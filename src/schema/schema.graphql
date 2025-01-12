@@ -1,0 +1,9 @@
+type User {
+  name: String!
+  ip: String!
+  status: [String!]!
+}
+
+type Query {
+  users: [User!]!
+} 
