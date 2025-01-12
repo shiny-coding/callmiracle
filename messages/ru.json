@@ -1,0 +1,10 @@
+{
+  "Status": {
+    "MEET_NEW_PEOPLE": "Познакомиться",
+    "CHAT": "Поболтать",
+    "WANT_TO_SPEAK_OUT": "Хочу высказаться",
+    "WANT_TO_LISTEN": "Хочу выслушать",
+    "NEED_HELP_WITH_SITUATION": "Хочу помощь в разборе ситуации",
+    "WANT_TO_HELP_WITH_SITUATION": "Хочу помочь в разборе ситуации"
+  }
+} 

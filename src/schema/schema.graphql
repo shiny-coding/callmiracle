@@ -1,7 +1,16 @@
+enum Status {
+  MEET_NEW_PEOPLE
+  CHAT
+  WANT_TO_SPEAK_OUT
+  WANT_TO_LISTEN
+  NEED_HELP_WITH_SITUATION
+  WANT_TO_HELP_WITH_SITUATION
+}
+
 type User {
   name: String!
   ip: String!
-  status: [String!]!
+  status: [Status!]!
 }
 
 type Query {

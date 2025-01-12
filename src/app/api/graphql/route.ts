@@ -1,6 +1,6 @@
 import { createYoga } from 'graphql-yoga'
 import { makeExecutableSchema } from '@graphql-tools/schema'
-import { resolvers } from '../../../src/resolvers'
+import { resolvers } from '../../../resolvers'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
