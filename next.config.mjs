@@ -4,7 +4,12 @@ const withNextIntl = createNextIntlPlugin();
  
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove experimental.appDir as it's no longer needed in newer Next.js versions
+  // save this just in case
+  // productionBrowserSourceMaps: true,
+  // webpack: (config) => {
+  //   config.devtool = 'source-map';
+  //   return config;
+  // }
 };
  
 export default withNextIntl(nextConfig);

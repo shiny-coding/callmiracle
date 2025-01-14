@@ -34,9 +34,9 @@ export default function Home() {
   const [name, setName] = useState('');
   const [userId, setUserId] = useState<string>('');
 
-  // useEffect(() => {
-  //   setUserId(getUserId());
-  // }, []);
+  useEffect(() => {
+    setUserId(getUserId());
+  }, []);
 
   // Split statuses into left and right columns
   const leftColumnStatuses = Array.from(statusRelationships.keys());

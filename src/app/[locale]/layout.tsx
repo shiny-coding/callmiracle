@@ -1,4 +1,3 @@
-import { ApolloClient, ApolloProvider } from '@apollo/client';
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { ApolloWrapper } from '@/lib/apollo-provider';
