@@ -14,14 +14,37 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  connect?: Maybe<User>;
+};
+
+
+export type MutationConnectArgs = {
+  name: Scalars['String']['input'];
+  statuses: Array<Status>;
+  userId: Scalars['String']['input'];
+};
+
 export type Query = {
   __typename?: 'Query';
   users: Array<User>;
 };
 
+export enum Status {
+  Chat = 'CHAT',
+  MeetNewPeople = 'MEET_NEW_PEOPLE',
+  NeedHelpWithSituation = 'NEED_HELP_WITH_SITUATION',
+  SitTogetherInSilence = 'SIT_TOGETHER_IN_SILENCE',
+  WantToHelpWithSituation = 'WANT_TO_HELP_WITH_SITUATION',
+  WantToListen = 'WANT_TO_LISTEN',
+  WantToSpeakOut = 'WANT_TO_SPEAK_OUT'
+}
+
 export type User = {
   __typename?: 'User';
-  ip: Scalars['String']['output'];
   name: Scalars['String']['output'];
-  status: Array<Scalars['String']['output']>;
+  statuses: Array<Status>;
+  timestamp: Scalars['String']['output'];
+  userId: Scalars['String']['output'];
 };

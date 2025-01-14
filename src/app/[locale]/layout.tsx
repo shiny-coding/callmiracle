@@ -1,5 +1,7 @@
+import { ApolloClient, ApolloProvider } from '@apollo/client';
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
+import { ApolloWrapper } from '@/lib/apollo-provider';
  
 export function generateStaticParams() {
   console.log('[locale]/layout.tsx - generateStaticParams called');
@@ -27,8 +29,10 @@ export default async function LocaleLayout({
   }
  
   return (
-    <NextIntlClientProvider messages={messages} locale={locale}>
-      {children}
-    </NextIntlClientProvider>
+    <ApolloWrapper>
+      <NextIntlClientProvider messages={messages} locale={locale}>
+        {children}
+      </NextIntlClientProvider>
+    </ApolloWrapper>
   );
 } 

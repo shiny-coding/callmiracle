@@ -5,14 +5,20 @@ enum Status {
   WANT_TO_LISTEN
   NEED_HELP_WITH_SITUATION
   WANT_TO_HELP_WITH_SITUATION
+  SIT_TOGETHER_IN_SILENCE
 }
 
 type User {
+  userId: String!
   name: String!
-  ip: String!
-  status: [Status!]!
+  statuses: [Status!]!
+  timestamp: String!
 }
 
 type Query {
   users: [User!]!
+}
+
+type Mutation {
+  connect(userId: String!, name: String!, statuses: [Status!]!): User
 } 

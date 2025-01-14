@@ -5,6 +5,8 @@
     "WANT_TO_SPEAK_OUT": "Want to Speak Out",
     "WANT_TO_LISTEN": "Want to Listen",
     "NEED_HELP_WITH_SITUATION": "Need Help with Situation",
-    "WANT_TO_HELP_WITH_SITUATION": "Want to Help with Situation"
-  }
+    "WANT_TO_HELP_WITH_SITUATION": "Want to Help with Situation",
+    "SIT_TOGETHER_IN_SILENCE": "Sit together in Silence"
+  },
+  "connect": "Find Partner"
 } 
