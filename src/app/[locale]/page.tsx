@@ -8,6 +8,7 @@ import { getUserId } from '@/lib/userId';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useStore } from '@/store/useStore'
 import { usePathname } from 'next/navigation';
+import VideoPreview from '@/components/VideoPreview'
 
 // Define the status relationships map
 const statusRelationships = new Map<Status, Status>([
@@ -95,6 +96,7 @@ export default function Home() {
               required
             />
           </div>
+          <VideoPreview />
 
           <fieldset>
             <legend className="text-sm font-medium mb-4">Select your status:</legend>
