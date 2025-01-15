@@ -7,6 +7,7 @@ import { gql, useMutation } from '@apollo/client';
 import { getUserId } from '@/lib/userId';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useStore } from '@/store/useStore'
+import { usePathname } from 'next/navigation';
 
 // Define the status relationships map
 const statusRelationships = new Map<Status, Status>([
@@ -18,12 +19,13 @@ const statusRelationships = new Map<Status, Status>([
 ]);
 
 const CONNECT_MUTATION = gql`
-  mutation Connect($userId: String!, $name: String!, $statuses: [Status!]!) {
-    connect(userId: $userId, name: $name, statuses: $statuses) {
+  mutation Connect($input: ConnectInput!) {
+    connect(input: $input) {
       userId
       name
       statuses
       timestamp
+      locale
     }
   }
 `;
@@ -34,6 +36,8 @@ export default function Home() {
   const { name, selectedStatuses, setName, setSelectedStatuses } = useStore()
   const [connect] = useMutation(CONNECT_MUTATION);
   const [userId, setUserId] = useState<string>('');
+  const pathname = usePathname()
+  const currentLocale = pathname.split('/')[1]
 
   useEffect(() => {
     setUserId(getUserId());
@@ -58,9 +62,12 @@ export default function Home() {
     try {
       await connect({
         variables: {
-          userId,
-          name,
-          statuses: selectedStatuses
+          input: {
+            userId,
+            name,
+            statuses: selectedStatuses,
+            locale: currentLocale
+          }
         }
       });
     } catch (error) {

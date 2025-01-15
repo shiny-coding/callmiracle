@@ -1,5 +1,7 @@
 import { Status } from '@/generated/graphql';
 import clientPromise from '../../lib/mongodb';
+import { Context } from 'graphql';
+import { ConnectInput } from '@/generated/graphql';
 
 export const resolvers = {
   Query: {
@@ -10,28 +12,26 @@ export const resolvers = {
     },
   },
   Mutation: {
-    connect: async (_: any, { userId, name, statuses }: { userId: string, name: string, statuses: string[] }) => {
-      const client = await clientPromise;
-      const db = client.db();
+    connect: async (_: any, { input }: { input: ConnectInput }, { db }: Context) => {
+      const { userId, name, statuses, locale } = input;
+      const timestamp = new Date().toISOString();
 
-      const existing = await db.collection('users').findOne({ userId });
-      console.log('Existing document:', existing);
-      
       const result = await db.collection('users').findOneAndUpdate(
         { userId },
         { 
           $set: { 
-            name,
-            statuses,
-            timestamp: new Date().toISOString(),
-          }
+            name, 
+            statuses, 
+            timestamp,
+            locale 
+          } 
         },
         { 
-          upsert: true, 
+          upsert: true,
           returnDocument: 'after'
         }
       );
-      
+
       return result;
     }
   }

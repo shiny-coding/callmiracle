@@ -13,6 +13,14 @@ type User {
   name: String!
   statuses: [Status!]!
   timestamp: String!
+  locale: String!
+}
+
+input ConnectInput {
+  userId: String!
+  name: String!
+  statuses: [Status!]!
+  locale: String!
 }
 
 type Query {
@@ -20,5 +28,5 @@ type Query {
 }
 
 type Mutation {
-  connect(userId: String!, name: String!, statuses: [Status!]!): User
+  connect(input: ConnectInput!): User!
 } 

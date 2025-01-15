@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { FormControl, Select, MenuItem } from '@mui/material';
 import { Locale, locales } from '@/config';
+import Cookies from 'js-cookie'
 
 export default function LocaleSelector() {
   const pathname = usePathname();
@@ -27,9 +28,12 @@ export default function LocaleSelector() {
   const currentLocale = pathname.split('/')[1] || getDefaultLocale();
 
   const handleChange = (newLocale: string) => {
-    const pathWithoutLocale = pathname.split('/').slice(2).join('/');
-    const newPath = `/${newLocale}/${pathWithoutLocale}`;
-    router.push(newPath);
+    // Set cookie with 1 year expiry
+    Cookies.set('NEXT_LOCALE', newLocale, { expires: 365 })
+    
+    const pathWithoutLocale = pathname.split('/').slice(2).join('/')
+    const newPath = `/${newLocale}/${pathWithoutLocale}`
+    router.push(newPath)
   };
 
   return (

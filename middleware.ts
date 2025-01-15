@@ -1,38 +1,40 @@
-import createMiddleware from 'next-intl/middleware';
-import { locales, defaultLocale } from '@/config';
+import { NextRequest, NextResponse } from 'next/server'
+import { locales, defaultLocale } from '@/config'
 
-// Function to get best matching locale from Accept-Language header
-function getLocaleFromHeader(acceptLanguage: string | null): string {
-  if (!acceptLanguage) return defaultLocale;
+function getLocaleFromHeader(req: NextRequest): string {
+  const acceptLanguage = req.headers.get('accept-language')
+  if (!acceptLanguage) return defaultLocale
   
-  // Parse Accept-Language header values and their q-factors
   const languages = acceptLanguage.split(',')
     .map(lang => {
-      const [code, q = '1'] = lang.split(';q=');
+      const [code, q = '1'] = lang.split(';q=')
       return {
-        code: code.split('-')[0], // Get primary language code
+        code: code.split('-')[0].toLowerCase(),
         q: parseFloat(q)
-      };
+      }
     })
-    .sort((a, b) => b.q - a.q); // Sort by q-factor
-
-  // Find first matching locale
-  for (const lang of languages) {
-    if (locales.includes(lang.code as any)) {
-      return lang.code;
-    }
-  }
-
-  return defaultLocale;
+    .sort((a, b) => b.q - a.q) // Sort by quality value
+  
+  const match = languages.find(lang => locales.includes(lang.code as any))
+  return match ? match.code : defaultLocale
 }
 
-export default createMiddleware({
-  locales,
-  defaultLocale,
-  localePrefix: 'always',
-  localeDetection: true
-});
+export function middleware(req: NextRequest) {
+  if (
+    req.nextUrl.pathname.startsWith('/_next') ||
+    req.nextUrl.pathname.includes('/api/') ||
+    /\.(.*)$/.test(req.nextUrl.pathname)
+  ) {
+    return
+  }
+
+  const pathname = req.nextUrl.pathname
+  if (pathname === '/') {
+    const locale = req.cookies.get('NEXT_LOCALE')?.value || getLocaleFromHeader(req)
+    return NextResponse.redirect(new URL(`/${locale}${pathname}`, req.url))
+  }
+}
 
 export const config = {
-  matcher: ['/', '/(ru|en)/:path*']
-}; 
+  matcher: ['/', '/((?!_next|api|.*\\.).*)']
+} 
