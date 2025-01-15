@@ -1,4 +1,6 @@
 {
+  "name": "Name",
+  "selectStatus": "Select your status",
   "Status": {
     "MEET_NEW_PEOPLE": "Meet New People",
     "CHAT": "Chat",

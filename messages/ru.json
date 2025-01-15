@@ -1,4 +1,6 @@
 {
+  "name": "Имя",
+  "selectStatus": "Выберите свой статус",
   "Status": {
     "MEET_NEW_PEOPLE": "Познакомиться",
     "CHAT": "Поболтать",

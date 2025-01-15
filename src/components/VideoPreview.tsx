@@ -108,24 +108,30 @@ export default function VideoPreview() {
   return (
     <div className="relative w-full max-w-[320px] mx-auto mb-6">
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg text-red-600 text-sm mb-2">{error}</div>
+        <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className={`w-[${VIDEO_WIDTH}px] h-[${VIDEO_HEIGHT}px] rounded-lg shadow-lg object-cover ${!isEnabled && 'hidden'}`}
-      />
-      {!isEnabled && (
-        <div className={`w-[${VIDEO_WIDTH}px] h-[${VIDEO_HEIGHT}px] bg-gray-100 rounded-lg flex items-center justify-center text-gray-500`}>
-          {t('cameraDisabled')}
-        </div>
-      )}
+      <div style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }} className="mx-auto">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }}
+          className={`rounded-lg shadow-lg object-cover ${!isEnabled && 'hidden'}`}
+        />
+        {!isEnabled && (
+          <div 
+            style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }}
+            className="bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400"
+          >
+            {t('cameraDisabled')}
+          </div>
+        )}
+      </div>
       <div className="flex justify-center mt-3">
         <IconButton 
           onClick={toggleCamera}
-          className="bg-white hover:bg-gray-100"
+          className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
           size="small"
         >
           {isEnabled ? (
@@ -136,29 +142,31 @@ export default function VideoPreview() {
         </IconButton>
       </div>
       <div className="flex gap-2 mt-2">
-        <FormControl size="small" fullWidth>
-          <InputLabel>Camera</InputLabel>
+        <FormControl size="small" fullWidth className="dark:bg-gray-800 rounded-lg">
+          <InputLabel className="dark:text-gray-300">Camera</InputLabel>
           <Select
             value={selectedDevices.videoId}
             onChange={(e) => handleDeviceChange('video', e.target.value)}
             label="Camera"
+            className="dark:text-gray-100"
           >
             {devices.video.map(device => (
-              <MenuItem key={device.deviceId} value={device.deviceId}>
+              <MenuItem key={device.deviceId} value={device.deviceId} className="dark:text-gray-100 dark:hover:bg-gray-700">
                 {device.label || `Camera ${device.deviceId.slice(0, 5)}...`}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
-        <FormControl size="small" fullWidth>
-          <InputLabel>Microphone</InputLabel>
+        <FormControl size="small" fullWidth className="dark:bg-gray-800 rounded-lg">
+          <InputLabel className="dark:text-gray-300">Microphone</InputLabel>
           <Select
             value={selectedDevices.audioId}
             onChange={(e) => handleDeviceChange('audio', e.target.value)}
             label="Microphone"
+            className="dark:text-gray-100"
           >
             {devices.audio.map(device => (
-              <MenuItem key={device.deviceId} value={device.deviceId}>
+              <MenuItem key={device.deviceId} value={device.deviceId} className="dark:text-gray-100 dark:hover:bg-gray-700">
                 {device.label || `Microphone ${device.deviceId.slice(0, 5)}...`}
               </MenuItem>
             ))}
