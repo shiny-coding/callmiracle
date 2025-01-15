@@ -10,9 +10,12 @@ export const resolvers = {
     },
   },
   Mutation: {
-    connect: async (_: any, { name, statuses }: { name: string, statuses: string[] }, { userId }: { userId: string }) => {
+    connect: async (_: any, { userId, name, statuses }: { userId: string, name: string, statuses: string[] }) => {
       const client = await clientPromise;
       const db = client.db();
+
+      const existing = await db.collection('users').findOne({ userId });
+      console.log('Existing document:', existing);
       
       const result = await db.collection('users').findOneAndUpdate(
         { userId },
@@ -23,10 +26,13 @@ export const resolvers = {
             timestamp: new Date().toISOString(),
           }
         },
-        { upsert: true, returnDocument: 'after' }
+        { 
+          upsert: true, 
+          returnDocument: 'after'
+        }
       );
       
-      return result?.value;
+      return result;
     }
   }
 }; 

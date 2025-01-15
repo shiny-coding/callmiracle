@@ -1,9 +1,17 @@
 'use client';
 
-import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
+import { ApolloClient, InMemoryCache, ApolloProvider, createHttpLink } from '@apollo/client';
+import { getUserId } from './userId';
+
+const httpLink = createHttpLink({
+  uri: '/api/graphql',
+  headers: {
+    'x-user-id': getUserId()
+  }
+});
 
 const client = new ApolloClient({
-  uri: '/api/graphql',
+  link: httpLink,
   cache: new InMemoryCache(),
 });
 

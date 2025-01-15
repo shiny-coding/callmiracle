@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { Status } from '@/generated/graphql';
 import { gql, useMutation } from '@apollo/client';
 import { getUserId } from '@/lib/userId';
+import LanguageSelector from '@/components/LanguageSelector';
+import { useStore } from '@/store/useStore'
 
 // Define the status relationships map
 const statusRelationships = new Map<Status, Status>([
@@ -29,9 +31,8 @@ const CONNECT_MUTATION = gql`
 export default function Home() {
   const t = useTranslations('Status');
   const tRoot = useTranslations();
-  const [selectedStatuses, setSelectedStatuses] = useState<Status[]>([]);
+  const { name, selectedStatuses, setName, setSelectedStatuses } = useStore()
   const [connect] = useMutation(CONNECT_MUTATION);
-  const [name, setName] = useState('');
   const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
@@ -43,12 +44,12 @@ export default function Home() {
   const rightColumnStatuses = Array.from(new Set(statusRelationships.values()));
 
   const toggleStatus = (status: Status) => {
-    setSelectedStatuses(prev => 
-      prev.includes(status)
-        ? prev.filter(s => s !== status)
-        : [...prev, status]
-    );
-  };
+    setSelectedStatuses(
+      selectedStatuses.includes(status)
+        ? selectedStatuses.filter(s => s !== status)
+        : [...selectedStatuses, status]
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +71,8 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-md mx-auto mt-8">
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <LanguageSelector />
+        <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-2">
               Name:
