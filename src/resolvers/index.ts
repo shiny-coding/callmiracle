@@ -18,7 +18,7 @@ export const resolvers = {
   },
   Mutation: {
     connect: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { userId, name, statuses, locale } = input;
+      const { userId, name, statuses, locale, languages } = input;
       const timestamp = Date.now();
 
       const result = await db.collection('users').findOneAndUpdate(
@@ -29,7 +29,7 @@ export const resolvers = {
             statuses, 
             timestamp,
             locale,
-            languages: []
+            languages
           } 
         },
         { 

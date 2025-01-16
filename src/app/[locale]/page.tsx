@@ -18,6 +18,7 @@ const CONNECT_MUTATION = gql`
       userId
       name
       statuses
+      languages
       timestamp
       locale
     }
@@ -26,7 +27,7 @@ const CONNECT_MUTATION = gql`
 
 export default function Home() {
   const tRoot = useTranslations();
-  const { name, selectedStatuses, setName } = useStore();
+  const { name, selectedLangs, selectedStatuses, setName } = useStore();
   const [connect] = useMutation(CONNECT_MUTATION);
   const [userId, setUserId] = useState<string>('');
   const pathname = usePathname();
@@ -48,6 +49,7 @@ export default function Home() {
             userId: currentUserId,
             name,
             statuses: selectedStatuses,
+            languages: selectedLangs,
             locale: currentLocale
           }
         }

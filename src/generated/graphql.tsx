@@ -15,15 +15,16 @@ export type Scalars = {
 };
 
 export type ConnectInput = {
+  languages: Array<Scalars['String']['input']>;
   locale: Scalars['String']['input'];
   name: Scalars['String']['input'];
   statuses: Array<Status>;
-  userId: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export type Mutation = {
   __typename?: 'Mutation';
-  connect: User;
+  connect?: Maybe<User>;
 };
 
 

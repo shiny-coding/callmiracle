@@ -1,6 +1,6 @@
 enum Status {
-  MEET_NEW_PEOPLE
   CHAT
+  MEET_NEW_PEOPLE
   WANT_TO_SPEAK_OUT
   WANT_TO_LISTEN
   NEED_HELP_WITH_SITUATION
@@ -18,9 +18,10 @@ type User {
 }
 
 input ConnectInput {
-  userId: String!
+  userId: ID!
   name: String!
   statuses: [Status!]!
+  languages: [String!]!
   locale: String!
 }
 
@@ -29,5 +30,5 @@ type Query {
 }
 
 type Mutation {
-  connect(input: ConnectInput!): User!
+  connect(input: ConnectInput!): User
 } 
