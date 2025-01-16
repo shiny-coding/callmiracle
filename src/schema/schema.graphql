@@ -9,10 +9,11 @@ enum Status {
 }
 
 type User {
-  userId: String!
+  userId: ID!
   name: String!
   statuses: [Status!]!
-  timestamp: String!
+  languages: [String!]!
+  timestamp: Float!
   locale: String!
 }
 

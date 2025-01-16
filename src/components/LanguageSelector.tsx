@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Theme, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import OutlinedInput from '@mui/material/OutlinedInput';
@@ -13,7 +12,7 @@ import { LANGUAGES } from '@/config/languages';
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import { useTranslations } from 'next-intl';
-import { useStore } from '@/store/useStore'
+import { useStore } from '@/store/useStore';
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -36,13 +35,9 @@ function getStyles(name: string, selectedLangs: string[], theme: Theme) {
 }
 
 export default function LanguageSelector() {
-  const { selectedLangs = [], setSelectedLangs } = useStore()
+  const { selectedLangs = [], setSelectedLangs } = useStore();
   const theme = useTheme();
   const t = useTranslations();
-  
-  useEffect(() => {
-    useStore.persist.rehydrate()
-  }, [])
 
   const handleChange = (event: SelectChangeEvent<typeof selectedLangs>) => {
     const {

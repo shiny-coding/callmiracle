@@ -1,20 +1,25 @@
 import { Status } from '@/generated/graphql';
-import clientPromise from '../../lib/mongodb';
-import { Context } from 'graphql';
-import { ConnectInput } from '@/generated/graphql';
+import { Db } from 'mongodb';
+
+interface Context {
+  db: Db;
+}
 
 export const resolvers = {
   Query: {
-    users: async () => {
-      const client = await clientPromise;
-      const db = client.db("commiracle");
-      return await db.collection("users").find({}).toArray();
-    },
+    users: async (_: any, __: any, { db }: Context) => {
+      const users = await db.collection('users').find({
+        // Only show users active in the last 5 minutes
+        timestamp: { $gt: Date.now() - 5 * 60 * 1000 }
+      }).toArray()
+      
+      return users
+    }
   },
   Mutation: {
-    connect: async (_: any, { input }: { input: ConnectInput }, { db }: Context) => {
+    connect: async (_: any, { input }: { input: any }, { db }: Context) => {
       const { userId, name, statuses, locale } = input;
-      const timestamp = new Date().toISOString();
+      const timestamp = Date.now();
 
       const result = await db.collection('users').findOneAndUpdate(
         { userId },
@@ -23,7 +28,8 @@ export const resolvers = {
             name, 
             statuses, 
             timestamp,
-            locale 
+            locale,
+            languages: []
           } 
         },
         { 

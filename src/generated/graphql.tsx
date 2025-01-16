@@ -14,16 +14,21 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type ConnectInput = {
+  locale: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  statuses: Array<Status>;
+  userId: Scalars['String']['input'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
-  connect?: Maybe<User>;
+  connect: User;
 };
 
 
 export type MutationConnectArgs = {
-  name: Scalars['String']['input'];
-  statuses: Array<Status>;
-  userId: Scalars['String']['input'];
+  input: ConnectInput;
 };
 
 export type Query = {
@@ -43,8 +48,10 @@ export enum Status {
 
 export type User = {
   __typename?: 'User';
+  languages: Array<Scalars['String']['output']>;
+  locale: Scalars['String']['output'];
   name: Scalars['String']['output'];
   statuses: Array<Status>;
-  timestamp: Scalars['String']['output'];
-  userId: Scalars['String']['output'];
+  timestamp: Scalars['Float']['output'];
+  userId: Scalars['ID']['output'];
 };

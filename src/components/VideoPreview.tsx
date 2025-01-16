@@ -13,12 +13,7 @@ export default function VideoPreview() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
-  const [isEnabled, setIsEnabled] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('cameraEnabled') !== 'false'
-    }
-    return true
-  })
+  const [isEnabled, setIsEnabled] = useState(true)
   const t = useTranslations()
   const [devices, setDevices] = useState<{
     video: MediaDeviceInfo[],
@@ -27,10 +22,20 @@ export default function VideoPreview() {
   const [selectedDevices, setSelectedDevices] = useState<{
     videoId: string,
     audioId: string
-  }>(() => ({
-    videoId: localStorage.getItem('selectedVideoDevice') || '',
-    audioId: localStorage.getItem('selectedAudioDevice') || ''
-  }))
+  }>({ videoId: '', audioId: '' })
+
+  useEffect(() => {
+    // Initialize client-side only states
+    const savedCameraEnabled = localStorage.getItem('cameraEnabled')
+    if (savedCameraEnabled !== null) {
+      setIsEnabled(savedCameraEnabled !== 'false')
+    }
+    
+    setSelectedDevices({
+      videoId: localStorage.getItem('selectedVideoDevice') || '',
+      audioId: localStorage.getItem('selectedAudioDevice') || ''
+    })
+  }, [])
 
   useEffect(() => {
     async function getDevices() {
@@ -141,38 +146,44 @@ export default function VideoPreview() {
           )}
         </IconButton>
       </div>
-      <div className="flex gap-2 mt-2">
-        <FormControl size="small" fullWidth className="dark:bg-gray-800 rounded-lg">
-          <InputLabel className="dark:text-gray-300">Camera</InputLabel>
-          <Select
-            value={selectedDevices.videoId}
-            onChange={(e) => handleDeviceChange('video', e.target.value)}
-            label="Camera"
-            className="dark:text-gray-100"
-          >
-            {devices.video.map(device => (
-              <MenuItem key={device.deviceId} value={device.deviceId} className="dark:text-gray-100 dark:hover:bg-gray-700">
-                {device.label || `Camera ${device.deviceId.slice(0, 5)}...`}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" fullWidth className="dark:bg-gray-800 rounded-lg">
-          <InputLabel className="dark:text-gray-300">Microphone</InputLabel>
-          <Select
-            value={selectedDevices.audioId}
-            onChange={(e) => handleDeviceChange('audio', e.target.value)}
-            label="Microphone"
-            className="dark:text-gray-100"
-          >
-            {devices.audio.map(device => (
-              <MenuItem key={device.deviceId} value={device.deviceId} className="dark:text-gray-100 dark:hover:bg-gray-700">
-                {device.label || `Microphone ${device.deviceId.slice(0, 5)}...`}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </div>
+      {(devices.video.length > 0 || devices.audio.length > 0) && (
+        <div className="flex gap-2 mt-2">
+          {devices.video.length > 0 && (
+            <FormControl size="small" fullWidth className="dark:bg-gray-800 rounded-lg">
+              <InputLabel className="dark:text-gray-300">Camera</InputLabel>
+              <Select
+                value={selectedDevices.videoId}
+                onChange={(e) => handleDeviceChange('video', e.target.value)}
+                label="Camera"
+                className="dark:text-gray-100"
+              >
+                {devices.video.map(device => (
+                  <MenuItem key={device.deviceId} value={device.deviceId} className="dark:text-gray-100 dark:hover:bg-gray-700">
+                    {device.label || `Camera ${device.deviceId.slice(0, 5)}...`}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+          {devices.audio.length > 0 && (
+            <FormControl size="small" fullWidth className="dark:bg-gray-800 rounded-lg">
+              <InputLabel className="dark:text-gray-300">Microphone</InputLabel>
+              <Select
+                value={selectedDevices.audioId}
+                onChange={(e) => handleDeviceChange('audio', e.target.value)}
+                label="Microphone"
+                className="dark:text-gray-100"
+              >
+                {devices.audio.map(device => (
+                  <MenuItem key={device.deviceId} value={device.deviceId} className="dark:text-gray-100 dark:hover:bg-gray-700">
+                    {device.label || `Microphone ${device.deviceId.slice(0, 5)}...`}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </div>
+      )}
     </div>
   )
-} 
+}

@@ -10,6 +10,7 @@ import { useStore } from '@/store/useStore';
 import { usePathname } from 'next/navigation';
 import VideoPreview from '@/components/VideoPreview';
 import { TextField, Button } from '@mui/material';
+import UserList from '@/components/UserList';
 
 const CONNECT_MUTATION = gql`
   mutation Connect($input: ConnectInput!) {
@@ -58,31 +59,39 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-8">
-      <div className="max-w-md mx-auto mt-8">
-        <LanguageSelector />
-        <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            id="name"
-            name="name"
-            label={tRoot('name')}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            variant="outlined"
-          />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        {/* Left Column */}
+        <div>
+          <LanguageSelector />
+          <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              id="name"
+              name="name"
+              label={tRoot('name')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              variant="outlined"
+            />
+            <StatusSelector />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              size="large"
+            >
+              {tRoot('connect')}
+            </Button>
+          </form>
+        </div>
+
+        {/* Right Column */}
+        <div>
           <VideoPreview />
-          <StatusSelector />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            size="large"
-          >
-            {tRoot('connect')}
-          </Button>
-        </form>
+          <UserList />
+        </div>
       </div>
     </main>
   );

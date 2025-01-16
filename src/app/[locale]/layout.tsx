@@ -1,9 +1,9 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { ApolloWrapper } from '@/lib/apollo-provider';
-import LanguageSelector from '@/components/LanguageSelector';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import LocaleSelector from '@/components/LocaleSelector';
+import { StoreInitializer } from '@/components/StoreInitializer';
 
 export default async function LocaleLayout({
   children,
@@ -28,6 +28,7 @@ export default async function LocaleLayout({
     <ApolloWrapper>
       <AppRouterCacheProvider>
         <NextIntlClientProvider messages={messages} locale={locale}>
+          <StoreInitializer />
           <LocaleSelector />
           {children}
         </NextIntlClientProvider>
