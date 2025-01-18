@@ -96,7 +96,7 @@ export default function Home() {
         <div className="space-y-6">
           <div className="space-y-4">
             <VideoPreview onStreamChange={setLocalStream} />
-            {selectedUserId && <VideoChat targetUserId={selectedUserId} localStream={localStream} />}
+            <VideoChat targetUserId={selectedUserId} localStream={localStream} />
           </div>
           <UserList onUserSelect={setSelectedUserId} localStream={localStream} />
         </div>

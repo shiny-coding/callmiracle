@@ -33,7 +33,7 @@ const ON_CONNECTION_REQUEST = gql`
 `;
 
 interface VideoChatProps {
-  targetUserId: string;
+  targetUserId?: string;
   localStream?: MediaStream;
 }
 
@@ -124,6 +124,8 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
 
   useEffect(() => {
     async function initializeConnection() {
+      if (!targetUserId) return;
+
       console.log('Initializing WebRTC connection with:', targetUserId);
       setConnectionStatus('waiting');
       
@@ -213,6 +215,13 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
 
     if (targetUserId) {
       initializeConnection();
+    } else {
+      // Clean up any existing connection when no user is selected
+      if (peerConnection.current) {
+        peerConnection.current.close();
+        peerConnection.current = null;
+      }
+      setConnectionStatus(null);
     }
 
     return () => {
@@ -226,6 +235,13 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
     <>
       <div className="relative w-full max-w-[320px] mx-auto">
         <div style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }} className="mx-auto">
+          {!targetUserId && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <Typography className="text-gray-600 dark:text-gray-300">
+                Select User
+              </Typography>
+            </div>
+          )}
           {connectionStatus === 'waiting' && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
               <Typography className="text-gray-600 dark:text-gray-300">
