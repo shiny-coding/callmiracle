@@ -5,11 +5,13 @@ import { IconButton, FormControl, InputLabel, Select, MenuItem } from '@mui/mate
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import { useTranslations } from 'next-intl'
+import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 
-const VIDEO_WIDTH = 320
-const VIDEO_HEIGHT = 240
+interface VideoPreviewProps {
+  onStreamChange: (stream: MediaStream | undefined) => void
+}
 
-export default function VideoPreview() {
+export default function VideoPreview({ onStreamChange }: VideoPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
@@ -53,51 +55,40 @@ export default function VideoPreview() {
   }, [])
 
   useEffect(() => {
-    async function setupVideo() {
+    async function setupStream() {
       try {
         if (!isEnabled) {
           if (videoRef.current?.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream
-            stream.getTracks().forEach(track => track.stop())
+            const tracks = (videoRef.current.srcObject as MediaStream).getTracks()
+            tracks.forEach(track => track.stop())
             videoRef.current.srcObject = null
+            onStreamChange(undefined)
           }
           return
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({ 
+        const constraints: MediaStreamConstraints = {
           video: selectedDevices.videoId ? { deviceId: selectedDevices.videoId } : true,
           audio: selectedDevices.audioId ? { deviceId: selectedDevices.audioId } : true
-        })
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           setHasPermission(true)
           setError('')
+          onStreamChange(stream)
         }
       } catch (err) {
-        if (err instanceof Error && err.name === 'NotAllowedError') {
-          try {
-            // Request initial permissions with default devices
-            const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            tempStream.getTracks().forEach(track => track.stop())
-            // Try again with selected devices
-            setupVideo()
-          } catch (permErr) {
-            setError('Please allow camera access to use this app')
-          }
-        } else {
-          setError('This camera is not available')
-          console.error('Error accessing media devices:', err)
-        }
+        console.error('Error accessing media devices:', err)
+        setError('Error accessing camera/microphone')
+        setHasPermission(false)
+        onStreamChange(undefined)
       }
     }
 
-    setupVideo()
-    
-    return () => {
-      const stream = videoRef.current?.srcObject as MediaStream
-      stream?.getTracks().forEach(track => track.stop())
-    }
-  }, [isEnabled, selectedDevices.videoId, selectedDevices.audioId])
+    setupStream()
+  }, [isEnabled, selectedDevices.videoId, selectedDevices.audioId, onStreamChange])
 
   const toggleCamera = () => {
     const newState = !isEnabled

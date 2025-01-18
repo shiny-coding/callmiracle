@@ -1339,6 +1339,13 @@
   dependencies:
     tslib "^2.5.2"
 
+"@graphql-yoga/plugin-graphql-sse@^3.10.10":
+  version "3.10.10"
+  resolved "https://registry.yarnpkg.com/@graphql-yoga/plugin-graphql-sse/-/plugin-graphql-sse-3.10.10.tgz#c83880544c9c3fb8d28b5697db50548f1008b2a4"
+  integrity sha512-sJA3xwTROeG5uh+ZfgYVvoY3gldRu2sZdv4xBd6G63CXmBrvKkME//Si6ivoc/5HfBmg+kBPUrMgDpokFyNAEQ==
+  dependencies:
+    graphql-sse "^2.0.0"
+
 "@graphql-yoga/subscription@^5.0.2":
   version "5.0.2"
   resolved "https://registry.yarnpkg.com/@graphql-yoga/subscription/-/subscription-5.0.2.tgz#a68bbe64e2cb9cd14dc854a36ecc1fb81e6fa03b"
@@ -4081,6 +4088,16 @@ graphql-request@^6.0.0:
   dependencies:
     "@graphql-typed-document-node/core" "^3.2.0"
     cross-fetch "^3.1.5"
+
+graphql-sse@^2.0.0:
+  version "2.5.4"
+  resolved "https://registry.yarnpkg.com/graphql-sse/-/graphql-sse-2.5.4.tgz#29e93d8ccda58b9263b18f176b7be631638ec658"
+  integrity sha512-8PIGHQPv1vokYboL8KsoBomvyJCUMJCAwSp5f+bR2qVoYtPo7CYowrYV7LFiXuiirX0cxVzgUBFNa5BaI4rZ2A==
+
+graphql-subscriptions@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/graphql-subscriptions/-/graphql-subscriptions-3.0.0.tgz#820c846ef271414c08f64827b5c9a192801e1b6f"
+  integrity sha512-kZCdevgmzDjGAOqH7GlDmQXYAkuHoKpMlJrqF40HMPhUhM5ZWSFSxCwD/nSi6AkaijmMfsFhoJRGJ27UseCvRA==
 
 graphql-tag@^2.11.0, graphql-tag@^2.12.6:
   version "2.12.6"

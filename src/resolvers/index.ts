@@ -1,5 +1,26 @@
 import { Status } from '@/generated/graphql';
 import { Db } from 'mongodb';
+import { createPubSub } from 'graphql-yoga';
+
+type ConnectionRequestPayload = {
+  onConnectionRequest: {
+    offer: string;
+    from: {
+      userId: string;
+      name: string;
+      languages: string[];
+      statuses: Status[];
+    };
+  };
+  userId: string;
+};
+
+type PubSubEvents = {
+  [key: string]: [any];
+  CONNECTION_REQUEST: [ConnectionRequestPayload];
+};
+
+const pubsub = createPubSub<PubSubEvents>();
 
 interface Context {
   db: Db;
@@ -9,8 +30,8 @@ export const resolvers = {
   Query: {
     users: async (_: any, __: any, { db }: Context) => {
       const users = await db.collection('users').find({
-        // Only show users active in the last 5 minutes
-        timestamp: { $gt: Date.now() - 5 * 60 * 1000 }
+        // Only show users active in the last 15 minutes
+        timestamp: { $gt: Date.now() - 15 * 60 * 1000 }
       }).toArray()
       
       return users
@@ -39,6 +60,68 @@ export const resolvers = {
       );
 
       return result;
+    },
+    connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
+      const { targetUserId, offer } = input;
+      const initiatorUserId = input.initiatorUserId || '';
+
+      if (offer) {
+        // Get initiator user details
+        const initiator = await db.collection('users').findOne({ userId: initiatorUserId });
+        
+        if (initiator) {
+          // Publish connection request
+          const payload: ConnectionRequestPayload = {
+            onConnectionRequest: {
+              offer,
+              from: {
+                userId: initiator.userId,
+                name: initiator.name,
+                languages: initiator.languages,
+                statuses: initiator.statuses
+              }
+            },
+            userId: targetUserId
+          };
+          pubsub.publish('CONNECTION_REQUEST', payload);
+        }
+      }
+
+      // Store the connection attempt
+      await db.collection('connections').updateOne(
+        { 
+          $or: [
+            { initiatorUserId, targetUserId },
+            { initiatorUserId: targetUserId, targetUserId: initiatorUserId }
+          ]
+        },
+        {
+          $set: {
+            offer,
+            timestamp: Date.now()
+          }
+        },
+        { upsert: true }
+      );
+
+      return {
+        offer,
+        targetUserId,
+        initiatorUserId
+      };
+    }
+  },
+  Subscription: {
+    onConnectionRequest: {
+      subscribe: (_: any, { userId }: { userId: string }) => {
+        return pubsub.subscribe('CONNECTION_REQUEST')
+      },
+      resolve: (payload: ConnectionRequestPayload, { userId }: { userId: string }) => {
+        if (payload.userId === userId) {
+          return payload.onConnectionRequest
+        }
+        return null
+      }
     }
   }
 }; 

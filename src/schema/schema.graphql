@@ -17,6 +17,18 @@ type User {
   locale: String!
 }
 
+type ConnectionParams {
+  offer: String
+  answer: String
+  targetUserId: ID!
+  initiatorUserId: ID!
+}
+
+type ConnectionRequest {
+  offer: String!
+  from: User!
+}
+
 input ConnectInput {
   userId: ID!
   name: String!
@@ -25,10 +37,21 @@ input ConnectInput {
   locale: String!
 }
 
+input ConnectionParamsInput {
+  offer: String
+  answer: String
+  targetUserId: ID!
+}
+
 type Query {
   users: [User!]!
 }
 
 type Mutation {
   connect(input: ConnectInput!): User
+  connectWithUser(input: ConnectionParamsInput!): ConnectionParams
+}
+
+type Subscription {
+  onConnectionRequest(userId: ID!): ConnectionRequest
 } 

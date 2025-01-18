@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import VideoPreview from '@/components/VideoPreview';
 import { TextField, Button } from '@mui/material';
 import UserList from '@/components/UserList';
+import VideoChat from '@/components/VideoChat';
 
 const CONNECT_MUTATION = gql`
   mutation Connect($input: ConnectInput!) {
@@ -30,6 +31,8 @@ export default function Home() {
   const { name, selectedLangs, selectedStatuses, setName } = useStore();
   const [connect] = useMutation(CONNECT_MUTATION);
   const [userId, setUserId] = useState<string>('');
+  const [selectedUserId, setSelectedUserId] = useState<string>();
+  const [localStream, setLocalStream] = useState<MediaStream | undefined>();
   const pathname = usePathname();
   const currentLocale = pathname.split('/')[1];
 
@@ -37,7 +40,7 @@ export default function Home() {
     setUserId(getUserId());
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
     const currentUserId = getUserId();
     if (!currentUserId) return;
@@ -60,7 +63,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen p-8">
+    <main className="min-h-screen p-8 pt-16">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
         {/* Left Column */}
         <div>
@@ -90,9 +93,12 @@ export default function Home() {
         </div>
 
         {/* Right Column */}
-        <div>
-          <VideoPreview />
-          <UserList />
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <VideoPreview onStreamChange={setLocalStream} />
+            {selectedUserId && <VideoChat targetUserId={selectedUserId} localStream={localStream} />}
+          </div>
+          <UserList onUserSelect={setSelectedUserId} localStream={localStream} />
         </div>
       </div>
     </main>
