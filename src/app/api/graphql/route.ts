@@ -19,21 +19,15 @@ const yoga = createYoga({
 
 // Export request handlers
 export const GET = async (request: Request) => {
-  console.log('GET Request:', {
-    url: request.url,
-    method: request.method,
-    headers: Object.fromEntries(request.headers.entries())
-  })
+  // Only log SSE connections
+  if (request.headers.get('accept')?.includes('text/event-stream')) {
+    console.log('SSE GET Request')
+  }
 
   const response = await yoga.fetch(request)
-  console.log('GET Response:', {
-    status: response.status,
-    headers: Object.fromEntries(response.headers.entries())
-  })
 
   // Add SSE headers if needed
   if (request.headers.get('accept')?.includes('text/event-stream')) {
-    console.log('Adding SSE headers to response')
     response.headers.set('Content-Type', 'text/event-stream')
     response.headers.set('Connection', 'keep-alive')
     response.headers.set('Cache-Control', 'no-cache')
@@ -42,51 +36,45 @@ export const GET = async (request: Request) => {
 }
 
 export const POST = async (request: Request) => {
-  // Clone request to read body
+  // Clone request early for error logging if needed
   const clonedRequest = request.clone()
-  const body = await clonedRequest.text()
-  
-  console.log('POST Request:', {
-    url: request.url,
-    method: request.method,
-    headers: Object.fromEntries(request.headers.entries()),
-    body: body
-  })
-
-  try {
-    const parsedBody = JSON.parse(body)
-    console.log('Parsed GraphQL operation:', {
-      operationName: parsedBody.operationName,
-      variables: parsedBody.variables,
-      query: parsedBody.query?.slice(0, 100) + '...' // Log first 100 chars of query
-    })
-  } catch (e) {
-    console.log('Could not parse request body')
-  }
+  let requestBody: string | undefined
 
   try {
     const response = await yoga.fetch(request)
-    console.log('POST Response:', {
-      status: response.status,
-      headers: Object.fromEntries(response.headers.entries()),
-      type: response.type,
-      bodyUsed: response.bodyUsed
-    })
-
-    // Try to read and log response body if possible
-    if (response.bodyUsed === false) {
-      const clonedResponse = response.clone()
+    
+    // Only log non-200 responses
+    if (!response.ok) {
+      // Read body only if we need it for error logging
+      if (!requestBody) {
+        requestBody = await clonedRequest.text()
+      }
+      
       try {
-        const responseBody = await clonedResponse.text()
-        console.log('Response body:', responseBody)
+        const parsedBody = JSON.parse(requestBody)
+        console.error('GraphQL Error:', {
+          status: response.status,
+          operationName: parsedBody.operationName,
+          variables: parsedBody.variables,
+          query: parsedBody.query?.slice(0, 100) + '...'
+        })
       } catch (e) {
-        console.log('Could not read response body')
+        console.error('GraphQL Error:', {
+          status: response.status,
+          body: requestBody
+        })
       }
     }
 
     return response
   } catch (error) {
-    console.error('Error in POST handler:', error)
+    // For unhandled errors, also include request context
+    if (!requestBody) {
+      requestBody = await clonedRequest.text()
+    }
+    console.error('Error in POST handler:', error, {
+      body: requestBody
+    })
     throw error
   }
 } 

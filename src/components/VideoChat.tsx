@@ -157,7 +157,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
       // Log ICE candidates
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log('New ICE candidate:', event.candidate.candidate);
+          // console.log('New ICE candidate:', event.candidate.candidate);
         }
       };
 

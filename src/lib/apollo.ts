@@ -3,6 +3,21 @@ import { getMainDefinition } from '@apollo/client/utilities'
 import { Observable } from '@apollo/client/utilities'
 import { getUserId } from './userId'
 
+// Logging link to intercept all requests
+const loggingLink = new ApolloLink((operation, forward) => {
+  return forward(operation).map(response => {
+    // Only log if there are GraphQL errors
+    if (response.errors && response.errors.length > 0) {
+      console.error(`GraphQL Error (${operation.operationName || 'unnamed'}):`, {
+        errors: response.errors,
+        query: operation.query.loc?.source.body,
+        variables: operation.variables
+      })
+    }
+    return response
+  })
+})
+
 const httpLink = new HttpLink({
   uri: '/api/graphql',
   credentials: 'include',
@@ -59,7 +74,6 @@ const sseLink = new ApolloLink((operation) => {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          console.log(`SSE: Received message for ${operationName}`, data)
           if (data.errors) {
             observer.error(data.errors[0])
           } else {
@@ -101,7 +115,8 @@ const splitLink = split(
 )
 
 export const client = new ApolloClient({
-  link: splitLink,
+  // Compose links: logging -> split(http/sse)
+  link: ApolloLink.from([loggingLink, splitLink]),
   cache: new InMemoryCache(),
   credentials: 'include'
 }) 
