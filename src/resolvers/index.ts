@@ -86,7 +86,7 @@ export const resolvers = {
       pubsub.publish('USERS_UPDATED', typedUsers);
 
       console.log('Publishing users updated:', {
-        users: typedUsers
+        users: typedUsers.length
       })
 
       return result;
@@ -156,24 +156,19 @@ export const resolvers = {
   Subscription: {
     onConnectionRequest: {
       subscribe: (_: any, { userId }: { userId: string }) => {
-        return pubsub.subscribe('CONNECTION_REQUEST')
-      },
-      resolve: async (payload: ConnectionRequestPayload, { userId }: { userId: string }, { db }: Context) => {
-        // Get user names for logging
-        const subscribedUser = await db.collection('users').findOne({ userId })
-        const payloadUser = await db.collection('users').findOne({ userId: payload.userId })
-        
-        console.log('Resolving connection request:', {
-          payloadUserId: payload.userId,
-          payloadUserName: payloadUser?.name || 'Unknown',
-          subscribedUserId: userId,
-          subscribedUserName: subscribedUser?.name || 'Unknown',
-          willDeliver: payload.userId === userId
-        })
-        if (payload.userId === userId) {
-          return payload.onConnectionRequest
+        const iterator = pubsub.subscribe('CONNECTION_REQUEST')
+        return {
+          async *[Symbol.asyncIterator]() {
+            for await (const payload of iterator) {
+              if (payload.userId === userId) {
+                yield payload
+              }
+            }
+          }
         }
-        return null
+      },
+      resolve: (payload: ConnectionRequestPayload) => {
+        return payload.onConnectionRequest
       }
     },
     onUsersUpdated: {

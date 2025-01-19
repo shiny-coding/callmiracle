@@ -120,8 +120,23 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
 
       // Handle incoming stream
       peerConnection.current.ontrack = (event) => {
+        console.log('VideoChat: Received remote track:', {
+          kind: event.track.kind,
+          enabled: event.track.enabled,
+          muted: event.track.muted,
+          readyState: event.track.readyState,
+          streams: event.streams.length
+        })
         if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
+          console.log('VideoChat: Setting remote stream:', {
+            hasStream: !!event.streams[0],
+            tracks: event.streams[0]?.getTracks().map(t => ({
+              kind: t.kind,
+              enabled: t.enabled,
+              muted: t.muted
+            }))
+          })
+          remoteVideoRef.current.srcObject = event.streams[0]
         }
       };
 
@@ -132,6 +147,18 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
       // Create and send answer
       const answer = await peerConnection.current.createAnswer();
       await peerConnection.current.setLocalDescription(answer);
+
+      console.log('VideoChat: Remote description set:', {
+        signalingState: peerConnection.current.signalingState,
+        connectionState: peerConnection.current.connectionState,
+        iceGatheringState: peerConnection.current.iceGatheringState,
+        iceConnectionState: peerConnection.current.iceConnectionState
+      })
+
+      console.log('VideoChat: Created answer:', {
+        type: answer.type,
+        sdp: answer.sdp?.substring(0, 100) + '...'
+      })
 
       await connectWithUser({
         variables: {

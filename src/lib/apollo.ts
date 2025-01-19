@@ -84,29 +84,10 @@ const sseLink = new ApolloLink((operation) => {
         })
       }
 
-      // Log all events
-      eventSource.addEventListener('message', (event) => {
-        console.log(`SSE: Raw message event for ${operationName}:`, {
-          type: event.type,
-          data: event.data,
-          lastEventId: event.lastEventId,
-          origin: event.origin
-        })
-      })
-
-      // Log any other event types
-      eventSource.addEventListener('open', (event) => {
-        console.log(`SSE: Raw open event for ${operationName}:`, event)
-      })
-
-      eventSource.addEventListener('error', (event) => {
-        console.log(`SSE: Raw error event for ${operationName}:`, event)
-      })
-
-      eventSource.onmessage = (event) => {
+      // Listen for subscription data
+      eventSource.addEventListener('next', (event) => {
         try {
-          console.log(`SSE: Handling message for ${operationName}:`, {
-            type: event.type,
+          console.log(`SSE: Received next event for ${operationName}:`, {
             data: event.data?.slice(0, 100) + '...' // Log first 100 chars
           })
           const data = JSON.parse(event.data)
@@ -115,20 +96,34 @@ const sseLink = new ApolloLink((operation) => {
             data: data.data,
             errors: data.errors,
             extensions: data.extensions,
-            // Required by Apollo to identify this as a subscription result
             type: 'data'
           }
           observer.next(result)
         } catch (err) {
-          console.error(`SSE: Error processing message for ${operationName}:`, err)
+          console.error(`SSE: Error processing next event for ${operationName}:`, err)
           observer.error(err)
         }
-      }
+      })
 
-      eventSource.onerror = (error) => {
-        console.error(`SSE: Connection error for ${operationName}:`, error)
-        observer.error(error)
-      }
+      // Listen for subscription completion
+      eventSource.addEventListener('complete', () => {
+        console.log(`SSE: Subscription completed for ${operationName}`)
+        observer.complete()
+        eventSource.close()
+      })
+
+      // Listen for subscription errors
+      eventSource.addEventListener('error', (event) => {
+        console.error(`SSE: Error event for ${operationName}:`, {
+          error: event,
+          readyState: eventSource.readyState
+        })
+        if (eventSource.readyState === EventSource.CLOSED) {
+          observer.complete()
+        } else {
+          observer.error(event)
+        }
+      })
 
       return () => {
         console.log(`SSE: Closing connection for ${operationName}`)
@@ -146,6 +141,7 @@ const sseLink = new ApolloLink((operation) => {
 const splitLink = split(
   ({ query }) => {
     const definition = getMainDefinition(query)
+
     return (
       definition.kind === 'OperationDefinition' &&
       definition.operation === 'subscription'
