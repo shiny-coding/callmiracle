@@ -96,10 +96,8 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
       timestamp: new Date().toISOString()
     })
 
-    // First notify parent about user selection
     onUserSelect(userId)
 
-    // Don't proceed with WebRTC if no local stream
     if (!localStream) {
       console.log('Skipping WebRTC setup - no local stream available')
       return
@@ -131,7 +129,7 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
 
       // Send the offer through GraphQL mutation
       console.log('Sending offer to server')
-      await connectWithUser({
+      const result = await connectWithUser({
         variables: {
           input: {
             type: 'offer',
@@ -141,13 +139,28 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
           }
         }
       })
-      console.log('Offer sent successfully')
+
+      // Add more detailed logging for answer handling
+      if (result.data?.connectWithUser.answer) {
+        console.log('Received answer from server:', {
+          hasAnswer: true,
+          timestamp: new Date().toISOString()
+        });
+        const answer = JSON.parse(result.data.connectWithUser.answer);
+        console.log('Setting remote description');
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        
+        // Process any buffered ICE candidates
+        console.log('Processing buffered ICE candidates');
+        // ... process buffered candidates
+      } else {
+        console.warn('No answer received from server - will wait for it via subscription');
+      }
     } catch (error) {
       console.error('Error creating connection offer:', error)
-    } finally {
-      // Clean up the temporary peer connection
+      // Only clean up on error
       if (peerConnectionRef.current) {
-        console.log('Cleaning up temporary peer connection')
+        console.log('Cleaning up peer connection due to error')
         peerConnectionRef.current.close()
         peerConnectionRef.current = null
       }

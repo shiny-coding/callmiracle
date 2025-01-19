@@ -117,6 +117,26 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           setConnectionStatus(null) // Reset status when receiving new request
           console.log('VideoChat: Showing call request from:', request.from.name)
         }
+
+        if (request.answer && peerConnection.current) {
+          try {
+            console.log('VideoChat: Received answer via subscription');
+            const answer = JSON.parse(request.answer);
+            await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+            console.log('VideoChat: Set remote description from subscription');
+            
+            // Process any buffered ICE candidates
+            if (iceCandidateBuffer.current.length > 0) {
+              console.log('VideoChat: Processing buffered ICE candidates:', iceCandidateBuffer.current.length);
+              for (const candidate of iceCandidateBuffer.current) {
+                await peerConnection.current.addIceCandidate(candidate);
+              }
+              iceCandidateBuffer.current = [];
+            }
+          } catch (err) {
+            console.error('VideoChat: Failed to process answer:', err);
+          }
+        }
       } else {
         console.log('VideoChat: Invalid or empty request data:', {
           data: data.data,
@@ -218,6 +238,9 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           }
         }
       });
+
+      // Add more logging to track answer flow
+      console.log('VideoChat: Answer sent to server');
 
       // Add ICE candidate handling
       peerConnection.current.onicecandidate = async (event) => {
