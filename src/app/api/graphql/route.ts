@@ -45,6 +45,10 @@ export const POST = async (request: Request) => {
     
     // Only log non-200 responses
     if (!response.ok) {
+      // Clone response to read body
+      const clonedResponse = response.clone()
+      const responseBody = await clonedResponse.text()
+
       // Read body only if we need it for error logging
       if (!requestBody) {
         requestBody = await clonedRequest.text()
@@ -56,12 +60,14 @@ export const POST = async (request: Request) => {
           status: response.status,
           operationName: parsedBody.operationName,
           variables: parsedBody.variables,
-          query: parsedBody.query?.slice(0, 100) + '...'
+          query: parsedBody.query?.slice(0, 100) + '...',
+          response: responseBody
         })
       } catch (e) {
         console.error('GraphQL Error:', {
           status: response.status,
-          body: requestBody
+          body: requestBody,
+          response: responseBody
         })
       }
     }

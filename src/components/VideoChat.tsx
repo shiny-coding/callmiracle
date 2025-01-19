@@ -104,6 +104,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         variables: {
           input: {
             targetUserId: incomingRequest.from.userId,
+            initiatorUserId: getUserId(),
             answer: JSON.stringify(answer)
           }
         }
@@ -192,6 +193,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           variables: {
             input: {
               targetUserId,
+              initiatorUserId: getUserId(),
               offer: JSON.stringify(offer)
             }
           }

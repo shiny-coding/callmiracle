@@ -41,6 +41,7 @@ input ConnectionParamsInput {
   offer: String
   answer: String
   targetUserId: ID!
+  initiatorUserId: ID!
 }
 
 type Query {
