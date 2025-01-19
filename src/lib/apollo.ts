@@ -2,6 +2,13 @@ import { ApolloClient, InMemoryCache, split, HttpLink, ApolloLink } from '@apoll
 import { getMainDefinition } from '@apollo/client/utilities'
 import { Observable } from '@apollo/client/utilities'
 import { getUserId } from './userId'
+import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev"
+
+// Load Apollo error messages in development
+if (process.env.NODE_ENV !== 'production') {
+  loadDevMessages()
+  loadErrorMessages()
+}
 
 // Logging link to intercept all requests
 const loggingLink = new ApolloLink((operation, forward) => {
@@ -73,18 +80,36 @@ const sseLink = new ApolloLink((operation) => {
 
       eventSource.onmessage = (event) => {
         try {
+          console.log(`SSE: Received message for ${operationName}:`, {
+            type: event.type,
+            eventId: event.lastEventId,
+            data: event.data.slice(0, 100) + '...' // Log first 100 chars to keep it readable
+          })
+
           const data = JSON.parse(event.data)
+          
           if (data.data?.onConnectionRequest) {
-            console.log('SSE: Received connection request from:', data.data.onConnectionRequest.from.name)
-          }
-          if (data.errors) {
-            console.error('SSE: Event contains errors:', data.errors)
-            observer.error(data.errors[0])
+            console.log(`SSE: Processing connection request for ${operationName}:`, {
+              from: data.data.onConnectionRequest.from.name,
+              hasOffer: !!data.data.onConnectionRequest.offer,
+              timestamp: new Date().toISOString()
+            })
+            observer.next(data)
+          } else if (data.data?.onUsersUpdated) {
+            console.log(`SSE: Processing users update for ${operationName}:`, {
+              userCount: data.data.onUsersUpdated.length,
+              timestamp: new Date().toISOString()
+            })
+            observer.next(data)
           } else {
+            console.log(`SSE: Received unknown data type for ${operationName}:`, {
+              dataKeys: Object.keys(data.data || {}),
+              timestamp: new Date().toISOString()
+            })
             observer.next(data)
           }
         } catch (err) {
-          console.error('SSE: Error parsing event data:', err)
+          console.error(`SSE: Error processing message for ${operationName}:`, err)
           observer.error(err)
         }
       }

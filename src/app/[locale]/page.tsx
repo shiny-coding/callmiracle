@@ -78,7 +78,6 @@ export default function Home() {
 
       {/* User list */}
       <div>
-        <Typography variant="h6" className="mb-2">Online Users</Typography>
         <UserList onUserSelect={setSelectedUserId} localStream={localStream} />
       </div>
 

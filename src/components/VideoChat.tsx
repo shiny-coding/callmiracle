@@ -55,12 +55,23 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
   } | null>(null);
 
   // Subscribe to incoming connection requests
-  useSubscription(ON_CONNECTION_REQUEST, {
+  const { data: subData } = useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
     onSubscriptionData: ({ subscriptionData }) => {
-      const request = subscriptionData.data?.onConnectionRequest
+      console.log('VideoChat: Subscription data received:', {
+        hasData: !!subscriptionData?.data,
+        type: 'onConnectionRequest',
+        timestamp: new Date().toISOString()
+      })
+      
+      const request = subscriptionData?.data?.onConnectionRequest
       if (request) {
-        console.log('VideoChat: Incoming call from:', request.from.name)
+        console.log('VideoChat: Processing connection request:', {
+          from: request.from.name,
+          hasOffer: !!request.offer,
+          timestamp: new Date().toISOString()
+        })
+        
         // Clean up any existing peer connection before showing the request
         if (peerConnection.current) {
           console.log('VideoChat: Cleaning up existing connection')
@@ -69,6 +80,11 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         }
         setIncomingRequest(request)
         setConnectionStatus(null) // Reset status when receiving new request
+      } else {
+        console.log('VideoChat: Invalid or empty request data:', {
+          data: subscriptionData?.data,
+          timestamp: new Date().toISOString()
+        })
       }
     },
     onError: (error) => {

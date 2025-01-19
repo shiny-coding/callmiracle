@@ -1,6 +1,6 @@
 'use client'
 
-import { gql, useQuery, useMutation } from '@apollo/client'
+import { gql, useQuery, useMutation, useSubscription } from '@apollo/client'
 import { useTranslations } from 'next-intl'
 import { Paper, List, ListItem, Typography, Chip, IconButton } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -11,6 +11,19 @@ import { useRef } from 'react'
 const GET_USERS = gql`
   query GetUsers {
     users {
+      userId
+      name
+      statuses
+      languages
+      timestamp
+      locale
+    }
+  }
+`
+
+const USERS_SUBSCRIPTION = gql`
+  subscription OnUsersUpdated {
+    onUsersUpdated {
       userId
       name
       statuses
@@ -38,17 +51,45 @@ interface UserListProps {
 }
 
 export default function UserList({ onUserSelect, localStream }: UserListProps) {
-  const { data, loading, error, refetch } = useQuery(GET_USERS, {
-    pollInterval: 15000 // Poll every 15 seconds to keep the list updated
+  const { data, loading, error, refetch } = useQuery(GET_USERS)
+  const { data: subData } = useSubscription(USERS_SUBSCRIPTION, {
+    onSubscriptionData: ({ subscriptionData }) => {
+      console.log('UserList: Subscription data received:', {
+        hasData: !!subscriptionData?.data,
+        type: 'onUsersUpdated',
+        timestamp: new Date().toISOString()
+      })
+      
+      const users = subscriptionData?.data?.onUsersUpdated
+      if (users) {
+        console.log('UserList: Processing user update:', {
+          userCount: users.length,
+          timestamp: new Date().toISOString()
+        })
+      } else {
+        console.log('UserList: Invalid or empty users data:', {
+          data: subscriptionData?.data,
+          timestamp: new Date().toISOString()
+        })
+      }
+    },
+    onError: (error) => {
+      console.error('UserList: Subscription error:', error)
+    }
   })
+  
+  // Use subscription data if available, otherwise use query data
+  const users = subData?.onUsersUpdated || data?.users
+  
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
   const t = useTranslations('Status')
   
-  if (loading) return <Typography>Loading...</Typography>
+  if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
 
   const handleUserClick = async (userId: string) => {
+    console.log('Creating new offer for user:', userId)
     onUserSelect(userId)
 
     // Clean up any existing peer connection
@@ -65,17 +106,22 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
 
     // Add local stream tracks
     if (localStream) {
+      console.log('Adding local stream tracks to offer')
       localStream.getTracks().forEach(track => {
         peerConnectionRef.current?.addTrack(track, localStream)
       })
+    } else {
+      console.warn('No local stream available for offer')
     }
 
     try {
       // Create and set local description (offer)
+      console.log('Creating WebRTC offer')
       const offer = await peerConnectionRef.current.createOffer()
       await peerConnectionRef.current.setLocalDescription(offer)
 
       // Send the offer through GraphQL mutation
+      console.log('Sending offer to server')
       await connectWithUser({
         variables: {
           input: {
@@ -85,11 +131,13 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
           }
         }
       })
+      console.log('Offer sent successfully')
     } catch (error) {
       console.error('Error creating connection offer:', error)
     } finally {
       // Clean up the temporary peer connection
       if (peerConnectionRef.current) {
+        console.log('Cleaning up temporary peer connection')
         peerConnectionRef.current.close()
         peerConnectionRef.current = null
       }
@@ -109,7 +157,7 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
         </IconButton>
       </div>
       <List>
-        {data?.users.map((user: any) => (
+        {users?.map((user: any) => (
           <ListItem 
             key={user.userId} 
             className="flex flex-col items-start cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"

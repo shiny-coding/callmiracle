@@ -1,4 +1,4 @@
-import { Status } from '@/generated/graphql';
+import { Status, User } from '@/generated/graphql';
 import { Db } from 'mongodb';
 import { createPubSub } from 'graphql-yoga';
 
@@ -18,6 +18,7 @@ type ConnectionRequestPayload = {
 type PubSubEvents = {
   [key: string]: [any];
   CONNECTION_REQUEST: [ConnectionRequestPayload];
+  USERS_UPDATED: [User[]];
 };
 
 const pubsub = createPubSub<PubSubEvents>();
@@ -30,11 +31,19 @@ export const resolvers = {
   Query: {
     users: async (_: any, __: any, { db }: Context) => {
       const users = await db.collection('users').find({
-        // Only show users active in the last 15 minutes
-        timestamp: { $gt: Date.now() - 15 * 60 * 1000 }
+        // Only show users active in the last 1500 minutes
+        timestamp: { $gt: Date.now() - 1500 * 60 * 1000 }
       }).toArray()
       
-      return users
+      // Map MongoDB documents to User type
+      return users.map(user => ({
+        userId: user.userId,
+        name: user.name,
+        statuses: user.statuses,
+        languages: user.languages,
+        timestamp: user.timestamp,
+        locale: user.locale
+      }))
     }
   },
   Mutation: {
@@ -58,6 +67,23 @@ export const resolvers = {
           returnDocument: 'after'
         }
       );
+
+      // Get updated user list and publish
+      const users = await db.collection('users').find({
+        timestamp: { $gt: Date.now() - 1500 * 60 * 1000 }
+      }).toArray();
+      
+      // Map MongoDB documents to User type
+      const typedUsers = users.map(user => ({
+        userId: user.userId,
+        name: user.name,
+        statuses: user.statuses,
+        languages: user.languages,
+        timestamp: user.timestamp,
+        locale: user.locale
+      }));
+      
+      pubsub.publish('USERS_UPDATED', typedUsers);
 
       return result;
     },
@@ -89,6 +115,7 @@ export const resolvers = {
       if (offer) {
         // Get initiator user details
         const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
+        const target = await db.collection('users').findOne({ userId: targetUserId })
         
         if (initiator) {
           // Publish connection request
@@ -106,6 +133,7 @@ export const resolvers = {
           }
           console.log('Publishing connection request:', {
             targetUserId,
+            targetName: target?.name || 'Unknown',
             fromUserId: initiator.userId,
             fromName: initiator.name
           })
@@ -126,10 +154,16 @@ export const resolvers = {
       subscribe: (_: any, { userId }: { userId: string }) => {
         return pubsub.subscribe('CONNECTION_REQUEST')
       },
-      resolve: (payload: ConnectionRequestPayload, { userId }: { userId: string }) => {
+      resolve: async (payload: ConnectionRequestPayload, { userId }: { userId: string }, { db }: Context) => {
+        // Get user names for logging
+        const subscribedUser = await db.collection('users').findOne({ userId })
+        const payloadUser = await db.collection('users').findOne({ userId: payload.userId })
+        
         console.log('Resolving connection request:', {
           payloadUserId: payload.userId,
+          payloadUserName: payloadUser?.name || 'Unknown',
           subscribedUserId: userId,
+          subscribedUserName: subscribedUser?.name || 'Unknown',
           willDeliver: payload.userId === userId
         })
         if (payload.userId === userId) {
@@ -137,6 +171,10 @@ export const resolvers = {
         }
         return null
       }
+    },
+    onUsersUpdated: {
+      subscribe: () => pubsub.subscribe('USERS_UPDATED'),
+      resolve: (payload: User[]) => payload
     }
   }
 }; 
