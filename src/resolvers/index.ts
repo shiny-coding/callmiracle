@@ -85,6 +85,10 @@ export const resolvers = {
       
       pubsub.publish('USERS_UPDATED', typedUsers);
 
+      console.log('Publishing users updated:', {
+        users: typedUsers
+      })
+
       return result;
     },
     connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
@@ -174,7 +178,12 @@ export const resolvers = {
     },
     onUsersUpdated: {
       subscribe: () => pubsub.subscribe('USERS_UPDATED'),
-      resolve: (payload: User[]) => payload
+      resolve: (payload: User[]) => {
+        console.log('Resolving users updated:', {
+          length: payload.length
+        })
+        return payload
+      }
     }
   }
 }; 

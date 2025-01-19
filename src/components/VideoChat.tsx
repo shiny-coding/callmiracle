@@ -57,14 +57,14 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
   // Subscribe to incoming connection requests
   const { data: subData } = useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
-    onSubscriptionData: ({ subscriptionData }) => {
+    onData: ({ data }) => {
       console.log('VideoChat: Subscription data received:', {
-        hasData: !!subscriptionData?.data,
+        hasData: !!data.data,
         type: 'onConnectionRequest',
         timestamp: new Date().toISOString()
       })
       
-      const request = subscriptionData?.data?.onConnectionRequest
+      const request = data.data?.onConnectionRequest
       if (request) {
         console.log('VideoChat: Processing connection request:', {
           from: request.from.name,
@@ -82,7 +82,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         setConnectionStatus(null) // Reset status when receiving new request
       } else {
         console.log('VideoChat: Invalid or empty request data:', {
-          data: subscriptionData?.data,
+          data: data.data,
           timestamp: new Date().toISOString()
         })
       }

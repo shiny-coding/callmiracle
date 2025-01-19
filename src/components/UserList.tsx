@@ -53,14 +53,14 @@ interface UserListProps {
 export default function UserList({ onUserSelect, localStream }: UserListProps) {
   const { data, loading, error, refetch } = useQuery(GET_USERS)
   const { data: subData } = useSubscription(USERS_SUBSCRIPTION, {
-    onSubscriptionData: ({ subscriptionData }) => {
+    onData: ({ data }) => {
       console.log('UserList: Subscription data received:', {
-        hasData: !!subscriptionData?.data,
+        hasData: !!data.data,
         type: 'onUsersUpdated',
         timestamp: new Date().toISOString()
       })
       
-      const users = subscriptionData?.data?.onUsersUpdated
+      const users = data.data?.onUsersUpdated
       if (users) {
         console.log('UserList: Processing user update:', {
           userCount: users.length,
@@ -68,7 +68,7 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
         })
       } else {
         console.log('UserList: Invalid or empty users data:', {
-          data: subscriptionData?.data,
+          data: data.data,
           timestamp: new Date().toISOString()
         })
       }
@@ -89,7 +89,12 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
   if (error) return <Typography color="error">Error loading users</Typography>
 
   const handleUserClick = async (userId: string) => {
-    console.log('Creating new offer for user:', userId)
+    const targetUser = users?.find((u: { userId: string; name: string }) => u.userId === userId)
+    console.log('Creating new offer for user:', {
+      userId,
+      name: targetUser?.name,
+      timestamp: new Date().toISOString()
+    })
     onUserSelect(userId)
 
     // Clean up any existing peer connection

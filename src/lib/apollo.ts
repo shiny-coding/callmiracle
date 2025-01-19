@@ -36,7 +36,6 @@ const httpLink = new HttpLink({
 const sseLink = new ApolloLink((operation) => {
   return new Observable((observer) => {
     const operationName = operation.operationName || 'unnamed'
-    console.log(`SSE: Establishing connection for ${operationName}`)
 
     // First send the subscription request
     fetch('/api/graphql', {
@@ -58,6 +57,10 @@ const sseLink = new ApolloLink((operation) => {
       })
     }).then(response => {
       if (!response.ok) {
+        console.error(`SSE: Subscription request failed for ${operationName}:`, {
+          status: response.status,
+          statusText: response.statusText
+        })
         throw new Error(`Subscription request failed: ${response.status}`)
       }
       
@@ -75,39 +78,47 @@ const sseLink = new ApolloLink((operation) => {
       })
 
       eventSource.onopen = () => {
-        console.log(`SSE: Connection opened for ${operationName}`)
+        console.log(`SSE: Connection opened for ${operationName}`, {
+          readyState: eventSource.readyState,
+          url: eventSource.url
+        })
       }
+
+      // Log all events
+      eventSource.addEventListener('message', (event) => {
+        console.log(`SSE: Raw message event for ${operationName}:`, {
+          type: event.type,
+          data: event.data,
+          lastEventId: event.lastEventId,
+          origin: event.origin
+        })
+      })
+
+      // Log any other event types
+      eventSource.addEventListener('open', (event) => {
+        console.log(`SSE: Raw open event for ${operationName}:`, event)
+      })
+
+      eventSource.addEventListener('error', (event) => {
+        console.log(`SSE: Raw error event for ${operationName}:`, event)
+      })
 
       eventSource.onmessage = (event) => {
         try {
-          console.log(`SSE: Received message for ${operationName}:`, {
+          console.log(`SSE: Handling message for ${operationName}:`, {
             type: event.type,
-            eventId: event.lastEventId,
-            data: event.data.slice(0, 100) + '...' // Log first 100 chars to keep it readable
+            data: event.data?.slice(0, 100) + '...' // Log first 100 chars
           })
-
           const data = JSON.parse(event.data)
-          
-          if (data.data?.onConnectionRequest) {
-            console.log(`SSE: Processing connection request for ${operationName}:`, {
-              from: data.data.onConnectionRequest.from.name,
-              hasOffer: !!data.data.onConnectionRequest.offer,
-              timestamp: new Date().toISOString()
-            })
-            observer.next(data)
-          } else if (data.data?.onUsersUpdated) {
-            console.log(`SSE: Processing users update for ${operationName}:`, {
-              userCount: data.data.onUsersUpdated.length,
-              timestamp: new Date().toISOString()
-            })
-            observer.next(data)
-          } else {
-            console.log(`SSE: Received unknown data type for ${operationName}:`, {
-              dataKeys: Object.keys(data.data || {}),
-              timestamp: new Date().toISOString()
-            })
-            observer.next(data)
+          // Create a proper GraphQL result format
+          const result = {
+            data: data.data,
+            errors: data.errors,
+            extensions: data.extensions,
+            // Required by Apollo to identify this as a subscription result
+            type: 'data'
           }
+          observer.next(result)
         } catch (err) {
           console.error(`SSE: Error processing message for ${operationName}:`, err)
           observer.error(err)

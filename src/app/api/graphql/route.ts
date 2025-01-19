@@ -19,9 +19,26 @@ const yoga = createYoga({
 
 // Export request handlers
 export const GET = async (request: Request) => {
-  // Only log SSE connections
+  // Log SSE requests with minimal info
   if (request.headers.get('accept')?.includes('text/event-stream')) {
-    console.log('SSE GET Request')
+    const url = new URL(request.url)
+    const userId = url.searchParams.get('x-user-id')
+    
+    // Get username from database
+    let username = 'unknown'
+    if (userId) {
+      const client = await clientPromise
+      const db = client.db('commiracle')
+      const user = await db.collection('users').findOne({ userId })
+      username = user?.name || 'unknown'
+    }
+
+    console.log('SSE GET Request:', {
+      operationName: url.searchParams.get('operationName'),
+      userId,
+      username,
+      timestamp: new Date().toISOString()
+    })
   }
 
   const response = await yoga.fetch(request)
@@ -32,6 +49,7 @@ export const GET = async (request: Request) => {
     response.headers.set('Connection', 'keep-alive')
     response.headers.set('Cache-Control', 'no-cache')
   }
+
   return response
 }
 
