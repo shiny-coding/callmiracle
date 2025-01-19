@@ -96,6 +96,15 @@ export const resolvers = {
       const { targetUserId, offer, answer, iceCandidate } = input
       const initiatorUserId = input.initiatorUserId || ''
 
+      console.log('Handling connectWithUser:', {
+        hasOffer: !!offer,
+        hasAnswer: !!answer,
+        hasIceCandidate: !!iceCandidate,
+        targetUserId,
+        initiatorUserId,
+        timestamp: new Date().toISOString()
+      })
+
       // Store the connection attempt
       const connection = await db.collection('connections').findOneAndUpdate(
         { 
@@ -117,6 +126,13 @@ export const resolvers = {
           returnDocument: 'after'
         }
       )
+
+      console.log('Connection state after update:', {
+        hasStoredOffer: !!connection?.offer,
+        hasStoredAnswer: !!connection?.answer,
+        hasStoredIceCandidate: !!connection?.iceCandidate,
+        timestamp: new Date().toISOString()
+      })
 
       if (offer || iceCandidate) {
         // Get initiator user details
@@ -144,19 +160,29 @@ export const resolvers = {
             fromUserId: initiator.userId,
             fromName: initiator.name,
             hasOffer: !!offer,
-            hasIceCandidate: !!iceCandidate
+            hasIceCandidate: !!iceCandidate,
+            timestamp: new Date().toISOString()
           })
           pubsub.publish('CONNECTION_REQUEST', payload)
         }
       }
 
-      return {
+      const result = {
         offer: connection?.offer || null,
         answer: connection?.answer || null,
         iceCandidate: connection?.iceCandidate || null,
         targetUserId,
         initiatorUserId
       }
+
+      console.log('Returning connection result:', {
+        hasOffer: !!result.offer,
+        hasAnswer: !!result.answer,
+        hasIceCandidate: !!result.iceCandidate,
+        timestamp: new Date().toISOString()
+      })
+
+      return result
     }
   },
   Subscription: {
@@ -165,31 +191,32 @@ export const resolvers = {
         const iterator = pubsub.subscribe('CONNECTION_REQUEST')
         return {
           async *[Symbol.asyncIterator]() {
+            const processedPayloads = new Set() // Track processed payloads
             for await (const payload of iterator) {
               if (payload.userId === userId) {
-                yield payload
+                // Create a unique key based on the content
+                const key = JSON.stringify({
+                  offer: payload.onConnectionRequest.offer,
+                  iceCandidate: payload.onConnectionRequest.iceCandidate,
+                  userId: payload.onConnectionRequest.from.userId
+                })
+                
+                if (!processedPayloads.has(key)) {
+                  processedPayloads.add(key)
+                  yield payload
+                }
               }
             }
           }
         }
       },
       resolve: (payload: ConnectionRequestPayload) => {
-        try {
-          console.log('Resolving connection request:', {
-            hasOffer: !!payload.onConnectionRequest.offer,
-            hasIceCandidate: !!payload.onConnectionRequest.iceCandidate,
-            fromUser: payload.onConnectionRequest.from.name,
-            payload: JSON.stringify(payload).slice(0, 100) + '...'
-          })
-          return {
-            offer: payload.onConnectionRequest.offer || null,
-            iceCandidate: payload.onConnectionRequest.iceCandidate || null,
-            from: payload.onConnectionRequest.from
-          }
-        } catch (error) {
-          console.error('Error in subscription resolver:', error)
-          throw error
-        }
+        console.log('Resolving connection request:', {
+          hasOffer: !!payload.onConnectionRequest.offer,
+          hasIceCandidate: !!payload.onConnectionRequest.iceCandidate,
+          fromUser: payload.onConnectionRequest.from.name
+        })
+        return payload.onConnectionRequest
       }
     },
     onUsersUpdated: {

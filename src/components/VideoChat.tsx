@@ -56,6 +56,12 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
     }
   } | null>(null);
 
+  // Add a ref to track if we've already shown a request from this user
+  const activeRequestRef = useRef<string | null>(null)
+
+  // Add a ref to track the last processed offer
+  const lastOfferRef = useRef<string | null>(null)
+
   // Subscribe to incoming connection requests
   const { data: subData } = useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
@@ -75,6 +81,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           timestamp: new Date().toISOString()
         })
         
+        // Handle ICE candidates for existing connection
         if (request.iceCandidate && peerConnection.current) {
           try {
             const candidate = JSON.parse(request.iceCandidate)
@@ -86,14 +93,22 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           }
         }
         
-        // Clean up any existing peer connection before showing the request
-        if (peerConnection.current) {
-          console.log('VideoChat: Cleaning up existing connection')
-          peerConnection.current.close()
-          peerConnection.current = null
+        // Only show the request dialog for new offers and if not already showing for this user
+        if (request.offer && 
+            activeRequestRef.current !== request.from.userId && 
+            lastOfferRef.current !== request.offer) { // Check if this is a new offer
+          // Clean up any existing peer connection before showing the request
+          if (peerConnection.current) {
+            console.log('VideoChat: Cleaning up existing connection')
+            peerConnection.current.close()
+            peerConnection.current = null
+          }
+          activeRequestRef.current = request.from.userId
+          lastOfferRef.current = request.offer // Store the offer
+          setIncomingRequest(request)
+          setConnectionStatus(null) // Reset status when receiving new request
+          console.log('VideoChat: Showing call request from:', request.from.name)
         }
-        setIncomingRequest(request)
-        setConnectionStatus(null) // Reset status when receiving new request
       } else {
         console.log('VideoChat: Invalid or empty request data:', {
           data: data.data,
@@ -155,8 +170,19 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
       };
 
       // Set remote description (offer)
+      console.log('VideoChat: Parsing offer:', {
+        rawOffer: incomingRequest.offer?.substring(0, 100) + '...',
+        isString: typeof incomingRequest.offer === 'string'
+      });
+      
       const offer = JSON.parse(incomingRequest.offer);
-      await peerConnection.current.setRemoteDescription(offer);
+      console.log('VideoChat: Parsed offer:', {
+        type: offer.type,
+        hasSdp: !!offer.sdp,
+        sdpLength: offer.sdp?.length
+      });
+      
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
 
       // Create and send answer
       const answer = await peerConnection.current.createAnswer();
@@ -217,15 +243,21 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         })
       }
 
+      activeRequestRef.current = null
+      lastOfferRef.current = null
       setIncomingRequest(null);
     } catch (error) {
       console.error('Error accepting call:', error);
+      activeRequestRef.current = null
+      lastOfferRef.current = null
       setConnectionStatus(null);
     }
   };
 
   const handleRejectCall = () => {
     console.log('Rejecting call from:', incomingRequest?.from.name);
+    activeRequestRef.current = null
+    lastOfferRef.current = null
     setIncomingRequest(null);
     setConnectionStatus('rejected');
   };
