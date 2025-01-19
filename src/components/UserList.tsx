@@ -95,7 +95,15 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
       name: targetUser?.name,
       timestamp: new Date().toISOString()
     })
+
+    // First notify parent about user selection
     onUserSelect(userId)
+
+    // Don't proceed with WebRTC if no local stream
+    if (!localStream) {
+      console.log('Skipping WebRTC setup - no local stream available')
+      return
+    }
 
     // Clean up any existing peer connection
     if (peerConnectionRef.current) {
@@ -110,14 +118,10 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
     })
 
     // Add local stream tracks
-    if (localStream) {
-      console.log('Adding local stream tracks to offer')
-      localStream.getTracks().forEach(track => {
-        peerConnectionRef.current?.addTrack(track, localStream)
-      })
-    } else {
-      console.warn('No local stream available for offer')
-    }
+    console.log('Adding local stream tracks to offer:', localStream.getTracks().length)
+    localStream.getTracks().forEach(track => {
+      peerConnectionRef.current?.addTrack(track, localStream)
+    })
 
     try {
       // Create and set local description (offer)
@@ -130,6 +134,7 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
       await connectWithUser({
         variables: {
           input: {
+            type: 'offer',
             targetUserId: userId,
             initiatorUserId: getUserId(),
             offer: JSON.stringify(offer)

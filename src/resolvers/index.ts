@@ -93,10 +93,11 @@ export const resolvers = {
       return result;
     },
     connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { targetUserId, offer, answer, iceCandidate } = input
+      const { targetUserId, type, offer, answer, iceCandidate } = input
       const initiatorUserId = input.initiatorUserId || ''
 
       console.log('Handling connectWithUser:', {
+        type,
         hasOffer: !!offer,
         hasAnswer: !!answer,
         hasIceCandidate: !!iceCandidate,
@@ -105,7 +106,21 @@ export const resolvers = {
         timestamp: new Date().toISOString()
       })
 
-      // Store the connection attempt
+      // Store the connection attempt based on type
+      const updateQuery = type === 'ice-candidate' 
+        ? {
+            $push: {
+              [`iceCandidates.${initiatorUserId}`]: iceCandidate
+            }
+          }
+        : {
+            $set: {
+              timestamp: Date.now(),
+              ...(type === 'offer' && { offer }),
+              ...(type === 'answer' && { answer })
+            }
+          }
+
       const connection = await db.collection('connections').findOneAndUpdate(
         { 
           $or: [
@@ -113,38 +128,23 @@ export const resolvers = {
             { initiatorUserId: targetUserId, targetUserId: initiatorUserId }
           ]
         },
-        {
-          $set: {
-            ...(offer && { offer }),
-            ...(answer && { answer }),
-            ...(iceCandidate && { iceCandidate }),
-            timestamp: Date.now()
-          }
-        },
+        updateQuery,
         { 
           upsert: true,
           returnDocument: 'after'
         }
       )
 
-      console.log('Connection state after update:', {
-        hasStoredOffer: !!connection?.offer,
-        hasStoredAnswer: !!connection?.answer,
-        hasStoredIceCandidate: !!connection?.iceCandidate,
-        timestamp: new Date().toISOString()
-      })
-
-      if (offer || iceCandidate) {
-        // Get initiator user details
+      // Only publish to subscription for offers and ice candidates
+      if (type === 'offer' || type === 'ice-candidate') {
         const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
         const target = await db.collection('users').findOne({ userId: targetUserId })
         
         if (initiator) {
-          // Publish connection request
           const payload: ConnectionRequestPayload = {
             onConnectionRequest: {
-              offer: offer || connection?.offer,
-              ...(iceCandidate && { iceCandidate }),
+              offer: type === 'offer' ? offer : connection?.offer,
+              ...(type === 'ice-candidate' && { iceCandidate }),
               from: {
                 userId: initiator.userId,
                 name: initiator.name,
@@ -154,15 +154,16 @@ export const resolvers = {
             },
             userId: targetUserId
           }
-          console.log('Publishing connection request:', {
+
+          console.log(`Publishing ${type}:`, {
             targetUserId,
             targetName: target?.name || 'Unknown',
             fromUserId: initiator.userId,
             fromName: initiator.name,
-            hasOffer: !!offer,
-            hasIceCandidate: !!iceCandidate,
+            type,
             timestamp: new Date().toISOString()
           })
+
           pubsub.publish('CONNECTION_REQUEST', payload)
         }
       }
@@ -176,6 +177,7 @@ export const resolvers = {
       }
 
       console.log('Returning connection result:', {
+        type,
         hasOffer: !!result.offer,
         hasAnswer: !!result.answer,
         hasIceCandidate: !!result.iceCandidate,

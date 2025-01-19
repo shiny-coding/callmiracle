@@ -62,6 +62,9 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
   // Add a ref to track the last processed offer
   const lastOfferRef = useRef<string | null>(null)
 
+  // Add a ref to buffer ICE candidates
+  const iceCandidateBuffer = useRef<RTCIceCandidate[]>([]);
+
   // Subscribe to incoming connection requests
   const { data: subData } = useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
@@ -84,12 +87,17 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         // Handle ICE candidates for existing connection
         if (request.iceCandidate && peerConnection.current) {
           try {
-            const candidate = JSON.parse(request.iceCandidate)
-            await peerConnection.current.addIceCandidate(candidate)
-            console.log('VideoChat: Added remote ICE candidate')
-            return // Don't process as new connection request
+            const candidate = JSON.parse(request.iceCandidate);
+            if (peerConnection.current.remoteDescription) {
+              await peerConnection.current.addIceCandidate(candidate);
+              console.log('VideoChat: Added remote ICE candidate');
+            } else {
+              console.log('VideoChat: Buffering ICE candidate until remote description is set');
+              iceCandidateBuffer.current.push(candidate);
+            }
+            return; // Don't process as new connection request
           } catch (err) {
-            console.error('VideoChat: Failed to add ICE candidate:', err)
+            console.error('VideoChat: Failed to add ICE candidate:', err);
           }
         }
         
@@ -203,6 +211,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
       await connectWithUser({
         variables: {
           input: {
+            type: 'answer',
             targetUserId: incomingRequest.from.userId,
             initiatorUserId: getUserId(),
             answer: JSON.stringify(answer)
@@ -222,6 +231,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
             await connectWithUser({
               variables: {
                 input: {
+                  type: 'ice-candidate',
                   targetUserId: incomingRequest.from.userId,
                   initiatorUserId: getUserId(),
                   iceCandidate: JSON.stringify(event.candidate)
@@ -332,6 +342,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
             await connectWithUser({
               variables: {
                 input: {
+                  type: 'ice-candidate',
                   targetUserId,
                   initiatorUserId: getUserId(),
                   iceCandidate: JSON.stringify(event.candidate)
@@ -367,6 +378,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         const result = await connectWithUser({
           variables: {
             input: {
+              type: 'offer',
               targetUserId,
               initiatorUserId: getUserId(),
               offer: JSON.stringify(offer)
@@ -380,6 +392,14 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           const answer = JSON.parse(result.data.connectWithUser.answer);
           console.log('Setting remote description');
           await peerConnection.current.setRemoteDescription(answer);
+          
+          // Add buffered ICE candidates after remote description is set
+          console.log('Adding buffered ICE candidates:', iceCandidateBuffer.current.length);
+          for (const candidate of iceCandidateBuffer.current) {
+            await peerConnection.current.addIceCandidate(candidate);
+          }
+          iceCandidateBuffer.current = []; // Clear the buffer
+          
           setConnectionStatus('connected');
         } else {
           console.warn('No answer received from server');
