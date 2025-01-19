@@ -22,6 +22,7 @@ const ON_CONNECTION_REQUEST = gql`
   subscription OnConnectionRequest($userId: ID!) {
     onConnectionRequest(userId: $userId) {
       offer
+      iceCandidate
       from {
         userId
         name
@@ -46,6 +47,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(null);
   const [incomingRequest, setIncomingRequest] = useState<{
     offer: string;
+    iceCandidate: string;
     from: {
       userId: string;
       name: string;
@@ -57,7 +59,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
   // Subscribe to incoming connection requests
   const { data: subData } = useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
-    onData: ({ data }) => {
+    onData: async ({ data }) => {
       console.log('VideoChat: Subscription data received:', {
         hasData: !!data.data,
         type: 'onConnectionRequest',
@@ -69,8 +71,20 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         console.log('VideoChat: Processing connection request:', {
           from: request.from.name,
           hasOffer: !!request.offer,
+          hasIceCandidate: !!request.iceCandidate,
           timestamp: new Date().toISOString()
         })
+        
+        if (request.iceCandidate && peerConnection.current) {
+          try {
+            const candidate = JSON.parse(request.iceCandidate)
+            await peerConnection.current.addIceCandidate(candidate)
+            console.log('VideoChat: Added remote ICE candidate')
+            return // Don't process as new connection request
+          } catch (err) {
+            console.error('VideoChat: Failed to add ICE candidate:', err)
+          }
+        }
         
         // Clean up any existing peer connection before showing the request
         if (peerConnection.current) {
@@ -170,6 +184,39 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         }
       });
 
+      // Add ICE candidate handling
+      peerConnection.current.onicecandidate = async (event) => {
+        console.log('VideoChat: New ICE candidate:', {
+          candidate: event.candidate?.candidate,
+          sdpMid: event.candidate?.sdpMid,
+          state: peerConnection.current?.iceGatheringState
+        })
+        if (event.candidate) {
+          try {
+            await connectWithUser({
+              variables: {
+                input: {
+                  targetUserId: incomingRequest.from.userId,
+                  initiatorUserId: getUserId(),
+                  iceCandidate: JSON.stringify(event.candidate)
+                }
+              }
+            })
+          } catch (err) {
+            console.error('VideoChat: Failed to send ICE candidate:', err)
+          }
+        }
+      }
+
+      // Add connection state change logging
+      peerConnection.current.onconnectionstatechange = () => {
+        console.log('VideoChat: Connection state changed:', {
+          state: peerConnection.current?.connectionState,
+          iceState: peerConnection.current?.iceConnectionState,
+          signalingState: peerConnection.current?.signalingState
+        })
+      }
+
       setIncomingRequest(null);
     } catch (error) {
       console.error('Error accepting call:', error);
@@ -240,6 +287,42 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
+
+      // Add ICE candidate handling for initiator
+      peerConnection.current.onicecandidate = async (event) => {
+        console.log('VideoChat: New ICE candidate (initiator):', {
+          candidate: event.candidate?.candidate,
+          sdpMid: event.candidate?.sdpMid,
+          state: peerConnection.current?.iceGatheringState
+        })
+        if (event.candidate) {
+          try {
+            await connectWithUser({
+              variables: {
+                input: {
+                  targetUserId,
+                  initiatorUserId: getUserId(),
+                  iceCandidate: JSON.stringify(event.candidate)
+                }
+              }
+            })
+          } catch (err) {
+            console.error('VideoChat: Failed to send ICE candidate:', err)
+          }
+        }
+      }
+
+      // Add more detailed connection state logging
+      peerConnection.current.onconnectionstatechange = () => {
+        console.log('VideoChat: Connection state changed (initiator):', {
+          state: peerConnection.current?.connectionState,
+          iceState: peerConnection.current?.iceConnectionState,
+          signalingState: peerConnection.current?.signalingState
+        })
+        if (peerConnection.current?.connectionState === 'connected') {
+          setConnectionStatus('connected')
+        }
+      }
 
       try {
         // Create and send offer

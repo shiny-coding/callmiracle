@@ -5,6 +5,7 @@ import { createPubSub } from 'graphql-yoga';
 type ConnectionRequestPayload = {
   onConnectionRequest: {
     offer: string;
+    iceCandidate?: string;
     from: {
       userId: string;
       name: string;
@@ -92,7 +93,7 @@ export const resolvers = {
       return result;
     },
     connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { targetUserId, offer, answer } = input
+      const { targetUserId, offer, answer, iceCandidate } = input
       const initiatorUserId = input.initiatorUserId || ''
 
       // Store the connection attempt
@@ -107,6 +108,7 @@ export const resolvers = {
           $set: {
             ...(offer && { offer }),
             ...(answer && { answer }),
+            ...(iceCandidate && { iceCandidate }),
             timestamp: Date.now()
           }
         },
@@ -116,7 +118,7 @@ export const resolvers = {
         }
       )
 
-      if (offer) {
+      if (offer || iceCandidate) {
         // Get initiator user details
         const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
         const target = await db.collection('users').findOne({ userId: targetUserId })
@@ -125,7 +127,8 @@ export const resolvers = {
           // Publish connection request
           const payload: ConnectionRequestPayload = {
             onConnectionRequest: {
-              offer,
+              offer: offer || connection?.offer,
+              ...(iceCandidate && { iceCandidate }),
               from: {
                 userId: initiator.userId,
                 name: initiator.name,
@@ -139,7 +142,9 @@ export const resolvers = {
             targetUserId,
             targetName: target?.name || 'Unknown',
             fromUserId: initiator.userId,
-            fromName: initiator.name
+            fromName: initiator.name,
+            hasOffer: !!offer,
+            hasIceCandidate: !!iceCandidate
           })
           pubsub.publish('CONNECTION_REQUEST', payload)
         }
@@ -148,6 +153,7 @@ export const resolvers = {
       return {
         offer: connection?.offer || null,
         answer: connection?.answer || null,
+        iceCandidate: connection?.iceCandidate || null,
         targetUserId,
         initiatorUserId
       }
@@ -168,7 +174,22 @@ export const resolvers = {
         }
       },
       resolve: (payload: ConnectionRequestPayload) => {
-        return payload.onConnectionRequest
+        try {
+          console.log('Resolving connection request:', {
+            hasOffer: !!payload.onConnectionRequest.offer,
+            hasIceCandidate: !!payload.onConnectionRequest.iceCandidate,
+            fromUser: payload.onConnectionRequest.from.name,
+            payload: JSON.stringify(payload).slice(0, 100) + '...'
+          })
+          return {
+            offer: payload.onConnectionRequest.offer || null,
+            iceCandidate: payload.onConnectionRequest.iceCandidate || null,
+            from: payload.onConnectionRequest.from
+          }
+        } catch (error) {
+          console.error('Error in subscription resolver:', error)
+          throw error
+        }
       }
     },
     onUsersUpdated: {

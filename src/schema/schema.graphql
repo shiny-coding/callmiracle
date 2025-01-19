@@ -20,12 +20,14 @@ type User {
 type ConnectionParams {
   offer: String
   answer: String
+  iceCandidate: String
   targetUserId: ID!
   initiatorUserId: ID!
 }
 
 type ConnectionRequest {
-  offer: String!
+  offer: String
+  iceCandidate: String
   from: User!
 }
 
@@ -40,6 +42,7 @@ input ConnectInput {
 input ConnectionParamsInput {
   offer: String
   answer: String
+  iceCandidate: String
   targetUserId: ID!
   initiatorUserId: ID!
 }
