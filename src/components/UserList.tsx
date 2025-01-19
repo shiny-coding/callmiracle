@@ -6,6 +6,7 @@ import { Paper, List, ListItem, Typography, Chip, IconButton } from '@mui/materi
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { LANGUAGES } from '@/config/languages'
 import { getUserId } from '@/lib/userId'
+import { useRef } from 'react'
 
 const GET_USERS = gql`
   query GetUsers {
@@ -41,6 +42,7 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
     pollInterval: 15000 // Poll every 15 seconds to keep the list updated
   })
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
   const t = useTranslations('Status')
   
   if (loading) return <Typography>Loading...</Typography>
@@ -49,22 +51,29 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
   const handleUserClick = async (userId: string) => {
     onUserSelect(userId)
 
+    // Clean up any existing peer connection
+    if (peerConnectionRef.current) {
+      console.log('Cleaning up existing peer connection before creating new one')
+      peerConnectionRef.current.close()
+      peerConnectionRef.current = null
+    }
+
     // Create a new RTCPeerConnection and generate an offer
-    const pc = new RTCPeerConnection({
+    peerConnectionRef.current = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     })
 
     // Add local stream tracks
     if (localStream) {
       localStream.getTracks().forEach(track => {
-        pc.addTrack(track, localStream)
+        peerConnectionRef.current?.addTrack(track, localStream)
       })
     }
 
     try {
       // Create and set local description (offer)
-      const offer = await pc.createOffer()
-      await pc.setLocalDescription(offer)
+      const offer = await peerConnectionRef.current.createOffer()
+      await peerConnectionRef.current.setLocalDescription(offer)
 
       // Send the offer through GraphQL mutation
       await connectWithUser({
@@ -80,7 +89,10 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
       console.error('Error creating connection offer:', error)
     } finally {
       // Clean up the temporary peer connection
-      pc.close()
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close()
+        peerConnectionRef.current = null
+      }
     }
   }
 

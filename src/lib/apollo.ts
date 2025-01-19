@@ -74,12 +74,17 @@ const sseLink = new ApolloLink((operation) => {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
+          if (data.data?.onConnectionRequest) {
+            console.log('SSE: Received connection request from:', data.data.onConnectionRequest.from.name)
+          }
           if (data.errors) {
+            console.error('SSE: Event contains errors:', data.errors)
             observer.error(data.errors[0])
           } else {
             observer.next(data)
           }
         } catch (err) {
+          console.error('SSE: Error parsing event data:', err)
           observer.error(err)
         }
       }

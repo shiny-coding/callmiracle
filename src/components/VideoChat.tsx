@@ -57,14 +57,31 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
   // Subscribe to incoming connection requests
   useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
-    onData: ({ data }) => {
-      console.log('Received connection request:', data);
-      if (data.data?.onConnectionRequest) {
-        setIncomingRequest(data.data.onConnectionRequest);
-        setConnectionStatus(null); // Reset status when receiving new request
+    onSubscriptionData: ({ subscriptionData }) => {
+      const request = subscriptionData.data?.onConnectionRequest
+      if (request) {
+        console.log('VideoChat: Incoming call from:', request.from.name)
+        // Clean up any existing peer connection before showing the request
+        if (peerConnection.current) {
+          console.log('VideoChat: Cleaning up existing connection')
+          peerConnection.current.close()
+          peerConnection.current = null
+        }
+        setIncomingRequest(request)
+        setConnectionStatus(null) // Reset status when receiving new request
       }
+    },
+    onError: (error) => {
+      console.error('VideoChat: Subscription error:', error)
     }
-  });
+  })
+
+  // Log incoming request changes
+  useEffect(() => {
+    if (incomingRequest) {
+      console.log('VideoChat: Showing call request from:', incomingRequest.from.name)
+    }
+  }, [incomingRequest])
 
   const handleAcceptCall = async () => {
     if (!incomingRequest) return;
@@ -226,10 +243,14 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
       setConnectionStatus(null);
     }
 
+    // Only clean up the WebRTC connection, not the subscription
     return () => {
-      console.log('Cleaning up WebRTC connection');
-      peerConnection.current?.close();
-      setConnectionStatus(null);
+      if (peerConnection.current) {
+        console.log('Cleaning up WebRTC connection');
+        peerConnection.current.close();
+        peerConnection.current = null;
+        setConnectionStatus(null);
+      }
     };
   }, [targetUserId, localStream, connectWithUser]);
 

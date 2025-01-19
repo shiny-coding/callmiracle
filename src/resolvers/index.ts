@@ -62,12 +62,33 @@ export const resolvers = {
       return result;
     },
     connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { targetUserId, offer } = input;
-      const initiatorUserId = input.initiatorUserId || '';
+      const { targetUserId, offer, answer } = input
+      const initiatorUserId = input.initiatorUserId || ''
+
+      // Store the connection attempt
+      const connection = await db.collection('connections').findOneAndUpdate(
+        { 
+          $or: [
+            { initiatorUserId, targetUserId },
+            { initiatorUserId: targetUserId, targetUserId: initiatorUserId }
+          ]
+        },
+        {
+          $set: {
+            ...(offer && { offer }),
+            ...(answer && { answer }),
+            timestamp: Date.now()
+          }
+        },
+        { 
+          upsert: true,
+          returnDocument: 'after'
+        }
+      )
 
       if (offer) {
         // Get initiator user details
-        const initiator = await db.collection('users').findOne({ userId: initiatorUserId });
+        const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
         
         if (initiator) {
           // Publish connection request
@@ -82,33 +103,22 @@ export const resolvers = {
               }
             },
             userId: targetUserId
-          };
-          pubsub.publish('CONNECTION_REQUEST', payload);
+          }
+          console.log('Publishing connection request:', {
+            targetUserId,
+            fromUserId: initiator.userId,
+            fromName: initiator.name
+          })
+          pubsub.publish('CONNECTION_REQUEST', payload)
         }
       }
 
-      // Store the connection attempt
-      await db.collection('connections').updateOne(
-        { 
-          $or: [
-            { initiatorUserId, targetUserId },
-            { initiatorUserId: targetUserId, targetUserId: initiatorUserId }
-          ]
-        },
-        {
-          $set: {
-            offer,
-            timestamp: Date.now()
-          }
-        },
-        { upsert: true }
-      );
-
       return {
-        offer,
+        offer: connection?.offer || null,
+        answer: connection?.answer || null,
         targetUserId,
         initiatorUserId
-      };
+      }
     }
   },
   Subscription: {
@@ -117,6 +127,11 @@ export const resolvers = {
         return pubsub.subscribe('CONNECTION_REQUEST')
       },
       resolve: (payload: ConnectionRequestPayload, { userId }: { userId: string }) => {
+        console.log('Resolving connection request:', {
+          payloadUserId: payload.userId,
+          subscribedUserId: userId,
+          willDeliver: payload.userId === userId
+        })
         if (payload.userId === userId) {
           return payload.onConnectionRequest
         }

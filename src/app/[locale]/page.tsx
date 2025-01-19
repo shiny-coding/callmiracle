@@ -9,7 +9,7 @@ import StatusSelector from '@/components/StatusSelector';
 import { useStore } from '@/store/useStore';
 import { usePathname } from 'next/navigation';
 import VideoPreview from '@/components/VideoPreview';
-import { TextField, Button } from '@mui/material';
+import { TextField, Button, Typography } from '@mui/material';
 import UserList from '@/components/UserList';
 import VideoChat from '@/components/VideoChat';
 
@@ -32,7 +32,7 @@ export default function Home() {
   const [connect] = useMutation(CONNECT_MUTATION);
   const [userId, setUserId] = useState<string>('');
   const [selectedUserId, setSelectedUserId] = useState<string>();
-  const [localStream, setLocalStream] = useState<MediaStream | undefined>();
+  const [localStream, setLocalStream] = useState<MediaStream>();
   const pathname = usePathname();
   const currentLocale = pathname.split('/')[1];
 
@@ -63,43 +63,50 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen p-8 pt-16">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {/* Left Column */}
+    <main className="container mx-auto p-4 space-y-4">
+      {/* Video row */}
+      <div className="flex flex-row justify-center gap-4">
         <div>
-          <LanguageSelector />
-          <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              id="name"
-              name="name"
-              label={tRoot('name')}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              variant="outlined"
-            />
-            <StatusSelector />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              size="large"
-            >
-              {tRoot('connect')}
-            </Button>
-          </form>
+          <Typography variant="h6" className="mb-2">Your Camera</Typography>
+          <VideoPreview onStreamChange={setLocalStream} />
         </div>
+        <div>
+          <Typography variant="h6" className="mb-2">Remote Video</Typography>
+          <VideoChat targetUserId={selectedUserId} localStream={localStream} />
+        </div>
+      </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <VideoPreview onStreamChange={setLocalStream} />
-            <VideoChat targetUserId={selectedUserId} localStream={localStream} />
-          </div>
-          <UserList onUserSelect={setSelectedUserId} localStream={localStream} />
-        </div>
+      {/* User list */}
+      <div>
+        <Typography variant="h6" className="mb-2">Online Users</Typography>
+        <UserList onUserSelect={setSelectedUserId} localStream={localStream} />
+      </div>
+
+      {/* Rest of UI components */}
+      <div>
+        <LanguageSelector />
+        <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            id="name"
+            name="name"
+            label={tRoot('name')}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            variant="outlined"
+          />
+          <StatusSelector />
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            color="primary"
+            size="large"
+          >
+            {tRoot('connect')}
+          </Button>
+        </form>
       </div>
     </main>
   );
