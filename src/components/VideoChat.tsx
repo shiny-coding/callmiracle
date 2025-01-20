@@ -7,6 +7,9 @@ import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video';
 import ConnectionRequest from './ConnectionRequest';
 import { Typography } from '@mui/material';
 
+// Add timeout constant
+const CONNECTION_TIMEOUT_MS = 20000; // 20 seconds
+
 const CONNECT_WITH_USER = gql`
   mutation ConnectWithUser($input: ConnectionParamsInput!) {
     connectWithUser(input: $input) {
@@ -79,6 +82,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           type: request.type,
           hasOffer: !!request.offer,
           hasIceCandidate: !!request.iceCandidate,
+          sdpMid: request.iceCandidate ? JSON.parse(request.iceCandidate).sdpMid : undefined,
           timestamp: new Date().toISOString()
         })
         
@@ -87,21 +91,28 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           try {
             console.log('VideoChat: Received answer via subscription');
             const answer = JSON.parse(request.answer);
-            await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-            console.log('VideoChat: Set remote description from subscription:', {
-              signalingState: peerConnection.current.signalingState,
-              connectionState: peerConnection.current.connectionState,
-              iceGatheringState: peerConnection.current.iceGatheringState,
-              iceConnectionState: peerConnection.current.iceConnectionState
-            });
             
-            // Process any buffered ICE candidates
-            if (iceCandidateBuffer.current.length > 0) {
-              console.log('VideoChat: Processing buffered ICE candidates:', iceCandidateBuffer.current.length);
-              for (const candidate of iceCandidateBuffer.current) {
-                await peerConnection.current.addIceCandidate(candidate);
+            // Check if we can process the answer
+            if (peerConnection.current.signalingState === 'have-local-offer') {
+              await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+              console.log('VideoChat: Set remote description from subscription:', {
+                signalingState: peerConnection.current.signalingState,
+                connectionState: peerConnection.current.connectionState,
+                iceGatheringState: peerConnection.current.iceGatheringState,
+                iceConnectionState: peerConnection.current.iceConnectionState
+              });
+              
+              // Process any buffered ICE candidates
+              if (iceCandidateBuffer.current.length > 0) {
+                console.log('VideoChat: Processing buffered ICE candidates:', iceCandidateBuffer.current.length);
+                for (const candidate of iceCandidateBuffer.current) {
+                  await peerConnection.current.addIceCandidate(candidate);
+                  console.log('VideoChat: Added buffered ICE candidate');
+                }
+                iceCandidateBuffer.current = [];
               }
-              iceCandidateBuffer.current = [];
+            } else {
+              console.warn('VideoChat: Received answer in invalid state:', peerConnection.current.signalingState);
             }
             return; // Don't process as new connection request
           } catch (err) {
@@ -169,14 +180,104 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
       
       // Create peer connection for incoming call
       peerConnection.current = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.stunprotocol.org:3478' },
+          { urls: 'stun:stun.voip.blackberry.com:3478' },
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          },
+          // Add more reliable TURN servers
+          {
+            urls: 'turn:relay.metered.ca:80',
+            username: 'e8e137b5c81cdb4186a95ad5',
+            credential: 'L+dbO2bQGVWFJfvq'
+          },
+          {
+            urls: 'turn:relay.metered.ca:443',
+            username: 'e8e137b5c81cdb4186a95ad5',
+            credential: 'L+dbO2bQGVWFJfvq'
+          }
+        ],
+        iceCandidatePoolSize: 10,
+        iceTransportPolicy: 'all'
       });
 
       // Add local stream
       if (localStream) {
-        localStream.getTracks().forEach(track => {
-          peerConnection.current?.addTrack(track, localStream);
+        console.log('VideoChat: Adding local stream tracks:', {
+          trackCount: localStream.getTracks().length,
+          tracks: localStream.getTracks().map(t => ({
+            kind: t.kind,
+            enabled: t.enabled,
+            muted: t.muted
+          }))
         });
+        
+        // Set up transceivers first with explicit codec preferences
+        const audioTransceiver = peerConnection.current.addTransceiver('audio', {
+          direction: 'sendrecv',
+          streams: [localStream]
+        });
+        
+        const videoTransceiver = peerConnection.current.addTransceiver('video', {
+          direction: 'sendrecv',
+          streams: [localStream],
+          sendEncodings: [
+            {
+              maxBitrate: 2000000, // 2 Mbps
+              maxFramerate: 30
+            }
+          ]
+        });
+
+        console.log('VideoChat: Created transceivers:', {
+          audio: {
+            mid: audioTransceiver.mid,
+            direction: audioTransceiver.direction,
+            currentDirection: audioTransceiver.currentDirection
+          },
+          video: {
+            mid: videoTransceiver.mid,
+            direction: videoTransceiver.direction,
+            currentDirection: videoTransceiver.currentDirection
+          }
+        });
+        
+        // Add tracks individually and verify they're added
+        localStream.getTracks().forEach(track => {
+          const sender = peerConnection.current?.addTrack(track, localStream);
+          console.log('VideoChat: Added track to peer connection:', {
+            kind: track.kind,
+            enabled: track.enabled,
+            muted: track.muted,
+            sender: !!sender,
+            transceiverId: track.kind === 'audio' ? audioTransceiver.mid : videoTransceiver.mid
+          });
+        });
+
+        // Verify transceivers after adding tracks
+        const transceivers = peerConnection.current?.getTransceivers();
+        console.log('VideoChat: Peer connection transceivers:', {
+          count: transceivers?.length,
+          kinds: transceivers?.map(t => ({
+            kind: t.sender.track?.kind,
+            mid: t.mid,
+            direction: t.direction,
+            currentDirection: t.currentDirection
+          }))
+        });
+      } else {
+        console.warn('VideoChat: No local stream available for offer');
       }
 
       // Handle incoming stream
@@ -188,18 +289,22 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           readyState: event.track.readyState,
           streams: event.streams.length
         })
-        if (remoteVideoRef.current) {
+        if (remoteVideoRef.current && event.streams[0]) {
           console.log('VideoChat: Setting remote stream:', {
-            hasStream: !!event.streams[0],
-            tracks: event.streams[0]?.getTracks().map(t => ({
+            hasStream: true,
+            tracks: event.streams[0].getTracks().map(t => ({
               kind: t.kind,
               enabled: t.enabled,
               muted: t.muted
             }))
           })
           remoteVideoRef.current.srcObject = event.streams[0]
+          // Ensure we update connection status when we get video track
+          if (event.track.kind === 'video') {
+            setConnectionStatus('connected')
+          }
         }
-      };
+      }
 
       // Set remote description (offer)
       console.log('VideoChat: Parsing offer:', {
@@ -271,12 +376,63 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         }
       }
 
-      // Add connection state change logging
+      // Add more detailed connection state logging
       peerConnection.current.onconnectionstatechange = () => {
+        const state = peerConnection.current?.connectionState
         console.log('VideoChat: Connection state changed:', {
-          state: peerConnection.current?.connectionState,
+          state,
           iceState: peerConnection.current?.iceConnectionState,
           signalingState: peerConnection.current?.signalingState
+        })
+        if (state === 'connected') {
+          setConnectionStatus('connected')
+        } else if (state === 'failed') {
+          // Add delay before closing on failure to allow for late ICE candidates
+          setTimeout(() => {
+            if (peerConnection.current?.connectionState === 'failed') {
+              console.log('VideoChat: Connection failed after delay, cleaning up')
+              if (peerConnection.current) {
+                peerConnection.current.close()
+                peerConnection.current = null
+              }
+              setConnectionStatus(null)
+            }
+          }, CONNECTION_TIMEOUT_MS)
+        }
+      }
+
+      peerConnection.current.oniceconnectionstatechange = () => {
+        const state = peerConnection.current?.iceConnectionState
+        console.log('ICE connection state:', state)
+        
+        if (state === 'connected' || state === 'completed') {
+          setConnectionStatus('connected')
+        } else if (state === 'disconnected') {
+          // Wait before handling disconnected state
+          setTimeout(() => {
+            if (peerConnection.current?.iceConnectionState === 'disconnected') {
+              console.log('VideoChat: ICE still disconnected after delay')
+              setConnectionStatus(null)
+            }
+          }, CONNECTION_TIMEOUT_MS)
+        } else if (state === 'failed') {
+          console.error('VideoChat: ICE connection failed')
+          // Don't immediately close - give time for more candidates
+          setTimeout(() => {
+            if (peerConnection.current?.iceConnectionState === 'failed') {
+              setConnectionStatus(null)
+            }
+          }, CONNECTION_TIMEOUT_MS)
+        }
+      }
+
+      // Track ICE gathering completion
+      peerConnection.current.onicegatheringstatechange = () => {
+        const state = peerConnection.current?.iceGatheringState
+        console.log('VideoChat: ICE gathering state changed:', {
+          state,
+          connectionState: peerConnection.current?.connectionState,
+          iceConnectionState: peerConnection.current?.iceConnectionState
         })
       }
 
@@ -308,7 +464,36 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
       
       // Create peer connection
       peerConnection.current = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.stunprotocol.org:3478' },
+          { urls: 'stun:stun.voip.blackberry.com:3478' },
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          },
+          // Add more reliable TURN servers
+          {
+            urls: 'turn:relay.metered.ca:80',
+            username: 'e8e137b5c81cdb4186a95ad5',
+            credential: 'L+dbO2bQGVWFJfvq'
+          },
+          {
+            urls: 'turn:relay.metered.ca:443',
+            username: 'e8e137b5c81cdb4186a95ad5',
+            credential: 'L+dbO2bQGVWFJfvq'
+          }
+        ],
+        iceCandidatePoolSize: 10,
+        iceTransportPolicy: 'all'
       });
 
       // Log connection state changes
@@ -340,12 +525,70 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
 
       // Add local stream
       if (localStream) {
-        console.log('Adding local stream tracks:', localStream.getTracks().length);
+        console.log('VideoChat: Adding local stream tracks:', {
+          trackCount: localStream.getTracks().length,
+          tracks: localStream.getTracks().map(t => ({
+            kind: t.kind,
+            enabled: t.enabled,
+            muted: t.muted
+          }))
+        });
+        
+        // Set up transceivers first with explicit codec preferences
+        const audioTransceiver = peerConnection.current.addTransceiver('audio', {
+          direction: 'sendrecv',
+          streams: [localStream]
+        });
+        
+        const videoTransceiver = peerConnection.current.addTransceiver('video', {
+          direction: 'sendrecv',
+          streams: [localStream],
+          sendEncodings: [
+            {
+              maxBitrate: 2000000, // 2 Mbps
+              maxFramerate: 30
+            }
+          ]
+        });
+
+        console.log('VideoChat: Created transceivers:', {
+          audio: {
+            mid: audioTransceiver.mid,
+            direction: audioTransceiver.direction,
+            currentDirection: audioTransceiver.currentDirection
+          },
+          video: {
+            mid: videoTransceiver.mid,
+            direction: videoTransceiver.direction,
+            currentDirection: videoTransceiver.currentDirection
+          }
+        });
+        
+        // Add tracks individually and verify they're added
         localStream.getTracks().forEach(track => {
-          peerConnection.current?.addTrack(track, localStream);
+          const sender = peerConnection.current?.addTrack(track, localStream);
+          console.log('VideoChat: Added track to peer connection:', {
+            kind: track.kind,
+            enabled: track.enabled,
+            muted: track.muted,
+            sender: !!sender,
+            transceiverId: track.kind === 'audio' ? audioTransceiver.mid : videoTransceiver.mid
+          });
+        });
+
+        // Verify transceivers after adding tracks
+        const transceivers = peerConnection.current?.getTransceivers();
+        console.log('VideoChat: Peer connection transceivers:', {
+          count: transceivers?.length,
+          kinds: transceivers?.map(t => ({
+            kind: t.sender.track?.kind,
+            mid: t.mid,
+            direction: t.direction,
+            currentDirection: t.currentDirection
+          }))
         });
       } else {
-        console.warn('No local stream available');
+        console.warn('VideoChat: No local stream available for offer');
       }
 
       // Handle incoming stream
@@ -384,14 +627,63 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
 
       // Add more detailed connection state logging
       peerConnection.current.onconnectionstatechange = () => {
+        const state = peerConnection.current?.connectionState
         console.log('VideoChat: Connection state changed (initiator):', {
-          state: peerConnection.current?.connectionState,
+          state,
           iceState: peerConnection.current?.iceConnectionState,
           signalingState: peerConnection.current?.signalingState
         })
-        if (peerConnection.current?.connectionState === 'connected') {
+        
+        if (state === 'connected') {
           setConnectionStatus('connected')
+        } else if (state === 'failed') {
+          // Add delay before closing on failure to allow for late ICE candidates
+          setTimeout(() => {
+            if (peerConnection.current?.connectionState === 'failed') {
+              console.log('VideoChat: Connection failed after delay, cleaning up')
+              if (peerConnection.current) {
+                peerConnection.current.close()
+                peerConnection.current = null
+              }
+              setConnectionStatus(null)
+            }
+          }, CONNECTION_TIMEOUT_MS)
         }
+      }
+
+      peerConnection.current.oniceconnectionstatechange = () => {
+        const state = peerConnection.current?.iceConnectionState
+        console.log('ICE connection state:', state)
+        
+        if (state === 'connected' || state === 'completed') {
+          setConnectionStatus('connected')
+        } else if (state === 'disconnected') {
+          // Wait before handling disconnected state
+          setTimeout(() => {
+            if (peerConnection.current?.iceConnectionState === 'disconnected') {
+              console.log('VideoChat: ICE still disconnected after delay')
+              setConnectionStatus(null)
+            }
+          }, CONNECTION_TIMEOUT_MS)
+        } else if (state === 'failed') {
+          console.error('VideoChat: ICE connection failed')
+          // Don't immediately close - give time for more candidates
+          setTimeout(() => {
+            if (peerConnection.current?.iceConnectionState === 'failed') {
+              setConnectionStatus(null)
+            }
+          }, CONNECTION_TIMEOUT_MS)
+        }
+      }
+
+      // Track ICE gathering completion
+      peerConnection.current.onicegatheringstatechange = () => {
+        const state = peerConnection.current?.iceGatheringState
+        console.log('VideoChat: ICE gathering state changed:', {
+          state,
+          connectionState: peerConnection.current?.connectionState,
+          iceConnectionState: peerConnection.current?.iceConnectionState
+        })
       }
 
       try {
@@ -402,7 +694,7 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         await peerConnection.current.setLocalDescription(offer);
 
         console.log('Sending offer to server');
-        const result = await connectWithUser({
+        await connectWithUser({
           variables: {
             input: {
               type: 'offer',
@@ -413,27 +705,38 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           }
         });
 
-        // Handle answer
-        if (result.data?.connectWithUser.answer) {
-          console.log('Received answer from server');
-          const answer = JSON.parse(result.data.connectWithUser.answer);
-          console.log('Setting remote description');
-          await peerConnection.current.setRemoteDescription(answer);
-          
-          // Add buffered ICE candidates after remote description is set
-          console.log('Adding buffered ICE candidates:', iceCandidateBuffer.current.length);
-          for (const candidate of iceCandidateBuffer.current) {
-            await peerConnection.current.addIceCandidate(candidate);
+        // Don't wait for immediate answer, it will come through subscription
+        console.log('Offer sent, waiting for answer via subscription');
+        
+        // Set a timeout to reset connection if no answer received
+        const answerTimeout = setTimeout(() => {
+          if (peerConnection.current?.signalingState !== 'stable') {
+            console.warn('No answer received within timeout period');
+            setConnectionStatus(null);
+            if (peerConnection.current) {
+              peerConnection.current.close();
+              peerConnection.current = null;
+            }
           }
-          iceCandidateBuffer.current = []; // Clear the buffer
-          
-          setConnectionStatus('connected');
-        } else {
-          console.warn('No answer received from server');
-        }
+        }, CONNECTION_TIMEOUT_MS); // Use constant for answer timeout
+
+        // Clean up timeout on unmount
+        return () => {
+          clearTimeout(answerTimeout);
+          if (peerConnection.current) {
+            console.log('Cleaning up WebRTC connection');
+            peerConnection.current.close();
+            peerConnection.current = null;
+            setConnectionStatus(null);
+          }
+        };
       } catch (error) {
         console.error('WebRTC setup error:', error);
         setConnectionStatus(null);
+        if (peerConnection.current) {
+          peerConnection.current.close();
+          peerConnection.current = null;
+        }
       }
     }
 
