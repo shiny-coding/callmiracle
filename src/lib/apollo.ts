@@ -87,9 +87,6 @@ const sseLink = new ApolloLink((operation) => {
       // Listen for subscription data
       eventSource.addEventListener('next', (event) => {
         try {
-          console.log(`SSE: Received next event for ${operationName}:`, {
-            data: event.data?.slice(0, 100) + '...' // Log first 100 chars
-          })
           const data = JSON.parse(event.data)
           // Create a proper GraphQL result format
           const result = {

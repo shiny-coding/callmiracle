@@ -4,17 +4,19 @@ import { createPubSub } from 'graphql-yoga';
 
 type ConnectionRequestPayload = {
   onConnectionRequest: {
-    offer: string;
-    iceCandidate?: string;
+    type: 'offer' | 'answer' | 'ice-candidate'
+    offer: string
+    answer?: string
+    iceCandidate?: string
     from: {
-      userId: string;
-      name: string;
-      languages: string[];
-      statuses: Status[];
-    };
-  };
-  userId: string;
-};
+      userId: string
+      name: string
+      languages: string[]
+      statuses: Status[]
+    }
+  }
+  userId: string
+}
 
 type PubSubEvents = {
   [key: string]: [any];
@@ -135,6 +137,14 @@ export const resolvers = {
         }
       )
 
+      console.log('Connection state after update:', {
+        type,
+        hasStoredOffer: !!connection?.offer,
+        hasStoredAnswer: !!connection?.answer,
+        hasStoredIceCandidates: !!connection?.iceCandidates,
+        timestamp: new Date().toISOString()
+      })
+
       // Only publish to subscription for offers and ice candidates
       if (type === 'offer' || type === 'ice-candidate') {
         const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
@@ -143,6 +153,7 @@ export const resolvers = {
         if (initiator) {
           const payload: ConnectionRequestPayload = {
             onConnectionRequest: {
+              type,
               offer: type === 'offer' ? offer : connection?.offer,
               ...(type === 'ice-candidate' && { iceCandidate }),
               from: {
@@ -164,6 +175,32 @@ export const resolvers = {
             timestamp: new Date().toISOString()
           })
 
+          pubsub.publish('CONNECTION_REQUEST', payload)
+        }
+      } else if (type === 'answer') {
+        // When receiving an answer, publish it back to the initiator
+        const answerer = await db.collection('users').findOne({ userId: initiatorUserId })
+        if (answerer) {
+          const payload: ConnectionRequestPayload = {
+            onConnectionRequest: {
+              type: 'answer',
+              offer: connection?.offer,
+              answer,
+              from: {
+                userId: answerer.userId,
+                name: answerer.name,
+                languages: answerer.languages,
+                statuses: answerer.statuses
+              }
+            },
+            userId: targetUserId
+          }
+          console.log('Publishing answer:', {
+            targetUserId,
+            fromUserId: answerer.userId,
+            hasAnswer: !!answer,
+            timestamp: new Date().toISOString()
+          })
           pubsub.publish('CONNECTION_REQUEST', payload)
         }
       }

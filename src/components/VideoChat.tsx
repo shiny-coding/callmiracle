@@ -21,7 +21,9 @@ const CONNECT_WITH_USER = gql`
 const ON_CONNECTION_REQUEST = gql`
   subscription OnConnectionRequest($userId: ID!) {
     onConnectionRequest(userId: $userId) {
+      type
       offer
+      answer
       iceCandidate
       from {
         userId
@@ -69,23 +71,46 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
   const { data: subData } = useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
     onData: async ({ data }) => {
-      console.log('VideoChat: Subscription data received:', {
-        hasData: !!data.data,
-        type: 'onConnectionRequest',
-        timestamp: new Date().toISOString()
-      })
       
       const request = data.data?.onConnectionRequest
       if (request) {
         console.log('VideoChat: Processing connection request:', {
           from: request.from.name,
+          type: request.type,
           hasOffer: !!request.offer,
           hasIceCandidate: !!request.iceCandidate,
           timestamp: new Date().toISOString()
         })
         
+        // Handle answer for initiator
+        if (request.type === 'answer' && peerConnection.current) {
+          try {
+            console.log('VideoChat: Received answer via subscription');
+            const answer = JSON.parse(request.answer);
+            await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+            console.log('VideoChat: Set remote description from subscription:', {
+              signalingState: peerConnection.current.signalingState,
+              connectionState: peerConnection.current.connectionState,
+              iceGatheringState: peerConnection.current.iceGatheringState,
+              iceConnectionState: peerConnection.current.iceConnectionState
+            });
+            
+            // Process any buffered ICE candidates
+            if (iceCandidateBuffer.current.length > 0) {
+              console.log('VideoChat: Processing buffered ICE candidates:', iceCandidateBuffer.current.length);
+              for (const candidate of iceCandidateBuffer.current) {
+                await peerConnection.current.addIceCandidate(candidate);
+              }
+              iceCandidateBuffer.current = [];
+            }
+            return; // Don't process as new connection request
+          } catch (err) {
+            console.error('VideoChat: Failed to process answer:', err);
+          }
+        }
+        
         // Handle ICE candidates for existing connection
-        if (request.iceCandidate && peerConnection.current) {
+        if (request.type === 'ice-candidate' && peerConnection.current) {
           try {
             const candidate = JSON.parse(request.iceCandidate);
             if (peerConnection.current.remoteDescription) {
@@ -101,10 +126,10 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           }
         }
         
-        // Only show the request dialog for new offers and if not already showing for this user
-        if (request.offer && 
+        // Only show the request dialog for new offers
+        if (request.type === 'offer' && 
             activeRequestRef.current !== request.from.userId && 
-            lastOfferRef.current !== request.offer) { // Check if this is a new offer
+            lastOfferRef.current !== request.offer) {
           // Clean up any existing peer connection before showing the request
           if (peerConnection.current) {
             console.log('VideoChat: Cleaning up existing connection')
@@ -115,27 +140,6 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
           lastOfferRef.current = request.offer // Store the offer
           setIncomingRequest(request)
           setConnectionStatus(null) // Reset status when receiving new request
-          console.log('VideoChat: Showing call request from:', request.from.name)
-        }
-
-        if (request.answer && peerConnection.current) {
-          try {
-            console.log('VideoChat: Received answer via subscription');
-            const answer = JSON.parse(request.answer);
-            await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-            console.log('VideoChat: Set remote description from subscription');
-            
-            // Process any buffered ICE candidates
-            if (iceCandidateBuffer.current.length > 0) {
-              console.log('VideoChat: Processing buffered ICE candidates:', iceCandidateBuffer.current.length);
-              for (const candidate of iceCandidateBuffer.current) {
-                await peerConnection.current.addIceCandidate(candidate);
-              }
-              iceCandidateBuffer.current = [];
-            }
-          } catch (err) {
-            console.error('VideoChat: Failed to process answer:', err);
-          }
         }
       } else {
         console.log('VideoChat: Invalid or empty request data:', {

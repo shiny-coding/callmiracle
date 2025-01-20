@@ -26,7 +26,9 @@ type ConnectionParams {
 }
 
 type ConnectionRequest {
+  type: String!
   offer: String
+  answer: String
   iceCandidate: String
   from: User!
 }

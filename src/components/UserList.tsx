@@ -81,8 +81,6 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
   // Use subscription data if available, otherwise use query data
   const users = subData?.onUsersUpdated || data?.users
   
-  const [connectWithUser] = useMutation(CONNECT_WITH_USER)
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
   const t = useTranslations('Status')
   
   if (loading && !users) return <Typography>Loading...</Typography>
@@ -90,81 +88,13 @@ export default function UserList({ onUserSelect, localStream }: UserListProps) {
 
   const handleUserClick = async (userId: string) => {
     const targetUser = users?.find((u: { userId: string; name: string }) => u.userId === userId)
-    console.log('Creating new offer for user:', {
+    console.log('Selected user:', {
       userId,
       name: targetUser?.name,
       timestamp: new Date().toISOString()
     })
 
     onUserSelect(userId)
-
-    if (!localStream) {
-      console.log('Skipping WebRTC setup - no local stream available')
-      return
-    }
-
-    // Clean up any existing peer connection
-    if (peerConnectionRef.current) {
-      console.log('Cleaning up existing peer connection before creating new one')
-      peerConnectionRef.current.close()
-      peerConnectionRef.current = null
-    }
-
-    // Create a new RTCPeerConnection and generate an offer
-    peerConnectionRef.current = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    })
-
-    // Add local stream tracks
-    console.log('Adding local stream tracks to offer:', localStream.getTracks().length)
-    localStream.getTracks().forEach(track => {
-      peerConnectionRef.current?.addTrack(track, localStream)
-    })
-
-    try {
-      // Create and set local description (offer)
-      console.log('Creating WebRTC offer')
-      const offer = await peerConnectionRef.current.createOffer()
-      await peerConnectionRef.current.setLocalDescription(offer)
-
-      // Send the offer through GraphQL mutation
-      console.log('Sending offer to server')
-      const result = await connectWithUser({
-        variables: {
-          input: {
-            type: 'offer',
-            targetUserId: userId,
-            initiatorUserId: getUserId(),
-            offer: JSON.stringify(offer)
-          }
-        }
-      })
-
-      // Add more detailed logging for answer handling
-      if (result.data?.connectWithUser.answer) {
-        console.log('Received answer from server:', {
-          hasAnswer: true,
-          timestamp: new Date().toISOString()
-        });
-        const answer = JSON.parse(result.data.connectWithUser.answer);
-        console.log('Setting remote description');
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-        
-        // Process any buffered ICE candidates
-        console.log('Processing buffered ICE candidates');
-        // ... process buffered candidates
-      } else {
-        console.warn('No answer received from server - will wait for it via subscription');
-      }
-    } catch (error) {
-      console.error('Error creating connection offer:', error)
-      // Only clean up on error
-      if (peerConnectionRef.current) {
-        console.log('Cleaning up peer connection due to error')
-        peerConnectionRef.current.close()
-        peerConnectionRef.current = null
-      }
-    }
   }
 
   return (
