@@ -78,10 +78,10 @@ const sseLink = new ApolloLink((operation) => {
       })
 
       eventSource.onopen = () => {
-        console.log(`SSE: Connection opened for ${operationName}`, {
-          readyState: eventSource.readyState,
-          url: eventSource.url
-        })
+        // console.log(`SSE: Connection opened for ${operationName}`, {
+        //   readyState: eventSource.readyState,
+        //   url: eventSource.url
+        // })
       }
 
       // Listen for subscription data

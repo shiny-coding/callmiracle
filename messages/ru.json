@@ -12,5 +12,17 @@
   },
   "connect": "Найти собеседника",
   "iSpeak": "Я говорю на",
-  "cameraDisabled": "Камера отключена"
+  "cameraDisabled": "Камера отключена",
+  "VideoChat": {
+    "selectUser": "Выберите собеседника",
+    "status": {
+      "disconnected": "Отключено",
+      "calling": "Вызов...",
+      "connecting": "Подключение...",
+      "connected": "Подключено",
+      "failed": "Ошибка подключения",
+      "rejected": "Вызов отклонен",
+      "timeout": "Нет ответа"
+    }
+  }
 } 

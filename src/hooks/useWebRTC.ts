@@ -32,7 +32,7 @@ const ON_CONNECTION_REQUEST = gql`
   }
 `
 
-type ConnectionStatus = 'waiting' | 'rejected' | 'connected' | null
+type ConnectionStatus = 'disconnected' | 'calling' | 'connecting' | 'connected' | 'failed' | 'rejected' | 'timeout'
 
 interface IncomingRequest {
   offer: string
@@ -48,19 +48,48 @@ interface IncomingRequest {
 interface UseWebRTCProps {
   targetUserId?: string
   localStream?: MediaStream
-  onTrack?: (event: RTCTrackEvent) => void
+  onTrack: (event: RTCTrackEvent) => void
 }
 
 export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps) {
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(null)
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
 
-  // Add refs to track state
+  // Add refs to track state and timeouts
   const activeRequestRef = useRef<string | null>(null)
   const lastOfferRef = useRef<string | null>(null)
   const iceCandidateBuffer = useRef<RTCIceCandidate[]>([])
+  const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const iceConnectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const answerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hasTimedOutRef = useRef<boolean>(false)
+
+  const logWebRTCState = (event: string, pc: RTCPeerConnection, error?: any) => {
+    const baseState = {
+      status: connectionStatus,
+      connectionState: pc.connectionState,
+      signalingState: pc.signalingState,
+      iceConnectionState: pc.iceConnectionState,
+      iceGatheringState: pc.iceGatheringState
+    }
+
+    if (error) {
+      console.log(`WebRTC: ${event}:`, error, baseState)
+    } else {
+      console.log(`WebRTC: ${event}:`, baseState)
+    }
+  }
+
+  const clearAllTimeouts = () => {
+    clearTimeout(connectionTimeoutRef.current as any)
+    connectionTimeoutRef.current = null
+    clearTimeout(iceConnectionTimeoutRef.current as any)
+    iceConnectionTimeoutRef.current = null
+    clearTimeout(answerTimeoutRef.current as any)
+    answerTimeoutRef.current = null
+  }
 
   const createPeerConnection = () => {
     const pc = new RTCPeerConnection({
@@ -70,99 +99,66 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun.stunprotocol.org:3478' },
         { urls: 'stun:stun.voip.blackberry.com:3478' },
-        {
-          urls: 'turn:openrelay.metered.ca:80',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:relay.metered.ca:80',
-          username: 'e8e137b5c81cdb4186a95ad5',
-          credential: 'L+dbO2bQGVWFJfvq'
-        },
-        {
-          urls: 'turn:relay.metered.ca:443',
-          username: 'e8e137b5c81cdb4186a95ad5',
-          credential: 'L+dbO2bQGVWFJfvq'
-        }
       ],
       iceCandidatePoolSize: 10,
       iceTransportPolicy: 'all'
     })
 
-    pc.ontrack = onTrack || ((event) => {
-      console.log('VideoChat: Received remote track:', {
-        kind: event.track.kind,
-        enabled: event.track.enabled,
-        muted: event.track.muted,
-        readyState: event.track.readyState,
-        streams: event.streams.length
-      })
-    })
+    pc.ontrack = onTrack
 
     pc.onconnectionstatechange = () => {
-      const state = pc.connectionState
-      console.log('VideoChat: Connection state changed:', {
-        state,
-        iceState: pc.iceConnectionState,
-        signalingState: pc.signalingState
-      })
+      logWebRTCState('Connection state changed to ' + pc.connectionState, pc)
       
-      if (state === 'connected') {
+      if (pc.connectionState === 'connected') {
         setConnectionStatus('connected')
-      } else if (state === 'failed') {
-        setTimeout(() => {
+        clearAllTimeouts()
+      } else if (pc.connectionState === 'failed') {
+        console.log('Connection failed, setting timeout')
+        clearTimeout(connectionTimeoutRef.current as any)
+        connectionTimeoutRef.current = setTimeout(() => {
           if (pc.connectionState === 'failed') {
-            console.log('VideoChat: Connection failed after delay, cleaning up')
+            logWebRTCState('Connection failed after delay', pc)
             pc.close()
             peerConnection.current = null
-            setConnectionStatus(null)
+            setConnectionStatus('failed')
           }
         }, CONNECTION_TIMEOUT_MS)
       }
     }
 
     pc.oniceconnectionstatechange = () => {
-      const state = pc.iceConnectionState
-      console.log('ICE connection state:', state)
+      logWebRTCState('ICE connection state changed', pc)
       
-      if (state === 'connected' || state === 'completed') {
-        setConnectionStatus('connected')
-      } else if (state === 'disconnected') {
-        setTimeout(() => {
-          if (pc.iceConnectionState === 'disconnected') {
-            console.log('VideoChat: ICE still disconnected after delay')
-            setConnectionStatus(null)
+      if (pc.iceConnectionState === 'disconnected') {
+        logWebRTCState('ICE disconnected, setting timeout', pc)
+        clearTimeout(iceConnectionTimeoutRef.current as any)
+        iceConnectionTimeoutRef.current = setTimeout(() => {
+          if (pc.iceConnectionState === 'disconnected' && pc.connectionState !== 'connected') {
+            logWebRTCState('ICE still disconnected after delay', pc)
+            setConnectionStatus('failed')
           }
         }, CONNECTION_TIMEOUT_MS)
-      } else if (state === 'failed') {
-        console.error('VideoChat: ICE connection failed')
-        setTimeout(() => {
-          if (pc.iceConnectionState === 'failed') {
-            setConnectionStatus(null)
+      } else if (pc.iceConnectionState === 'failed') {
+        logWebRTCState('ICE connection failed, setting timeout', pc)
+        clearTimeout(iceConnectionTimeoutRef.current as any)
+        iceConnectionTimeoutRef.current = setTimeout(() => {
+          if (pc.iceConnectionState === 'failed' && pc.connectionState !== 'connected') {
+            logWebRTCState('ICE still failed after delay', pc)
+            setConnectionStatus('failed')
           }
         }, CONNECTION_TIMEOUT_MS)
       }
     }
 
     pc.onicegatheringstatechange = () => {
-      console.log('VideoChat: ICE gathering state changed:', {
-        state: pc.iceGatheringState,
-        connectionState: pc.connectionState,
-        iceConnectionState: pc.iceConnectionState
-      })
+      logWebRTCState('ICE gathering state changed to ' + pc.iceGatheringState, pc)
     }
 
     return pc
   }
 
   const addLocalStream = (pc: RTCPeerConnection, stream: MediaStream) => {
-    console.log('VideoChat: Adding local stream tracks:', {
+    console.log('WebRTC: Adding local stream tracks:', {
       trackCount: stream.getTracks().length,
       tracks: stream.getTracks().map(t => ({
         kind: t.kind,
@@ -198,7 +194,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
       }
     })
 
-    console.log('VideoChat: Configured transceivers:', {
+    console.log('WebRTC: Configured transceivers:', {
       count: transceivers.length,
       transceivers: transceivers.map(t => ({
         kind: t.sender.track?.kind,
@@ -213,12 +209,34 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
     })
   }
 
+  const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string) => {
+    pc.onicecandidate = async (event) => {
+      logWebRTCState('New ICE candidate', pc)
+      if (event.candidate) {
+        try {
+          await connectWithUser({
+            variables: {
+              input: {
+                type: 'ice-candidate',
+                targetUserId,
+                initiatorUserId: getUserId(),
+                iceCandidate: JSON.stringify(event.candidate)
+              }
+            }
+          })
+        } catch (err) {
+          console.error('WebRTC: Failed to send ICE candidate:', err)
+        }
+      }
+    }
+  }
+
   const handleAcceptCall = async () => {
     if (!incomingRequest || !localStream) return
 
     try {
-      console.log('Accepting call from:', incomingRequest.from.name)
-      setConnectionStatus('connected')
+      console.log('WebRTC: Accepting call from:', incomingRequest.from.name)
+      setConnectionStatus('connecting')
       
       const pc = createPeerConnection()
       peerConnection.current = pc
@@ -226,13 +244,8 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
       addLocalStream(pc, localStream)
 
       // Set remote description (offer)
-      console.log('VideoChat: Parsing offer:', {
-        rawOffer: incomingRequest.offer?.substring(0, 100) + '...',
-        isString: typeof incomingRequest.offer === 'string'
-      })
-      
       const offer = JSON.parse(incomingRequest.offer)
-      console.log('VideoChat: Parsed offer:', {
+      console.log('WebRTC: Parsed offer:', {
         type: offer.type,
         hasSdp: !!offer.sdp,
         sdpLength: offer.sdp?.length
@@ -244,17 +257,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
 
-      console.log('VideoChat: Remote description set:', {
-        signalingState: pc.signalingState,
-        connectionState: pc.connectionState,
-        iceGatheringState: pc.iceGatheringState,
-        iceConnectionState: pc.iceConnectionState
-      })
-
-      console.log('VideoChat: Created answer:', {
-        type: answer.type,
-        sdp: answer.sdp?.substring(0, 100) + '...'
-      })
+      logWebRTCState('Remote description set', pc)
 
       await connectWithUser({
         variables: {
@@ -267,32 +270,10 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
         }
       })
 
-      console.log('VideoChat: Answer sent to server')
+      console.log('WebRTC: Answer sent to server')
 
       // Add ICE candidate handling
-      pc.onicecandidate = async (event) => {
-        console.log('VideoChat: New ICE candidate:', {
-          candidate: event.candidate?.candidate,
-          sdpMid: event.candidate?.sdpMid,
-          state: pc.iceGatheringState
-        })
-        if (event.candidate) {
-          try {
-            await connectWithUser({
-              variables: {
-                input: {
-                  type: 'ice-candidate',
-                  targetUserId: incomingRequest.from.userId,
-                  initiatorUserId: getUserId(),
-                  iceCandidate: JSON.stringify(event.candidate)
-                }
-              }
-            })
-          } catch (err) {
-            console.error('VideoChat: Failed to send ICE candidate:', err)
-          }
-        }
-      }
+      setupIceCandidateHandler(pc, incomingRequest.from.userId)
 
       activeRequestRef.current = null
       lastOfferRef.current = null
@@ -301,7 +282,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
       console.error('Error accepting call:', error)
       activeRequestRef.current = null
       lastOfferRef.current = null
-      setConnectionStatus(null)
+      setConnectionStatus('failed')
     }
   }
 
@@ -319,7 +300,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
     onData: async ({ data }) => {
       const request = data.data?.onConnectionRequest
       if (request) {
-        console.log('VideoChat: Processing connection request:', {
+        console.log('WebRTC: Processing connection request:', {
           from: request.from.name,
           type: request.type,
           hasOffer: !!request.offer,
@@ -331,32 +312,27 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
         // Handle answer for initiator
         if (request.type === 'answer' && peerConnection.current) {
           try {
-            console.log('VideoChat: Received answer via subscription')
+            console.log('WebRTC: Received answer via subscription')
             const answer = JSON.parse(request.answer)
             
             if (peerConnection.current.signalingState === 'have-local-offer') {
               await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer))
-              console.log('VideoChat: Set remote description from subscription:', {
-                signalingState: peerConnection.current.signalingState,
-                connectionState: peerConnection.current.connectionState,
-                iceGatheringState: peerConnection.current.iceGatheringState,
-                iceConnectionState: peerConnection.current.iceConnectionState
-              })
+              logWebRTCState('Set remote description from subscription', peerConnection.current)
               
               if (iceCandidateBuffer.current.length > 0) {
-                console.log('VideoChat: Processing buffered ICE candidates:', iceCandidateBuffer.current.length)
+                console.log('WebRTC: Processing buffered ICE candidates:', iceCandidateBuffer.current.length)
                 for (const candidate of iceCandidateBuffer.current) {
                   await peerConnection.current.addIceCandidate(candidate)
-                  console.log('VideoChat: Added buffered ICE candidate')
+                  console.log('WebRTC: Added buffered ICE candidate')
                 }
                 iceCandidateBuffer.current = []
               }
             } else {
-              console.warn('VideoChat: Received answer in invalid state:', peerConnection.current.signalingState)
+              console.warn('WebRTC: Received answer in invalid state:', peerConnection.current.signalingState)
             }
             return
           } catch (err) {
-            console.error('VideoChat: Failed to process answer:', err)
+            console.error('WebRTC: Failed to process answer:', err)
           }
         }
         
@@ -366,14 +342,14 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
             const candidate = JSON.parse(request.iceCandidate)
             if (peerConnection.current.remoteDescription) {
               await peerConnection.current.addIceCandidate(candidate)
-              console.log('VideoChat: Added remote ICE candidate')
+              console.log('WebRTC: Added remote ICE candidate')
             } else {
-              console.log('VideoChat: Buffering ICE candidate until remote description is set')
+              console.log('WebRTC: Buffering ICE candidate until remote description is set')
               iceCandidateBuffer.current.push(candidate)
             }
             return
           } catch (err) {
-            console.error('VideoChat: Failed to add ICE candidate:', err)
+            console.error('WebRTC: Failed to add ICE candidate:', err)
           }
         }
         
@@ -382,26 +358,38 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
             activeRequestRef.current !== request.from.userId && 
             lastOfferRef.current !== request.offer) {
           if (peerConnection.current) {
-            console.log('VideoChat: Cleaning up existing connection')
+            console.log('WebRTC: Cleaning up existing connection')
             peerConnection.current.close()
             peerConnection.current = null
           }
           activeRequestRef.current = request.from.userId
           lastOfferRef.current = request.offer
           setIncomingRequest(request)
-          setConnectionStatus(null)
+          setConnectionStatus('calling')
         }
       }
     }
   })
 
+  const resetConnection = () => {
+    if (peerConnection.current) {
+      peerConnection.current.close()
+      peerConnection.current = null
+    }
+    clearAllTimeouts()
+    activeRequestRef.current = null
+    lastOfferRef.current = null
+    iceCandidateBuffer.current = []
+    hasTimedOutRef.current = false
+  }
+
   // Handle outgoing calls
   useEffect(() => {
     async function initializeConnection() {
-      if (!targetUserId || !localStream) return
+      if (!targetUserId || !localStream || hasTimedOutRef.current) return
 
-      console.log('Initializing WebRTC connection with:', targetUserId)
-      setConnectionStatus('waiting')
+      console.log('WebRTC: Initializing connection with:', targetUserId)
+      setConnectionStatus('calling')
       
       const pc = createPeerConnection()
       peerConnection.current = pc
@@ -409,38 +397,16 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
       addLocalStream(pc, localStream)
 
       // Add ICE candidate handling for initiator
-      pc.onicecandidate = async (event) => {
-        console.log('VideoChat: New ICE candidate (initiator):', {
-          candidate: event.candidate?.candidate,
-          sdpMid: event.candidate?.sdpMid,
-          state: pc.iceGatheringState
-        })
-        if (event.candidate) {
-          try {
-            await connectWithUser({
-              variables: {
-                input: {
-                  type: 'ice-candidate',
-                  targetUserId,
-                  initiatorUserId: getUserId(),
-                  iceCandidate: JSON.stringify(event.candidate)
-                }
-              }
-            })
-          } catch (err) {
-            console.error('VideoChat: Failed to send ICE candidate:', err)
-          }
-        }
-      }
+      setupIceCandidateHandler(pc, targetUserId)
 
       try {
         // Create and send offer
-        console.log('Creating offer')
+        logWebRTCState('Creating offer', pc)
         const offer = await pc.createOffer()
-        console.log('Setting local description')
+        logWebRTCState('Setting local description', pc)
         await pc.setLocalDescription(offer)
 
-        console.log('Sending offer to server')
+        logWebRTCState('Sending offer to server', pc)
         await connectWithUser({
           variables: {
             input: {
@@ -455,46 +421,37 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
         console.log('Offer sent, waiting for answer via subscription')
         
         // Set a timeout to reset connection if no answer received
-        const answerTimeout = setTimeout(() => {
+        clearTimeout(answerTimeoutRef.current as any)
+        answerTimeoutRef.current = setTimeout(() => {
           if (pc.signalingState !== 'stable') {
-            console.warn('No answer received within timeout period')
-            setConnectionStatus(null)
-            pc.close()
-            peerConnection.current = null
+            logWebRTCState('No answer received within timeout period', pc, true)
+            hasTimedOutRef.current = true
+            setConnectionStatus('timeout')
+            resetConnection()
           }
         }, CONNECTION_TIMEOUT_MS)
 
         return () => {
-          clearTimeout(answerTimeout)
-          pc.close()
-          peerConnection.current = null
-          setConnectionStatus(null)
+          resetConnection()
+          setConnectionStatus('disconnected')
         }
       } catch (error) {
-        console.error('WebRTC setup error:', error)
-        setConnectionStatus(null)
-        pc.close()
-        peerConnection.current = null
+        logWebRTCState('WebRTC setup error', pc, error)
+        setConnectionStatus('failed')
+        resetConnection()
       }
     }
 
     if (targetUserId) {
       initializeConnection()
     } else {
-      if (peerConnection.current) {
-        peerConnection.current.close()
-        peerConnection.current = null
-      }
-      setConnectionStatus(null)
+      resetConnection()
+      setConnectionStatus('disconnected')
     }
 
     return () => {
-      if (peerConnection.current) {
-        console.log('Cleaning up WebRTC connection')
-        peerConnection.current.close()
-        peerConnection.current = null
-        setConnectionStatus(null)
-      }
+      resetConnection()
+      setConnectionStatus('disconnected')
     }
   }, [targetUserId, localStream, connectWithUser])
 
@@ -502,6 +459,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
     connectionStatus,
     incomingRequest,
     handleAcceptCall,
-    handleRejectCall
+    handleRejectCall,
+    resetConnection
   }
 } 

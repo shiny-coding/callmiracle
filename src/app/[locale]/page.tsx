@@ -64,7 +64,9 @@ export default function Home() {
 
   return (
     <main className="container mx-auto p-4 space-y-4">
-      {/* Video row */}
+      <div>
+        <UserList onUserSelect={setSelectedUserId} localStream={localStream} />
+      </div>
       <div className="flex flex-row justify-center gap-4">
         <div>
           <Typography variant="h6" className="mb-2">Your Camera</Typography>
@@ -76,10 +78,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* User list */}
-      <div>
-        <UserList onUserSelect={setSelectedUserId} localStream={localStream} />
-      </div>
 
       {/* Rest of UI components */}
       <div>

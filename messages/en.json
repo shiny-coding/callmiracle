@@ -12,5 +12,17 @@
   },
   "connect": "Find Partner",
   "iSpeak": "I speak",
-  "cameraDisabled": "Camera disabled"
+  "cameraDisabled": "Camera disabled",
+  "VideoChat": {
+    "selectUser": "Select User",
+    "status": {
+      "disconnected": "Disconnected",
+      "calling": "Calling...",
+      "connecting": "Connecting...",
+      "connected": "Connected",
+      "failed": "Connection Failed",
+      "rejected": "Call Rejected",
+      "timeout": "No Answer"
+    }
+  }
 } 
