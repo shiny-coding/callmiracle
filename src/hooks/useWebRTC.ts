@@ -49,9 +49,10 @@ interface UseWebRTCProps {
   targetUserId?: string
   localStream?: MediaStream
   onTrack: (event: RTCTrackEvent) => void
+  connectWithVideo?: boolean
 }
 
-export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps) {
+export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo = false }: UseWebRTCProps) {
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
@@ -167,8 +168,13 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
       }))
     })
 
+    // Filter tracks based on connectWithVideo setting
+    const tracksToAdd = stream.getTracks().filter(track => 
+      connectWithVideo ? true : track.kind === 'audio'
+    )
+
     // First add tracks to get transceivers created
-    const senders = stream.getTracks().map(track => 
+    const senders = tracksToAdd.map(track => 
       pc.addTrack(track, stream)
     )
 
@@ -179,15 +185,23 @@ export function useWebRTC({ targetUserId, localStream, onTrack }: UseWebRTCProps
     transceivers.forEach(transceiver => {
       const kind = transceiver.sender.track?.kind
       if (kind === 'video') {
-        transceiver.direction = 'sendrecv'
-        if (transceiver.sender.setParameters) {
-          const params = transceiver.sender.getParameters()
-          if (!params.encodings) {
-            params.encodings = [{}]
+        if (connectWithVideo) {
+          transceiver.direction = 'sendrecv'
+          if (transceiver.sender.setParameters) {
+            const params = transceiver.sender.getParameters()
+            if (!params.encodings) {
+              params.encodings = [{}]
+            }
+            params.encodings[0].maxBitrate = 2000000 // 2 Mbps
+            params.encodings[0].maxFramerate = 30
+            transceiver.sender.setParameters(params)
           }
-          params.encodings[0].maxBitrate = 2000000 // 2 Mbps
-          params.encodings[0].maxFramerate = 30
-          transceiver.sender.setParameters(params)
+        } else {
+          transceiver.direction = 'inactive'
+          if (transceiver.sender.track) {
+            transceiver.sender.track.enabled = false
+            transceiver.sender.track.stop()
+          }
         }
       } else if (kind === 'audio') {
         transceiver.direction = 'sendrecv'
