@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { gql, useMutation, useSubscription } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 
-const CONNECTION_TIMEOUT_MS = 20000 // 20 seconds
+const CONNECTION_TIMEOUT_MS = 120000 // 20 seconds
 
 const CONNECT_WITH_USER = gql`
   mutation ConnectWithUser($input: ConnectionParamsInput!) {
@@ -52,7 +52,7 @@ interface UseWebRTCProps {
   connectWithVideo?: boolean
 }
 
-export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo = false }: UseWebRTCProps) {
+export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo = true }: UseWebRTCProps) {
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
@@ -61,12 +61,11 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
   // Add refs to track state and timeouts
   const activeRequestRef = useRef<string | null>(null)
   const lastOfferRef = useRef<string | null>(null)
-  const iceCandidateBuffer = useRef<RTCIceCandidate[]>([])
+  const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const iceConnectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const answerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasTimedOutRef = useRef<boolean>(false)
-
   const logWebRTCState = (event: string, pc: RTCPeerConnection, error?: any) => {
     const baseState = {
       status: connectionStatus,
@@ -96,24 +95,23 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun.stunprotocol.org:3478' },
-        { urls: 'stun:stun.voip.blackberry.com:3478' },
+        // { urls: 'stun:stun.cloudflare.com:3478' },
       ],
-      iceCandidatePoolSize: 10,
-      iceTransportPolicy: 'all'
+      iceCandidatePoolSize: 0,
+      iceTransportPolicy: 'all',
+      bundlePolicy: 'balanced',
+      rtcpMuxPolicy: 'require',
     })
 
     pc.ontrack = onTrack
 
     pc.onconnectionstatechange = () => {
-      logWebRTCState('Connection state changed to ' + pc.connectionState, pc)
-      
       if (pc.connectionState === 'connected') {
         setConnectionStatus('connected')
+        logWebRTCState('Connection state changed to ' + pc.connectionState, pc)
         clearAllTimeouts()
       } else if (pc.connectionState === 'failed') {
+        logWebRTCState('Connection state changed to ' + pc.connectionState, pc)
         console.log('Connection failed, setting timeout')
         clearTimeout(connectionTimeoutRef.current as any)
         connectionTimeoutRef.current = setTimeout(() => {
@@ -128,7 +126,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
     }
 
     pc.oniceconnectionstatechange = () => {
-      logWebRTCState('ICE connection state changed', pc)
+      logWebRTCState('ICE connection state changed to ' + pc.iceConnectionState, pc)
       
       if (pc.iceConnectionState === 'disconnected') {
         logWebRTCState('ICE disconnected, setting timeout', pc)
@@ -168,23 +166,33 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
       }))
     })
 
-    // Filter tracks based on connectWithVideo setting
-    const tracksToAdd = stream.getTracks().filter(track => 
-      connectWithVideo ? true : track.kind === 'audio'
-    )
+    // First set up transceivers for both audio and video
+    if (!pc.getTransceivers().length) {
+      pc.addTransceiver('audio', { direction: 'sendrecv' })
+      if (connectWithVideo) {
+        pc.addTransceiver('video', { direction: 'sendrecv' })
+      }
+    }
 
-    // First add tracks to get transceivers created
-    const senders = tracksToAdd.map(track => 
-      pc.addTrack(track, stream)
-    )
+    // Then add tracks
+    stream.getTracks().forEach(track => {
+      const existingSender = pc.getSenders().find(s => s.track?.kind === track.kind)
+      if (existingSender) {
+        if (track.kind === 'video' && !connectWithVideo) {
+          track.enabled = false
+          track.stop()
+        } else {
+          existingSender.replaceTrack(track)
+        }
+      } else if (track.kind === 'audio' || (track.kind === 'video' && connectWithVideo)) {
+        pc.addTrack(track, stream)
+      }
+    })
 
-    // Get the transceivers that were created
-    const transceivers = pc.getTransceivers()
-    
     // Configure transceivers
-    transceivers.forEach(transceiver => {
-      const kind = transceiver.sender.track?.kind
-      if (kind === 'video') {
+    pc.getTransceivers().forEach(transceiver => {
+      const kind = transceiver.sender.track?.kind || transceiver.mid
+      if (kind === 'video' || kind === '1') {
         if (connectWithVideo) {
           transceiver.direction = 'sendrecv'
           if (transceiver.sender.setParameters) {
@@ -198,20 +206,16 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
           }
         } else {
           transceiver.direction = 'inactive'
-          if (transceiver.sender.track) {
-            transceiver.sender.track.enabled = false
-            transceiver.sender.track.stop()
-          }
         }
-      } else if (kind === 'audio') {
+      } else if (kind === 'audio' || kind === '0') {
         transceiver.direction = 'sendrecv'
       }
     })
 
     console.log('WebRTC: Configured transceivers:', {
-      count: transceivers.length,
-      transceivers: transceivers.map(t => ({
-        kind: t.sender.track?.kind,
+      count: pc.getTransceivers().length,
+      transceivers: pc.getTransceivers().map(t => ({
+        kind: t.sender.track?.kind || t.mid,
         mid: t.mid,
         direction: t.direction,
         currentDirection: t.currentDirection,
@@ -225,7 +229,6 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
 
   const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string) => {
     pc.onicecandidate = async (event) => {
-      logWebRTCState('New ICE candidate', pc)
       if (event.candidate) {
         try {
           await connectWithUser({
@@ -238,9 +241,12 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
               }
             }
           })
+          logWebRTCState(`Sent ICE candidate`, pc)
         } catch (err) {
           console.error('WebRTC: Failed to send ICE candidate:', err)
         }
+      } else {
+        console.log('WebRTC: No ICE candidate received', event)
       }
     }
   }
@@ -289,6 +295,17 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
       // Add ICE candidate handling
       setupIceCandidateHandler(pc, incomingRequest.from.userId)
 
+      // Process any pending ICE candidates
+      if (pendingIceCandidates.current.length > 0) {
+        console.log('WebRTC: Processing pending ICE candidates:', pendingIceCandidates.current.length)
+        for (const candidate of pendingIceCandidates.current) {
+          await pc.addIceCandidate(candidate)
+          const candidateInfo = parseCandidate(candidate)
+          console.log(`WebRTC: Added buffered ICE candidate:`, candidateInfo)
+        }
+        pendingIceCandidates.current = []
+      }
+
       activeRequestRef.current = null
       lastOfferRef.current = null
       setIncomingRequest(null)
@@ -324,7 +341,10 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
         })
         
         // Handle answer for initiator
-        if (request.type === 'answer' && peerConnection.current) {
+        if (request.type === 'answer') {
+          if (!peerConnection.current) {
+            throw new Error('WebRTC: No peer connection found when receiving answer')
+          }
           try {
             console.log('WebRTC: Received answer via subscription')
             const answer = JSON.parse(request.answer)
@@ -332,15 +352,6 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
             if (peerConnection.current.signalingState === 'have-local-offer') {
               await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer))
               logWebRTCState('Set remote description from subscription', peerConnection.current)
-              
-              if (iceCandidateBuffer.current.length > 0) {
-                console.log('WebRTC: Processing buffered ICE candidates:', iceCandidateBuffer.current.length)
-                for (const candidate of iceCandidateBuffer.current) {
-                  await peerConnection.current.addIceCandidate(candidate)
-                  console.log('WebRTC: Added buffered ICE candidate')
-                }
-                iceCandidateBuffer.current = []
-              }
             } else {
               console.warn('WebRTC: Received answer in invalid state:', peerConnection.current.signalingState)
             }
@@ -350,20 +361,23 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
           }
         }
         
-        // Handle ICE candidates for existing connection
-        if (request.type === 'ice-candidate' && peerConnection.current) {
+        // Handle ICE candidates
+        if (request.type === 'ice-candidate') {
           try {
             const candidate = JSON.parse(request.iceCandidate)
-            if (peerConnection.current.remoteDescription) {
+            const candidateInfo = parseCandidate(candidate)
+            
+            if (peerConnection.current) {
               await peerConnection.current.addIceCandidate(candidate)
-              console.log('WebRTC: Added remote ICE candidate')
-            } else {
-              console.log('WebRTC: Buffering ICE candidate until remote description is set')
-              iceCandidateBuffer.current.push(candidate)
+              console.log(`WebRTC: Added remote ICE candidate:`, candidateInfo)
+            } else if (incomingRequest) {
+              // Buffer ICE candidates if we're in the process of accepting a call
+              console.log(`WebRTC: Buffering ICE candidate:`, candidateInfo)
+              pendingIceCandidates.current.push(candidate)
             }
             return
           } catch (err) {
-            console.error('WebRTC: Failed to add ICE candidate:', err)
+            console.error('WebRTC: Failed to handle ICE candidate:', err)
           }
         }
         
@@ -376,6 +390,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
             peerConnection.current.close()
             peerConnection.current = null
           }
+          pendingIceCandidates.current = [] // Clear any pending candidates from previous calls
           activeRequestRef.current = request.from.userId
           lastOfferRef.current = request.offer
           setIncomingRequest(request)
@@ -393,7 +408,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
     clearAllTimeouts()
     activeRequestRef.current = null
     lastOfferRef.current = null
-    iceCandidateBuffer.current = []
+    pendingIceCandidates.current = []
     hasTimedOutRef.current = false
   }
 
@@ -468,6 +483,20 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
       setConnectionStatus('disconnected')
     }
   }, [targetUserId, localStream, connectWithUser])
+
+  function parseCandidate(candidate: RTCIceCandidateInit) {
+    if (!candidate.candidate) return null
+    const parts = candidate.candidate.split(' ')
+    return {
+      foundation: parts[0].split(':')[1],
+      component: parts[1],
+      protocol: parts[2].toLowerCase(),
+      priority: parseInt(parts[3], 10),
+      ip: parts[4],
+      port: parseInt(parts[5], 10),
+      type: parts[7],
+    }
+  }
 
   return {
     connectionStatus,

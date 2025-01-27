@@ -25,8 +25,9 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
     targetUserId,
     localStream,
     onTrack: (event) => {
-      if (remoteVideoRef.current && event.streams[0]) {
-        if (remoteVideoRef.current.srcObject !== event.streams[0]) {
+      console.log('VideoChat: OnTrack', event)
+      if ( event.track.kind === 'video') {
+        if (remoteVideoRef.current && event.streams[0]) {
           console.log('VideoChat: Received remote stream')
           remoteVideoRef.current.srcObject = event.streams[0]
         }
