@@ -11,6 +11,12 @@ interface AppState {
   setSelectedLangs: (langs: string[] | ((prev: string[]) => string[])) => void
   setSelectedStatuses: (statuses: Status[]) => void
   initBrowserLangs: () => void
+  statuses: string[]
+  setStatuses: (statuses: string[]) => void
+  languages: string[]
+  setLanguages: (languages: string[]) => void
+  targetUserId: string | null
+  setTargetUserId: (userId: string | null) => void
 }
 
 export const useStore = create<AppState>()(
@@ -29,12 +35,23 @@ export const useStore = create<AppState>()(
           const browserLangs = getBrowserLanguage()
           set({ selectedLangs: browserLangs })
         }
-      }
+      },
+      statuses: [],
+      setStatuses: (statuses) => set({ statuses }),
+      languages: [],
+      setLanguages: (languages) => set({ languages }),
+      targetUserId: null,
+      setTargetUserId: (userId) => set({ targetUserId: userId })
     }),
     {
       name: 'app-storage',
       storage: createJSONStorage(() => localStorage),
-      skipHydration: true
+      skipHydration: true,
+      partialize: (state) => ({
+        name: state.name,
+        statuses: state.statuses,
+        languages: state.languages
+      })
     }
   )
 ) 

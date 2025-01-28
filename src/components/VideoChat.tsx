@@ -4,36 +4,24 @@ import { useRef } from 'react';
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video';
 import ConnectionRequest from './ConnectionRequest';
 import { Typography } from '@mui/material';
-import { useWebRTC } from '@/hooks/useWebRTC';
 import { useTranslations } from 'next-intl';
+import { useStore } from '@/store/useStore';
+import { useWebRTCContext } from './WebRTCProvider';
 
 interface VideoChatProps {
-  targetUserId?: string;
   localStream?: MediaStream;
 }
 
-export default function VideoChat({ targetUserId, localStream }: VideoChatProps) {
+export default function VideoChat({ localStream }: VideoChatProps) {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const t = useTranslations('VideoChat');
-
+  const targetUserId = useStore(state => state.targetUserId);
   const { 
     connectionStatus, 
     incomingRequest, 
     handleAcceptCall, 
     handleRejectCall 
-  } = useWebRTC({
-    targetUserId,
-    localStream,
-    onTrack: (event) => {
-      console.log('VideoChat: OnTrack', event)
-      if ( event.track.kind === 'video') {
-        if (remoteVideoRef.current && event.streams[0]) {
-          console.log('VideoChat: Received remote stream')
-          remoteVideoRef.current.srcObject = event.streams[0]
-        }
-      }
-    }
-  });
+  } = useWebRTCContext();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -45,8 +33,6 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
         return 'text-gray-600 dark:text-gray-300';
     }
   };
-
-  console.log('VideoChat: rendering with connectionStatus', connectionStatus)
 
   return (
     <>

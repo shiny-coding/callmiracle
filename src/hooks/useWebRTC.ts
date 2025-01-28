@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect } from 'react'
 import { gql, useMutation, useSubscription } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
+import { useStore } from '@/store/useStore'
+import { User } from '@/generated/graphql'
 
 const CONNECTION_TIMEOUT_MS = 120000 // 20 seconds
 
@@ -46,17 +48,18 @@ interface IncomingRequest {
 }
 
 interface UseWebRTCProps {
-  targetUserId?: string
   localStream?: MediaStream
   onTrack: (event: RTCTrackEvent) => void
   connectWithVideo?: boolean
 }
 
-export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo = true }: UseWebRTCProps) {
+export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: UseWebRTCProps) {
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
+  const targetUserId = useStore(state => state.targetUserId)
+  const setTargetUserId = useStore(state => state.setTargetUserId)
 
   // Add refs to track state and timeouts
   const activeRequestRef = useRef<string | null>(null)
@@ -122,6 +125,8 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
             setConnectionStatus('failed')
           }
         }, CONNECTION_TIMEOUT_MS)
+      } else {
+        logWebRTCState('Connection state changed to ' + pc.connectionState, pc)
       }
     }
 
@@ -382,9 +387,12 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
         }
         
         // Only show the request dialog for new offers
-        if (request.type === 'offer' && 
-            activeRequestRef.current !== request.from.userId && 
-            lastOfferRef.current !== request.offer) {
+        if (request.type === 'offer' ) {
+          if ( activeRequestRef.current === request.from.userId && lastOfferRef.current === request.offer) {
+            console.log('WebRTC: Offer already processed')
+            return
+          }
+
           if (peerConnection.current) {
             console.log('WebRTC: Cleaning up existing connection')
             peerConnection.current.close()
@@ -393,6 +401,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
           pendingIceCandidates.current = [] // Clear any pending candidates from previous calls
           activeRequestRef.current = request.from.userId
           lastOfferRef.current = request.offer
+          setTargetUserId(request.from.userId) // Set targetUserId when receiving a call
           setIncomingRequest(request)
           setConnectionStatus('calling')
         }
@@ -410,79 +419,66 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
     lastOfferRef.current = null
     pendingIceCandidates.current = []
     hasTimedOutRef.current = false
+    setTargetUserId(null) // Reset targetUserId when connection is reset
   }
 
-  // Handle outgoing calls
-  useEffect(() => {
-    async function initializeConnection() {
-      if (!targetUserId || !localStream || hasTimedOutRef.current) return
+  const doCall = async (userId: string) => {
+    if (!userId || !localStream || hasTimedOutRef.current) {
+      console.log('WebRTC: Cannot initialize call - missing requirements', { 
+        hasUserId: !!userId, hasLocalStream: !!localStream, hasTimedOut: hasTimedOutRef.current 
+      })
+      return
+    }
 
-      console.log('WebRTC: Initializing connection with:', targetUserId)
-      setConnectionStatus('calling')
-      
-      const pc = createPeerConnection()
-      peerConnection.current = pc
+    console.log('WebRTC: Initializing connection with:', userId)
+    setTargetUserId(userId)
+    setConnectionStatus('calling')
+    
+    const pc = createPeerConnection()
+    peerConnection.current = pc
 
-      addLocalStream(pc, localStream)
+    addLocalStream(pc, localStream)
 
-      // Add ICE candidate handling for initiator
-      setupIceCandidateHandler(pc, targetUserId)
+    // Add ICE candidate handling for initiator
+    setupIceCandidateHandler(pc, userId)
 
-      try {
-        // Create and send offer
-        logWebRTCState('Creating offer', pc)
-        const offer = await pc.createOffer()
-        logWebRTCState('Setting local description', pc)
-        await pc.setLocalDescription(offer)
+    try {
+      // Create and send offer
+      logWebRTCState('Creating offer', pc)
+      const offer = await pc.createOffer()
+      logWebRTCState('Setting local description', pc)
+      await pc.setLocalDescription(offer)
 
-        logWebRTCState('Sending offer to server', pc)
-        await connectWithUser({
-          variables: {
-            input: {
-              type: 'offer',
-              targetUserId,
-              initiatorUserId: getUserId(),
-              offer: JSON.stringify(offer)
-            }
+      logWebRTCState('Sending offer to server', pc)
+      await connectWithUser({
+        variables: {
+          input: {
+            type: 'offer',
+            targetUserId: userId,
+            initiatorUserId: getUserId(),
+            offer: JSON.stringify(offer)
           }
-        })
-
-        console.log('Offer sent, waiting for answer via subscription')
-        
-        // Set a timeout to reset connection if no answer received
-        clearTimeout(answerTimeoutRef.current as any)
-        answerTimeoutRef.current = setTimeout(() => {
-          if (pc.signalingState !== 'stable') {
-            logWebRTCState('No answer received within timeout period', pc, true)
-            hasTimedOutRef.current = true
-            setConnectionStatus('timeout')
-            resetConnection()
-          }
-        }, CONNECTION_TIMEOUT_MS)
-
-        return () => {
-          resetConnection()
-          setConnectionStatus('disconnected')
         }
-      } catch (error) {
-        logWebRTCState('WebRTC setup error', pc, error)
-        setConnectionStatus('failed')
-        resetConnection()
-      }
-    }
+      })
 
-    if (targetUserId) {
-      initializeConnection()
-    } else {
+      console.log('Offer sent, waiting for answer via subscription')
+      
+      // Set a timeout to reset connection if no answer received
+      clearTimeout(answerTimeoutRef.current as any)
+      answerTimeoutRef.current = setTimeout(() => {
+        if (pc.signalingState !== 'stable') {
+          logWebRTCState('No answer received within timeout period', pc, true)
+          hasTimedOutRef.current = true
+          setConnectionStatus('timeout')
+          resetConnection()
+        }
+      }, CONNECTION_TIMEOUT_MS)
+    } catch (error) {
+      logWebRTCState('WebRTC setup error', pc, error)
+      setConnectionStatus('failed')
       resetConnection()
-      setConnectionStatus('disconnected')
     }
-
-    return () => {
-      resetConnection()
-      setConnectionStatus('disconnected')
-    }
-  }, [targetUserId, localStream, connectWithUser])
+  }
 
   function parseCandidate(candidate: RTCIceCandidateInit) {
     if (!candidate.candidate) return null
@@ -503,6 +499,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
     incomingRequest,
     handleAcceptCall,
     handleRejectCall,
+    doCall,
     resetConnection
   }
 } 
