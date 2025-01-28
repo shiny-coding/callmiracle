@@ -106,7 +106,26 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
       rtcpMuxPolicy: 'require',
     })
 
-    pc.ontrack = onTrack
+    pc.ontrack = (event) => {
+      console.log('WebRTC: ontrack fired', {
+        kind: event.track.kind,
+        trackId: event.track.id,
+        trackEnabled: event.track.enabled,
+        trackMuted: event.track.muted,
+        streamCount: event.streams.length,
+        streams: event.streams.map(s => ({
+          id: s.id,
+          trackCount: s.getTracks().length,
+          tracks: s.getTracks().map(t => ({
+            kind: t.kind,
+            id: t.id,
+            enabled: t.enabled,
+            muted: t.muted
+          }))
+        }))
+      })
+      onTrack(event)
+    }
 
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
@@ -161,7 +180,7 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
     return pc
   }
 
-  const addLocalStream = (pc: RTCPeerConnection, stream: MediaStream) => {
+  const addLocalStream = (pc: RTCPeerConnection, stream: MediaStream, isInitiator: boolean) => {
     console.log('WebRTC: Adding local stream tracks:', {
       trackCount: stream.getTracks().length,
       tracks: stream.getTracks().map(t => ({
@@ -171,16 +190,18 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
       }))
     })
 
-    // First set up transceivers for both audio and video
-    if (!pc.getTransceivers().length) {
-      pc.addTransceiver('audio', { direction: 'sendrecv' })
-      if (connectWithVideo) {
-        pc.addTransceiver('video', { direction: 'sendrecv' })
+    if (isInitiator) {
+      // First set up transceivers for both audio and video
+      if (!pc.getTransceivers().length) {
+        pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] })
+        if (connectWithVideo) {
+          pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
+        }
       }
     }
 
     // Then add tracks
-    stream.getTracks().forEach(track => {
+    for (const track of stream.getTracks()) {
       const existingSender = pc.getSenders().find(s => s.track?.kind === track.kind)
       if (existingSender) {
         if (track.kind === 'video' && !connectWithVideo) {
@@ -192,7 +213,7 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
       } else if (track.kind === 'audio' || (track.kind === 'video' && connectWithVideo)) {
         pc.addTrack(track, stream)
       }
-    })
+    }
 
     // Configure transceivers
     for (const transceiver of pc.getTransceivers()) {
@@ -266,7 +287,7 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
       const pc = createPeerConnection()
       peerConnection.current = pc
 
-      addLocalStream(pc, localStream)
+      addLocalStream(pc, localStream, false)
 
       // Set remote description (offer)
       const offer = JSON.parse(incomingRequest.offer)
@@ -357,20 +378,7 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
             if (peerConnection.current.signalingState === 'have-local-offer') {
               await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer))
               logWebRTCState('Set remote description from subscription', peerConnection.current)
-
-              // Negotiate media after setting remote description
-              for (const transceiver of peerConnection.current.getTransceivers()) {
-                if (transceiver.receiver.track) {
-                  console.log('WebRTC: Got remote track:', transceiver.receiver.track.kind)
-                  const stream = new MediaStream([transceiver.receiver.track])
-                  onTrack(new RTCTrackEvent('track', {
-                    track: transceiver.receiver.track,
-                    streams: [stream],
-                    transceiver,
-                    receiver: transceiver.receiver,
-                  }))
-                }
-              }
+              // The ontrack event will fire automatically when tracks are available
             } else {
               console.warn('WebRTC: Received answer in invalid state:', peerConnection.current.signalingState)
             }
@@ -451,7 +459,7 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
     const pc = createPeerConnection()
     peerConnection.current = pc
 
-    addLocalStream(pc, localStream)
+    addLocalStream(pc, localStream, true)
 
     // Add ICE candidate handling for initiator
     setupIceCandidateHandler(pc, userId)
