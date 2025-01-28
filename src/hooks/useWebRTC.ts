@@ -190,7 +190,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
     })
 
     // Configure transceivers
-    pc.getTransceivers().forEach(transceiver => {
+    for (const transceiver of pc.getTransceivers()) {
       const kind = transceiver.sender.track?.kind || transceiver.mid
       if (kind === 'video' || kind === '1') {
         if (connectWithVideo) {
@@ -210,7 +210,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
       } else if (kind === 'audio' || kind === '0') {
         transceiver.direction = 'sendrecv'
       }
-    })
+    }
 
     console.log('WebRTC: Configured transceivers:', {
       count: pc.getTransceivers().length,
@@ -246,7 +246,7 @@ export function useWebRTC({ targetUserId, localStream, onTrack, connectWithVideo
           console.error('WebRTC: Failed to send ICE candidate:', err)
         }
       } else {
-        console.log('WebRTC: No ICE candidate received', event)
+        console.log('WebRTC: onicecandidate without candidate')
       }
     }
   }

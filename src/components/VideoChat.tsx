@@ -46,6 +46,8 @@ export default function VideoChat({ targetUserId, localStream }: VideoChatProps)
     }
   };
 
+  console.log('VideoChat: rendering with connectionStatus', connectionStatus)
+
   return (
     <>
       <div className="relative w-full max-w-[320px] mx-auto">
