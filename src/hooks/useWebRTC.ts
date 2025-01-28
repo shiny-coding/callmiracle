@@ -357,6 +357,20 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
             if (peerConnection.current.signalingState === 'have-local-offer') {
               await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer))
               logWebRTCState('Set remote description from subscription', peerConnection.current)
+
+              // Negotiate media after setting remote description
+              for (const transceiver of peerConnection.current.getTransceivers()) {
+                if (transceiver.receiver.track) {
+                  console.log('WebRTC: Got remote track:', transceiver.receiver.track.kind)
+                  const stream = new MediaStream([transceiver.receiver.track])
+                  onTrack(new RTCTrackEvent('track', {
+                    track: transceiver.receiver.track,
+                    streams: [stream],
+                    transceiver,
+                    receiver: transceiver.receiver,
+                  }))
+                }
+              }
             } else {
               console.warn('WebRTC: Received answer in invalid state:', peerConnection.current.signalingState)
             }

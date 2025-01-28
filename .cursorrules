@@ -7,3 +7,4 @@ prefer omitting semicolons in js where it won't change meaning
 
 params should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
 
+use normal for loops, not forEach
