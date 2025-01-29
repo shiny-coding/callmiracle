@@ -14,15 +14,16 @@
   "iSpeak": "I speak",
   "cameraDisabled": "Camera disabled",
   "VideoChat": {
-    "selectUser": "Select User",
+    "selectUser": "Select a user",
     "status": {
       "disconnected": "Disconnected",
       "calling": "Calling...",
       "connecting": "Connecting...",
       "connected": "Connected",
-      "failed": "Connection Failed",
-      "rejected": "Call Rejected",
-      "timeout": "No Answer"
+      "failed": "Connection failed",
+      "rejected": "Call rejected",
+      "timeout": "No response",
+      "finished": "Call Finished"
     }
   }
 } 

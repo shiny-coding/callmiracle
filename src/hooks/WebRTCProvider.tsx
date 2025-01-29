@@ -1,10 +1,9 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, createContext, useContext, ReactNode } from 'react'
 import { gql, useMutation, useSubscription } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
-import { User } from '@/generated/graphql'
 
-const CONNECTION_TIMEOUT_MS = 120000 // 20 seconds
+const CONNECTION_TIMEOUT_MS = 10000 // 10 seconds
 
 const CONNECT_WITH_USER = gql`
   mutation ConnectWithUser($input: ConnectionParamsInput!) {
@@ -34,7 +33,7 @@ const ON_CONNECTION_REQUEST = gql`
   }
 `
 
-type ConnectionStatus = 'disconnected' | 'calling' | 'connecting' | 'connected' | 'failed' | 'rejected' | 'timeout'
+type ConnectionStatus = 'disconnected' | 'calling' | 'connecting' | 'connected' | 'failed' | 'rejected' | 'timeout' | 'finished'
 
 interface IncomingRequest {
   offer: string
@@ -47,19 +46,40 @@ interface IncomingRequest {
   }
 }
 
-interface UseWebRTCProps {
+interface WebRTCContextType {
+  doCall: (userId: string) => Promise<void>
+  connectionStatus: ConnectionStatus
+  incomingRequest: IncomingRequest | null
+  handleAcceptCall: () => void
+  handleRejectCall: () => void
+  resetConnection: () => void
+}
+
+interface WebRTCProviderProps {
+  children: ReactNode
   localStream?: MediaStream
-  remoteVideoRef?: React.RefObject<HTMLVideoElement>
+  remoteVideoRef: React.RefObject<HTMLVideoElement>
   localVideoEnabled?: boolean
   localAudioEnabled?: boolean
 }
 
-export function useWebRTC({ 
+const WebRTCContext = createContext<WebRTCContextType | null>(null)
+
+export function useWebRTCContext() {
+  const context = useContext(WebRTCContext)
+  if (!context) {
+    throw new Error('useWebRTCContext must be used within a WebRTCProvider')
+  }
+  return context
+}
+
+export function WebRTCProvider({ 
+  children, 
   localStream, 
   remoteVideoRef, 
   localVideoEnabled = true,
   localAudioEnabled = true 
-}: UseWebRTCProps) {
+}: WebRTCProviderProps) {
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
@@ -321,12 +341,12 @@ export function useWebRTC({
               }
             }
           })
-          logWebRTCState(`Sent ICE candidate`, pc)
+          // logWebRTCState(`Sent ICE candidate`, pc)
         } catch (err) {
           console.error('WebRTC: Failed to send ICE candidate:', err)
         }
       } else {
-        console.log('WebRTC: onicecandidate without candidate')
+        // console.log('WebRTC: onicecandidate without candidate')
       }
     }
   }
@@ -345,11 +365,6 @@ export function useWebRTC({
 
       // Set remote description (offer)
       const offer = JSON.parse(incomingRequest.offer)
-      console.log('WebRTC: Parsed offer:', {
-        type: offer.type,
-        hasSdp: !!offer.sdp,
-        sdpLength: offer.sdp?.length
-      })
       
       await pc.setRemoteDescription(new RTCSessionDescription(offer))
 
@@ -357,7 +372,7 @@ export function useWebRTC({
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
 
-      logWebRTCState('Remote description set', pc)
+      // console.log('WebRTC: Remote description set')
 
       await connectWithUser({
         variables: {
@@ -370,7 +385,7 @@ export function useWebRTC({
         }
       })
 
-      console.log('WebRTC: Answer sent to server')
+      // console.log('WebRTC: Answer sent to server')
 
       // Add ICE candidate handling
       setupIceCandidateHandler(pc, incomingRequest.from.userId)
@@ -380,8 +395,8 @@ export function useWebRTC({
         console.log('WebRTC: Processing pending ICE candidates:', pendingIceCandidates.current.length)
         for (const candidate of pendingIceCandidates.current) {
           await pc.addIceCandidate(candidate)
-          const candidateInfo = parseCandidate(candidate)
-          console.log(`WebRTC: Added buffered ICE candidate:`, candidateInfo)
+          // const candidateInfo = parseCandidate(candidate)
+          // console.log(`WebRTC: Added buffered ICE candidate:`, candidateInfo)
         }
         pendingIceCandidates.current = []
       }
@@ -405,6 +420,33 @@ export function useWebRTC({
     setConnectionStatus('rejected')
   }
 
+  const cleanupConnection = (shouldSendFinished: boolean = false) => {
+    if (peerConnection.current) {
+      if (shouldSendFinished) {
+        connectWithUser({
+          variables: {
+            input: {
+              type: 'finished',
+              targetUserId: targetUserId,
+              initiatorUserId: getUserId()
+            }
+          }
+        }).catch(err => console.error('Error sending finished status:', err))
+      }
+
+      peerConnection.current.close()
+      peerConnection.current = null
+    }
+    clearAllTimeouts()
+    activeRequestRef.current = null
+    lastOfferRef.current = null
+    pendingIceCandidates.current = []
+    hasTimedOutRef.current = false
+    console.log('WebRTC: Connection finished')
+    setConnectionStatus('finished')
+    setTargetUserId(null)
+  }
+
   // Subscribe to incoming connection requests
   useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
@@ -420,6 +462,12 @@ export function useWebRTC({
           timestamp: new Date().toISOString()
         })
         
+        // Handle finished status
+        if (request.type === 'finished') {
+          cleanupConnection()
+          return
+        }
+
         // Handle answer for initiator
         if (request.type === 'answer') {
           if (!peerConnection.current) {
@@ -431,7 +479,7 @@ export function useWebRTC({
             
             if (peerConnection.current.signalingState === 'have-local-offer') {
               await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer))
-              logWebRTCState('Set remote description from subscription', peerConnection.current)
+              // logWebRTCState('Set remote description from subscription', peerConnection.current)
               // The ontrack event will fire automatically when tracks are available
             } else {
               console.warn('WebRTC: Received answer in invalid state:', peerConnection.current.signalingState)
@@ -450,10 +498,10 @@ export function useWebRTC({
             
             if (peerConnection.current) {
               await peerConnection.current.addIceCandidate(candidate)
-              console.log(`WebRTC: Added remote ICE candidate:`, candidateInfo)
+              // console.log(`WebRTC: Added remote ICE candidate:`, candidateInfo)
             } else if (incomingRequest) {
               // Buffer ICE candidates if we're in the process of accepting a call
-              console.log(`WebRTC: Buffering ICE candidate:`, candidateInfo)
+              // console.log(`WebRTC: Buffering ICE candidate:`, candidateInfo)
               pendingIceCandidates.current.push(candidate)
             }
             return
@@ -486,16 +534,8 @@ export function useWebRTC({
   })
 
   const resetConnection = () => {
-    if (peerConnection.current) {
-      peerConnection.current.close()
-      peerConnection.current = null
-    }
-    clearAllTimeouts()
-    activeRequestRef.current = null
-    lastOfferRef.current = null
-    pendingIceCandidates.current = []
-    hasTimedOutRef.current = false
-    setTargetUserId(null) // Reset targetUserId when connection is reset
+    console.log('WebRTC: Resetting connection')
+    cleanupConnection(true) // true to send finished status
   }
 
   const doCall = async (userId: string) => {
@@ -570,12 +610,18 @@ export function useWebRTC({
     }
   }
 
-  return {
-    connectionStatus,
-    incomingRequest,
-    handleAcceptCall,
-    handleRejectCall,
-    doCall,
-    resetConnection
-  }
+  return (
+    <WebRTCContext.Provider 
+      value={{ 
+        doCall, 
+        connectionStatus, 
+        incomingRequest, 
+        handleAcceptCall, 
+        handleRejectCall,
+        resetConnection
+      }}
+    >
+      {children}
+    </WebRTCContext.Provider>
+  )
 } 

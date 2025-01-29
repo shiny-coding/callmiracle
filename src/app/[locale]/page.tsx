@@ -12,7 +12,7 @@ import LocalVideo from '@/components/LocalVideo';
 import { TextField, Button, Typography } from '@mui/material';
 import UserList from '@/components/UserList';
 import RemoteVideo from '@/components/RemoteVideo';
-import { WebRTCProvider } from '@/components/WebRTCProvider'
+import { WebRTCProvider } from '@/hooks/WebRTCProvider'
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 
 const CONNECT_MUTATION = gql`

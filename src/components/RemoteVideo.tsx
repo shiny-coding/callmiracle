@@ -7,7 +7,7 @@ import { Typography, IconButton } from '@mui/material';
 import CallEndIcon from '@mui/icons-material/CallEnd';
 import { useTranslations } from 'next-intl';
 import { useStore } from '@/store/useStore';
-import { useWebRTCContext } from './WebRTCProvider';
+import { useWebRTCContext } from '@/hooks/WebRTCProvider';
 
 interface RemoteVideoProps {
   localStream?: MediaStream;
@@ -26,20 +26,32 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
   } = useWebRTCContext();
 
   useEffect(() => {
-    // Reset video when connection is lost
+    // Reset video when connection is lost or disconnected
     if (connectionStatus !== 'connected' && remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
+      const tracks = remoteVideoRef.current.srcObject instanceof MediaStream 
+        ? remoteVideoRef.current.srcObject.getTracks() 
+        : []
+      
+      // Stop all tracks
+      for (const track of tracks) {
+        track.stop()
+      }
+      
+      // Clear the video source
+      remoteVideoRef.current.srcObject = null
     }
-  }, [connectionStatus, remoteVideoRef]);
+  }, [connectionStatus, remoteVideoRef])
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'rejected':
       case 'timeout':
       case 'failed':
-        return 'text-red-600 dark:text-red-400';
+        return 'text-red-600 dark:text-red-400'
+      case 'finished':
+        return 'text-blue-600 dark:text-blue-400'
       default:
-        return 'text-gray-600 dark:text-gray-300';
+        return 'text-gray-600 dark:text-gray-300'
     }
   };
 
@@ -61,12 +73,11 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
           {(!targetUserId || connectionStatus !== 'connected') && (
             <div className="absolute inset-0 flex items-center justify-center">
               <Typography className={getStatusColor(connectionStatus)}>
-                {!targetUserId ? t('selectUser') : t(`status.${connectionStatus}`)}
+                {t(`status.${connectionStatus}`)}
               </Typography>
             </div>
           )}
         </div>
-
         {connectionStatus === 'connected' && (
           <div className="flex justify-center mt-2">
             <IconButton
