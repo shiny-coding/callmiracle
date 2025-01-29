@@ -11,9 +11,11 @@ import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 
 interface LocalVideoProps {
   onStreamChange: (stream: MediaStream | undefined) => void
+  onVideoEnabledChange: (enabled: boolean) => void
+  onAudioEnabledChange: (enabled: boolean) => void
 }
 
-export default function LocalVideo({ onStreamChange }: LocalVideoProps) {
+export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAudioEnabledChange }: LocalVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
@@ -133,16 +135,18 @@ export default function LocalVideo({ onStreamChange }: LocalVideoProps) {
     setupStream()
   }, [isVideoEnabled, selectedDevices.videoId, selectedDevices.audioId, onStreamChange, isAudioEnabled])
 
-  const toggleCamera = () => {
+  const handleVideoToggle = () => {
     const newState = !isVideoEnabled
     setIsVideoEnabled(newState)
     localStorage.setItem('cameraEnabled', String(newState))
+    onVideoEnabledChange(newState)
   }
 
   const toggleAudio = () => {
     const newState = !isAudioEnabled
     setIsAudioEnabled(newState)
     localStorage.setItem('audioEnabled', String(newState))
+    onAudioEnabledChange(newState)
   }
 
   const handleDeviceChange = (type: 'video' | 'audio', deviceId: string) => {
@@ -167,15 +171,10 @@ export default function LocalVideo({ onStreamChange }: LocalVideoProps) {
             )}
           </IconButton>
           <IconButton 
-            onClick={toggleCamera}
-            className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-            size="small"
+            onClick={handleVideoToggle}
+            className={isVideoEnabled ? 'text-blue-500' : 'text-gray-500'}
           >
-            {isVideoEnabled ? (
-              <VideocamOffIcon className="text-blue-400" />
-            ) : (
-              <VideocamIcon className="text-blue-400" />
-            )}
+            {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
           </IconButton>
         </div>
       </div>

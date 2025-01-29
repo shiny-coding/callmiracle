@@ -33,6 +33,8 @@ export default function Home() {
   const { name, selectedLangs, selectedStatuses, setName } = useStore();
   const [connect] = useMutation(CONNECT_MUTATION);
   const [localStream, setLocalStream] = useState<MediaStream>();
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>;
   const pathname = usePathname();
   const currentLocale = pathname.split('/')[1];
@@ -64,11 +66,17 @@ export default function Home() {
       <WebRTCProvider 
         localStream={localStream} 
         remoteVideoRef={remoteVideoRef}
+        localVideoEnabled={isVideoEnabled}
+        localAudioEnabled={isAudioEnabled}
       >
         <div className="flex flex-row flex-wrap gap-4 justify-center">
           <div className="flex flex-row gap-4">
             <div>
-              <LocalVideo onStreamChange={setLocalStream} />
+              <LocalVideo 
+                onStreamChange={setLocalStream} 
+                onVideoEnabledChange={setIsVideoEnabled}
+                onAudioEnabledChange={setIsAudioEnabled}
+              />
             </div>
             <div>
               <RemoteVideo localStream={localStream} remoteVideoRef={remoteVideoRef} />

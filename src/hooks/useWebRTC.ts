@@ -50,10 +50,16 @@ interface IncomingRequest {
 interface UseWebRTCProps {
   localStream?: MediaStream
   remoteVideoRef?: React.RefObject<HTMLVideoElement>
-  connectWithVideo?: boolean
+  localVideoEnabled?: boolean
+  localAudioEnabled?: boolean
 }
 
-export function useWebRTC({ localStream, remoteVideoRef, connectWithVideo = true }: UseWebRTCProps) {
+export function useWebRTC({ 
+  localStream, 
+  remoteVideoRef, 
+  localVideoEnabled = true,
+  localAudioEnabled = true 
+}: UseWebRTCProps) {
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
@@ -200,8 +206,10 @@ export function useWebRTC({ localStream, remoteVideoRef, connectWithVideo = true
     if (isInitiator) {
       // First set up transceivers for both audio and video
       if (!pc.getTransceivers().length) {
-        pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] })
-        if (connectWithVideo) {
+        if (localAudioEnabled) {
+          pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] })
+        }
+        if (localVideoEnabled) {
           pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
         }
       }
@@ -211,13 +219,16 @@ export function useWebRTC({ localStream, remoteVideoRef, connectWithVideo = true
     for (const track of stream.getTracks()) {
       const existingSender = pc.getSenders().find(s => s.track?.kind === track.kind)
       if (existingSender) {
-        if (track.kind === 'video' && !connectWithVideo) {
+        if (track.kind === 'video' && !localVideoEnabled) {
+          track.enabled = false
+          track.stop()
+        } else if (track.kind === 'audio' && !localAudioEnabled) {
           track.enabled = false
           track.stop()
         } else {
           existingSender.replaceTrack(track)
         }
-      } else if (track.kind === 'audio' || (track.kind === 'video' && connectWithVideo)) {
+      } else if ((track.kind === 'audio' && localAudioEnabled) || (track.kind === 'video' && localVideoEnabled)) {
         pc.addTrack(track, stream)
       }
     }
@@ -226,7 +237,7 @@ export function useWebRTC({ localStream, remoteVideoRef, connectWithVideo = true
     for (const transceiver of pc.getTransceivers()) {
       const kind = transceiver.sender.track?.kind || transceiver.mid
       if (kind === 'video' || kind === '1') {
-        if (connectWithVideo) {
+        if (localVideoEnabled) {
           transceiver.direction = 'sendrecv'
           if (transceiver.sender.setParameters) {
             const params = transceiver.sender.getParameters()
@@ -241,7 +252,7 @@ export function useWebRTC({ localStream, remoteVideoRef, connectWithVideo = true
           transceiver.direction = 'inactive'
         }
       } else if (kind === 'audio' || kind === '0') {
-        transceiver.direction = 'sendrecv'
+        transceiver.direction = localAudioEnabled ? 'sendrecv' : 'inactive'
       }
     }
 

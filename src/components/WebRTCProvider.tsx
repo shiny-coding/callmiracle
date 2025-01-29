@@ -23,9 +23,17 @@ interface WebRTCProviderProps {
   children: ReactNode
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
+  localVideoEnabled?: boolean
+  localAudioEnabled?: boolean
 }
 
-export function WebRTCProvider({ children, localStream, remoteVideoRef }: WebRTCProviderProps) {
+export function WebRTCProvider({ 
+  children, 
+  localStream, 
+  remoteVideoRef, 
+  localVideoEnabled,
+  localAudioEnabled 
+}: WebRTCProviderProps) {
   const { 
     connectionStatus, 
     incomingRequest, 
@@ -34,7 +42,9 @@ export function WebRTCProvider({ children, localStream, remoteVideoRef }: WebRTC
     doCall
   } = useWebRTC({
     localStream,
-    remoteVideoRef
+    remoteVideoRef,
+    localVideoEnabled,
+    localAudioEnabled
   })
 
   return (
