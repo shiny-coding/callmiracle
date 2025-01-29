@@ -7,6 +7,7 @@ interface WebRTCContextType {
   incomingRequest: any // TODO: type this properly
   handleAcceptCall: () => void
   handleRejectCall: () => void
+  resetConnection: () => void
 }
 
 export const WebRTCContext = createContext<WebRTCContextType | null>(null)
@@ -39,7 +40,8 @@ export function WebRTCProvider({
     incomingRequest, 
     handleAcceptCall, 
     handleRejectCall,
-    doCall
+    doCall,
+    resetConnection
   } = useWebRTC({
     localStream,
     remoteVideoRef,
@@ -55,6 +57,7 @@ export function WebRTCProvider({
         incomingRequest, 
         handleAcceptCall, 
         handleRejectCall,
+        resetConnection
       }}
     >
       {children}

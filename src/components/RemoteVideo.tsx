@@ -3,7 +3,8 @@
 import { useRef, useEffect } from 'react';
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video';
 import ConnectionRequest from './ConnectionRequest';
-import { Typography } from '@mui/material';
+import { Typography, IconButton } from '@mui/material';
+import CallEndIcon from '@mui/icons-material/CallEnd';
 import { useTranslations } from 'next-intl';
 import { useStore } from '@/store/useStore';
 import { useWebRTCContext } from './WebRTCProvider';
@@ -20,7 +21,8 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
     connectionStatus,
     incomingRequest,
     handleAcceptCall,
-    handleRejectCall
+    handleRejectCall,
+    resetConnection
   } = useWebRTCContext();
 
   useEffect(() => {
@@ -64,6 +66,18 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
             </div>
           )}
         </div>
+
+        {connectionStatus === 'connected' && (
+          <div className="flex justify-center mt-2">
+            <IconButton
+              onClick={resetConnection}
+              className="bg-red-500 hover:bg-red-600 text-white"
+              size="medium"
+            >
+              <CallEndIcon />
+            </IconButton>
+          </div>
+        )}
       </div>
 
       <ConnectionRequest

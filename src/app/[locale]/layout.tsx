@@ -29,7 +29,7 @@ export default async function LocaleLayout({
       <AppRouterCacheProvider>
         <NextIntlClientProvider messages={messages} locale={locale}>
           <StoreInitializer />
-          <LocaleSelector />
+          {/* <LocaleSelector /> */}
           {children}
         </NextIntlClientProvider>
       </AppRouterCacheProvider>
