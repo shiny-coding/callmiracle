@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, useState } from 'react'
 import { useWebRTC } from '@/hooks/useWebRTC'
 
 interface WebRTCContextType {
@@ -22,10 +22,10 @@ export function useWebRTCContext() {
 interface WebRTCProviderProps {
   children: ReactNode
   localStream?: MediaStream
-  onTrack: (event: RTCTrackEvent) => void
+  remoteVideoRef: React.RefObject<HTMLVideoElement>
 }
 
-export function WebRTCProvider({ children, localStream, onTrack }: WebRTCProviderProps) {
+export function WebRTCProvider({ children, localStream, remoteVideoRef }: WebRTCProviderProps) {
   const { 
     connectionStatus, 
     incomingRequest, 
@@ -34,7 +34,7 @@ export function WebRTCProvider({ children, localStream, onTrack }: WebRTCProvide
     doCall
   } = useWebRTC({
     localStream,
-    onTrack
+    remoteVideoRef
   })
 
   return (
@@ -44,7 +44,7 @@ export function WebRTCProvider({ children, localStream, onTrack }: WebRTCProvide
         connectionStatus, 
         incomingRequest, 
         handleAcceptCall, 
-        handleRejectCall 
+        handleRejectCall,
       }}
     >
       {children}

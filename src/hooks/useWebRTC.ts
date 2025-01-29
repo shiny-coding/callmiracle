@@ -49,11 +49,11 @@ interface IncomingRequest {
 
 interface UseWebRTCProps {
   localStream?: MediaStream
-  onTrack: (event: RTCTrackEvent) => void
+  remoteVideoRef?: React.RefObject<HTMLVideoElement>
   connectWithVideo?: boolean
 }
 
-export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: UseWebRTCProps) {
+export function useWebRTC({ localStream, remoteVideoRef, connectWithVideo = true }: UseWebRTCProps) {
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
@@ -69,19 +69,43 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
   const iceConnectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const answerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasTimedOutRef = useRef<boolean>(false)
+  const remoteStreamRef = useRef<MediaStream | null>(null)
+
   const logWebRTCState = (event: string, pc: RTCPeerConnection, error?: any) => {
     const baseState = {
-      status: connectionStatus,
-      connectionState: pc.connectionState,
+      event,
       signalingState: pc.signalingState,
+      iceGatheringState: pc.iceGatheringState,
       iceConnectionState: pc.iceConnectionState,
-      iceGatheringState: pc.iceGatheringState
+      connectionState: pc.connectionState,
     }
 
     if (error) {
-      console.log(`WebRTC: ${event}:`, error, baseState)
+      console.error('WebRTC:', { ...baseState, error })
     } else {
-      console.log(`WebRTC: ${event}:`, baseState)
+      console.log('WebRTC:', baseState)
+    }
+  }
+
+  const handleTrack = (event: RTCTrackEvent) => {
+    if (!peerConnection.current) return
+    
+    console.log('WebRTC: OnTrack', event)
+    // Only handle tracks from the remote peer
+    if (!event.streams[0]?.id.includes(getUserId())) {
+      const [remoteStream] = event.streams
+      if (remoteStream && remoteVideoRef?.current) {
+        // Keep using the same MediaStream for all tracks
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = remoteStream
+          remoteVideoRef.current.srcObject = remoteStream
+          logWebRTCState('Received first remote track: ' + event.track.kind, peerConnection.current)
+        } else {
+          logWebRTCState('Added remote track: ' + event.track.kind, peerConnection.current)
+        }
+      }
+    } else {
+      logWebRTCState('Ignored local track: ' + event.track.kind, peerConnection.current)
     }
   }
 
@@ -106,26 +130,9 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
       rtcpMuxPolicy: 'require',
     })
 
-    pc.ontrack = (event) => {
-      console.log('WebRTC: ontrack fired', {
-        kind: event.track.kind,
-        trackId: event.track.id,
-        trackEnabled: event.track.enabled,
-        trackMuted: event.track.muted,
-        streamCount: event.streams.length,
-        streams: event.streams.map(s => ({
-          id: s.id,
-          trackCount: s.getTracks().length,
-          tracks: s.getTracks().map(t => ({
-            kind: t.kind,
-            id: t.id,
-            enabled: t.enabled,
-            muted: t.muted
-          }))
-        }))
-      })
-      onTrack(event)
-    }
+    logWebRTCState('create', pc)
+
+    pc.ontrack = handleTrack
 
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
@@ -354,8 +361,8 @@ export function useWebRTC({ localStream, onTrack, connectWithVideo = true }: Use
   // Subscribe to incoming connection requests
   useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
-    onData: async ({ data }) => {
-      const request = data.data?.onConnectionRequest
+    onSubscriptionData: async ({ subscriptionData }) => {
+      const request = subscriptionData.data?.onConnectionRequest
       if (request) {
         console.log('WebRTC: Processing connection request:', {
           from: request.from.name,

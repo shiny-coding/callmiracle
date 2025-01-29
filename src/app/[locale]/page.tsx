@@ -33,19 +33,9 @@ export default function Home() {
   const { name, selectedLangs, selectedStatuses, setName } = useStore();
   const [connect] = useMutation(CONNECT_MUTATION);
   const [localStream, setLocalStream] = useState<MediaStream>();
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>;
   const pathname = usePathname();
   const currentLocale = pathname.split('/')[1];
-
-  const handleTrack = (event: RTCTrackEvent) => {
-    console.log('VideoChat: OnTrack', event);
-    if (event.track.kind === 'video') {
-      if (remoteVideoRef.current && event.streams[0]) {
-        console.log('VideoChat: Received remote stream');
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
-    }
-  };
 
   const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
@@ -71,25 +61,21 @@ export default function Home() {
 
   return (
     <main className="container mx-auto p-4 space-y-4">
-      <WebRTCProvider localStream={localStream} onTrack={handleTrack}>
-        <div>
-          <UserList />
-        </div>
-        <div className="flex flex-row justify-center gap-4">
-          <div>
-            <Typography variant="h6" className="mb-2">Your Camera</Typography>
-            <LocalVideo onStreamChange={setLocalStream} />
+      <WebRTCProvider 
+        localStream={localStream} 
+        remoteVideoRef={remoteVideoRef}
+      >
+        <div className="flex flex-row flex-wrap gap-4 justify-center">
+          <div className="flex flex-row gap-4">
+            <div>
+              <LocalVideo onStreamChange={setLocalStream} />
+            </div>
+            <div>
+              <RemoteVideo localStream={localStream} remoteVideoRef={remoteVideoRef} />
+            </div>
           </div>
-          <div>
-            <Typography variant="h6" className="mb-2">Remote Video</Typography>
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }}
-              className="rounded-lg shadow-lg object-cover"
-            />
-            <RemoteVideo localStream={localStream} />
+          <div className="flex-1 min-w-[320px]">
+            <UserList />
           </div>
         </div>
 
