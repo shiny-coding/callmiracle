@@ -93,7 +93,7 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
     async function setupStream() {
       try {
         if (!videoRef.current) {
-          console.log('Video element not ready yet')
+          // console.log('Video element not ready yet')
           return
         }
 

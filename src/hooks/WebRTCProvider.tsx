@@ -199,51 +199,23 @@ export function WebRTCProvider({
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
         setConnectionStatus('connected')
-        logWebRTCState('Connection state changed to ' + pc.connectionState, pc)
-        clearAllTimeouts()
+        console.log('Connection state changed to ' + pc.connectionState)
       } else if (pc.connectionState === 'failed') {
-        logWebRTCState('Connection state changed to ' + pc.connectionState, pc)
-        console.log('Connection failed, setting timeout')
-        clearTimeout(connectionTimeoutRef.current as any)
-        connectionTimeoutRef.current = setTimeout(() => {
-          if (pc.connectionState === 'failed') {
-            logWebRTCState('Connection failed after delay', pc)
-            pc.close()
-            peerConnection.current = null
-            setConnectionStatus('failed')
-          }
-        }, CONNECTION_TIMEOUT_MS)
+        console.log('Connection state changed to ' + pc.connectionState)
+        pc.close()
+        peerConnection.current = null
+        setConnectionStatus('failed')
       } else {
-        logWebRTCState('Connection state changed to ' + pc.connectionState, pc)
+        console.log('Connection state changed to ' + pc.connectionState)
       }
     }
 
     pc.oniceconnectionstatechange = () => {
-      logWebRTCState('ICE connection state changed to ' + pc.iceConnectionState, pc)
-      
-      if (pc.iceConnectionState === 'disconnected') {
-        logWebRTCState('ICE disconnected, setting timeout', pc)
-        clearTimeout(iceConnectionTimeoutRef.current as any)
-        iceConnectionTimeoutRef.current = setTimeout(() => {
-          if (pc.iceConnectionState === 'disconnected' && pc.connectionState !== 'connected') {
-            logWebRTCState('ICE still disconnected after delay', pc)
-            setConnectionStatus('failed')
-          }
-        }, CONNECTION_TIMEOUT_MS)
-      } else if (pc.iceConnectionState === 'failed') {
-        logWebRTCState('ICE connection failed, setting timeout', pc)
-        clearTimeout(iceConnectionTimeoutRef.current as any)
-        iceConnectionTimeoutRef.current = setTimeout(() => {
-          if (pc.iceConnectionState === 'failed' && pc.connectionState !== 'connected') {
-            logWebRTCState('ICE still failed after delay', pc)
-            setConnectionStatus('failed')
-          }
-        }, CONNECTION_TIMEOUT_MS)
-      }
+      console.log('ICE connection state changed to ' + pc.iceConnectionState)
     }
 
     pc.onicegatheringstatechange = () => {
-      logWebRTCState('ICE gathering state changed to ' + pc.iceGatheringState, pc)
+      console.log('ICE gathering state changed to ' + pc.iceGatheringState)
     }
 
     return pc
@@ -447,20 +419,30 @@ export function WebRTCProvider({
     setTargetUserId(null)
   }
 
+  const handleIceCandidate = async (pc: RTCPeerConnection | null, candidate: RTCIceCandidateInit) => {
+    try {
+      // Only add candidate if we have a remote description
+      if (pc?.remoteDescription && pc.remoteDescription.type) {
+        await pc.addIceCandidate(candidate)
+        // const candidateInfo = parseCandidate(candidate)
+        // console.log(`WebRTC: Added remote ICE candidate:`, candidateInfo)
+      } else {
+        // Buffer the candidate if we don't have a remote description yet
+        // console.log(`WebRTC: Buffering ICE candidate:`, parseCandidate(candidate))
+        pendingIceCandidates.current.push(candidate)
+      }
+    } catch (err) {
+      console.error('WebRTC: Failed to handle ICE candidate:', err)
+    }
+  }
+
   // Subscribe to incoming connection requests
   useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
     onSubscriptionData: async ({ subscriptionData }) => {
       const request = subscriptionData.data?.onConnectionRequest
       if (request) {
-        console.log('WebRTC: Processing connection request:', {
-          from: request.from.name,
-          type: request.type,
-          hasOffer: !!request.offer,
-          hasIceCandidate: !!request.iceCandidate,
-          sdpMid: request.iceCandidate ? JSON.parse(request.iceCandidate).sdpMid : undefined,
-          timestamp: new Date().toISOString()
-        })
+        console.log('WebRTC: Processing connection request:', { from: request.from.name, type: request.type })
         
         // Handle finished status
         if (request.type === 'finished') {
@@ -474,13 +456,18 @@ export function WebRTCProvider({
             throw new Error('WebRTC: No peer connection found when receiving answer')
           }
           try {
-            console.log('WebRTC: Received answer via subscription')
             const answer = JSON.parse(request.answer)
             
             if (peerConnection.current.signalingState === 'have-local-offer') {
               await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer))
-              // logWebRTCState('Set remote description from subscription', peerConnection.current)
-              // The ontrack event will fire automatically when tracks are available
+              
+              // Process any pending ICE candidates after setting remote description
+              if (pendingIceCandidates.current.length > 0) {
+                for (const candidate of pendingIceCandidates.current) {
+                  await peerConnection.current.addIceCandidate(candidate)
+                }
+                pendingIceCandidates.current = []
+              }
             } else {
               console.warn('WebRTC: Received answer in invalid state:', peerConnection.current.signalingState)
             }
@@ -494,16 +481,7 @@ export function WebRTCProvider({
         if (request.type === 'ice-candidate') {
           try {
             const candidate = JSON.parse(request.iceCandidate)
-            const candidateInfo = parseCandidate(candidate)
-            
-            if (peerConnection.current) {
-              await peerConnection.current.addIceCandidate(candidate)
-              // console.log(`WebRTC: Added remote ICE candidate:`, candidateInfo)
-            } else if (incomingRequest) {
-              // Buffer ICE candidates if we're in the process of accepting a call
-              // console.log(`WebRTC: Buffering ICE candidate:`, candidateInfo)
-              pendingIceCandidates.current.push(candidate)
-            }
+            await handleIceCandidate(peerConnection?.current, candidate)
             return
           } catch (err) {
             console.error('WebRTC: Failed to handle ICE candidate:', err)
