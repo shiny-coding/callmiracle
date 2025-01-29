@@ -42,7 +42,9 @@ export default function UserList() {
   const { data: subData } = useSubscription(USERS_SUBSCRIPTION)
   
   // Use subscription data if available, otherwise use query data
-  const users = subData?.onUsersUpdated || data?.users
+  const users = (subData?.onUsersUpdated || data?.users)?.filter(
+    (user: User) => user.userId !== getUserId()
+  )
   
   const t = useTranslations('Status')
   const { doCall } = useWebRTCContext()

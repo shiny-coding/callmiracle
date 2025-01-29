@@ -8,11 +8,11 @@ import { useTranslations } from 'next-intl';
 import { useStore } from '@/store/useStore';
 import { useWebRTCContext } from './WebRTCProvider';
 
-interface VideoChatProps {
+interface RemoteVideoProps {
   localStream?: MediaStream;
 }
 
-export default function VideoChat({ localStream }: VideoChatProps) {
+export default function RemoteVideo({ localStream }: RemoteVideoProps) {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const t = useTranslations('VideoChat');
   const targetUserId = useStore(state => state.targetUserId);

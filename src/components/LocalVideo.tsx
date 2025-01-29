@@ -7,11 +7,11 @@ import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import { useTranslations } from 'next-intl'
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 
-interface VideoPreviewProps {
+interface LocalVideoProps {
   onStreamChange: (stream: MediaStream | undefined) => void
 }
 
-export default function VideoPreview({ onStreamChange }: VideoPreviewProps) {
+export default function LocalVideo({ onStreamChange }: LocalVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')

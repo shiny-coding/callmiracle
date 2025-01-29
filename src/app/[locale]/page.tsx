@@ -8,10 +8,10 @@ import LanguageSelector from '@/components/LanguageSelector';
 import StatusSelector from '@/components/StatusSelector';
 import { useStore } from '@/store/useStore';
 import { usePathname } from 'next/navigation';
-import VideoPreview from '@/components/VideoPreview';
+import LocalVideo from '@/components/LocalVideo';
 import { TextField, Button, Typography } from '@mui/material';
 import UserList from '@/components/UserList';
-import VideoChat from '@/components/VideoChat';
+import RemoteVideo from '@/components/RemoteVideo';
 import { WebRTCProvider } from '@/components/WebRTCProvider'
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 
@@ -78,7 +78,7 @@ export default function Home() {
         <div className="flex flex-row justify-center gap-4">
           <div>
             <Typography variant="h6" className="mb-2">Your Camera</Typography>
-            <VideoPreview onStreamChange={setLocalStream} />
+            <LocalVideo onStreamChange={setLocalStream} />
           </div>
           <div>
             <Typography variant="h6" className="mb-2">Remote Video</Typography>
@@ -89,7 +89,7 @@ export default function Home() {
               style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }}
               className="rounded-lg shadow-lg object-cover"
             />
-            <VideoChat localStream={localStream} />
+            <RemoteVideo localStream={localStream} />
           </div>
         </div>
 
