@@ -77,6 +77,42 @@ export function useWebRTC({
   const hasTimedOutRef = useRef<boolean>(false)
   const remoteStreamRef = useRef<MediaStream | null>(null)
 
+  // Handle video/audio enabled state changes for active connections
+  useEffect(() => {
+    if (!peerConnection.current || !localStream) return
+
+    const pc = peerConnection.current
+    const senders = pc.getSenders()
+
+    for (const sender of senders) {
+      const track = sender.track
+      if (!track) continue
+
+      if (track.kind === 'video') {
+        track.enabled = localVideoEnabled
+        const transceiver = pc.getTransceivers().find(t => t.sender === sender)
+        if (transceiver) {
+          transceiver.direction = localVideoEnabled ? 'sendrecv' : 'inactive'
+          if (localVideoEnabled && transceiver.sender.setParameters) {
+            const params = transceiver.sender.getParameters()
+            if (!params.encodings) {
+              params.encodings = [{}]
+            }
+            params.encodings[0].maxBitrate = 2000000 // 2 Mbps
+            params.encodings[0].maxFramerate = 30
+            transceiver.sender.setParameters(params)
+          }
+        }
+      } else if (track.kind === 'audio') {
+        track.enabled = localAudioEnabled
+        const transceiver = pc.getTransceivers().find(t => t.sender === sender)
+        if (transceiver) {
+          transceiver.direction = localAudioEnabled ? 'sendrecv' : 'inactive'
+        }
+      }
+    }
+  }, [localVideoEnabled, localAudioEnabled, localStream])
+
   const logWebRTCState = (event: string, pc: RTCPeerConnection, error?: any) => {
     const baseState = {
       event,

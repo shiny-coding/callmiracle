@@ -92,11 +92,15 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
   useEffect(() => {
     async function setupStream() {
       try {
-        if (!videoRef.current) return
+        if (!videoRef.current) {
+          console.log('Video element not ready yet')
+          return
+        }
 
         // Stop any existing tracks
-        if (videoRef.current.srcObject) {
-          const tracks = (videoRef.current.srcObject as MediaStream).getTracks()
+        const currentStream = videoRef.current.srcObject as MediaStream | null
+        if (currentStream) {
+          const tracks = currentStream.getTracks()
           tracks.forEach(track => track.stop())
           videoRef.current.srcObject = null
           onStreamChange(undefined)
@@ -120,10 +124,17 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
           track.enabled = isAudioEnabled
         })
 
-        videoRef.current.srcObject = stream
-        setHasPermission(true)
-        setError('')
-        onStreamChange(stream)
+        // Check again if video element is still available
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          setHasPermission(true)
+          setError('')
+          onStreamChange(stream)
+        } else {
+          // Clean up if video element is gone
+          stream.getTracks().forEach(track => track.stop())
+          onStreamChange(undefined)
+        }
       } catch (err) {
         console.error('Error accessing media devices:', err)
         setError('Error accessing camera/microphone')
