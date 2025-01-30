@@ -25,29 +25,35 @@ export type ConnectInput = {
 export type ConnectionParams = {
   __typename?: 'ConnectionParams';
   answer?: Maybe<Scalars['String']['output']>;
+  audioEnabled?: Maybe<Scalars['Boolean']['output']>;
   iceCandidate?: Maybe<Scalars['String']['output']>;
   initiatorUserId: Scalars['ID']['output'];
   offer?: Maybe<Scalars['String']['output']>;
   targetUserId: Scalars['ID']['output'];
   type: Scalars['String']['output'];
+  videoEnabled?: Maybe<Scalars['Boolean']['output']>;
 };
 
 export type ConnectionParamsInput = {
   answer?: InputMaybe<Scalars['String']['input']>;
+  audioEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   iceCandidate?: InputMaybe<Scalars['String']['input']>;
   initiatorUserId: Scalars['ID']['input'];
   offer?: InputMaybe<Scalars['String']['input']>;
   targetUserId: Scalars['ID']['input'];
   type: Scalars['String']['input'];
+  videoEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type ConnectionRequest = {
   __typename?: 'ConnectionRequest';
   answer?: Maybe<Scalars['String']['output']>;
+  audioEnabled?: Maybe<Scalars['Boolean']['output']>;
   from: User;
   iceCandidate?: Maybe<Scalars['String']['output']>;
   offer?: Maybe<Scalars['String']['output']>;
   type: Scalars['String']['output'];
+  videoEnabled?: Maybe<Scalars['Boolean']['output']>;
 };
 
 export type Mutation = {

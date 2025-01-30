@@ -13,6 +13,9 @@ interface WebRTCContextType {
   handleAcceptCall: () => void
   handleRejectCall: () => void
   hangup: () => Promise<void>
+  remoteVideoEnabled: boolean
+  remoteAudioEnabled: boolean
+  remoteName: string | null
 }
 
 interface WebRTCProviderProps {
@@ -41,6 +44,9 @@ export function WebRTCProvider({
   localAudioEnabled = true 
 }: WebRTCProviderProps) {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
+  const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(false)
+  const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
+  const [remoteName, setRemoteName] = useState<string | null>(null)
 
   const childProps = {
     localStream,
@@ -59,6 +65,9 @@ export function WebRTCProvider({
       await callee.hangup()
     }
     setConnectionStatus('finished')
+    setRemoteVideoEnabled(false)
+    setRemoteAudioEnabled(false)
+    setRemoteName(null)
   }
 
   // Subscribe to incoming connection requests
@@ -67,7 +76,7 @@ export function WebRTCProvider({
     onSubscriptionData: async ({ subscriptionData }) => {
       const request = subscriptionData.data?.onConnectionRequest
       if (request) {
-        console.log('WebRTC: Processing connection request:', { from: request.from.name, type: request.type, })
+        console.log('WebRTC: Processing connection request:', { from: request.from.name, type: request.type })
         
         // Handle finished status
         if (request.type === 'finished') {
@@ -78,10 +87,17 @@ export function WebRTCProvider({
             callee.cleanup()
           }
           setConnectionStatus('finished')
+          setRemoteVideoEnabled(false)
+          setRemoteAudioEnabled(false)
+          setRemoteName(null)
 
         } else if (request.type === 'answer') { // Handle answer for initiator
           const answer = JSON.parse(request.answer)
           await caller.handleAnswer(caller.peerConnection.current!, answer)
+          // Initialize remote media state from answer
+          setRemoteVideoEnabled(request.videoEnabled ?? true)
+          setRemoteAudioEnabled(request.audioEnabled ?? true)
+          setRemoteName(request.from.name)
 
         } else if (request.type === 'ice-candidate') { // Handle ICE candidates
           const candidate = JSON.parse(request.iceCandidate)
@@ -98,9 +114,16 @@ export function WebRTCProvider({
             console.log('WebRTC: Already in a call, ignoring offer')
             return
           }
+          // Initialize remote media state from offer
+          setRemoteVideoEnabled(request.videoEnabled ?? true)
+          setRemoteAudioEnabled(request.audioEnabled ?? true)
+          setRemoteName(request.from.name)
           callee.setIncomingRequest(request)
           setConnectionStatus('calling')
 
+        } else if (request.type === 'changeTracks') { // Handle track changes
+          setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
+          setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
         } else {
           throw new Error('WebRTC: Unknown request type:', request.type)
         }
@@ -116,7 +139,10 @@ export function WebRTCProvider({
         incomingRequest: callee.incomingRequest, 
         handleAcceptCall: callee.handleAcceptCall, 
         handleRejectCall: callee.handleRejectCall,
-        hangup
+        hangup,
+        remoteVideoEnabled,
+        remoteAudioEnabled,
+        remoteName
       }}
     >
       {children}

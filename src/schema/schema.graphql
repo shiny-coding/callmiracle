@@ -24,6 +24,8 @@ type ConnectionParams {
   iceCandidate: String
   targetUserId: ID!
   initiatorUserId: ID!
+  videoEnabled: Boolean
+  audioEnabled: Boolean
 }
 
 type ConnectionRequest {
@@ -32,6 +34,8 @@ type ConnectionRequest {
   answer: String
   iceCandidate: String
   from: User!
+  videoEnabled: Boolean
+  audioEnabled: Boolean
 }
 
 input ConnectInput {
@@ -45,10 +49,12 @@ input ConnectInput {
 input ConnectionParamsInput {
   targetUserId: ID!
   initiatorUserId: ID!
-  type: String!  # 'offer' | 'answer' | 'ice-candidate' | 'finished'
+  type: String!  # 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'changeTracks'
   offer: String
   answer: String
   iceCandidate: String
+  videoEnabled: Boolean
+  audioEnabled: Boolean
 }
 
 type Query {

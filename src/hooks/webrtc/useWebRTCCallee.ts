@@ -79,7 +79,9 @@ export function useWebRTCCallee({
             type: 'answer',
             targetUserId: incomingRequest.from.userId,
             initiatorUserId: getUserId(),
-            answer: JSON.stringify(answer)
+            answer: JSON.stringify(answer),
+            videoEnabled: localVideoEnabled,
+            audioEnabled: localAudioEnabled
           }
         }
       })
@@ -124,9 +126,9 @@ export function useWebRTCCallee({
 
   useEffect(() => {
     if (peerConnection.current && active) {
-      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled)
+      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser)
     }
-  }, [localVideoEnabled, localAudioEnabled, active])
+  }, [localVideoEnabled, localAudioEnabled, active, targetUserId])
 
   return {
     incomingRequest,

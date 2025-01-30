@@ -93,7 +93,9 @@ export function useWebRTCCaller({
             type: 'offer',
             targetUserId: userId,
             initiatorUserId: getUserId(),
-            offer: JSON.stringify(offer)
+            offer: JSON.stringify(offer),
+            videoEnabled: localVideoEnabled,
+            audioEnabled: localAudioEnabled
           }
         }
       })
@@ -134,9 +136,9 @@ export function useWebRTCCaller({
 
   useEffect(() => {
     if (peerConnection.current && active) {
-      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled)
+      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser)
     }
-  }, [localVideoEnabled, localAudioEnabled, active])
+  }, [localVideoEnabled, localAudioEnabled, active, targetUserId])
 
   return {
     doCall,

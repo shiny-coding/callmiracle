@@ -8,6 +8,7 @@ import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
 import { useTranslations } from 'next-intl'
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
+import { useStore } from '@/store/useStore'
 
 interface LocalVideoProps {
   onStreamChange: (stream: MediaStream | undefined) => void
@@ -22,6 +23,7 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isAudioEnabled, setIsAudioEnabled] = useState(true)
   const t = useTranslations()
+  const { name } = useStore()
   const [devices, setDevices] = useState<{
     video: MediaDeviceInfo[],
     audio: MediaDeviceInfo[]
@@ -92,12 +94,6 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
           constraints.audio = selectedDevices.audioId ? { deviceId: selectedDevices.audioId } : true
         }
 
-        // Only create stream if we have any constraints
-        if (Object.keys(constraints).length === 0) {
-          onStreamChange(undefined)
-          return
-        }
-
         const stream = await navigator.mediaDevices.getUserMedia(constraints)
         
         // Set initial track states
@@ -152,7 +148,7 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
   return (
     <div className="relative w-full max-w-[200px] mx-auto mb-6">
       <div className="flex justify-between items-center mb-2">
-        <Typography variant="subtitle1">Your Camera</Typography>
+        <Typography variant="subtitle1">{name || 'Me'}</Typography>
         <div className="flex gap-1">
           <IconButton 
             onClick={toggleAudio}

@@ -23,6 +23,8 @@ export const ON_CONNECTION_REQUEST = gql`
       offer
       answer
       iceCandidate
+      videoEnabled
+      audioEnabled
       from {
         userId
         name
@@ -209,7 +211,7 @@ export function useWebRTCCommon() {
     pendingIceCandidates.current = []
   }
 
-  const updateMediaState = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean) => {
+  const updateMediaState = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean, targetUserId: string, connectWithUser: any) => {
     // Update tracks
     const senders = pc.getSenders()
     for (const sender of senders) {
@@ -225,6 +227,21 @@ export function useWebRTCCommon() {
 
     // Update transceivers
     configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
+
+    // Notify peer about track changes
+    connectWithUser({
+      variables: {
+        input: {
+          type: 'changeTracks',
+          targetUserId,
+          initiatorUserId: getUserId(),
+          videoEnabled: localVideoEnabled,
+          audioEnabled: localAudioEnabled
+        }
+      }
+    }).catch((err: any) => {
+      console.error('Failed to send track changes:', err)
+    })
   }
 
   const createHangup = (

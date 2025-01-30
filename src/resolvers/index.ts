@@ -4,10 +4,12 @@ import { createPubSub } from 'graphql-yoga';
 
 type ConnectionRequestPayload = {
   onConnectionRequest: {
-    type: 'offer' | 'answer' | 'ice-candidate' | 'finished'
+    type: 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'changeTracks'
     offer: string
     answer?: string
     iceCandidate?: string
+    videoEnabled?: boolean
+    audioEnabled?: boolean
     from: {
       userId: string
       name: string
@@ -95,7 +97,7 @@ export const resolvers = {
       return result;
     },
     connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { targetUserId, type, offer, answer, iceCandidate } = input
+      const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled } = input
       const initiatorUserId = input.initiatorUserId || ''
 
       console.log('Handling connectWithUser:', { type, targetUserId, initiatorUserId })
@@ -108,7 +110,8 @@ export const resolvers = {
               timestamp: Date.now(),
               ...(type === 'offer' && { offer }),
               ...(type === 'answer' && { answer }),
-              ...(type === 'finished' && { finished: true })
+              ...(type === 'finished' && { finished: true }),
+              ...(type === 'changeTracks' && { videoEnabled, audioEnabled })
             }
           }
 
@@ -146,7 +149,8 @@ export const resolvers = {
         offer: { offer },
         answer: { offer: connection?.offer, answer },
         'ice-candidate': { offer: connection?.offer, iceCandidate },
-        finished: { offer: '' }
+        finished: { offer: '' },
+        changeTracks: { videoEnabled, audioEnabled }
       }
 
       pubsub.publish('CONNECTION_REQUEST', {

@@ -5,8 +5,11 @@ import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video';
 import ConnectionRequest from './ConnectionRequest';
 import { Typography, IconButton } from '@mui/material';
 import CallEndIcon from '@mui/icons-material/CallEnd';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import VideocamOffIcon from '@mui/icons-material/VideocamOff';
+import MicIcon from '@mui/icons-material/Mic';
+import MicOffIcon from '@mui/icons-material/MicOff';
 import { useTranslations } from 'next-intl';
-import { useStore } from '@/store/useStore';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 
 interface RemoteVideoProps {
@@ -21,7 +24,10 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
     incomingRequest,
     handleAcceptCall,
     handleRejectCall,
-    hangup
+    hangup,
+    remoteVideoEnabled,
+    remoteAudioEnabled,
+    remoteName
   } = useWebRTCContext();
 
   useEffect(() => {
@@ -58,7 +64,27 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
     <>
       <div className="relative w-full max-w-[200px] mx-auto">
         <div className="flex justify-between items-center mb-2">
-          <Typography variant="subtitle1">Remote Video</Typography>
+          <Typography variant="subtitle1">
+            {connectionStatus === 'connected' ? remoteName : 'Brother'}
+          </Typography>
+          {connectionStatus === 'connected' && (
+            <div className="flex gap-1">
+              <div className="bg-white dark:bg-gray-800 p-1 rounded">
+                {remoteAudioEnabled ? (
+                  <MicIcon className="text-blue-500" fontSize="small" />
+                ) : (
+                  <MicOffIcon className="text-gray-500" fontSize="small" />
+                )}
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-1 rounded">
+                {remoteVideoEnabled ? (
+                  <VideocamIcon className="text-blue-500" fontSize="small" />
+                ) : (
+                  <VideocamOffIcon className="text-gray-500" fontSize="small" />
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }} className="mx-auto relative">
