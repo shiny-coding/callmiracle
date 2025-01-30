@@ -7,7 +7,7 @@ import { Typography, IconButton } from '@mui/material';
 import CallEndIcon from '@mui/icons-material/CallEnd';
 import { useTranslations } from 'next-intl';
 import { useStore } from '@/store/useStore';
-import { useWebRTCContext } from '@/hooks/WebRTCProvider';
+import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 
 interface RemoteVideoProps {
   localStream?: MediaStream;

@@ -9,7 +9,7 @@ import { getUserId } from '@/lib/userId'
 import { useRef, useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
-import { useWebRTCContext } from '@/hooks/WebRTCProvider'
+import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 
 const GET_USERS = gql`
   query GetUsers {
