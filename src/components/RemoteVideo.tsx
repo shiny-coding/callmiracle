@@ -16,7 +16,6 @@ interface RemoteVideoProps {
 
 export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideoProps) {
   const t = useTranslations('VideoChat');
-  const targetUserId = useStore(state => state.targetUserId);
   const {
     connectionStatus,
     incomingRequest,
@@ -70,7 +69,7 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
             style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }}
             className="rounded-lg shadow-lg object-cover bg-gray-100 dark:bg-gray-800"
           />
-          {(!targetUserId || connectionStatus !== 'connected') && (
+          {connectionStatus !== 'connected' && (
             <div className="absolute inset-0 flex items-center justify-center">
               <Typography className={getStatusColor(connectionStatus)}>
                 {t(`status.${connectionStatus}`)}

@@ -53,7 +53,6 @@ export function WebRTCProvider({
   const callee = useWebRTCCallee(childProps)
 
   const hangup = async () => {
-    console.log('WebRTC: Hanging up call')
     if (caller.active) {
       await caller.hangup()
     } else if (callee.active) {

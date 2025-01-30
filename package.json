@@ -6,7 +6,7 @@
     "dev-ssl": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 next dev --turbopack --experimental-https --experimental-https-key ./certs/localhost-key.pem --experimental-https-cert ./certs/localhost.pem",
     "debug-dev-ssl": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 next dev --experimental-https --experimental-https-key ./certs/localhost-key.pem --experimental-https-cert ./certs/localhost.pem",
     "dev": "next dev --turbopack",
-    "debug-dev": "next dev ",
+    "debug-dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

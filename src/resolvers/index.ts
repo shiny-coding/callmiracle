@@ -130,6 +130,7 @@ export const resolvers = {
       const basePayload = {
         onConnectionRequest: {
           type,
+          offer: '',  // Default empty offer
           from: {
             userId: initiator.userId,
             name: initiator.name,
@@ -140,47 +141,21 @@ export const resolvers = {
         userId: targetUserId
       }
 
-      // Publish based on type
-      switch (type) {
-        case 'offer':
-          pubsub.publish('CONNECTION_REQUEST', {
-            ...basePayload,
-            onConnectionRequest: {
-              ...basePayload.onConnectionRequest,
-              offer
-            }
-          })
-          break
-        case 'answer':
-          pubsub.publish('CONNECTION_REQUEST', {
-            ...basePayload,
-            onConnectionRequest: {
-              ...basePayload.onConnectionRequest,
-              offer: connection?.offer,
-              answer
-            }
-          })
-          break
-        case 'ice-candidate':
-          pubsub.publish('CONNECTION_REQUEST', {
-            ...basePayload,
-            onConnectionRequest: {
-              ...basePayload.onConnectionRequest,
-              offer: connection?.offer,
-              iceCandidate
-            }
-          })
-          break
-        case 'finished':
-          pubsub.publish('CONNECTION_REQUEST', {
-            ...basePayload,
-            onConnectionRequest: {
-              ...basePayload.onConnectionRequest,
-              offer: ''
-            }
-          })
-          break
+      // Additional fields based on type
+      const additionalFields: Record<string, Record<string, any>> = {
+        offer: { offer },
+        answer: { offer: connection?.offer, answer },
+        'ice-candidate': { offer: connection?.offer, iceCandidate },
+        finished: { offer: '' }
       }
+
+      pubsub.publish('CONNECTION_REQUEST', {
+        ...basePayload,
+        onConnectionRequest: {
+          ...basePayload.onConnectionRequest,
+          ...additionalFields[type]
+        }
+      })
 
       return {
         type,
@@ -198,20 +173,9 @@ export const resolvers = {
         const iterator = pubsub.subscribe('CONNECTION_REQUEST')
         return {
           async *[Symbol.asyncIterator]() {
-            const processedPayloads = new Set() // Track processed payloads
             for await (const payload of iterator) {
               if (payload.userId === userId) {
-                // Create a unique key based on the content
-                const key = JSON.stringify({
-                  offer: payload.onConnectionRequest.offer,
-                  iceCandidate: payload.onConnectionRequest.iceCandidate,
-                  userId: payload.onConnectionRequest.from.userId
-                })
-                
-                if (!processedPayloads.has(key)) {
-                  processedPayloads.add(key)
-                  yield payload
-                }
+                yield payload
               }
             }
           }
@@ -219,6 +183,7 @@ export const resolvers = {
       },
       resolve: (payload: ConnectionRequestPayload) => {
         console.log('Resolving connection request:', {
+          type: payload.onConnectionRequest.type,
           hasOffer: !!payload.onConnectionRequest.offer,
           hasIceCandidate: !!payload.onConnectionRequest.iceCandidate,
           fromUser: payload.onConnectionRequest.from.name

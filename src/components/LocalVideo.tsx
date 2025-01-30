@@ -64,54 +64,38 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
   }, [])
 
   useEffect(() => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream
-      // Control video tracks
-      const videoTracks = stream.getVideoTracks()
-      videoTracks.forEach(track => {
-        track.enabled = isVideoEnabled
-      })
-      // Update stream for remote peer
-      onStreamChange(stream)
-    }
-  }, [isVideoEnabled, onStreamChange])
-
-  useEffect(() => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream
-      // Control audio tracks
-      const audioTracks = stream.getAudioTracks()
-      audioTracks.forEach(track => {
-        track.enabled = isAudioEnabled
-      })
-      // Update stream for remote peer
-      onStreamChange(stream)
-    }
-  }, [isAudioEnabled, onStreamChange])
-
-  useEffect(() => {
     async function setupStream() {
       try {
         if (!videoRef.current) {
-          // console.log('Video element not ready yet')
           return
         }
 
-        // Stop any existing tracks
+        // If we have an existing stream, just update track states
         const currentStream = videoRef.current.srcObject as MediaStream | null
         if (currentStream) {
-          const tracks = currentStream.getTracks()
-          tracks.forEach(track => track.stop())
-          videoRef.current.srcObject = null
-          onStreamChange(undefined)
+          currentStream.getVideoTracks().forEach(track => {
+            track.enabled = isVideoEnabled
+          })
+          currentStream.getAudioTracks().forEach(track => {
+            track.enabled = isAudioEnabled
+          })
+          onStreamChange(currentStream)
+          return
         }
 
-        // Don't create stream if both video and audio are disabled
-        if (!isVideoEnabled && !isAudioEnabled) return
+        // Create new stream if we don't have one
+        const constraints: MediaStreamConstraints = {}
+        if (isVideoEnabled) {
+          constraints.video = selectedDevices.videoId ? { deviceId: selectedDevices.videoId } : true
+        }
+        if (isAudioEnabled) {
+          constraints.audio = selectedDevices.audioId ? { deviceId: selectedDevices.audioId } : true
+        }
 
-        const constraints: MediaStreamConstraints = {
-          video: isVideoEnabled && (selectedDevices.videoId ? { deviceId: selectedDevices.videoId } : true),
-          audio: isAudioEnabled && (selectedDevices.audioId ? { deviceId: selectedDevices.audioId } : true)
+        // Only create stream if we have any constraints
+        if (Object.keys(constraints).length === 0) {
+          onStreamChange(undefined)
+          return
         }
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints)
@@ -144,7 +128,7 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
     }
 
     setupStream()
-  }, [isVideoEnabled, selectedDevices.videoId, selectedDevices.audioId, onStreamChange, isAudioEnabled])
+  }, [isVideoEnabled, isAudioEnabled, selectedDevices.videoId, selectedDevices.audioId, onStreamChange])
 
   const handleVideoToggle = () => {
     const newState = !isVideoEnabled
@@ -176,16 +160,21 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
             size="small"
           >
             {isAudioEnabled ? (
-              <MicOffIcon className="text-blue-400" />
+              <MicIcon className="text-blue-500" />
             ) : (
-              <MicIcon className="text-blue-400" />
+              <MicOffIcon className="text-gray-500" />
             )}
           </IconButton>
           <IconButton 
             onClick={handleVideoToggle}
-            className={isVideoEnabled ? 'text-blue-500' : 'text-gray-500'}
+            className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+            size="small"
           >
-            {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+            {isVideoEnabled ? (
+              <VideocamIcon className="text-blue-500" />
+            ) : (
+              <VideocamOffIcon className="text-gray-500" />
+            )}
           </IconButton>
         </div>
       </div>
