@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { useWebRTCCommon, CONNECT_WITH_USER, CONNECTION_TIMEOUT_MS } from './useWebRTCCommon'
@@ -26,7 +26,8 @@ export function useWebRTCCaller({
     setupIceCandidateHandler,
     handleIceCandidate,
     dispatchPendingIceCandidates,
-    clearPendingCandidates
+    clearPendingCandidates,
+    updateMediaState
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
@@ -124,6 +125,12 @@ export function useWebRTCCaller({
     remoteStreamRef.current = null
     setActive(false)
   }
+
+  useEffect(() => {
+    if (peerConnection.current && active) {
+      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled)
+    }
+  }, [localVideoEnabled, localAudioEnabled, active])
 
   return {
     doCall,

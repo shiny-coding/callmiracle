@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
@@ -26,10 +26,12 @@ export function useWebRTCCallee({
     setupIceCandidateHandler,
     handleIceCandidate,
     dispatchPendingIceCandidates,
-    clearPendingCandidates
+    clearPendingCandidates,
+    updateMediaState
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
+  const [active, setActive] = useState(false)
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
@@ -40,6 +42,7 @@ export function useWebRTCCallee({
     try {
       console.log('WebRTC: Accepting call from:', incomingRequest.from.name)
       onStatusChange('connecting')
+      setActive(true)
       
       const pc = createPeerConnection()
       peerConnection.current = pc
@@ -53,6 +56,7 @@ export function useWebRTCCallee({
           pc.close()
           peerConnection.current = null
           onStatusChange('failed')
+          setActive(false)
         }
       }
 
@@ -92,6 +96,7 @@ export function useWebRTCCallee({
     console.log('Rejecting call from:', incomingRequest?.from.name)
     setIncomingRequest(null)
     onStatusChange('rejected')
+    setActive(false)
   }
 
   const cleanup = () => {
@@ -102,7 +107,14 @@ export function useWebRTCCallee({
     clearPendingCandidates()
     remoteStreamRef.current = null
     setIncomingRequest(null)
+    setActive(false)
   }
+
+  useEffect(() => {
+    if (peerConnection.current && active) {
+      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled)
+    }
+  }, [localVideoEnabled, localAudioEnabled, active])
 
   return {
     incomingRequest,
@@ -111,6 +123,7 @@ export function useWebRTCCallee({
     handleRejectCall,
     handleIceCandidate,
     cleanup,
-    peerConnection
+    peerConnection,
+    active
   }
 } 

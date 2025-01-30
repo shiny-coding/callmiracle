@@ -208,6 +208,24 @@ export function useWebRTCCommon() {
     pendingIceCandidates.current = []
   }
 
+  const updateMediaState = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean) => {
+    // Update tracks
+    const senders = pc.getSenders()
+    for (const sender of senders) {
+      const track = sender.track
+      if (!track) continue
+
+      if (track.kind === 'video') {
+        track.enabled = localVideoEnabled
+      } else if (track.kind === 'audio') {
+        track.enabled = localAudioEnabled
+      }
+    }
+
+    // Update transceivers
+    configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
+  }
+
   return {
     createPeerConnection,
     addLocalStream,
@@ -217,6 +235,7 @@ export function useWebRTCCommon() {
     setupIceCandidateHandler,
     handleIceCandidate,
     dispatchPendingIceCandidates,
-    clearPendingCandidates
+    clearPendingCandidates,
+    updateMediaState
   }
 } 

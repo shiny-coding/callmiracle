@@ -106,7 +106,7 @@ export function WebRTCProvider({
     if (caller.active) {
       // We're the caller
       caller.cleanup()
-    } else if (callee.incomingRequest?.from.userId) {
+    } else if (callee.active) {
       // We're the callee
       callee.cleanup()
     }
@@ -115,7 +115,7 @@ export function WebRTCProvider({
 
   const resetConnection = () => {
     console.log('WebRTC: Resetting connection')
-    if (caller.active || callee.incomingRequest?.from.userId) {
+    if (caller.active || callee.active) {
       cleanup()
     }
   }
