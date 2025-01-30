@@ -4,7 +4,7 @@ import { createPubSub } from 'graphql-yoga';
 
 type ConnectionRequestPayload = {
   onConnectionRequest: {
-    type: 'offer' | 'answer' | 'ice-candidate'
+    type: 'offer' | 'answer' | 'ice-candidate' | 'finished'
     offer: string
     answer?: string
     iceCandidate?: string
@@ -98,130 +98,98 @@ export const resolvers = {
       const { targetUserId, type, offer, answer, iceCandidate } = input
       const initiatorUserId = input.initiatorUserId || ''
 
-      console.log('Handling connectWithUser:', {
-        type,
-        hasOffer: !!offer,
-        hasAnswer: !!answer,
-        hasIceCandidate: !!iceCandidate,
-        targetUserId,
-        initiatorUserId,
-        timestamp: new Date().toISOString()
-      })
+      console.log('Handling connectWithUser:', { type, targetUserId, initiatorUserId })
 
-      // Store the connection attempt based on type
+      // Store the connection attempt
       const updateQuery = type === 'ice-candidate' 
-        ? {
-            $push: {
-              [`iceCandidates.${initiatorUserId}`]: iceCandidate
-            }
-          }
-        : {
+        ? { $push: { [`iceCandidates.${initiatorUserId}`]: iceCandidate } }
+        : { 
             $set: {
               timestamp: Date.now(),
               ...(type === 'offer' && { offer }),
-              ...(type === 'answer' && { answer })
+              ...(type === 'answer' && { answer }),
+              ...(type === 'finished' && { finished: true })
             }
           }
 
       const connection = await db.collection('connections').findOneAndUpdate(
-        { 
-          $or: [
+        { $or: [
             { initiatorUserId, targetUserId },
             { initiatorUserId: targetUserId, targetUserId: initiatorUserId }
           ]
         },
         updateQuery,
-        { 
-          upsert: true,
-          returnDocument: 'after'
-        }
+        { upsert: true, returnDocument: 'after' }
       )
 
-      console.log('Connection state after update:', {
-        type,
-        hasStoredOffer: !!connection?.offer,
-        hasStoredAnswer: !!connection?.answer,
-        hasStoredIceCandidates: !!connection?.iceCandidates,
-        timestamp: new Date().toISOString()
-      })
+      // Get user info for publishing
+      const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
+      if (!initiator) return connection
 
-      // Only publish to subscription for offers and ice candidates
-      if (type === 'offer' || type === 'ice-candidate') {
-        const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
-        const target = await db.collection('users').findOne({ userId: targetUserId })
-        
-        if (initiator) {
-          const payload: ConnectionRequestPayload = {
-            onConnectionRequest: {
-              type,
-              offer: type === 'offer' ? offer : connection?.offer,
-              ...(type === 'ice-candidate' && { iceCandidate }),
-              from: {
-                userId: initiator.userId,
-                name: initiator.name,
-                languages: initiator.languages,
-                statuses: initiator.statuses
-              }
-            },
-            userId: targetUserId
+      // Prepare common payload data
+      const basePayload = {
+        onConnectionRequest: {
+          type,
+          from: {
+            userId: initiator.userId,
+            name: initiator.name,
+            languages: initiator.languages,
+            statuses: initiator.statuses
           }
-
-          console.log(`Publishing ${type}:`, {
-            targetUserId,
-            targetName: target?.name || 'Unknown',
-            fromUserId: initiator.userId,
-            fromName: initiator.name,
-            type,
-            timestamp: new Date().toISOString()
-          })
-
-          pubsub.publish('CONNECTION_REQUEST', payload)
-        }
-      } else if (type === 'answer') {
-        // When receiving an answer, publish it back to the initiator
-        const answerer = await db.collection('users').findOne({ userId: initiatorUserId })
-        if (answerer) {
-          const payload: ConnectionRequestPayload = {
-            onConnectionRequest: {
-              type: 'answer',
-              offer: connection?.offer,
-              answer,
-              from: {
-                userId: answerer.userId,
-                name: answerer.name,
-                languages: answerer.languages,
-                statuses: answerer.statuses
-              }
-            },
-            userId: targetUserId
-          }
-          console.log('Publishing answer:', {
-            targetUserId,
-            fromUserId: answerer.userId,
-            hasAnswer: !!answer,
-            timestamp: new Date().toISOString()
-          })
-          pubsub.publish('CONNECTION_REQUEST', payload)
-        }
+        },
+        userId: targetUserId
       }
 
-      const result = {
+      // Publish based on type
+      switch (type) {
+        case 'offer':
+          pubsub.publish('CONNECTION_REQUEST', {
+            ...basePayload,
+            onConnectionRequest: {
+              ...basePayload.onConnectionRequest,
+              offer
+            }
+          })
+          break
+        case 'answer':
+          pubsub.publish('CONNECTION_REQUEST', {
+            ...basePayload,
+            onConnectionRequest: {
+              ...basePayload.onConnectionRequest,
+              offer: connection?.offer,
+              answer
+            }
+          })
+          break
+        case 'ice-candidate':
+          pubsub.publish('CONNECTION_REQUEST', {
+            ...basePayload,
+            onConnectionRequest: {
+              ...basePayload.onConnectionRequest,
+              offer: connection?.offer,
+              iceCandidate
+            }
+          })
+          break
+        case 'finished':
+          pubsub.publish('CONNECTION_REQUEST', {
+            ...basePayload,
+            onConnectionRequest: {
+              ...basePayload.onConnectionRequest,
+              offer: ''
+            }
+          })
+          break
+      }
+
+      return {
+        type,
         offer: connection?.offer || null,
         answer: connection?.answer || null,
         iceCandidate: connection?.iceCandidate || null,
         targetUserId,
         initiatorUserId
       }
-
-      console.log('Returning connection result:', {
-        type,
-        hasOffer: !!result.offer,
-        hasAnswer: !!result.answer,
-        hasIceCandidate: !!result.iceCandidate,
-        timestamp: new Date().toISOString()
-      })
-
-      return result
     }
   },
   Subscription: {

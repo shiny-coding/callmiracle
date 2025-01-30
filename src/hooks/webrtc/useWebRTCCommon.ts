@@ -7,6 +7,7 @@ export const CONNECTION_TIMEOUT_MS = 10000 // 10 seconds
 export const CONNECT_WITH_USER = gql`
   mutation ConnectWithUser($input: ConnectionParamsInput!) {
     connectWithUser(input: $input) {
+      type
       offer
       answer
       targetUserId
@@ -226,6 +227,35 @@ export function useWebRTCCommon() {
     configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
   }
 
+  const createHangup = (
+    peerConnection: React.RefObject<RTCPeerConnection | null>,
+    targetUserId: string | null,
+    cleanup: () => void,
+    connectWithUser: any
+  ) => {
+    return async () => {
+      console.log('WebRTC: Hanging up call')
+      cleanup()
+
+      // Send finished signal if we have a target
+      if (targetUserId) {
+        try {
+          await connectWithUser({
+            variables: {
+              input: {
+                type: 'finished',
+                targetUserId,
+                initiatorUserId: getUserId()
+              }
+            }
+          })
+        } catch (err) {
+          console.error('Failed to send finished signal:', err)
+        }
+      }
+    }
+  }
+
   return {
     createPeerConnection,
     addLocalStream,
@@ -236,6 +266,7 @@ export function useWebRTCCommon() {
     handleIceCandidate,
     dispatchPendingIceCandidates,
     clearPendingCandidates,
-    updateMediaState
+    updateMediaState,
+    createHangup
   }
 } 

@@ -18,6 +18,7 @@ type User {
 }
 
 type ConnectionParams {
+  type: String!
   offer: String
   answer: String
   iceCandidate: String
@@ -44,7 +45,7 @@ input ConnectInput {
 input ConnectionParamsInput {
   targetUserId: ID!
   initiatorUserId: ID!
-  type: String!  # 'offer' | 'answer' | 'ice-candidate'
+  type: String!  # 'offer' | 'answer' | 'ice-candidate' | 'finished'
   offer: String
   answer: String
   iceCandidate: String

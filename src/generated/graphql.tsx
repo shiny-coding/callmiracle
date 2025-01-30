@@ -22,14 +22,48 @@ export type ConnectInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type ConnectionParams = {
+  __typename?: 'ConnectionParams';
+  answer?: Maybe<Scalars['String']['output']>;
+  iceCandidate?: Maybe<Scalars['String']['output']>;
+  initiatorUserId: Scalars['ID']['output'];
+  offer?: Maybe<Scalars['String']['output']>;
+  targetUserId: Scalars['ID']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type ConnectionParamsInput = {
+  answer?: InputMaybe<Scalars['String']['input']>;
+  iceCandidate?: InputMaybe<Scalars['String']['input']>;
+  initiatorUserId: Scalars['ID']['input'];
+  offer?: InputMaybe<Scalars['String']['input']>;
+  targetUserId: Scalars['ID']['input'];
+  type: Scalars['String']['input'];
+};
+
+export type ConnectionRequest = {
+  __typename?: 'ConnectionRequest';
+  answer?: Maybe<Scalars['String']['output']>;
+  from: User;
+  iceCandidate?: Maybe<Scalars['String']['output']>;
+  offer?: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   connect?: Maybe<User>;
+  connectWithUser?: Maybe<ConnectionParams>;
 };
 
 
 export type MutationConnectArgs = {
   input: ConnectInput;
+};
+
+
+export type MutationConnectWithUserArgs = {
+  input: ConnectionParamsInput;
 };
 
 export type Query = {
@@ -46,6 +80,17 @@ export enum Status {
   WantToListen = 'WANT_TO_LISTEN',
   WantToSpeakOut = 'WANT_TO_SPEAK_OUT'
 }
+
+export type Subscription = {
+  __typename?: 'Subscription';
+  onConnectionRequest?: Maybe<ConnectionRequest>;
+  onUsersUpdated: Array<User>;
+};
+
+
+export type SubscriptionOnConnectionRequestArgs = {
+  userId: Scalars['ID']['input'];
+};
 
 export type User = {
   __typename?: 'User';

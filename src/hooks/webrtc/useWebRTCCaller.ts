@@ -27,11 +27,13 @@ export function useWebRTCCaller({
     handleIceCandidate,
     dispatchPendingIceCandidates,
     clearPendingCandidates,
-    updateMediaState
+    updateMediaState,
+    createHangup
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
+  const [targetUserId, setTargetUserId] = useState<string | null>(null)
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const answerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasTimedOutRef = useRef<boolean>(false)
@@ -62,6 +64,7 @@ export function useWebRTCCaller({
     console.log('WebRTC: Initializing connection with:', userId)
     onStatusChange('calling')
     setActive(true)
+    setTargetUserId(userId)
     
     const pc = createPeerConnection()
     peerConnection.current = pc
@@ -124,7 +127,10 @@ export function useWebRTCCaller({
     hasTimedOutRef.current = false
     remoteStreamRef.current = null
     setActive(false)
+    setTargetUserId(null)
   }
+
+  const hangup = createHangup(peerConnection, targetUserId, cleanup, connectWithUser)
 
   useEffect(() => {
     if (peerConnection.current && active) {
@@ -138,6 +144,8 @@ export function useWebRTCCaller({
     handleIceCandidate,
     cleanup,
     peerConnection,
-    active
+    active,
+    targetUserId,
+    hangup
   }
 } 

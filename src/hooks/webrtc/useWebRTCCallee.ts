@@ -27,11 +27,13 @@ export function useWebRTCCallee({
     handleIceCandidate,
     dispatchPendingIceCandidates,
     clearPendingCandidates,
-    updateMediaState
+    updateMediaState,
+    createHangup
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
+  const [targetUserId, setTargetUserId] = useState<string | null>(null)
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
@@ -43,6 +45,7 @@ export function useWebRTCCallee({
       console.log('WebRTC: Accepting call from:', incomingRequest.from.name)
       onStatusChange('connecting')
       setActive(true)
+      setTargetUserId(incomingRequest.from.userId)
       
       const pc = createPeerConnection()
       peerConnection.current = pc
@@ -97,6 +100,7 @@ export function useWebRTCCallee({
     setIncomingRequest(null)
     onStatusChange('rejected')
     setActive(false)
+    setTargetUserId(null)
   }
 
   const cleanup = () => {
@@ -108,7 +112,15 @@ export function useWebRTCCallee({
     remoteStreamRef.current = null
     setIncomingRequest(null)
     setActive(false)
+    setTargetUserId(null)
   }
+
+  const hangup = createHangup(
+    peerConnection, 
+    targetUserId, 
+    cleanup, 
+    connectWithUser
+  )
 
   useEffect(() => {
     if (peerConnection.current && active) {
@@ -124,6 +136,8 @@ export function useWebRTCCallee({
     handleIceCandidate,
     cleanup,
     peerConnection,
-    active
+    active,
+    targetUserId,
+    hangup
   }
 } 

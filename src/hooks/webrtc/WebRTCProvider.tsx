@@ -1,10 +1,10 @@
 import { useState, createContext, useContext, ReactNode } from 'react'
-import { useSubscription } from '@apollo/client'
+import { useSubscription, useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
-import { ON_CONNECTION_REQUEST, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
+import { ON_CONNECTION_REQUEST, CONNECT_WITH_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
 
 interface WebRTCContextType {
   doCall: (userId: string) => Promise<void>
@@ -12,7 +12,7 @@ interface WebRTCContextType {
   incomingRequest: IncomingRequest | null
   handleAcceptCall: () => void
   handleRejectCall: () => void
-  resetConnection: () => void
+  hangup: () => Promise<void>
 }
 
 interface WebRTCProviderProps {
@@ -52,28 +52,35 @@ export function WebRTCProvider({
   const caller = useWebRTCCaller(childProps)
   const callee = useWebRTCCallee(childProps)
 
+  const hangup = async () => {
+    console.log('WebRTC: Hanging up call')
+    if (caller.active) {
+      await caller.hangup()
+    } else if (callee.active) {
+      await callee.hangup()
+    }
+    setConnectionStatus('finished')
+  }
+
   // Subscribe to incoming connection requests
   useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
     onSubscriptionData: async ({ subscriptionData }) => {
       const request = subscriptionData.data?.onConnectionRequest
       if (request) {
-        console.log('WebRTC: Processing connection request:', {
-          from: request.from.name,
-          type: request.type,
-          hasOffer: !!request.offer,
-          hasIceCandidate: !!request.iceCandidate,
-          timestamp: new Date().toISOString()
-        })
+        console.log('WebRTC: Processing connection request:', { from: request.from.name, type: request.type, })
         
         // Handle finished status
         if (request.type === 'finished') {
-          cleanup()
+          // Don't send finished signal back when receiving finished
+          if (caller.active) {
+            caller.cleanup()
+          } else if (callee.active) {
+            callee.cleanup()
+          }
+          setConnectionStatus('finished')
 
         } else if (request.type === 'answer') { // Handle answer for initiator
-          if (!caller.active) {
-            throw new Error('WebRTC: Not in caller mode, ignoring answer')
-          }
           const answer = JSON.parse(request.answer)
           await caller.handleAnswer(caller.peerConnection.current!, answer)
 
@@ -102,24 +109,6 @@ export function WebRTCProvider({
     }
   })
 
-  const cleanup = () => {
-    if (caller.active) {
-      // We're the caller
-      caller.cleanup()
-    } else if (callee.active) {
-      // We're the callee
-      callee.cleanup()
-    }
-    setConnectionStatus('finished')
-  }
-
-  const resetConnection = () => {
-    console.log('WebRTC: Resetting connection')
-    if (caller.active || callee.active) {
-      cleanup()
-    }
-  }
-
   return (
     <WebRTCContext.Provider 
       value={{ 
@@ -128,7 +117,7 @@ export function WebRTCProvider({
         incomingRequest: callee.incomingRequest, 
         handleAcceptCall: callee.handleAcceptCall, 
         handleRejectCall: callee.handleRejectCall,
-        resetConnection
+        hangup
       }}
     >
       {children}

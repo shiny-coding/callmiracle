@@ -22,7 +22,7 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
     incomingRequest,
     handleAcceptCall,
     handleRejectCall,
-    resetConnection
+    hangup
   } = useWebRTCContext();
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
         {connectionStatus === 'connected' && (
           <div className="flex justify-center mt-2">
             <IconButton
-              onClick={resetConnection}
+              onClick={hangup}
               className="bg-red-500 hover:bg-red-600 text-white"
               size="medium"
             >
