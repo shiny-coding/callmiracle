@@ -100,21 +100,19 @@ export const resolvers = {
       const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled } = input
       const initiatorUserId = input.initiatorUserId || ''
 
-      console.log('Handling connectWithUser:', { type, targetUserId, initiatorUserId })
-
       // Store the connection attempt
       const updateQuery = type === 'ice-candidate' 
-        ? { $push: { [`iceCandidates.${initiatorUserId}`]: iceCandidate } }
-        : { 
-            $set: {
-              timestamp: Date.now(),
-              ...(type === 'offer' && { offer }),
-              ...(type === 'answer' && { answer }),
-              ...(type === 'finished' && { finished: true }),
-              ...(type === 'changeTracks' && { videoEnabled, audioEnabled })
-            }
+      ? { $push: { [`iceCandidates.${initiatorUserId}`]: iceCandidate } }
+      : { 
+          $set: {
+            timestamp: Date.now(),
+            ...(type === 'offer' && { offer }),
+            ...(type === 'answer' && { answer }),
+            ...(type === 'finished' && { finished: true }),
+            ...(type === 'changeTracks' && { videoEnabled, audioEnabled })
           }
-
+        }
+    
       const connection = await db.collection('connections').findOneAndUpdate(
         { $or: [
             { initiatorUserId, targetUserId },
@@ -127,7 +125,19 @@ export const resolvers = {
 
       // Get user info for publishing
       const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
-      if (!initiator) return connection
+      if (!initiator) {
+        console.error( 'no user found for initiator', { initiatorUserId })
+        return connection
+      }
+
+      const targetUser = await db.collection('users').findOne({ userId: targetUserId })
+      if (!targetUser) {
+        console.error( 'no user found for target', { targetUserId })
+        return connection
+      }
+      
+      console.log('connectWithUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
+
 
       // Prepare common payload data
       const basePayload = {
@@ -153,7 +163,10 @@ export const resolvers = {
         changeTracks: { videoEnabled, audioEnabled }
       }
 
-      pubsub.publish('CONNECTION_REQUEST', {
+      // Create a unique topic for this user's connection requests
+      const topic = `CONNECTION_REQUEST:${targetUserId}`
+      
+      pubsub.publish(topic, {
         ...basePayload,
         onConnectionRequest: {
           ...basePayload.onConnectionRequest,
@@ -174,23 +187,15 @@ export const resolvers = {
   Subscription: {
     onConnectionRequest: {
       subscribe: (_: any, { userId }: { userId: string }) => {
-        const iterator = pubsub.subscribe('CONNECTION_REQUEST')
-        return {
-          async *[Symbol.asyncIterator]() {
-            for await (const payload of iterator) {
-              if (payload.userId === userId) {
-                yield payload
-              }
-            }
-          }
-        }
+        // Subscribe to user-specific topic
+        const topic = `CONNECTION_REQUEST:${userId}`
+        return pubsub.subscribe(topic)
       },
       resolve: (payload: ConnectionRequestPayload) => {
         console.log('Resolving connection request:', {
           type: payload.onConnectionRequest.type,
-          hasOffer: !!payload.onConnectionRequest.offer,
-          hasIceCandidate: !!payload.onConnectionRequest.iceCandidate,
-          fromUser: payload.onConnectionRequest.from.name
+          fromUser: payload.onConnectionRequest.from.name,
+          toUser: payload.userId
         })
         return payload.onConnectionRequest
       }

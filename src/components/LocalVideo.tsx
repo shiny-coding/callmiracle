@@ -66,20 +66,13 @@ export default function LocalVideo() {
           return
         }
 
-        // If we have an existing stream, just update track states
-        const currentStream = videoRef.current.srcObject as MediaStream | null
-        if (currentStream) {
-          currentStream.getVideoTracks().forEach(track => {
-            track.enabled = localVideoEnabled
-          })
-          currentStream.getAudioTracks().forEach(track => {
-            track.enabled = localAudioEnabled
-          })
-          setLocalStream(currentStream)
-          return
+        // Stop any existing tracks
+        if (videoRef.current.srcObject instanceof MediaStream) {
+          videoRef.current.srcObject.getTracks().forEach(track => track.stop())
+          videoRef.current.srcObject = null
         }
 
-        // Create new stream if we don't have one
+        // Create new stream
         const constraints: MediaStreamConstraints = {}
         if (localVideoEnabled) {
           constraints.video = selectedDevices.videoId ? { deviceId: selectedDevices.videoId } : true
