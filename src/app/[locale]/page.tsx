@@ -13,6 +13,9 @@ import { TextField, Button } from '@mui/material';
 import UserList from '@/components/UserList';
 import RemoteVideo from '@/components/RemoteVideo';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
+import VideoDeviceSelector from '@/components/VideoDeviceSelector';
+import AudioDeviceSelector from '@/components/AudioDeviceSelector';
+import VideoAudioControls from '@/components/VideoAudioControls';
 
 const CONNECT_MUTATION = gql`
   mutation Connect($input: ConnectInput!) {
@@ -58,60 +61,80 @@ export default function Home() {
   };
 
   return (
-    <main className={`container mx-auto p-4 ${connectionStatus === 'connected' ? 'h-screen' : ''}`}>
-      {/* RemoteVideo - Always rendered but positioned based on state */}
-      <div className={connectionStatus === 'connected' 
-        ? 'fixed inset-0 bg-gray-900' 
-        : 'fixed opacity-0 pointer-events-none'
-      }>
-        <RemoteVideo />
-      </div>
-
-      {connectionStatus === 'connected' ? (
-        // Connected state - LocalVideo PiP
-        <div className="fixed bottom-4 right-4 z-10 w-[200px]">
-          <LocalVideo />
+    <main className="h-full flex flex-col overflow-hidden">
+      {/* Main content area */}
+      <div className="flex-1 relative min-h-0">
+        {/* RemoteVideo - Always rendered but visibility controlled */}
+        <div className={connectionStatus === 'connected' 
+          ? 'absolute inset-0 bg-gray-900' 
+          : 'absolute opacity-0 pointer-events-none'
+        }>
+          <RemoteVideo />
         </div>
-      ) : (
-        // Disconnected state - Local video at top, user list below
-        <div className="flex flex-col gap-4">
-          {/* Local video section - taking max video height */}
-          <div className="flex justify-center">
+
+        {/* Disconnected state content */}
+        {connectionStatus !== 'connected' && (
+          <div className="h-full flex flex-col overflow-hidden">
+            {/* Local video at top */}
+            <div className="flex justify-center pt-4 flex-shrink-0">
+              <LocalVideo />
+            </div>
+
+            {/* Scrollable middle content */}
+            <div className="flex-1 min-h-0 px-4 overflow-y-auto">
+              <div className="mb-4">
+                <UserList />
+              </div>
+
+              <div className="mb-4">
+                <LanguageSelector />
+                <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+                  <TextField
+                    fullWidth
+                    id="name"
+                    name="name"
+                    label={tRoot('name')}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    variant="outlined"
+                  />
+                  <StatusSelector />
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                  >
+                    {tRoot('connect')}
+                  </Button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Connected state PiP */}
+        {connectionStatus === 'connected' && (
+          <div className="absolute bottom-4 right-4 z-10">
             <LocalVideo />
           </div>
+        )}
+      </div>
 
-          {/* User list and settings */}
-          <div className="flex-1 min-w-[320px]">
-            <UserList />
+      {/* Bottom controls - Always visible */}
+      <div className="bg-gray-100 dark:bg-gray-800 p-4 mt-auto">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex gap-2 flex-1">
+            <VideoDeviceSelector />
+            <AudioDeviceSelector />
           </div>
-
-          <div className="w-full">
-            <LanguageSelector />
-            <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                id="name"
-                name="name"
-                label={tRoot('name')}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                variant="outlined"
-              />
-              <StatusSelector />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="primary"
-                size="large"
-              >
-                {tRoot('connect')}
-              </Button>
-            </form>
+          <div className="flex gap-2">
+            <VideoAudioControls />
           </div>
         </div>
-      )}
+      </div>
     </main>
   );
 } 

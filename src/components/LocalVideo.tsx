@@ -35,8 +35,25 @@ export default function LocalVideo() {
     audioId: string
   }>({ videoId: '', audioId: '' })
 
+  // Update video element when stream changes
   useEffect(() => {
-    // Initialize client-side only states
+    if (!videoRef.current) return
+
+    // Update video source with new stream
+    if (localStream && localVideoEnabled) {
+      videoRef.current.srcObject = localStream
+      setHasPermission(true)
+      setError('')
+    } else {
+      if (videoRef.current.srcObject instanceof MediaStream) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop())
+      }
+      videoRef.current.srcObject = null
+    }
+  }, [localStream, localVideoEnabled])
+
+  // Initialize client-side only states
+  useEffect(() => {
     const savedCameraEnabled = localStorage.getItem('cameraEnabled')
     const savedAudioEnabled = localStorage.getItem('audioEnabled')
     if (savedCameraEnabled !== null) {
@@ -45,34 +62,13 @@ export default function LocalVideo() {
     if (savedAudioEnabled !== null) {
       setLocalAudioEnabled(savedAudioEnabled !== 'false')
     }
-    
-    setSelectedDevices({
-      videoId: localStorage.getItem('selectedVideoDevice') || '',
-      audioId: localStorage.getItem('selectedAudioDevice') || ''
-    })
   }, [setLocalVideoEnabled, setLocalAudioEnabled])
 
-  useEffect(() => {
-    async function getDevices() {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices()
-        setDevices({
-          video: devices.filter(d => d.kind === 'videoinput'),
-          audio: devices.filter(d => d.kind === 'audioinput')
-        })
-      } catch (err) {
-        console.error('Error getting devices:', err)
-      }
-    }
-    getDevices()
-  }, [])
-
+  // Initial stream setup
   useEffect(() => {
     async function setupStream() {
       try {
-        if (!videoRef.current) {
-          return
-        }
+        if (!videoRef.current) return
 
         // Stop any existing tracks
         if (videoRef.current.srcObject instanceof MediaStream) {
@@ -80,36 +76,31 @@ export default function LocalVideo() {
           videoRef.current.srcObject = null
         }
 
-        // Create new stream
-        const constraints: MediaStreamConstraints = {}
-        if (localVideoEnabled) {
-          constraints.video = selectedDevices.videoId ? { deviceId: selectedDevices.videoId } : true
-        }
-        if (localAudioEnabled) {
-          constraints.audio = selectedDevices.audioId ? { deviceId: selectedDevices.audioId } : true
-        }
+        // Create new stream if video or audio is enabled
+        if (localVideoEnabled || localAudioEnabled) {
+          const constraints: MediaStreamConstraints = {}
+          if (localVideoEnabled) {
+            constraints.video = true
+          }
+          if (localAudioEnabled) {
+            constraints.audio = true
+          }
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints)
-        
-        // Set initial track states
-        stream.getVideoTracks().forEach(track => {
-          track.enabled = localVideoEnabled
-        })
-        stream.getAudioTracks().forEach(track => {
-          track.enabled = localAudioEnabled
-        })
+          const stream = await navigator.mediaDevices.getUserMedia(constraints)
+          
+          // Set initial track states
+          stream.getVideoTracks().forEach(track => {
+            track.enabled = localVideoEnabled
+          })
+          stream.getAudioTracks().forEach(track => {
+            track.enabled = localAudioEnabled
+          })
 
-        // Check again if video element is still available
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
+          // Update the stream in WebRTC context
+          setLocalStream(stream)
           setHasPermission(true)
           setError('')
-          
-          // Update the stream in WebRTC context which will trigger peer connection update
-          setLocalStream(stream)
         } else {
-          // Clean up if video element is gone
-          stream.getTracks().forEach(track => track.stop())
           setLocalStream(undefined)
         }
       } catch (err) {
@@ -121,60 +112,15 @@ export default function LocalVideo() {
     }
 
     setupStream()
-  }, [localVideoEnabled, localAudioEnabled, selectedDevices.videoId, selectedDevices.audioId, setLocalStream])
-
-  const handleVideoToggle = () => {
-    const newState = !localVideoEnabled
-    setLocalVideoEnabled(newState)
-    localStorage.setItem('cameraEnabled', String(newState))
-  }
-
-  const toggleAudio = () => {
-    const newState = !localAudioEnabled
-    setLocalAudioEnabled(newState)
-    localStorage.setItem('audioEnabled', String(newState))
-  }
-
-  const handleDeviceChange = (type: 'video' | 'audio', deviceId: string) => {
-    setSelectedDevices(prev => ({ ...prev, [`${type}Id`]: deviceId }))
-    localStorage.setItem(`selected${type.charAt(0).toUpperCase() + type.slice(1)}Device`, deviceId)
-  }
+  }, [localVideoEnabled, localAudioEnabled])
 
   return (
-    <div className="relative w-full max-w-[400px] mx-auto mb-6">
-      <div className="flex justify-between items-center mb-2">
-        <Typography variant="subtitle1">{name || 'Me'}</Typography>
-        <div className="flex gap-1">
-          <IconButton 
-            onClick={toggleAudio}
-            className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-            size="small"
-          >
-            {localAudioEnabled ? (
-              <MicIcon className="text-blue-500" />
-            ) : (
-              <MicOffIcon className="text-gray-500" />
-            )}
-          </IconButton>
-          <IconButton 
-            onClick={handleVideoToggle}
-            className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-            size="small"
-          >
-            {localVideoEnabled ? (
-              <VideocamIcon className="text-blue-500" />
-            ) : (
-              <VideocamOffIcon className="text-gray-500" />
-            )}
-          </IconButton>
-        </div>
-      </div>
-
+    <div className="relative w-full max-w-[400px] mx-auto">
       {error && (
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
       <div style={connectionStatus === 'connected' ? { width: '200px', height: '150px' } : { width: '400px', height: '300px' }} 
-        className="mx-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
+        className="relative mx-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
         {localVideoEnabled ? (
           <video
             ref={videoRef}
@@ -188,45 +134,11 @@ export default function LocalVideo() {
             {t('cameraDisabled')}
           </div>
         )}
-      </div>
-      {(devices.video.length > 0 || devices.audio.length > 0) && (
-        <div className="flex gap-2 mt-2">
-          {devices.video.length > 0 && (
-            <FormControl size="small" fullWidth className="dark:bg-gray-800 rounded-lg">
-              <InputLabel className="dark:text-gray-300">Camera</InputLabel>
-              <Select
-                value={selectedDevices.videoId}
-                onChange={(e) => handleDeviceChange('video', e.target.value)}
-                label="Camera"
-                className="dark:text-gray-100"
-              >
-                {devices.video.map(device => (
-                  <MenuItem key={device.deviceId} value={device.deviceId} className="dark:text-gray-100 dark:hover:bg-gray-700">
-                    {device.label || `Camera ${device.deviceId.slice(0, 5)}...`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-          {devices.audio.length > 0 && (
-            <FormControl size="small" fullWidth className="dark:bg-gray-800 rounded-lg">
-              <InputLabel className="dark:text-gray-300">Microphone</InputLabel>
-              <Select
-                value={selectedDevices.audioId}
-                onChange={(e) => handleDeviceChange('audio', e.target.value)}
-                label="Microphone"
-                className="dark:text-gray-100"
-              >
-                {devices.audio.map(device => (
-                  <MenuItem key={device.deviceId} value={device.deviceId} className="dark:text-gray-100 dark:hover:bg-gray-700">
-                    {device.label || `Microphone ${device.deviceId.slice(0, 5)}...`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
+        {/* Name overlay */}
+        <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+          {name || 'Me'}
         </div>
-      )}
+      </div>
     </div>
   )
 }
