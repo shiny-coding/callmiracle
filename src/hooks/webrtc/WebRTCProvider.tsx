@@ -1,5 +1,5 @@
 'use client'
-import { useState, createContext, useContext, ReactNode, useRef } from 'react'
+import { useState, createContext, useContext, ReactNode, useRef, useEffect } from 'react'
 import { useSubscription, useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
@@ -134,6 +134,24 @@ export function WebRTCProvider({
       }
     }
   })
+
+  // Watch for stream changes and update peer connections
+  useEffect(() => {
+    if (!localStream) return
+
+    // Get the active peer connection from either caller or callee
+    const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
+    if (!activePeerConnection) return
+
+    // Update tracks in the active peer connection
+    const senders = activePeerConnection.getSenders()
+    localStream.getTracks().forEach(track => {
+      const sender = senders.find(s => s.track?.kind === track.kind)
+      if (sender) {
+        sender.replaceTrack(track)
+      }
+    })
+  }, [localStream, caller.active, caller.peerConnection, callee.active, callee.peerConnection])
 
   return (
     <WebRTCContext.Provider 

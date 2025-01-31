@@ -96,6 +96,8 @@ export default function LocalVideo() {
           videoRef.current.srcObject = stream
           setHasPermission(true)
           setError('')
+          
+          // Update the stream in WebRTC context which will trigger peer connection update
           setLocalStream(stream)
         } else {
           // Clean up if video element is gone
