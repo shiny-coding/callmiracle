@@ -4,6 +4,7 @@ import { ApolloWrapper } from '@/lib/apollo-provider';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import LocaleSelector from '@/components/LocaleSelector';
 import { StoreInitializer } from '@/components/StoreInitializer';
+import { WebRTCProvider } from '@/hooks/webrtc/WebRTCProvider';
 
 export default async function LocaleLayout({
   children,
@@ -25,14 +26,16 @@ export default async function LocaleLayout({
   }
 
   return (
-    <ApolloWrapper>
-      <AppRouterCacheProvider>
-        <NextIntlClientProvider messages={messages} locale={locale}>
-          <StoreInitializer />
-          {/* <LocaleSelector /> */}
-          {children}
-        </NextIntlClientProvider>
-      </AppRouterCacheProvider>
-    </ApolloWrapper>
+    <AppRouterCacheProvider>
+      <NextIntlClientProvider locale={locale} messages={messages}>
+        <ApolloWrapper>
+          <WebRTCProvider>
+            <StoreInitializer />
+            {/* <LocaleSelector /> */}
+            {children}
+          </WebRTCProvider>
+        </ApolloWrapper>
+      </NextIntlClientProvider>
+    </AppRouterCacheProvider>
   );
 } 

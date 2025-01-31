@@ -9,21 +9,17 @@ import MicOffIcon from '@mui/icons-material/MicOff'
 import { useTranslations } from 'next-intl'
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 import { useStore } from '@/store/useStore'
+import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 
-interface LocalVideoProps {
-  onStreamChange: (stream: MediaStream | undefined) => void
-  onVideoEnabledChange: (enabled: boolean) => void
-  onAudioEnabledChange: (enabled: boolean) => void
-}
+interface LocalVideoProps {}
 
-export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAudioEnabledChange }: LocalVideoProps) {
+export default function LocalVideo() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true)
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true)
   const t = useTranslations()
   const { name } = useStore()
+  const { localStream, setLocalStream, localVideoEnabled, setLocalVideoEnabled, localAudioEnabled, setLocalAudioEnabled } = useWebRTCContext()
   const [devices, setDevices] = useState<{
     video: MediaDeviceInfo[],
     audio: MediaDeviceInfo[]
@@ -38,10 +34,10 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
     const savedCameraEnabled = localStorage.getItem('cameraEnabled')
     const savedAudioEnabled = localStorage.getItem('audioEnabled')
     if (savedCameraEnabled !== null) {
-      setIsVideoEnabled(savedCameraEnabled !== 'false')
+      setLocalVideoEnabled(savedCameraEnabled !== 'false')
     }
     if (savedAudioEnabled !== null) {
-      setIsAudioEnabled(savedAudioEnabled !== 'false')
+      setLocalAudioEnabled(savedAudioEnabled !== 'false')
     }
     
     setSelectedDevices({
@@ -76,21 +72,21 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
         const currentStream = videoRef.current.srcObject as MediaStream | null
         if (currentStream) {
           currentStream.getVideoTracks().forEach(track => {
-            track.enabled = isVideoEnabled
+            track.enabled = localVideoEnabled
           })
           currentStream.getAudioTracks().forEach(track => {
-            track.enabled = isAudioEnabled
+            track.enabled = localAudioEnabled
           })
-          onStreamChange(currentStream)
+          setLocalStream(currentStream)
           return
         }
 
         // Create new stream if we don't have one
         const constraints: MediaStreamConstraints = {}
-        if (isVideoEnabled) {
+        if (localVideoEnabled) {
           constraints.video = selectedDevices.videoId ? { deviceId: selectedDevices.videoId } : true
         }
-        if (isAudioEnabled) {
+        if (localAudioEnabled) {
           constraints.audio = selectedDevices.audioId ? { deviceId: selectedDevices.audioId } : true
         }
 
@@ -98,10 +94,10 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
         
         // Set initial track states
         stream.getVideoTracks().forEach(track => {
-          track.enabled = isVideoEnabled
+          track.enabled = localVideoEnabled
         })
         stream.getAudioTracks().forEach(track => {
-          track.enabled = isAudioEnabled
+          track.enabled = localAudioEnabled
         })
 
         // Check again if video element is still available
@@ -109,35 +105,33 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
           videoRef.current.srcObject = stream
           setHasPermission(true)
           setError('')
-          onStreamChange(stream)
+          setLocalStream(stream)
         } else {
           // Clean up if video element is gone
           stream.getTracks().forEach(track => track.stop())
-          onStreamChange(undefined)
+          setLocalStream(undefined)
         }
       } catch (err) {
         console.error('Error accessing media devices:', err)
         setError('Error accessing camera/microphone')
         setHasPermission(false)
-        onStreamChange(undefined)
+        setLocalStream(undefined)
       }
     }
 
     setupStream()
-  }, [isVideoEnabled, isAudioEnabled, selectedDevices.videoId, selectedDevices.audioId, onStreamChange])
+  }, [localVideoEnabled, localAudioEnabled, selectedDevices.videoId, selectedDevices.audioId])
 
   const handleVideoToggle = () => {
-    const newState = !isVideoEnabled
-    setIsVideoEnabled(newState)
+    const newState = !localVideoEnabled
+    setLocalVideoEnabled(newState)
     localStorage.setItem('cameraEnabled', String(newState))
-    onVideoEnabledChange(newState)
   }
 
   const toggleAudio = () => {
-    const newState = !isAudioEnabled
-    setIsAudioEnabled(newState)
+    const newState = !localAudioEnabled
+    setLocalAudioEnabled(newState)
     localStorage.setItem('audioEnabled', String(newState))
-    onAudioEnabledChange(newState)
   }
 
   const handleDeviceChange = (type: 'video' | 'audio', deviceId: string) => {
@@ -155,7 +149,7 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
             className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
             size="small"
           >
-            {isAudioEnabled ? (
+            {localAudioEnabled ? (
               <MicIcon className="text-blue-500" />
             ) : (
               <MicOffIcon className="text-gray-500" />
@@ -166,7 +160,7 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
             className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
             size="small"
           >
-            {isVideoEnabled ? (
+            {localVideoEnabled ? (
               <VideocamIcon className="text-blue-500" />
             ) : (
               <VideocamOffIcon className="text-gray-500" />
@@ -179,7 +173,7 @@ export default function LocalVideo({ onStreamChange, onVideoEnabledChange, onAud
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
       <div style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }} className="mx-auto">
-        {isVideoEnabled ? (
+        {localVideoEnabled ? (
           <video
             ref={videoRef}
             autoPlay

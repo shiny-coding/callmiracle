@@ -1,4 +1,5 @@
-import { useState, createContext, useContext, ReactNode } from 'react'
+'use client'
+import { useState, createContext, useContext, ReactNode, useRef } from 'react'
 import { useSubscription, useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
@@ -16,14 +17,17 @@ interface WebRTCContextType {
   remoteVideoEnabled: boolean
   remoteAudioEnabled: boolean
   remoteName: string | null
+  localStream: MediaStream | undefined
+  setLocalStream: (stream: MediaStream | undefined) => void
+  localVideoEnabled: boolean
+  setLocalVideoEnabled: (enabled: boolean) => void
+  localAudioEnabled: boolean
+  setLocalAudioEnabled: (enabled: boolean) => void
+  remoteVideoRef: React.RefObject<HTMLVideoElement>
 }
 
 interface WebRTCProviderProps {
   children: ReactNode
-  localStream?: MediaStream
-  remoteVideoRef: React.RefObject<HTMLVideoElement>
-  localVideoEnabled?: boolean
-  localAudioEnabled?: boolean
 }
 
 const WebRTCContext = createContext<WebRTCContextType | null>(null)
@@ -38,15 +42,15 @@ export function useWebRTCContext() {
 
 export function WebRTCProvider({ 
   children, 
-  localStream, 
-  remoteVideoRef, 
-  localVideoEnabled = true,
-  localAudioEnabled = true 
 }: WebRTCProviderProps) {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
   const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(false)
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [remoteName, setRemoteName] = useState<string | null>(null)
+  const [localStream, setLocalStream] = useState<MediaStream>()
+  const [localVideoEnabled, setLocalVideoEnabled] = useState(true)
+  const [localAudioEnabled, setLocalAudioEnabled] = useState(true)
+  const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
 
   const childProps = {
     localStream,
@@ -142,7 +146,14 @@ export function WebRTCProvider({
         hangup,
         remoteVideoEnabled,
         remoteAudioEnabled,
-        remoteName
+        remoteName,
+        localStream,
+        setLocalStream,
+        localVideoEnabled,
+        setLocalVideoEnabled,
+        localAudioEnabled,
+        setLocalAudioEnabled,
+        remoteVideoRef
       }}
     >
       {children}

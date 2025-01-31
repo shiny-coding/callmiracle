@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video';
 import ConnectionRequest from './ConnectionRequest';
 import { Typography, IconButton } from '@mui/material';
@@ -12,12 +12,7 @@ import MicOffIcon from '@mui/icons-material/MicOff';
 import { useTranslations } from 'next-intl';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 
-interface RemoteVideoProps {
-  localStream?: MediaStream;
-  remoteVideoRef: React.RefObject<HTMLVideoElement>;
-}
-
-export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideoProps) {
+export default function RemoteVideo() {
   const t = useTranslations('VideoChat');
   const {
     connectionStatus,
@@ -27,7 +22,8 @@ export default function RemoteVideo({ localStream, remoteVideoRef }: RemoteVideo
     hangup,
     remoteVideoEnabled,
     remoteAudioEnabled,
-    remoteName
+    remoteName,
+    remoteVideoRef
   } = useWebRTCContext();
 
   useEffect(() => {

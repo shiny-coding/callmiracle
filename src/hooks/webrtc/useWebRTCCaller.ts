@@ -148,6 +148,6 @@ export function useWebRTCCaller({
     peerConnection,
     active,
     targetUserId,
-    hangup
+    hangup,
   }
 } 
