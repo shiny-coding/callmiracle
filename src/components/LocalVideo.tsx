@@ -17,7 +17,15 @@ export default function LocalVideo() {
   const [error, setError] = useState<string>('')
   const t = useTranslations()
   const { name } = useStore()
-  const { localStream, setLocalStream, localVideoEnabled, setLocalVideoEnabled, localAudioEnabled, setLocalAudioEnabled } = useWebRTCContext()
+  const { 
+    localStream, 
+    setLocalStream, 
+    localVideoEnabled, 
+    setLocalVideoEnabled, 
+    localAudioEnabled, 
+    setLocalAudioEnabled,
+    connectionStatus
+  } = useWebRTCContext()
   const [devices, setDevices] = useState<{
     video: MediaDeviceInfo[],
     audio: MediaDeviceInfo[]
@@ -133,7 +141,7 @@ export default function LocalVideo() {
   }
 
   return (
-    <div className="relative w-full max-w-[200px] mx-auto mb-6">
+    <div className="relative w-full max-w-[400px] mx-auto mb-6">
       <div className="flex justify-between items-center mb-2">
         <Typography variant="subtitle1">{name || 'Me'}</Typography>
         <div className="flex gap-1">
@@ -165,7 +173,8 @@ export default function LocalVideo() {
       {error && (
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
-      <div style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }} className="mx-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
+      <div style={connectionStatus === 'connected' ? { width: '200px', height: '150px' } : { width: '400px', height: '300px' }} 
+        className="mx-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
         {localVideoEnabled ? (
           <video
             ref={videoRef}

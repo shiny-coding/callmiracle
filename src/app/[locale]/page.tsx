@@ -58,51 +58,60 @@ export default function Home() {
   };
 
   return (
-    <main className={`container mx-auto p-4 space-y-4 ${connectionStatus === 'connected' ? 'h-screen' : ''}`}>
-      <div className={connectionStatus === 'connected' ? 'fixed inset-0 bg-gray-900' : 'flex flex-row flex-wrap gap-4 justify-center'}>
-        {/* Video Section */}
-        <div className={connectionStatus === 'connected' ? 'w-full h-full' : 'flex flex-row gap-4'}>
-          <RemoteVideo />
-          <div className={connectionStatus === 'connected' ? 'fixed bottom-4 right-4 z-10 w-[200px]' : ''}>
+    <main className={`container mx-auto p-4 ${connectionStatus === 'connected' ? 'h-screen' : ''}`}>
+      {/* RemoteVideo - Always rendered but positioned based on state */}
+      <div className={connectionStatus === 'connected' 
+        ? 'fixed inset-0 bg-gray-900' 
+        : 'fixed opacity-0 pointer-events-none'
+      }>
+        <RemoteVideo />
+      </div>
+
+      {connectionStatus === 'connected' ? (
+        // Connected state - LocalVideo PiP
+        <div className="fixed bottom-4 right-4 z-10 w-[200px]">
+          <LocalVideo />
+        </div>
+      ) : (
+        // Disconnected state - Local video at top, user list below
+        <div className="flex flex-col gap-4">
+          {/* Local video section - taking max video height */}
+          <div className="flex justify-center">
             <LocalVideo />
           </div>
+
+          {/* User list and settings */}
+          <div className="flex-1 min-w-[320px]">
+            <UserList />
+          </div>
+
+          <div className="w-full">
+            <LanguageSelector />
+            <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+              <TextField
+                fullWidth
+                id="name"
+                name="name"
+                label={tRoot('name')}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                variant="outlined"
+              />
+              <StatusSelector />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+                size="large"
+              >
+                {tRoot('connect')}
+              </Button>
+            </form>
+          </div>
         </div>
-
-        {/* Settings Section - Only show when disconnected */}
-        {connectionStatus !== 'connected' && (
-          <>
-            <div className="flex-1 min-w-[320px]">
-              <UserList />
-            </div>
-
-            <div className="w-full">
-              <LanguageSelector />
-              <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
-                <TextField
-                  fullWidth
-                  id="name"
-                  name="name"
-                  label={tRoot('name')}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  variant="outlined"
-                />
-                <StatusSelector />
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                >
-                  {tRoot('connect')}
-                </Button>
-              </form>
-            </div>
-          </>
-        )}
-      </div>
+      )}
     </main>
   );
 } 
