@@ -58,7 +58,7 @@ export default function RemoteVideo() {
 
   return (
     <>
-      <div className="relative w-full max-w-[200px] mx-auto">
+      <div className={`relative ${connectionStatus === 'connected' ? 'w-full h-screen' : 'w-full max-w-[200px] mx-auto'}`}>
         <div className="flex justify-between items-center mb-2">
           <Typography variant="subtitle1">
             {connectionStatus === 'connected' ? remoteName : 'Brother'}
@@ -83,13 +83,14 @@ export default function RemoteVideo() {
           )}
         </div>
 
-        <div style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }} className="mx-auto relative">
+        <div className={connectionStatus === 'connected' ? 'w-full h-full' : `w-[${VIDEO_WIDTH}px] h-[${VIDEO_HEIGHT}px] mx-auto relative`}>
           <video
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }}
-            className="rounded-lg shadow-lg object-cover bg-gray-100 dark:bg-gray-800"
+            className={`rounded-lg shadow-lg bg-gray-100 dark:bg-gray-800 ${
+              connectionStatus === 'connected' ? 'w-full h-full object-contain' : `w-[${VIDEO_WIDTH}px] h-[${VIDEO_HEIGHT}px] object-cover`
+            }`}
           />
           {connectionStatus !== 'connected' && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -100,7 +101,7 @@ export default function RemoteVideo() {
           )}
         </div>
         {connectionStatus === 'connected' && (
-          <div className="flex justify-center mt-2">
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
             <IconButton
               onClick={hangup}
               className="bg-red-500 hover:bg-red-600 text-white"

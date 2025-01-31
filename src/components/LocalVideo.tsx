@@ -11,8 +11,6 @@ import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 
-interface LocalVideoProps {}
-
 export default function LocalVideo() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
@@ -44,7 +42,7 @@ export default function LocalVideo() {
       videoId: localStorage.getItem('selectedVideoDevice') || '',
       audioId: localStorage.getItem('selectedAudioDevice') || ''
     })
-  }, [])
+  }, [setLocalVideoEnabled, setLocalAudioEnabled])
 
   useEffect(() => {
     async function getDevices() {
@@ -120,7 +118,7 @@ export default function LocalVideo() {
     }
 
     setupStream()
-  }, [localVideoEnabled, localAudioEnabled, selectedDevices.videoId, selectedDevices.audioId])
+  }, [localVideoEnabled, localAudioEnabled, selectedDevices.videoId, selectedDevices.audioId, setLocalStream])
 
   const handleVideoToggle = () => {
     const newState = !localVideoEnabled
@@ -172,21 +170,17 @@ export default function LocalVideo() {
       {error && (
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
-      <div style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }} className="mx-auto">
+      <div style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }} className="mx-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
         {localVideoEnabled ? (
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }}
-            className="rounded-lg shadow-lg object-cover"
+            className="w-full h-full object-contain rounded-lg"
           />
         ) : (
-          <div 
-            style={{ width: `${VIDEO_WIDTH}px`, height: `${VIDEO_HEIGHT}px` }}
-            className="bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400"
-          >
+          <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
             {t('cameraDisabled')}
           </div>
         )}
