@@ -13,8 +13,6 @@ import { TextField, Button } from '@mui/material';
 import UserList from '@/components/UserList';
 import RemoteVideo from '@/components/RemoteVideo';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
-import VideoDeviceSelector from '@/components/VideoDeviceSelector';
-import AudioDeviceSelector from '@/components/AudioDeviceSelector';
 import VideoAudioControls from '@/components/VideoAudioControls';
 
 const CONNECT_MUTATION = gql`
@@ -125,14 +123,8 @@ export default function Home() {
 
       {/* Bottom controls - Always visible */}
       <div className="bg-gray-100 dark:bg-gray-800 p-4 mt-auto">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex gap-2 flex-1">
-            <VideoDeviceSelector />
-            <AudioDeviceSelector />
-          </div>
-          <div className="flex gap-2">
-            <VideoAudioControls />
-          </div>
+        <div className="container mx-auto flex justify-end items-center">
+          <VideoAudioControls />
         </div>
       </div>
     </main>
