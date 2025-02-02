@@ -12,14 +12,17 @@ import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { LANGUAGES } from '@/config/languages'
 import ProfileSettings from './ProfileSettings'
+import StatusSettings from './StatusSettings'
 
 export default function LocalVideo() {
   const [profileOpen, setProfileOpen] = useState(false)
+  const [statusOpen, setStatusOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
   const t = useTranslations()
-  const { name, languages } = useStore()
+  const tStatus = useTranslations('Status')
+  const { name, languages, statuses } = useStore()
   const { 
     localStream, 
     setLocalStream, 
@@ -157,10 +160,30 @@ export default function LocalVideo() {
             ))}
           </div>
         )}
+        {/* Status overlay */}
+        {connectionStatus !== 'connected' && statuses.length > 0 && (
+          <div 
+            className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1 cursor-pointer"
+            onClick={() => setStatusOpen(true)}
+          >
+            {statuses.map(status => (
+              <div 
+                key={status} 
+                className="bg-black/50 px-2 py-1 rounded text-white text-sm hover:bg-black/60"
+              >
+                {tStatus(status)}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <ProfileSettings 
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
+      />
+      <StatusSettings
+        open={statusOpen}
+        onClose={() => setStatusOpen(false)}
       />
     </div>
   )

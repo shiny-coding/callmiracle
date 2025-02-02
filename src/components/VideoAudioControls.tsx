@@ -26,7 +26,7 @@ export default function VideoAudioControls() {
   } = useWebRTCContext()
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-4 flex justify-center items-center gap-4 bg-gradient-to-t from-black/50 to-transparent">
+    <div className="p-4 w-full flex justify-center items-center gap-4 bg-gradient-to-t from-black/50 to-transparent">
       <div className="absolute left-4 flex gap-2">
         <IconButton
           className="bg-black/30 backdrop-blur-sm hover:bg-black/40"

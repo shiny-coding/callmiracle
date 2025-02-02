@@ -56,7 +56,7 @@ export default function RemoteVideo() {
 
   return (
     <>
-      <div className={`relative ${connectionStatus === 'connected' ? 'w-full h-screen pb-20' : 'w-full max-w-[200px] mx-auto'}`}>
+      <div className={`relative ${connectionStatus === 'connected' ? 'w-full h-full pb-20' : 'w-full max-w-[200px] mx-auto'}`}>
         <div className={`absolute inset-0 ${connectionStatus === 'connected' ? 'bg-gray-900' : 'opacity-0 pointer-events-none'}`}>
           <div className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4 bg-gradient-to-b from-black/50 to-transparent">
             <Typography variant="subtitle1" className="text-white">

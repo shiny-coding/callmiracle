@@ -1,6 +1,5 @@
 'use client';
 
-import { Container } from '@mui/material'
 import VideoAudioControls from '@/components/VideoAudioControls'
 import LocalVideo from '@/components/LocalVideo'
 import RemoteVideo from '@/components/RemoteVideo'
@@ -11,18 +10,25 @@ function MainContent() {
   const { connectionStatus } = useWebRTCContext()
 
   return (
-    <Container maxWidth="xl" className="h-screen flex flex-col items-center justify-center">
-      <div className="relative w-full h-full max-w-[1536px] mx-auto">
-        <RemoteVideo />
+    <div className="h-screen flex flex-col items-center w-full max-w-[1536px] mx-auto">
+      <div className={`${connectionStatus === 'connected' 
+        ? 'absolute bottom-[72px] right-4 z-10 w-[240px]' 
+        : 'flex justify-center pt-4'
+      }`}>
         <LocalVideo />
-        {connectionStatus !== 'connected' && (
-          <div className="absolute left-0 right-0 bottom-20 px-4 max-h-[calc(100vh-500px)] overflow-y-auto">
-            <UserList />
-          </div>
-        )}
-        <VideoAudioControls />
       </div>
-    </Container>
+      <div className={`flex items-center justify-center w-full h-full ${
+        connectionStatus === 'connected' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}>
+        <RemoteVideo />
+      </div>
+      {connectionStatus !== 'connected' && (
+        <div className="h-full px-4 mt-4 overflow-y-auto pb-4">
+          <UserList />
+        </div>
+      )}
+      <VideoAudioControls />
+    </div>
   )
 }
 
