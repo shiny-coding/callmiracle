@@ -17,17 +17,17 @@ const statusRelationships = new Map<Status, Status>([
 export default function StatusSelector() {
   const t = useTranslations('Status')
   const tRoot = useTranslations()
-  const { selectedStatuses, setSelectedStatuses } = useStore()
+  const { statuses, setStatuses } = useStore()
 
   // Split statuses into left and right columns
   const leftColumnStatuses = Array.from(statusRelationships.keys())
   const rightColumnStatuses = Array.from(new Set(statusRelationships.values()))
 
   const toggleStatus = (status: Status) => {
-    setSelectedStatuses(
-      selectedStatuses.includes(status)
-        ? selectedStatuses.filter(s => s !== status)
-        : [...selectedStatuses, status]
+    setStatuses(
+      statuses.includes(status)
+        ? statuses.filter(s => s !== status)
+        : [...statuses, status]
     )
   }
 
@@ -40,9 +40,9 @@ export default function StatusSelector() {
             <Button
               key={status}
               fullWidth
-              variant={selectedStatuses.includes(status) ? "contained" : "outlined"}
+              variant={statuses.includes(status) ? "contained" : "outlined"}
               onClick={() => toggleStatus(status)}
-              color={selectedStatuses.includes(status) ? "primary" : "inherit"}
+              color={statuses.includes(status) ? "primary" : "inherit"}
             >
               {t(status)}
             </Button>
@@ -53,9 +53,9 @@ export default function StatusSelector() {
             <Button
               key={status}
               fullWidth
-              variant={selectedStatuses.includes(status) ? "contained" : "outlined"}
+              variant={statuses.includes(status) ? "contained" : "outlined"}
               onClick={() => toggleStatus(status)}
-              color={selectedStatuses.includes(status) ? "primary" : "inherit"}
+              color={statuses.includes(status) ? "primary" : "inherit"}
             >
               {t(status)}
             </Button>

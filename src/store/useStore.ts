@@ -5,16 +5,12 @@ import { getBrowserLanguage } from '@/utils/language'
 
 interface AppState {
   name: string
-  selectedLangs: string[]
-  selectedStatuses: Status[]
-  setName: (name: string) => void
-  setSelectedLangs: (langs: string[] | ((prev: string[]) => string[])) => void
-  setSelectedStatuses: (statuses: Status[]) => void
-  initBrowserLangs: () => void
-  statuses: string[]
-  setStatuses: (statuses: string[]) => void
   languages: string[]
-  setLanguages: (languages: string[]) => void
+  statuses: Status[]
+  setName: (name: string) => void
+  setLanguages: (languages: string[] | ((prev: string[]) => string[])) => void
+  setStatuses: (statuses: Status[]) => void
+  initBrowserLangs: () => void
   targetUserId: string | null
   setTargetUserId: (userId: string | null) => void
 }
@@ -23,23 +19,19 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       name: '',
-      selectedLangs: [],
-      selectedStatuses: [],
+      languages: [],
+      statuses: [],
       setName: (name) => set({ name }),
-      setSelectedLangs: (selectedLangs) => 
-        set({ selectedLangs: typeof selectedLangs === 'function' ? selectedLangs(get().selectedLangs) : selectedLangs }),
-      setSelectedStatuses: (selectedStatuses) => set({ selectedStatuses }),
+      setLanguages: (languages) => 
+        set({ languages: typeof languages === 'function' ? languages(get().languages) : languages }),
+      setStatuses: (statuses) => set({ statuses }),
       initBrowserLangs: () => {
-        const { selectedLangs } = get()
-        if (selectedLangs.length === 0) {
+        const { languages } = get()
+        if (languages.length === 0) {
           const browserLangs = getBrowserLanguage()
-          set({ selectedLangs: browserLangs })
+          set({ languages: browserLangs })
         }
       },
-      statuses: [],
-      setStatuses: (statuses) => set({ statuses }),
-      languages: [],
-      setLanguages: (languages) => set({ languages }),
       targetUserId: null,
       setTargetUserId: (userId) => set({ targetUserId: userId })
     }),
@@ -49,8 +41,8 @@ export const useStore = create<AppState>()(
       skipHydration: true,
       partialize: (state) => ({
         name: state.name,
-        statuses: state.statuses,
-        languages: state.languages
+        languages: state.languages,
+        statuses: state.statuses
       })
     }
   )

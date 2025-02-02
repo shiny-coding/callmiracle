@@ -35,15 +35,15 @@ function getStyles(name: string, selectedLangs: string[], theme: Theme) {
 }
 
 export default function LanguageSelector() {
-  const { selectedLangs = [], setSelectedLangs } = useStore();
+  const { languages, setLanguages } = useStore();
   const theme = useTheme();
   const t = useTranslations();
 
-  const handleChange = (event: SelectChangeEvent<typeof selectedLangs>) => {
+  const handleChange = (event: SelectChangeEvent<typeof languages>) => {
     const {
       target: { value },
     } = event;
-    setSelectedLangs(typeof value === 'string' ? value.split(',') : value);
+    setLanguages(typeof value === 'string' ? value.split(',') : value);
   };
 
   return (
@@ -54,7 +54,7 @@ export default function LanguageSelector() {
           labelId="language-select-label"
           id="language-select"
           multiple
-          value={selectedLangs}
+          value={languages}
           onChange={handleChange}
           input={<OutlinedInput label={t('iSpeak')} />}
           renderValue={(selected) => (
@@ -64,7 +64,7 @@ export default function LanguageSelector() {
                   key={value} 
                   label={LANGUAGES.find(lang => lang.code === value)?.name}
                   onDelete={() => {
-                    setSelectedLangs(prev => prev.filter(lang => lang !== value));
+                    setLanguages(prev => prev.filter(lang => lang !== value));
                   }}
                   onMouseDown={(event) => {
                     event.stopPropagation();
@@ -86,7 +86,7 @@ export default function LanguageSelector() {
         >
           {LANGUAGES.map((lang) => (
             <MenuItem key={lang.code} value={lang.code}>
-              <Checkbox checked={selectedLangs.indexOf(lang.code) > -1} />
+              <Checkbox checked={languages.indexOf(lang.code) > -1} />
               <ListItemText primary={lang.name} />
             </MenuItem>
           ))}

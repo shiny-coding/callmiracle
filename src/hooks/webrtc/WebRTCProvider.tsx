@@ -24,6 +24,8 @@ interface WebRTCContextType {
   localAudioEnabled: boolean
   setLocalAudioEnabled: (enabled: boolean) => void
   remoteVideoRef: React.RefObject<HTMLVideoElement>
+  handleAudioToggle: () => void
+  handleVideoToggle: () => void
 }
 
 interface WebRTCProviderProps {
@@ -48,8 +50,12 @@ export function WebRTCProvider({
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [remoteName, setRemoteName] = useState<string | null>(null)
   const [localStream, setLocalStream] = useState<MediaStream>()
-  const [localVideoEnabled, setLocalVideoEnabled] = useState(true)
-  const [localAudioEnabled, setLocalAudioEnabled] = useState(true)
+  const [localVideoEnabled, setLocalVideoEnabled] = useState(() => 
+    localStorage.getItem('cameraEnabled') !== 'false'
+  )
+  const [localAudioEnabled, setLocalAudioEnabled] = useState(() => 
+    localStorage.getItem('audioEnabled') !== 'false'
+  )
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
 
   const childProps = {
@@ -153,27 +159,41 @@ export function WebRTCProvider({
     })
   }, [localStream, caller.active, caller.peerConnection, callee.active, callee.peerConnection])
 
+  const handleAudioToggle = () => {
+    const newState = !localAudioEnabled
+    setLocalAudioEnabled(newState)
+    localStorage.setItem('audioEnabled', String(newState))
+  }
+
+  const handleVideoToggle = () => {
+    const newState = !localVideoEnabled
+    setLocalVideoEnabled(newState)
+    localStorage.setItem('cameraEnabled', String(newState))
+  }
+
+  const value = {
+    doCall: caller.doCall, 
+    connectionStatus, 
+    incomingRequest: callee.incomingRequest, 
+    handleAcceptCall: callee.handleAcceptCall, 
+    handleRejectCall: callee.handleRejectCall,
+    hangup,
+    remoteVideoEnabled,
+    remoteAudioEnabled,
+    remoteName,
+    localStream,
+    setLocalStream,
+    localVideoEnabled,
+    setLocalVideoEnabled,
+    localAudioEnabled,
+    setLocalAudioEnabled,
+    remoteVideoRef,
+    handleAudioToggle,
+    handleVideoToggle,
+  }
+
   return (
-    <WebRTCContext.Provider 
-      value={{ 
-        doCall: caller.doCall, 
-        connectionStatus, 
-        incomingRequest: callee.incomingRequest, 
-        handleAcceptCall: callee.handleAcceptCall, 
-        handleRejectCall: callee.handleRejectCall,
-        hangup,
-        remoteVideoEnabled,
-        remoteAudioEnabled,
-        remoteName,
-        localStream,
-        setLocalStream,
-        localVideoEnabled,
-        setLocalVideoEnabled,
-        localAudioEnabled,
-        setLocalAudioEnabled,
-        remoteVideoRef
-      }}
-    >
+    <WebRTCContext.Provider value={value}>
       {children}
     </WebRTCContext.Provider>
   )

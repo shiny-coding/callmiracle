@@ -10,13 +10,16 @@ import { useTranslations } from 'next-intl'
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { LANGUAGES } from '@/config/languages'
+import ProfileSettings from './ProfileSettings'
 
 export default function LocalVideo() {
+  const [profileOpen, setProfileOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
   const t = useTranslations()
-  const { name } = useStore()
+  const { name, languages } = useStore()
   const { 
     localStream, 
     setLocalStream, 
@@ -26,14 +29,7 @@ export default function LocalVideo() {
     setLocalAudioEnabled,
     connectionStatus
   } = useWebRTCContext()
-  const [devices, setDevices] = useState<{
-    video: MediaDeviceInfo[],
-    audio: MediaDeviceInfo[]
-  }>({ video: [], audio: [] })
-  const [selectedDevices, setSelectedDevices] = useState<{
-    videoId: string,
-    audioId: string
-  }>({ videoId: '', audioId: '' })
+
 
   // Update video element when stream changes
   useEffect(() => {
@@ -114,7 +110,7 @@ export default function LocalVideo() {
     setupStream()
   }, [localVideoEnabled, localAudioEnabled])
 
-  return (
+   return (
     <div className="relative w-full max-w-[400px] mx-auto">
       {error && (
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
@@ -138,7 +134,31 @@ export default function LocalVideo() {
         <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
           {name || 'Me'}
         </div>
+        {/* Languages overlay */}
+        {connectionStatus !== 'connected' && languages.length > 0 && (
+          <div 
+            className="absolute top-2 right-2 flex flex-col gap-1 cursor-pointer"
+            onClick={() => setProfileOpen(true)}
+          >
+            {languages.map(lang => (
+              <div 
+                key={lang} 
+                className="bg-black/50 px-2 py-1 rounded text-white text-sm hover:bg-black/60"
+              >
+                {(() => {
+                  const langName = LANGUAGES.find(l => l.code === lang)?.name
+                  const parts = langName?.split(' - ')
+                  return parts?.[1] || parts?.[0]
+                })()}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+      <ProfileSettings 
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
     </div>
   )
 }

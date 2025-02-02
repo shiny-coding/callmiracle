@@ -1,62 +1,90 @@
 import { IconButton } from '@mui/material'
-import VideocamIcon from '@mui/icons-material/Videocam'
-import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
+import VideocamIcon from '@mui/icons-material/Videocam'
+import VideocamOffIcon from '@mui/icons-material/VideocamOff'
+import CallEndIcon from '@mui/icons-material/CallEnd'
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'
+import MoodIcon from '@mui/icons-material/Mood'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import VideoDeviceSelector from './VideoDeviceSelector'
 import AudioDeviceSelector from './AudioDeviceSelector'
+import ProfileSettings from './ProfileSettings'
+import StatusSettings from './StatusSettings'
+import { useState } from 'react'
 
 export default function VideoAudioControls() {
-  const { 
-    localVideoEnabled, 
-    setLocalVideoEnabled, 
-    localAudioEnabled, 
-    setLocalAudioEnabled 
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [statusOpen, setStatusOpen] = useState(false)
+  const {
+    localAudioEnabled,
+    localVideoEnabled,
+    handleAudioToggle,
+    handleVideoToggle,
+    connectionStatus,
+    hangup
   } = useWebRTCContext()
 
-  const handleVideoToggle = () => {
-    const newState = !localVideoEnabled
-    setLocalVideoEnabled(newState)
-    localStorage.setItem('cameraEnabled', String(newState))
-  }
-
-  const handleAudioToggle = () => {
-    const newState = !localAudioEnabled
-    setLocalAudioEnabled(newState)
-    localStorage.setItem('audioEnabled', String(newState))
-  }
-
   return (
-    <div className="flex gap-2">
-      <div className="flex items-center">
-        <IconButton 
+    <div className="fixed bottom-0 left-0 right-0 p-4 flex justify-center items-center gap-4 bg-gradient-to-t from-black/50 to-transparent">
+      <div className="absolute left-4 flex gap-2">
+        <IconButton
+          className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+          onClick={() => setProfileOpen(true)}
+        >
+          <AccountCircleIcon className="text-white" />
+        </IconButton>
+        <IconButton
+          className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+          onClick={() => setStatusOpen(true)}
+        >
+          <MoodIcon className="text-white" />
+        </IconButton>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {connectionStatus === 'connected' && (
+          <IconButton
+            className="bg-red-500 hover:bg-red-600"
+            onClick={hangup}
+          >
+            <CallEndIcon className="text-white" />
+          </IconButton>
+        )}
+        
+        <IconButton
+          className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
           onClick={handleAudioToggle}
-          className="bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-          size="medium"
         >
           {localAudioEnabled ? (
-            <MicIcon className="text-blue-500" />
+            <MicIcon className="text-white" />
           ) : (
-            <MicOffIcon className="text-gray-500" />
+            <MicOffIcon className="text-white" />
           )}
         </IconButton>
         <AudioDeviceSelector />
-      </div>
-      <div className="flex items-center">
-        <IconButton 
+
+        <IconButton
+          className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
           onClick={handleVideoToggle}
-          className="bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-          size="medium"
         >
           {localVideoEnabled ? (
-            <VideocamIcon className="text-blue-500" />
+            <VideocamIcon className="text-white" />
           ) : (
-            <VideocamOffIcon className="text-gray-500" />
+            <VideocamOffIcon className="text-white" />
           )}
         </IconButton>
         <VideoDeviceSelector />
       </div>
+
+      <ProfileSettings 
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
+      <StatusSettings
+        open={statusOpen}
+        onClose={() => setStatusOpen(false)}
+      />
     </div>
   )
 } 
