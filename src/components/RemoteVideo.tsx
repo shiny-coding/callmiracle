@@ -56,50 +56,37 @@ export default function RemoteVideo() {
 
   return (
     <>
-      <div className={`relative ${connectionStatus === 'connected' ? 'w-full h-full pb-20' : 'w-full max-w-[200px] mx-auto'}`}>
-        <div className={`absolute inset-0 ${connectionStatus === 'connected' ? 'bg-gray-900' : 'opacity-0 pointer-events-none'}`}>
-          <div className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4 bg-gradient-to-b from-black/50 to-transparent">
-            <Typography variant="subtitle1" className="text-white">
-              {connectionStatus === 'connected' ? remoteName : 'Brother'}
-            </Typography>
-            {connectionStatus === 'connected' && (
-              <div className="flex gap-1">
-                <div className="bg-black/30 backdrop-blur-sm p-1 rounded">
-                  {remoteAudioEnabled ? (
-                    <MicIcon className="text-blue-500" fontSize="small" />
-                  ) : (
-                    <MicOffIcon className="text-gray-500" fontSize="small" />
-                  )}
-                </div>
-                <div className="bg-black/30 backdrop-blur-sm p-1 rounded">
-                  {remoteVideoEnabled ? (
-                    <VideocamIcon className="text-blue-500" fontSize="small" />
-                  ) : (
-                    <VideocamOffIcon className="text-gray-500" fontSize="small" />
-                  )}
-                </div>
+      <div className="absolute inset-0 bg-gray-900">
+        <div className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4 bg-gradient-to-b from-black/50 to-transparent">
+          <Typography variant="subtitle1" className="text-white">
+            {connectionStatus === 'connected' ? remoteName : ''}
+          </Typography>
+          {connectionStatus === 'connected' && (
+            <div className="flex gap-1">
+              <div className="bg-black/30 backdrop-blur-sm p-1 rounded">
+                {remoteAudioEnabled ? (
+                  <MicIcon className="text-blue-500" fontSize="small" />
+                ) : (
+                  <MicOffIcon className="text-gray-500" fontSize="small" />
+                )}
               </div>
-            )}
-          </div>
-
-          <div className={connectionStatus === 'connected' ? 'w-full h-full' : `w-[${VIDEO_WIDTH}px] h-[${VIDEO_HEIGHT}px] mx-auto relative`}>
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              className={`rounded-lg shadow-lg bg-gray-100 dark:bg-gray-800 ${
-                connectionStatus === 'connected' ? 'w-full h-full object-contain' : `w-[${VIDEO_WIDTH}px] h-[${VIDEO_HEIGHT}px] object-cover`
-              }`}
-            />
-            {connectionStatus !== 'connected' && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Typography className={getStatusColor(connectionStatus)}>
-                  {t(`status.${connectionStatus}`)}
-                </Typography>
+              <div className="bg-black/30 backdrop-blur-sm p-1 rounded">
+                {remoteVideoEnabled ? (
+                  <VideocamIcon className="text-blue-500" fontSize="small" />
+                ) : (
+                  <VideocamOffIcon className="text-gray-500" fontSize="small" />
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-contain"
+        />
       </div>
 
       <ConnectionRequest
