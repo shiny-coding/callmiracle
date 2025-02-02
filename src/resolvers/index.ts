@@ -35,10 +35,7 @@ interface Context {
 export const resolvers = {
   Query: {
     users: async (_: any, __: any, { db }: Context) => {
-      const users = await db.collection('users').find({
-        // Only show users active in the last 1500 minutes
-        timestamp: { $gt: Date.now() - 1500 * 60 * 1000 }
-      }).toArray()
+      const users = await db.collection('users').find().toArray()
       
       // Map MongoDB documents to User type
       return users.map(user => ({
@@ -47,13 +44,14 @@ export const resolvers = {
         statuses: user.statuses,
         languages: user.languages,
         timestamp: user.timestamp,
-        locale: user.locale
+        locale: user.locale,
+        online: user.online || false // Default to false if not set
       }))
     }
   },
   Mutation: {
-    connect: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { userId, name, statuses, locale, languages } = input;
+    updateUser: async (_: any, { input }: { input: any }, { db }: Context) => {
+      const { userId, name, statuses, locale, languages, online } = input;
       const timestamp = Date.now();
 
       const result = await db.collection('users').findOneAndUpdate(
@@ -64,7 +62,8 @@ export const resolvers = {
             statuses, 
             timestamp,
             locale,
-            languages
+            languages,
+            online
           } 
         },
         { 
@@ -85,7 +84,8 @@ export const resolvers = {
         statuses: user.statuses,
         languages: user.languages,
         timestamp: user.timestamp,
-        locale: user.locale
+        locale: user.locale,
+        online: user.online || false // Default to false if not set
       }));
       
       pubsub.publish('USERS_UPDATED', typedUsers);

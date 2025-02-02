@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { IconButton, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material'
+import { IconButton, FormControl, InputLabel, Select, MenuItem, Typography, Button } from '@mui/material'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import MicIcon from '@mui/icons-material/Mic'
@@ -13,10 +13,27 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { LANGUAGES } from '@/config/languages'
 import ProfileSettings from './ProfileSettings'
 import StatusSettings from './StatusSettings'
+import { gql, useMutation } from '@apollo/client'
+import { getUserId } from '@/lib/userId'
+
+const CONNECT = gql`
+  mutation UpdateUser($input: UpdateUserInput!) {
+    updateUser(input: $input) {
+      userId
+      name
+      statuses
+      languages
+      timestamp
+      locale
+      online
+    }
+  }
+`
 
 export default function LocalVideo() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
+  const [isOnline, setIsOnline] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
@@ -33,6 +50,28 @@ export default function LocalVideo() {
     connectionStatus
   } = useWebRTCContext()
 
+  const [connect] = useMutation(CONNECT)
+
+  const handleOnlineToggle = async () => {
+    const newOnlineState = !isOnline
+    try {
+      await connect({
+        variables: {
+          input: {
+            userId: getUserId(),
+            name,
+            statuses,
+            languages,
+            locale: navigator.language,
+            online: newOnlineState
+          }
+        }
+      })
+      setIsOnline(newOnlineState)
+    } catch (error) {
+      console.error('Failed to update online status:', error)
+    }
+  }
 
   // Update video element when stream changes
   useEffect(() => {
@@ -177,6 +216,20 @@ export default function LocalVideo() {
           </div>
         )}
       </div>
+      
+      {connectionStatus !== 'connected' && (
+        <div className="mt-4 flex justify-center">
+          <Button
+            variant={isOnline ? "contained" : "outlined"}
+            color={isOnline ? "primary" : "inherit"}
+            onClick={handleOnlineToggle}
+            className="w-full max-w-[200px]"
+          >
+            {isOnline ? t('online') : t('offline')}
+          </Button>
+        </div>
+      )}
+
       <ProfileSettings 
         open={profileOpen}
         onClose={() => setProfileOpen(false)}

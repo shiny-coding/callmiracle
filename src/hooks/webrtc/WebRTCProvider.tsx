@@ -50,13 +50,15 @@ export function WebRTCProvider({
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [remoteName, setRemoteName] = useState<string | null>(null)
   const [localStream, setLocalStream] = useState<MediaStream>()
-  const [localVideoEnabled, setLocalVideoEnabled] = useState(() => 
-    localStorage.getItem('cameraEnabled') !== 'false'
-  )
-  const [localAudioEnabled, setLocalAudioEnabled] = useState(() => 
-    localStorage.getItem('audioEnabled') !== 'false'
-  )
+  const [localVideoEnabled, setLocalVideoEnabled] = useState(false)
+  const [localAudioEnabled, setLocalAudioEnabled] = useState(false)
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
+
+  // Initialize client-side only states
+  useEffect(() => {
+    setLocalVideoEnabled(localStorage.getItem('cameraEnabled') !== 'false')
+    setLocalAudioEnabled(localStorage.getItem('audioEnabled') !== 'false')
+  }, [])
 
   const childProps = {
     localStream,

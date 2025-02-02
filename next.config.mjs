@@ -10,6 +10,16 @@ const nextConfig = {
   //   config.devtool = 'source-map';
   //   return config;
   // }
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/profiles/**',
+      },
+    ],
+  }
 };
  
 export default withNextIntl(nextConfig);

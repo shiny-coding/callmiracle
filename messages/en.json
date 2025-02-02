@@ -1,6 +1,15 @@
 {
   "name": "Name",
   "selectStatus": "Select your status",
+  "online": "Online",
+  "offline": "Offline",
+  "Profile": {
+    "title": "Profile Settings",
+    "name": "Name",
+    "photo": "Photo",
+    "uploadPhoto": "Upload Photo",
+    "uploading": "Uploading..."
+  },
   "Status": {
     "MEET_NEW_PEOPLE": "Meet New People",
     "CHAT": "Chat",

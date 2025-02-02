@@ -15,6 +15,7 @@ type User {
   languages: [String!]!
   timestamp: Float!
   locale: String!
+  online: Boolean!
 }
 
 type ConnectionParams {
@@ -38,12 +39,13 @@ type ConnectionRequest {
   audioEnabled: Boolean
 }
 
-input ConnectInput {
+input UpdateUserInput {
   userId: ID!
   name: String!
   statuses: [Status!]!
   languages: [String!]!
   locale: String!
+  online: Boolean!
 }
 
 input ConnectionParamsInput {
@@ -62,7 +64,7 @@ type Query {
 }
 
 type Mutation {
-  connect(input: ConnectInput!): User
+  updateUser(input: UpdateUserInput!): User
   connectWithUser(input: ConnectionParamsInput!): ConnectionParams
 }
 

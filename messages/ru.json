@@ -1,6 +1,15 @@
 {
   "name": "Имя",
   "selectStatus": "Выберите свой статус",
+  "online": "В сети",
+  "offline": "Не в сети",
+  "Profile": {
+    "title": "Настройки профиля",
+    "name": "Имя",
+    "photo": "Фото",
+    "uploadPhoto": "Загрузить фото",
+    "uploading": "Загрузка..."
+  },
   "Status": {
     "MEET_NEW_PEOPLE": "Познакомиться",
     "CHAT": "Поболтать",

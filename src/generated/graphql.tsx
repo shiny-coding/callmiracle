@@ -14,14 +14,6 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
-export type ConnectInput = {
-  languages: Array<Scalars['String']['input']>;
-  locale: Scalars['String']['input'];
-  name: Scalars['String']['input'];
-  statuses: Array<Status>;
-  userId: Scalars['ID']['input'];
-};
-
 export type ConnectionParams = {
   __typename?: 'ConnectionParams';
   answer?: Maybe<Scalars['String']['output']>;
@@ -58,18 +50,18 @@ export type ConnectionRequest = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  connect?: Maybe<User>;
   connectWithUser?: Maybe<ConnectionParams>;
-};
-
-
-export type MutationConnectArgs = {
-  input: ConnectInput;
+  updateUser?: Maybe<User>;
 };
 
 
 export type MutationConnectWithUserArgs = {
   input: ConnectionParamsInput;
+};
+
+
+export type MutationUpdateUserArgs = {
+  input: UpdateUserInput;
 };
 
 export type Query = {
@@ -98,11 +90,21 @@ export type SubscriptionOnConnectionRequestArgs = {
   userId: Scalars['ID']['input'];
 };
 
+export type UpdateUserInput = {
+  languages: Array<Scalars['String']['input']>;
+  locale: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  online: Scalars['Boolean']['input'];
+  statuses: Array<Status>;
+  userId: Scalars['ID']['input'];
+};
+
 export type User = {
   __typename?: 'User';
   languages: Array<Scalars['String']['output']>;
   locale: Scalars['String']['output'];
   name: Scalars['String']['output'];
+  online: Scalars['Boolean']['output'];
   statuses: Array<Status>;
   timestamp: Scalars['Float']['output'];
   userId: Scalars['ID']['output'];
