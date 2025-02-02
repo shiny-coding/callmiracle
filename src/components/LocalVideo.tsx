@@ -131,7 +131,10 @@ export default function LocalVideo() {
           </div>
         )}
         {/* Name overlay */}
-        <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+        <div 
+          className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm cursor-pointer hover:bg-black/60"
+          onClick={() => setProfileOpen(true)}
+        >
           {name || 'Me'}
         </div>
         {/* Languages overlay */}

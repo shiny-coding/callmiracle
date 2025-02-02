@@ -1,4 +1,5 @@
-import { Dialog, DialogTitle, DialogContent, Button } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import { useTranslations } from 'next-intl'
 import StatusSelector from './StatusSelector'
 
@@ -12,12 +13,14 @@ export default function StatusSettings({ open, onClose }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>{t('selectStatus')}</DialogTitle>
+      <div className="flex justify-between items-center pr-2">
+        <DialogTitle>{t('selectStatus')}</DialogTitle>
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
+      </div>
       <DialogContent className="flex flex-col gap-4 min-w-[300px]">
         <StatusSelector />
-        <Button onClick={onClose} variant="contained" color="primary">
-          {t('VideoChat.common.close')}
-        </Button>
       </DialogContent>
     </Dialog>
   )

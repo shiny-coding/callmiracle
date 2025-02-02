@@ -29,11 +29,9 @@ export default async function LocaleLayout({
     <AppRouterCacheProvider>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <ApolloWrapper>
-          <WebRTCProvider>
-            <StoreInitializer />
-            {/* <LocaleSelector /> */}
-            {children}
-          </WebRTCProvider>
+          <StoreInitializer />
+          {/* <LocaleSelector /> */}
+          {children}
         </ApolloWrapper>
       </NextIntlClientProvider>
     </AppRouterCacheProvider>

@@ -82,9 +82,6 @@ export default function UserList() {
           >
             <div className="flex flex-col w-full">
               <Typography variant="body1">{user.name}</Typography>
-              <Typography variant="caption" className="text-gray-500 dark:text-gray-400">
-                ID: {user.userId}
-              </Typography>
               <div className="mt-1">
                 <div className="flex flex-wrap gap-1 mb-2">
                   {user.languages?.map((lang: string) => (
