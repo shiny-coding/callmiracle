@@ -13,22 +13,8 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { LANGUAGES } from '@/config/languages'
 import ProfileSettings from './ProfileSettings'
 import StatusSettings from './StatusSettings'
-import { gql, useMutation } from '@apollo/client'
+import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { getUserId } from '@/lib/userId'
-
-const CONNECT = gql`
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
-      userId
-      name
-      statuses
-      languages
-      timestamp
-      locale
-      online
-    }
-  }
-`
 
 export default function LocalVideo() {
   const [profileOpen, setProfileOpen] = useState(false)
@@ -50,23 +36,12 @@ export default function LocalVideo() {
     connectionStatus
   } = useWebRTCContext()
 
-  const [connect] = useMutation(CONNECT)
+  const { updateUserData } = useUpdateUser()
 
   const handleOnlineToggle = async () => {
     const newOnlineState = !isOnline
     try {
-      await connect({
-        variables: {
-          input: {
-            userId: getUserId(),
-            name,
-            statuses,
-            languages,
-            locale: navigator.language,
-            online: newOnlineState
-          }
-        }
-      })
+      await updateUserData(newOnlineState)
       setIsOnline(newOnlineState)
     } catch (error) {
       console.error('Failed to update online status:', error)

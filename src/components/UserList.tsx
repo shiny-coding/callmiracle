@@ -88,7 +88,7 @@ export default function UserList() {
               <div className="relative w-12 h-12">
                 <div className="rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 w-full h-full">
                   <Avatar className="w-full h-full">{user.name[0]?.toUpperCase()}</Avatar>
-                  <div className="absolute inset-0">
+                  <div className="absolute inset-0 rounded-full overflow-hidden">
                     <Image
                       src={`/profiles/${user.userId}.jpg`}
                       alt={user.name}

@@ -7,6 +7,7 @@ import { useDropzone } from 'react-dropzone'
 import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
 import LanguageSelector from './LanguageSelector'
+import { useUpdateUser } from '@/hooks/useUpdateUser'
 
 interface ProfileSettingsProps {
   open: boolean
@@ -19,6 +20,12 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
   const [uploading, setUploading] = useState(false)
   const [timestamp, setTimestamp] = useState(Date.now())
   const userId = getUserId()
+  const { updateUserData } = useUpdateUser()
+
+  const handleClose = async () => {
+    await updateUserData()
+    onClose()
+  }
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return
@@ -52,13 +59,13 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
   return (
     <Dialog 
       open={open} 
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="sm"
       fullWidth
     >
       <DialogTitle className="flex justify-between items-center">
         {t('title')}
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
       </DialogTitle>

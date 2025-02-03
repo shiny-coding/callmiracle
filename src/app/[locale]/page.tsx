@@ -17,8 +17,8 @@ function MainContent() {
       }`}>
         <LocalVideo />
       </div>
-      <div className={`absolute flex items-center justify-center w-full h-full ${
-        connectionStatus === 'connected' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      <div className={`flex items-center justify-center w-full h-full ${
+        connectionStatus === 'connected' ? 'relative opacity-100' : 'absolute opacity-0 pointer-events-none'
       }`}>
         <RemoteVideo />
       </div>

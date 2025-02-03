@@ -2,6 +2,7 @@ import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { useTranslations } from 'next-intl'
 import StatusSelector from './StatusSelector'
+import { useUpdateUser } from '@/hooks/useUpdateUser'
 
 type Props = {
   open: boolean
@@ -10,12 +11,18 @@ type Props = {
 
 export default function StatusSettings({ open, onClose }: Props) {
   const t = useTranslations()
+  const { updateUserData } = useUpdateUser()
+
+  const handleClose = async () => {
+    await updateUserData()
+    onClose()
+  }
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={handleClose}>
       <div className="flex justify-between items-center pr-2">
         <DialogTitle>{t('selectStatus')}</DialogTitle>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
       </div>

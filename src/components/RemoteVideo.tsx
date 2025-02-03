@@ -65,16 +65,16 @@ export default function RemoteVideo() {
             <div className="flex gap-1">
               <div className="bg-black/30 backdrop-blur-sm p-1 rounded">
                 {remoteAudioEnabled ? (
-                  <MicIcon className="text-blue-500" fontSize="small" />
+                  <MicIcon className="text-white-500" fontSize="small" />
                 ) : (
-                  <MicOffIcon className="text-gray-500" fontSize="small" />
+                  <MicOffIcon className="text-white-500" fontSize="small" />
                 )}
               </div>
               <div className="bg-black/30 backdrop-blur-sm p-1 rounded">
                 {remoteVideoEnabled ? (
-                  <VideocamIcon className="text-blue-500" fontSize="small" />
+                  <VideocamIcon className="text-white-500" fontSize="small" />
                 ) : (
-                  <VideocamOffIcon className="text-gray-500" fontSize="small" />
+                  <VideocamOffIcon className="text-white-500" fontSize="small" />
                 )}
               </div>
             </div>

@@ -47,7 +47,7 @@ export default function VideoAudioControls() {
       <div className="flex items-center gap-4">
         {connectionStatus === 'connected' && (
           <IconButton
-            className="bg-red-500 hover:bg-red-600"
+            className="bg-red-500 hover:bg-red-600" 
             onClick={hangup}
           >
             <CallEndIcon className="text-white" />

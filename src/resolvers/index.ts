@@ -73,9 +73,7 @@ export const resolvers = {
       );
 
       // Get updated user list and publish
-      const users = await db.collection('users').find({
-        timestamp: { $gt: Date.now() - 1500 * 60 * 1000 }
-      }).toArray();
+      const users = await db.collection('users').find().toArray();
       
       // Map MongoDB documents to User type
       const typedUsers = users.map(user => ({
