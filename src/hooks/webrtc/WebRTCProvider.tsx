@@ -26,6 +26,7 @@ interface WebRTCContextType {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   handleAudioToggle: () => void
   handleVideoToggle: () => void
+  updateVideoQuality: (quality: string) => Promise<void>
 }
 
 interface WebRTCProviderProps {
@@ -173,6 +174,26 @@ export function WebRTCProvider({
     localStorage.setItem('cameraEnabled', String(newState))
   }
 
+  const updateVideoQuality = async (quality: string) => {
+    if (!localStream) return
+
+    const videoTrack = localStream.getVideoTracks()[0]
+    if (videoTrack) {
+      const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
+      if (activePeerConnection) {
+        const sender = activePeerConnection.getSenders().find(s => s.track?.kind === 'video')
+        if (sender) {
+          // Store sender reference in the track's metadata
+          Object.defineProperty(videoTrack, '_rtcSender', {
+            value: sender,
+            writable: true,
+            configurable: true
+          })
+        }
+      }
+    }
+  }
+
   const value = {
     doCall: caller.doCall, 
     connectionStatus, 
@@ -192,6 +213,7 @@ export function WebRTCProvider({
     remoteVideoRef,
     handleAudioToggle,
     handleVideoToggle,
+    updateVideoQuality,
   }
 
   return (

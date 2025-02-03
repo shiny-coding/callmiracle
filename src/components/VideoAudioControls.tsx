@@ -11,6 +11,7 @@ import VideoDeviceSelector from './VideoDeviceSelector'
 import AudioDeviceSelector from './AudioDeviceSelector'
 import ProfileSettings from './ProfileSettings'
 import StatusSettings from './StatusSettings'
+import VideoQualitySelector from './VideoQualitySelector'
 import { useState } from 'react'
 
 export default function VideoAudioControls() {
@@ -77,6 +78,7 @@ export default function VideoAudioControls() {
           )}
         </IconButton>
         <VideoDeviceSelector />
+        <VideoQualitySelector />
       </div>
 
       <ProfileSettings 
