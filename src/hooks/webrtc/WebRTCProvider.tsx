@@ -6,6 +6,7 @@ import { useStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
 import { ON_CONNECTION_REQUEST, CONNECT_WITH_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
+import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
 
 interface WebRTCContextType {
   doCall: (userId: string) => Promise<void>
@@ -26,7 +27,7 @@ interface WebRTCContextType {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   handleAudioToggle: () => void
   handleVideoToggle: () => void
-  updateVideoQuality: (quality: string) => Promise<void>
+  updateVideoQuality: (quality: VideoQuality) => Promise<void>
 }
 
 interface WebRTCProviderProps {
@@ -174,7 +175,7 @@ export function WebRTCProvider({
     localStorage.setItem('cameraEnabled', String(newState))
   }
 
-  const updateVideoQuality = async (quality: string) => {
+  const updateVideoQuality = async (quality: VideoQuality) => {
     if (!localStream) return
 
     const videoTrack = localStream.getVideoTracks()[0]
@@ -183,12 +184,29 @@ export function WebRTCProvider({
       if (activePeerConnection) {
         const sender = activePeerConnection.getSenders().find(s => s.track?.kind === 'video')
         if (sender) {
-          // Store sender reference in the track's metadata
-          Object.defineProperty(videoTrack, '_rtcSender', {
-            value: sender,
-            writable: true,
-            configurable: true
-          })
+          try {
+            // Update sender parameters for outgoing stream
+            const params = sender.getParameters()
+            if (!params.encodings) {
+              params.encodings = [{}]
+            }
+            
+            const config = QUALITY_CONFIGS[quality]
+            params.encodings[0].maxBitrate = config.maxBitrate
+            params.encodings[0].maxFramerate = config.maxFramerate
+            params.encodings[0].scaleResolutionDownBy = 1920 / config.width // Scale based on target width
+            
+            await sender.setParameters(params)
+            
+            // Also update local track constraints
+            await videoTrack.applyConstraints({
+              width: { ideal: config.width },
+              height: { ideal: config.height },
+              frameRate: { max: config.maxFramerate }
+            })
+          } catch (err) {
+            console.error('Failed to update video quality:', err)
+          }
         }
       }
     }

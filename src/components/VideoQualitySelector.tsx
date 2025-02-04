@@ -1,18 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { IconButton, Dialog, DialogTitle, DialogContent, List, ListItemButton, ListItemText, ListItemIcon } from '@mui/material'
 import HdIcon from '@mui/icons-material/Hd'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 
-type VideoQuality = '360p' | '480p' | '720p' | '1080p'
+export type VideoQuality = '360p' | '480p' | '720p' | '1080p'
 
-interface VideoQualityConfig {
+export interface VideoQualityConfig {
   width: number
   height: number
   maxBitrate: number
   maxFramerate: number
 }
 
-const QUALITY_CONFIGS: Record<VideoQuality, VideoQualityConfig> = {
+export const QUALITY_CONFIGS: Record<VideoQuality, VideoQualityConfig> = {
   '360p': {
     width: 640,
     height: 360,
@@ -42,39 +42,23 @@ const QUALITY_CONFIGS: Record<VideoQuality, VideoQualityConfig> = {
 export default function VideoQualitySelector() {
   const [open, setOpen] = useState(false)
   const [currentQuality, setCurrentQuality] = useState<VideoQuality>('720p')
-  const { localStream } = useWebRTCContext()
+  const { updateVideoQuality } = useWebRTCContext()
+
+  useEffect(() => {
+    const savedQuality = localStorage.getItem('videoQuality') as VideoQuality
+    if (savedQuality && QUALITY_CONFIGS[savedQuality]) {
+      setCurrentQuality(savedQuality)
+      updateVideoQuality(savedQuality)
+    }
+  }, [])
 
   const handleQualityChange = async (quality: VideoQuality) => {
-    if (!localStream) return
-
-    const config = QUALITY_CONFIGS[quality]
-    const videoTrack = localStream.getVideoTracks()[0]
-    
-    if (videoTrack) {
-      try {
-        await videoTrack.applyConstraints({
-          width: { ideal: config.width },
-          height: { ideal: config.height },
-          frameRate: { max: config.maxFramerate }
-        })
-
-        // Update sender parameters if available
-        const sender = (videoTrack as any).sender
-        if (sender?.setParameters) {
-          const params = sender.getParameters()
-          if (!params.encodings) {
-            params.encodings = [{}]
-          }
-          params.encodings[0].maxBitrate = config.maxBitrate
-          params.encodings[0].maxFramerate = config.maxFramerate
-          await sender.setParameters(params)
-        }
-
-        setCurrentQuality(quality)
-        localStorage.setItem('videoQuality', quality)
-      } catch (err) {
-        console.error('Failed to apply video constraints:', err)
-      }
+    try {
+      await updateVideoQuality(quality)
+      setCurrentQuality(quality)
+      localStorage.setItem('videoQuality', quality)
+    } catch (err) {
+      console.error('Failed to change video quality:', err)
     }
     setOpen(false)
   }
