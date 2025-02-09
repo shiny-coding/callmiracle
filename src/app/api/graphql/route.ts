@@ -1,5 +1,5 @@
 import { createYoga } from 'graphql-yoga'
-import { schema } from '@/schema'
+import { schema } from '@/schema/schema'
 import clientPromise from '@/lib/mongodb'
 
 const yoga = createYoga({

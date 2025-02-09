@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { gql } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
+import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
 
 export const CONNECTION_TIMEOUT_MS = 10000 // 10 seconds
 
@@ -51,6 +52,34 @@ export interface IncomingRequest {
 export function useWebRTCCommon() {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
 
+  const applyVideoQuality = async (videoTrack: MediaStreamTrack, sender: RTCRtpSender | null, quality: VideoQuality) => {
+    const config = QUALITY_CONFIGS[quality]
+    
+    try {
+      // Update track constraints
+      await videoTrack.applyConstraints({
+        width: { ideal: config.width },
+        height: { ideal: config.height },
+        frameRate: { max: config.maxFramerate }
+      })
+
+      // Update sender parameters if available
+      if (sender) {
+        const params = sender.getParameters()
+        if (!params.encodings) {
+          params.encodings = [{}]
+        }
+        params.encodings[0].maxBitrate = config.maxBitrate
+        params.encodings[0].maxFramerate = config.maxFramerate
+        params.encodings[0].scaleResolutionDownBy = 1920 / config.width
+        await sender.setParameters(params)
+      }
+    } catch (err) {
+      console.error('Failed to apply video quality settings:', err)
+      throw err
+    }
+  }
+
   const createPeerConnection = () => {
     const pc = new RTCPeerConnection({
       iceServers: [
@@ -100,6 +129,18 @@ export function useWebRTCCommon() {
         }
       } else if ((track.kind === 'audio' && localAudioEnabled) || (track.kind === 'video' && localVideoEnabled)) {
         pc.addTrack(track, stream)
+      }
+    }
+
+    // Apply initial video quality settings
+    const savedQuality = localStorage.getItem('videoQuality') as VideoQuality
+    if (savedQuality && QUALITY_CONFIGS[savedQuality]) {
+      const videoTrack = stream.getVideoTracks()[0]
+      if (videoTrack) {
+        const sender = pc.getSenders().find(s => s.track?.kind === 'video') || null
+        applyVideoQuality(videoTrack, sender, savedQuality).catch(err => 
+          console.error('Failed to apply initial video quality:', err)
+        )
       }
     }
 
@@ -284,6 +325,7 @@ export function useWebRTCCommon() {
     dispatchPendingIceCandidates,
     clearPendingCandidates,
     updateMediaState,
-    createHangup
+    createHangup,
+    applyVideoQuality
   }
 } 

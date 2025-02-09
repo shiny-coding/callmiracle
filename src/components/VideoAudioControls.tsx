@@ -29,7 +29,7 @@ export default function VideoAudioControls() {
   return (
     <div className="mt-auto p-4 w-full flex justify-center items-center gap-4 bg-gradient-to-t from-black/50 to-transparent">
       {connectionStatus !== 'connected' && (
-        <div className="absolute left-4 flex gap-2">
+        <>
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
             onClick={() => setProfileOpen(true)}
@@ -42,19 +42,19 @@ export default function VideoAudioControls() {
           >
             <MoodIcon className="text-white" />
           </IconButton>
-        </div>
+        </>
       )}
 
-      <div className="flex items-center gap-4">
-        {connectionStatus === 'connected' && (
-          <IconButton
-            className="bg-red-600 hover:bg-red-700" 
-            onClick={hangup}
-          >
-            <CallEndIcon className="text-red" />
-          </IconButton>
-        )}
-        
+      {connectionStatus === 'connected' && (
+        <IconButton
+          className="bg-red-600 hover:bg-red-700" 
+          onClick={hangup}
+        >
+          <CallEndIcon className="text-red" />
+        </IconButton>
+      )}
+      
+      <div className="flex gap-2 items-center">
         <IconButton
           className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
           onClick={handleAudioToggle}
@@ -66,7 +66,9 @@ export default function VideoAudioControls() {
           )}
         </IconButton>
         <AudioDeviceSelector />
+      </div>
 
+      <div className="flex gap-2 items-center">
         <IconButton
           className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
           onClick={handleVideoToggle}
@@ -78,8 +80,8 @@ export default function VideoAudioControls() {
           )}
         </IconButton>
         <VideoDeviceSelector />
-        <VideoQualitySelector />
       </div>
+      <VideoQualitySelector />
 
       <ProfileSettings 
         open={profileOpen}

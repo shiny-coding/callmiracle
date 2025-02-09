@@ -88,9 +88,22 @@ export const resolvers = {
       
       pubsub.publish('USERS_UPDATED', typedUsers);
 
-      console.log('Publishing users updated:', {
-        users: typedUsers.length
-      })
+      // just for testing
+      // const topic = `CONNECTION_REQUEST:${userId}`
+      // pubsub.publish(topic, {
+      //   onConnectionRequest: {
+      //     type: 'ignore',
+      //     from: {
+      //       userId: userId,
+      //       name: 'test',
+      //       languages: ['en'],
+      //       statuses: []
+      //     }
+      //   },
+      //   userId: userId
+      // })
+
+      console.log('Publishing users updated: ' + typedUsers.length )
 
       return result;
     },
@@ -187,6 +200,7 @@ export const resolvers = {
       subscribe: (_: any, { userId }: { userId: string }) => {
         // Subscribe to user-specific topic
         const topic = `CONNECTION_REQUEST:${userId}`
+        console.log('Subscribing to topic:', topic)
         return pubsub.subscribe(topic)
       },
       resolve: (payload: ConnectionRequestPayload) => {
@@ -199,7 +213,10 @@ export const resolvers = {
       }
     },
     onUsersUpdated: {
-      subscribe: () => pubsub.subscribe('USERS_UPDATED'),
+      subscribe: () => {
+        console.log('Subscribing to USERS_UPDATED')
+        return pubsub.subscribe('USERS_UPDATED')
+      },
       resolve: (payload: User[]) => {
         console.log('Resolving users updated:', {
           length: payload.length

@@ -7,6 +7,7 @@ import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
 import { ON_CONNECTION_REQUEST, CONNECT_WITH_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
+import { useWebRTCCommon } from './useWebRTCCommon'
 
 interface WebRTCContextType {
   doCall: (userId: string) => Promise<void>
@@ -62,6 +63,13 @@ export function WebRTCProvider({
     setLocalAudioEnabled(localStorage.getItem('audioEnabled') !== 'false')
   }, [])
 
+  const { applyVideoQuality } = useWebRTCCommon()
+
+  useEffect(() => {
+    console.log('WebRTCProvider mounted')
+    return () => console.log('WebRTCProvider unmounted')
+  }, [])
+
   const childProps = {
     localStream,
     remoteVideoRef,
@@ -92,6 +100,11 @@ export function WebRTCProvider({
       if (request) {
         console.log('WebRTC: Processing connection request:', { from: request.from.name, type: request.type })
         
+        if (request.type === 'ignore') {
+          console.log('WebRTC: Ignoring request:', { from: request.from.name, type: request.type })
+          return
+        }
+
         // Handle finished status
         if (request.type === 'finished') {
           // Don't send finished signal back when receiving finished
@@ -182,32 +195,11 @@ export function WebRTCProvider({
     if (videoTrack) {
       const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
       if (activePeerConnection) {
-        const sender = activePeerConnection.getSenders().find(s => s.track?.kind === 'video')
-        if (sender) {
-          try {
-            // Update sender parameters for outgoing stream
-            const params = sender.getParameters()
-            if (!params.encodings) {
-              params.encodings = [{}]
-            }
-            
-            const config = QUALITY_CONFIGS[quality]
-            params.encodings[0].maxBitrate = config.maxBitrate
-            params.encodings[0].maxFramerate = config.maxFramerate
-            params.encodings[0].scaleResolutionDownBy = 1920 / config.width // Scale based on target width
-            
-            await sender.setParameters(params)
-            
-            // Also update local track constraints
-            await videoTrack.applyConstraints({
-              width: { ideal: config.width },
-              height: { ideal: config.height },
-              frameRate: { max: config.maxFramerate }
-            })
-          } catch (err) {
-            console.error('Failed to update video quality:', err)
-          }
-        }
+        const sender = activePeerConnection.getSenders().find(s => s.track?.kind === 'video') || null
+        await applyVideoQuality(videoTrack, sender, quality)
+      } else {
+        // If no active connection, just update local track
+        await applyVideoQuality(videoTrack, null, quality)
       }
     }
   }
