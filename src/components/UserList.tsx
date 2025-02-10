@@ -66,9 +66,8 @@ export default function UserList() {
   }
 
   return (
-    <Paper className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <Typography variant="h6">Online Users</Typography>
+    <Paper className="p-4 relative">
+      <div className="flex justify-between items-center mb-4 absolute top-0 right-0">
         <IconButton 
           onClick={() => refetch()} 
           size="small"

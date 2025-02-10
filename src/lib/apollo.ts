@@ -36,8 +36,10 @@ const httpLink = new HttpLink({
 const sseLink = new ApolloLink((operation) => {
   return new Observable((observer) => {
     const operationName = operation.operationName || 'unnamed'
+    let eventSource: EventSource | null = null
+    let unsubscribed = false
 
-    // First send the subscription request
+    // Initiate the request to set up the SSE connection
     fetch('/api/graphql', {
       method: 'POST',
       headers: {
@@ -63,9 +65,11 @@ const sseLink = new ApolloLink((operation) => {
         })
         throw new Error(`Subscription request failed: ${response.status}`)
       }
-      
-      // If subscription request successful, establish SSE connection
-      const eventSource = new EventSource('/api/graphql?' + new URLSearchParams({
+      // If unsubscribed before the fetch resolves, we simply exit.
+      if (unsubscribed) return
+
+      // Build the EventSource URL with query parameters
+      const params = new URLSearchParams({
         query: operation.query.loc?.source.body || '',
         variables: JSON.stringify(operation.variables || {}),
         operationName: operation.operationName || '',
@@ -73,31 +77,22 @@ const sseLink = new ApolloLink((operation) => {
           subscription: { protocol: 'SSE' }
         }),
         'x-user-id': getUserId()
-      }), {
-        withCredentials: true 
+      })
+      eventSource = new EventSource(`/api/graphql?${params.toString()}`, {
+        withCredentials: true
       })
 
       eventSource.onopen = () => {
-        // console.log(`SSE: Connection opened for ${operationName}`, {
-        //   readyState: eventSource.readyState,
-        //   url: eventSource.url
-        // })
+        console.log(`SSE: Connection opened for ${operationName}`)
       }
 
       // Listen for subscription data
       eventSource.addEventListener('next', (event) => {
         try {
           const data = JSON.parse(event.data)
-          // Create a proper GraphQL result format
-          const result = {
-            data: data.data,
-            errors: data.errors,
-            extensions: data.extensions,
-            type: 'data'
-          }
-          observer.next(result)
+          observer.next(data)
         } catch (err) {
-          console.error(`SSE: Error processing next event for ${operationName}:`, err)
+          console.error(`SSE: Error parsing event for ${operationName}:`, err)
           observer.error(err)
         }
       })
@@ -106,32 +101,26 @@ const sseLink = new ApolloLink((operation) => {
       eventSource.addEventListener('complete', () => {
         console.log(`SSE: Subscription completed for ${operationName}`)
         observer.complete()
-        eventSource.close()
+        eventSource?.close()
       })
 
       // Listen for subscription errors
       eventSource.addEventListener('error', (event) => {
-        console.error(`SSE: Error event for ${operationName}:`, {
-          error: event,
-          readyState: eventSource.readyState
-        })
-        if (eventSource.readyState === EventSource.CLOSED) {
-          observer.complete()
-        } else {
-          observer.error(event)
-        }
+        console.error(`SSE: Error event for ${operationName}:`, event)
+        observer.error(event)
       })
-
-      return () => {
-        console.log(`SSE: Closing connection for ${operationName}`)
-        eventSource.close()
-      }
     }).catch(error => {
-      console.error(`SSE: Failed to setup ${operationName}:`, error)
       observer.error(error)
     })
 
-    return () => {}
+    // Return a cleanup function that will be called on unsubscribe
+    return () => {
+      unsubscribed = true
+      if (eventSource) {
+        console.log(`SSE: Closing connection for ${operationName}`)
+        eventSource.close()
+      }
+    }
   })
 })
 
