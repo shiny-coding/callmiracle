@@ -27,6 +27,7 @@ type ConnectionParams {
   initiatorUserId: ID!
   videoEnabled: Boolean
   audioEnabled: Boolean
+  quality: String
 }
 
 type ConnectionRequest {
@@ -37,6 +38,7 @@ type ConnectionRequest {
   from: User!
   videoEnabled: Boolean
   audioEnabled: Boolean
+  quality: String
 }
 
 input UpdateUserInput {
@@ -57,6 +59,7 @@ input ConnectionParamsInput {
   iceCandidate: String
   videoEnabled: Boolean
   audioEnabled: Boolean
+  quality: String
 }
 
 type Query {

@@ -13,6 +13,7 @@ export const CONNECT_WITH_USER = gql`
       answer
       targetUserId
       initiatorUserId
+      quality
     }
   }
 `
@@ -26,6 +27,7 @@ export const ON_CONNECTION_REQUEST = gql`
       iceCandidate
       videoEnabled
       audioEnabled
+      quality
       from {
         userId
         name
@@ -71,6 +73,7 @@ export function useWebRTCCommon() {
         height: { ideal: config.height },
         frameRate: { max: config.maxFramerate }
       })
+      console.log('WebRTC: Applied quality:', quality)
 
       // Update sender parameters if available
       if (sender) {

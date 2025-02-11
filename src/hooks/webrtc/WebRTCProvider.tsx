@@ -174,6 +174,12 @@ export function WebRTCProvider({
           setConnectionStatus('calling')
 
         } else if (request.type === 'changeTracks') { // Handle track changes
+          console.log('WebRTC: Remote peer changed tracks:', {
+            from: request.from.name,
+            videoEnabled: request.videoEnabled ?? remoteVideoEnabled,
+            audioEnabled: request.audioEnabled ?? remoteAudioEnabled,
+            quality: request.quality
+          })
           setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
           setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
         } else {
@@ -222,6 +228,19 @@ export function WebRTCProvider({
       if (activePeerConnection) {
         const sender = activePeerConnection.getSenders().find(s => s.track?.kind === 'video') || null
         await applyVideoQuality(videoTrack, sender, quality)
+        // Notify peer about quality change
+        await connectWithUser({
+          variables: {
+            input: {
+              type: 'changeTracks',
+              targetUserId: caller.active ? caller.targetUserId! : callee.targetUserId!,
+              initiatorUserId: getUserId(),
+              videoEnabled: localVideoEnabled,
+              audioEnabled: localAudioEnabled,
+              quality
+            }
+          }
+        })
       } else {
         // If no active connection, just update local track
         await applyVideoQuality(videoTrack, null, quality)

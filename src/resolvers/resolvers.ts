@@ -93,7 +93,7 @@ export const resolvers = {
       return result;
     },
     connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled } = input
+      const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality } = input
       const initiatorUserId = input.initiatorUserId || ''
 
       // Store the connection attempt
@@ -105,7 +105,7 @@ export const resolvers = {
             ...(type === 'offer' && { offer }),
             ...(type === 'answer' && { answer }),
             ...(type === 'finished' && { finished: true }),
-            ...(type === 'changeTracks' && { videoEnabled, audioEnabled })
+            ...(type === 'changeTracks' && { videoEnabled, audioEnabled, quality })
           }
         }
     
@@ -156,7 +156,7 @@ export const resolvers = {
         answer: { offer: connection?.offer, answer },
         'ice-candidate': { offer: connection?.offer, iceCandidate },
         finished: { offer: '' },
-        changeTracks: { videoEnabled, audioEnabled }
+        changeTracks: { videoEnabled, audioEnabled, quality }
       }
 
       // Create a unique topic for this user's connection requests

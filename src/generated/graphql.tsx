@@ -44,6 +44,7 @@ export type ConnectionRequest = {
   from: User;
   iceCandidate?: Maybe<Scalars['String']['output']>;
   offer?: Maybe<Scalars['String']['output']>;
+  quality?: Maybe<Scalars['String']['output']>;
   type: Scalars['String']['output'];
   videoEnabled?: Maybe<Scalars['Boolean']['output']>;
 };
