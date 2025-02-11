@@ -5,6 +5,7 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import LocaleSelector from '@/components/LocaleSelector';
 import { StoreInitializer } from '@/components/StoreInitializer';
 import { WebRTCProvider } from '@/hooks/webrtc/WebRTCProvider';
+import { UsersProvider } from '@/store/UsersProvider';
 
 export default async function LocaleLayout({
   children,
@@ -29,9 +30,11 @@ export default async function LocaleLayout({
     <AppRouterCacheProvider>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <ApolloWrapper>
-          <StoreInitializer />
-          {/* <LocaleSelector /> */}
-          {children}
+            <UsersProvider>
+              <StoreInitializer />
+              {/* <LocaleSelector /> */}
+              {children}
+            </UsersProvider>
         </ApolloWrapper>
       </NextIntlClientProvider>
     </AppRouterCacheProvider>

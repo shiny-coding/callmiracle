@@ -1,59 +1,21 @@
 'use client'
 
-import { gql, useQuery, useMutation, useSubscription } from '@apollo/client'
 import { useTranslations } from 'next-intl'
 import { Paper, List, ListItem, Typography, Chip, IconButton, Avatar } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { LANGUAGES } from '@/config/languages'
-import { getUserId } from '@/lib/userId'
 import { useRef, useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import Image from 'next/image'
-
-const GET_USERS = gql`
-  query GetUsers {
-    users {
-      userId
-      name
-      statuses
-      languages
-      timestamp
-      locale
-      online
-    }
-  }
-`
-
-const USERS_SUBSCRIPTION = gql`
-  subscription OnUsersUpdated {
-    onUsersUpdated {
-      userId
-      name
-      statuses
-      languages
-      timestamp
-      locale
-      online
-    }
-  }
-`
+import { useUsers } from '@/store/UsersProvider'
 
 export default function UserList() {
-  const { data, loading, error, refetch } = useQuery(GET_USERS, {
-    fetchPolicy: 'network-only'
-  })
-  const { data: subData } = useSubscription(USERS_SUBSCRIPTION)
-  
-  // Use subscription data if available, otherwise use query data
-  const users = (subData?.onUsersUpdated || data?.users)?.filter(
-    (user: User) => user.userId !== getUserId()
-  )
-  
+  const { users, loading, error, refetch } = useUsers()
   const t = useTranslations('Status')
   const tRoot = useTranslations()
-  //const { doCall } = useWebRTCContext()
+  const { doCall } = useWebRTCContext()
 
   if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
@@ -64,9 +26,9 @@ export default function UserList() {
       name: user.name,
       timestamp: new Date().toISOString()
     })
-    //await doCall(user.userId)
+    await doCall(user.userId)
   }
-  
+
   return (
     <Paper className="p-4 relative">
       <div className="flex justify-between items-center mb-4 absolute top-0 right-0">
@@ -111,37 +73,32 @@ export default function UserList() {
                   user.online ? 'bg-green-500' : 'bg-red-500'
                 }`} />
               </div>
-              <div className="flex flex-col flex-grow">
-                <div className="flex items-center gap-2">
-                  <Typography variant="body1">{user.name}</Typography>
-                  <Typography variant="caption" className={user.online ? 'text-green-600' : 'text-red-600'}>
-                    {user.online ? tRoot('online') : tRoot('offline')}
-                  </Typography>
+              <div className="flex-1">
+                <Typography variant="subtitle1" className="font-medium">
+                  {user.name}
+                </Typography>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {user.statuses.map((status) => (
+                    <Chip
+                      key={status}
+                      label={t(status)}
+                      size="small"
+                      className="text-xs"
+                    />
+                  ))}
                 </div>
-                <div className="mt-1">
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {user.languages?.map((lang: string) => (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {user.languages.map((lang) => {
+                    const language = Object.entries(LANGUAGES).find(([code]) => code === lang)
+                    return (
                       <Chip
                         key={lang}
-                        label={LANGUAGES.find(l => l.code === lang)?.name || lang}
+                        label={language?.[1].name || lang}
                         size="small"
-                        variant="outlined"
-                        className="mr-1"
+                        className="text-xs"
                       />
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {user.statuses?.map((status: string) => (
-                      <Chip
-                        key={status}
-                        label={t(status)}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                        className="mr-1"
-                      />
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>

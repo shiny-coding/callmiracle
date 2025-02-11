@@ -12,8 +12,7 @@ import CloseIcon from '@mui/icons-material/Close'
 
 function MainContent() {
   const [showUserList, setShowUserList] = useState(true)
-  // const { connectionStatus } = useWebRTCContext()
-  const connectionStatus:string = 'asdsa'
+  const { connectionStatus } = useWebRTCContext()
 
   return (
     <div className="h-full flex flex-col items-center w-full max-w-[1536px] mx-auto">
@@ -21,12 +20,12 @@ function MainContent() {
         ? 'absolute bottom-[72px] right-4 z-10 w-[240px]' 
         : 'flex justify-center pt-4'
       }`}>
-        {/* <LocalVideo /> */}
+        <LocalVideo />
       </div>
       <div className={`flex items-center justify-center w-full h-full ${
         connectionStatus === 'connected' ? 'relative opacity-100' : 'absolute opacity-0 pointer-events-none'
       }`}>
-        {/* <RemoteVideo /> */}
+        <RemoteVideo />
       </div>
       
       <IconButton
@@ -45,15 +44,15 @@ function MainContent() {
           <UserList />
         </div>
       )}
-      {/* <VideoAudioControls /> */}
+      <VideoAudioControls />
     </div>
   )
 }
 
 export default function Home() {
   return (
-    // <WebRTCProvider>
+    <WebRTCProvider>
       <MainContent />
-    // </WebRTCProvider>
+    </WebRTCProvider>
   )
 } 

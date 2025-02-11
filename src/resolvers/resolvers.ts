@@ -85,23 +85,8 @@ export const resolvers = {
         locale: user.locale,
         online: user.online || false // Default to false if not set
       }));
-      
-      pubsub.publish('USERS_UPDATED', typedUsers);
 
-      // just for testing
-      // const topic = `CONNECTION_REQUEST:${userId}`
-      // pubsub.publish(topic, {
-      //   onConnectionRequest: {
-      //     type: 'ignore',
-      //     from: {
-      //       userId: userId,
-      //       name: 'test',
-      //       languages: ['en'],
-      //       statuses: []
-      //     }
-      //   },
-      //   userId: userId
-      // })
+      pubsub.publish('USERS_UPDATED', typedUsers);
 
       console.log('Publishing users updated: ' + typedUsers.length )
 
