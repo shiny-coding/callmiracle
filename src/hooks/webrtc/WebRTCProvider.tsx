@@ -56,6 +56,7 @@ export function WebRTCProvider({
   const [localVideoEnabled, setLocalVideoEnabled] = useState(false)
   const [localAudioEnabled, setLocalAudioEnabled] = useState(false)
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
+  const [connectWithUser] = useMutation(CONNECT_WITH_USER)
 
   // Initialize client-side only states
   useEffect(() => {
@@ -120,11 +121,35 @@ export function WebRTCProvider({
 
         } else if (request.type === 'answer') { // Handle answer for initiator
           const answer = JSON.parse(request.answer)
-          await caller.handleAnswer(caller.peerConnection.current!, answer)
+          if (!caller.peerConnection.current) {
+            // Connection already closed, send expired
+            console.log('WebRTC: Connection already closed, sending expired')
+            await connectWithUser({
+              variables: {
+                input: {
+                  type: 'expired',
+                  targetUserId: request.from.userId,
+                  initiatorUserId: getUserId()
+                }
+              }
+            })
+            return
+          }
+          await caller.handleAnswer(caller.peerConnection.current, answer)
           // Initialize remote media state from answer
           setRemoteVideoEnabled(request.videoEnabled ?? true)
           setRemoteAudioEnabled(request.audioEnabled ?? true)
           setRemoteName(request.from.name)
+
+        } else if (request.type === 'expired') { // Handle expired connection
+          console.log('WebRTC: Received expired signal, cleaning up')
+          if (callee.active) {
+            callee.cleanup()
+          }
+          setConnectionStatus('timeout')
+          setRemoteVideoEnabled(false)
+          setRemoteAudioEnabled(false)
+          setRemoteName(null)
 
         } else if (request.type === 'ice-candidate') { // Handle ICE candidates
           const candidate = JSON.parse(request.iceCandidate)
@@ -132,7 +157,7 @@ export function WebRTCProvider({
             // We're the caller
             await caller.handleIceCandidate(caller.peerConnection.current!, candidate)
           } else {
-            // We're the callee
+            // We're the callee (supposedly)
             await callee.handleIceCandidate(callee.peerConnection.current!, candidate)
           }
 

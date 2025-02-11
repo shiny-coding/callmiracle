@@ -5,13 +5,8 @@ import LocalVideo from '@/components/LocalVideo'
 import RemoteVideo from '@/components/RemoteVideo'
 import UserList from '@/components/UserList'
 import { useWebRTCContext, WebRTCProvider } from '@/hooks/webrtc/WebRTCProvider'
-import { useState } from 'react'
-import { IconButton } from '@mui/material'
-import PeopleIcon from '@mui/icons-material/People'
-import CloseIcon from '@mui/icons-material/Close'
 
 function MainContent() {
-  const [showUserList, setShowUserList] = useState(true)
   const { connectionStatus } = useWebRTCContext()
 
   return (
@@ -27,19 +22,8 @@ function MainContent() {
       }`}>
         <RemoteVideo />
       </div>
-      
-      <IconButton
-        onClick={() => setShowUserList(!showUserList)}
-        className="fixed top-4 right-4 bg-black/30 backdrop-blur-sm hover:bg-black/40 z-50"
-      >
-        {showUserList ? (
-          <CloseIcon className="text-black" />
-        ) : (
-          <PeopleIcon className="text-black" />
-        )}
-      </IconButton>
 
-      {connectionStatus !== 'connected' && showUserList && (
+      {connectionStatus !== 'connected' && (
         <div className="px-4 mt-4 overflow-y-auto pb-4">
           <UserList />
         </div>

@@ -36,7 +36,16 @@ export const ON_CONNECTION_REQUEST = gql`
   }
 `
 
-export type ConnectionStatus = 'disconnected' | 'calling' | 'connecting' | 'connected' | 'failed' | 'rejected' | 'timeout' | 'finished'
+export type ConnectionStatus = 
+  | 'disconnected' 
+  | 'calling' 
+  | 'connecting' 
+  | 'connected' 
+  | 'failed' 
+  | 'rejected' 
+  | 'timeout' 
+  | 'finished'
+  | 'expired'
 
 export interface IncomingRequest {
   offer: string
