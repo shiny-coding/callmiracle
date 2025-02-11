@@ -19,6 +19,7 @@ interface WebRTCContextType {
   remoteVideoEnabled: boolean
   remoteAudioEnabled: boolean
   remoteName: string | null
+  remoteQuality: VideoQuality | null
   localStream: MediaStream | undefined
   setLocalStream: (stream: MediaStream | undefined) => void
   localVideoEnabled: boolean
@@ -52,19 +53,24 @@ export function WebRTCProvider({
   const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(false)
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [remoteName, setRemoteName] = useState<string | null>(null)
+  const [remoteQuality, setRemoteQuality] = useState<VideoQuality | null>(null)
+  const [localQuality, setLocalQuality] = useState<VideoQuality>('720p')
   const [localStream, setLocalStream] = useState<MediaStream>()
   const [localVideoEnabled, setLocalVideoEnabled] = useState(false)
   const [localAudioEnabled, setLocalAudioEnabled] = useState(false)
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
+  const { applyVideoQuality } = useWebRTCCommon()
 
   // Initialize client-side only states
   useEffect(() => {
     setLocalVideoEnabled(localStorage.getItem('cameraEnabled') !== 'false')
     setLocalAudioEnabled(localStorage.getItem('audioEnabled') !== 'false')
+    const savedQuality = localStorage.getItem('videoQuality') as VideoQuality
+    if (savedQuality && QUALITY_CONFIGS[savedQuality]) {
+      setLocalQuality(savedQuality)
+    }
   }, [])
-
-  const { applyVideoQuality } = useWebRTCCommon()
 
   useEffect(() => {
     console.log('WebRTCProvider mounted')
@@ -76,6 +82,7 @@ export function WebRTCProvider({
     remoteVideoRef,
     localVideoEnabled,
     localAudioEnabled,
+    localQuality,
     onStatusChange: setConnectionStatus
   }
   const caller = useWebRTCCaller(childProps)
@@ -178,10 +185,15 @@ export function WebRTCProvider({
             from: request.from.name,
             videoEnabled: request.videoEnabled ?? remoteVideoEnabled,
             audioEnabled: request.audioEnabled ?? remoteAudioEnabled,
-            quality: request.quality
+            quality: request.quality || 'unchanged'
           })
+
+          // Update remote media state
           setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
           setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
+          if (request.quality) {
+            setRemoteQuality(request.quality as VideoQuality)
+          }
         } else {
           throw new Error('WebRTC: Unknown request type:', request.type)
         }
@@ -228,6 +240,7 @@ export function WebRTCProvider({
       if (activePeerConnection) {
         const sender = activePeerConnection.getSenders().find(s => s.track?.kind === 'video') || null
         await applyVideoQuality(videoTrack, sender, quality)
+        setLocalQuality(quality)
         // Notify peer about quality change
         await connectWithUser({
           variables: {
@@ -244,6 +257,7 @@ export function WebRTCProvider({
       } else {
         // If no active connection, just update local track
         await applyVideoQuality(videoTrack, null, quality)
+        setLocalQuality(quality)
       }
     }
   }
@@ -258,6 +272,7 @@ export function WebRTCProvider({
     remoteVideoEnabled,
     remoteAudioEnabled,
     remoteName,
+    remoteQuality,
     localStream,
     setLocalStream,
     localVideoEnabled,

@@ -8,6 +8,7 @@ import VideocamIcon from '@mui/icons-material/Videocam';
 import VideocamOffIcon from '@mui/icons-material/VideocamOff';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
+import HdIcon from '@mui/icons-material/Hd';
 import { useTranslations } from 'next-intl';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 
@@ -23,7 +24,8 @@ export default function RemoteVideo() {
     remoteVideoEnabled,
     remoteAudioEnabled,
     remoteName,
-    remoteVideoRef
+    remoteVideoRef,
+    remoteQuality
   } = useWebRTCContext();
 
   // Update overlay dimensions when video loads or resizes
@@ -141,6 +143,12 @@ export default function RemoteVideo() {
                     {remoteName}
                   </div>
                   <div className="flex gap-2">
+                    {remoteQuality && (
+                      <div className="bg-black/50 flex items-center px-2 py-1 rounded">
+                        <HdIcon className="text-white" fontSize="small" />
+                        <span className="ml-1 text-xs text-white">{remoteQuality}</span>
+                      </div>
+                    )}
                     <div className="bg-black/50 w-8 h-8 rounded flex items-center justify-center">
                       {remoteAudioEnabled ? (
                         <MicIcon className="text-white" fontSize="small" />

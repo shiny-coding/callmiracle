@@ -264,7 +264,7 @@ export function useWebRTCCommon() {
     pendingIceCandidates.current = []
   }
 
-  const updateMediaState = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean, targetUserId: string, connectWithUser: any) => {
+  const updateMediaState = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean, targetUserId: string, connectWithUser: any, localQuality: VideoQuality) => {
     // Update tracks
     const senders = pc.getSenders()
     for (const sender of senders) {
@@ -289,7 +289,8 @@ export function useWebRTCCommon() {
           targetUserId,
           initiatorUserId: getUserId(),
           videoEnabled: localVideoEnabled,
-          audioEnabled: localAudioEnabled
+          audioEnabled: localAudioEnabled,
+          quality: localQuality
         }
       }
     }).catch((err: any) => {

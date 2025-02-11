@@ -3,12 +3,14 @@ import { useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { useWebRTCCommon, CONNECT_WITH_USER, CONNECTION_TIMEOUT_MS } from './useWebRTCCommon'
 import type { ConnectionStatus } from './useWebRTCCommon'
+import type { VideoQuality } from '@/components/VideoQualitySelector'
 
 interface UseWebRTCCallerProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   localVideoEnabled: boolean
   localAudioEnabled: boolean
+  localQuality: VideoQuality
   onStatusChange: (status: ConnectionStatus) => void
 }
 
@@ -17,6 +19,7 @@ export function useWebRTCCaller({
   remoteVideoRef,
   localVideoEnabled,
   localAudioEnabled,
+  localQuality,
   onStatusChange
 }: UseWebRTCCallerProps) {
   const {
@@ -136,9 +139,9 @@ export function useWebRTCCaller({
 
   useEffect(() => {
     if (peerConnection.current && active) {
-      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser)
+      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser, localQuality)
     }
-  }, [localVideoEnabled, localAudioEnabled, active, targetUserId])
+  }, [localVideoEnabled, localAudioEnabled, localQuality, active, targetUserId])
 
   return {
     doCall,
