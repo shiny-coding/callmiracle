@@ -38,6 +38,8 @@ const sseLink = new ApolloLink((operation) => {
     const operationName = operation.operationName || 'unnamed'
     let eventSource: EventSource | null = null
     let unsubscribed = false
+    // Create an AbortController to cancel the fetch if needed.
+    const controller = new AbortController()
 
     // Initiate the request to set up the SSE connection
     fetch('/api/graphql', {
@@ -56,7 +58,8 @@ const sseLink = new ApolloLink((operation) => {
             protocol: 'SSE'
           }
         }
-      })
+      }),
+      signal: controller.signal
     }).then(response => {
       if (!response.ok) {
         console.error(`SSE: Subscription request failed for ${operationName}:`, {
@@ -116,6 +119,7 @@ const sseLink = new ApolloLink((operation) => {
     // Return a cleanup function that will be called on unsubscribe
     return () => {
       unsubscribed = true
+      controller.abort() // Cancel the fetch if it is still pending.
       if (eventSource) {
         console.log(`SSE: Closing connection for ${operationName}`)
         eventSource.close()

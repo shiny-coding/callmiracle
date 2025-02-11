@@ -10,6 +10,7 @@ const nextConfig = {
   //   config.devtool = 'source-map';
   //   return config;
   // }
+  reactStrictMode: false,
   images: {
     remotePatterns: [
       {

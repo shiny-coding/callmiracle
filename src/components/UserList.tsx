@@ -41,7 +41,9 @@ const USERS_SUBSCRIPTION = gql`
 `
 
 export default function UserList() {
-  const { data, loading, error, refetch } = useQuery(GET_USERS)
+  const { data, loading, error, refetch } = useQuery(GET_USERS, {
+    fetchPolicy: 'network-only'
+  })
   const { data: subData } = useSubscription(USERS_SUBSCRIPTION)
   
   // Use subscription data if available, otherwise use query data
@@ -51,7 +53,7 @@ export default function UserList() {
   
   const t = useTranslations('Status')
   const tRoot = useTranslations()
-  const { doCall } = useWebRTCContext()
+  //const { doCall } = useWebRTCContext()
 
   if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
@@ -62,9 +64,9 @@ export default function UserList() {
       name: user.name,
       timestamp: new Date().toISOString()
     })
-    await doCall(user.userId)
+    //await doCall(user.userId)
   }
-
+  
   return (
     <Paper className="p-4 relative">
       <div className="flex justify-between items-center mb-4 absolute top-0 right-0">
