@@ -3,12 +3,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video';
 import ConnectionRequest from './ConnectionRequest';
-import { Typography } from '@mui/material';
+import { Typography, IconButton } from '@mui/material';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import VideocamOffIcon from '@mui/icons-material/VideocamOff';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import HdIcon from '@mui/icons-material/Hd';
+import FitScreenIcon from '@mui/icons-material/FitScreen';
 import { useTranslations } from 'next-intl';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 
@@ -16,6 +17,7 @@ export default function RemoteVideo() {
   const t = useTranslations('VideoChat');
   const overlayRef = useRef<HTMLDivElement>(null);
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [isFitMode, setIsFitMode] = useState(true);
   const {
     connectionStatus,
     incomingRequest,
@@ -116,60 +118,64 @@ export default function RemoteVideo() {
 
   return (
     <>
-      <div className="absolute inset-0 bg-gray-900">
-        <div className="relative w-full h-full flex items-center justify-center">
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-contain"
-          />
-          
-          {connectionStatus === 'connected' && videoDimensions && (
-            <div 
-              ref={overlayRef}
-              className="absolute z-10 pointer-events-none"
-              style={{
-                width: videoDimensions.width,
-                height: videoDimensions.height,
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)'
-              }}
-            >
-              <div className="absolute top-0 left-0 right-0 p-4">
-                <div className="flex justify-between items-center">
-                  <div className="bg-black/50 px-2 py-1 rounded text-white text-sm">
+        <div className="relative w-full h-full flex flex-col">
+          {connectionStatus === 'connected' && (
+            <div className="p-4 bg-gradient-to-b from-black/50 to-transparent">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="text-white text-sm">
                     {remoteName}
                   </div>
-                  <div className="flex gap-2">
-                    {remoteQuality && (
-                      <div className="bg-black/50 flex items-center px-2 py-1 rounded">
-                        <HdIcon className="text-white" fontSize="small" />
-                        <span className="ml-1 text-xs text-white">{remoteQuality}</span>
-                      </div>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <IconButton
+                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+                    onClick={() => setIsFitMode(!isFitMode)}
+                  >
+                    <FitScreenIcon className={`text-white transform ${!isFitMode ? 'rotate-90' : ''}`} />
+                  </IconButton>
+
+                  {remoteQuality && (
+                    <div className="flex items-center bg-black/30 backdrop-blur-sm px-2 py-1 rounded">
+                      <HdIcon className="text-white" />
+                      <span className="ml-1 text-xs text-white">{remoteQuality}</span>
+                    </div>
+                  )}
+
+                  <IconButton
+                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+                    disabled
+                  >
+                    {remoteAudioEnabled ? (
+                      <MicIcon className="text-white" />
+                    ) : (
+                      <MicOffIcon className="text-white" />
                     )}
-                    <div className="bg-black/50 w-8 h-8 rounded flex items-center justify-center">
-                      {remoteAudioEnabled ? (
-                        <MicIcon className="text-white" fontSize="small" />
-                      ) : (
-                        <MicOffIcon className="text-white" fontSize="small" />
-                      )}
-                    </div>
-                    <div className="bg-black/50 w-8 h-8 rounded flex items-center justify-center">
-                      {remoteVideoEnabled ? (
-                        <VideocamIcon className="text-white" fontSize="small" />
-                      ) : (
-                        <VideocamOffIcon className="text-white" fontSize="small" />
-                      )}
-                    </div>
-                  </div>
+                  </IconButton>
+
+                  <IconButton
+                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+                    disabled
+                  >
+                    {remoteVideoEnabled ? (
+                      <VideocamIcon className="text-white" />
+                    ) : (
+                      <VideocamOffIcon className="text-white" />
+                    )}
+                  </IconButton>
                 </div>
               </div>
             </div>
           )}
+          <div className="w-full h-[calc(100%-72px)] flex items-center justify-center">
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className={`${isFitMode ? 'object-contain' : 'object-cover'}`}
+            />
+          </div>
         </div>
-      </div>
 
       <ConnectionRequest
         open={!!incomingRequest}
