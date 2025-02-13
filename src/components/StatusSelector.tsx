@@ -3,7 +3,11 @@
 import { Button } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Status } from '@/generated/graphql'
-import { useStore } from '@/store/useStore'
+
+interface StatusSelectorProps {
+  value: Status[]
+  onChange: (statuses: Status[]) => void
+}
 
 // Define the status relationships map
 const statusRelationships = new Map<Status, Status>([
@@ -14,20 +18,19 @@ const statusRelationships = new Map<Status, Status>([
   [Status.WantToSpeakOut, Status.WantToListen],
 ])
 
-export default function StatusSelector() {
+export default function StatusSelector({ value, onChange }: StatusSelectorProps) {
   const t = useTranslations('Status')
   const tRoot = useTranslations()
-  const { statuses, setStatuses } = useStore()
 
   // Split statuses into left and right columns
   const leftColumnStatuses = Array.from(statusRelationships.keys())
   const rightColumnStatuses = Array.from(new Set(statusRelationships.values()))
 
   const toggleStatus = (status: Status) => {
-    setStatuses(
-      statuses.includes(status)
-        ? statuses.filter(s => s !== status)
-        : [...statuses, status]
+    onChange(
+      value.includes(status)
+        ? value.filter(s => s !== status)
+        : [...value, status]
     )
   }
 
@@ -40,9 +43,9 @@ export default function StatusSelector() {
             <Button
               key={status}
               fullWidth
-              variant={statuses.includes(status) ? "contained" : "outlined"}
+              variant={value.includes(status) ? "contained" : "outlined"}
               onClick={() => toggleStatus(status)}
-              color={statuses.includes(status) ? "primary" : "inherit"}
+              color={value.includes(status) ? "primary" : "inherit"}
             >
               {t(status)}
             </Button>
@@ -53,9 +56,9 @@ export default function StatusSelector() {
             <Button
               key={status}
               fullWidth
-              variant={statuses.includes(status) ? "contained" : "outlined"}
+              variant={value.includes(status) ? "contained" : "outlined"}
               onClick={() => toggleStatus(status)}
-              color={statuses.includes(status) ? "primary" : "inherit"}
+              color={value.includes(status) ? "primary" : "inherit"}
             >
               {t(status)}
             </Button>

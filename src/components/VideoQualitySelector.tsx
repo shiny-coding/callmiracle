@@ -1,6 +1,6 @@
-import { Dialog, DialogTitle, DialogContent, List, ListItemButton, ListItemText } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, List, ListItemButton, ListItemText, DialogActions, Button } from '@mui/material'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export type VideoQuality = '360p' | '480p' | '720p' | '1080p'
 
@@ -45,17 +45,17 @@ interface VideoQualitySelectorProps {
 
 export default function VideoQualitySelector({ open, onClose }: VideoQualitySelectorProps) {
   const { updateRemoteQuality, remoteQuality } = useWebRTCContext()
+  const [selectedQuality, setSelectedQuality] = useState<VideoQuality | null>(null)
 
   useEffect(() => {
     if (!open) return
-    if (!remoteQuality || !QUALITY_CONFIGS[remoteQuality]) {
-      onClose()
-    }
-  }, [remoteQuality, open, onClose])
+    setSelectedQuality(remoteQuality)
+  }, [remoteQuality, open])
 
-  const handleQualityChange = async (quality: VideoQuality) => {
+  const handleApply = async () => {
+    if (!selectedQuality) return
     try {
-      await updateRemoteQuality(quality)
+      await updateRemoteQuality(selectedQuality)
       onClose()
     } catch (err) {
       console.error('Failed to change remote video quality:', err)
@@ -76,8 +76,8 @@ export default function VideoQualitySelector({ open, onClose }: VideoQualitySele
           {Object.entries(QUALITY_CONFIGS).map(([quality, config]) => (
             <ListItemButton
               key={quality}
-              onClick={() => handleQualityChange(quality as VideoQuality)}
-              selected={quality === remoteQuality}
+              onClick={() => setSelectedQuality(quality as VideoQuality)}
+              selected={quality === selectedQuality}
               className={quality === remoteQuality ? 'bg-gray-800' : ''}
             >
               <ListItemText
@@ -89,6 +89,16 @@ export default function VideoQualitySelector({ open, onClose }: VideoQualitySele
           ))}
         </List>
       </DialogContent>
+      <DialogActions className="border-t border-gray-800">
+        <Button onClick={onClose}>Cancel</Button>
+        <Button 
+          onClick={handleApply}
+          variant="contained" 
+          disabled={!selectedQuality || selectedQuality === remoteQuality}
+        >
+          Apply
+        </Button>
+      </DialogActions>
     </Dialog>
   )
 } 

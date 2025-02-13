@@ -1,7 +1,7 @@
-import { Dialog, DialogTitle, DialogContent, TextField, IconButton } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, TextField, IconButton, DialogActions, Button } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { useTranslations } from 'next-intl'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useDropzone } from 'react-dropzone'
 import { getUserId } from '@/lib/userId'
@@ -16,13 +16,30 @@ interface ProfileSettingsProps {
 
 export default function ProfileSettings({ open, onClose }: ProfileSettingsProps) {
   const t = useTranslations('Profile')
-  const { name, setName } = useStore()
+  const { name, setName, languages, setLanguages } = useStore()
+  const [tempName, setTempName] = useState(name)
+  const [tempLanguages, setTempLanguages] = useState(languages)
   const [uploading, setUploading] = useState(false)
   const [timestamp, setTimestamp] = useState(Date.now())
   const userId = getUserId()
   const { updateUserData } = useUpdateUser()
 
-  const handleClose = async () => {
+  useEffect(() => {
+    if (open) {
+      setTempName(name)
+      setTempLanguages(languages)
+    }
+  }, [open, name, languages])
+
+  const handleCancel = () => {
+    setTempName(name)
+    setTempLanguages(languages)
+    onClose()
+  }
+
+  const handleApply = async () => {
+    setName(tempName)
+    setLanguages(tempLanguages)
     await updateUserData()
     onClose()
   }
@@ -59,13 +76,13 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
   return (
     <Dialog 
       open={open} 
-      onClose={handleClose}
+      onClose={handleCancel}
       maxWidth="sm"
       fullWidth
     >
       <DialogTitle className="flex justify-between items-center">
         {t('title')}
-        <IconButton onClick={handleClose} size="small">
+        <IconButton onClick={handleCancel} size="small">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -109,11 +126,21 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
         <TextField
           label={t('name')}
           fullWidth
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={tempName}
+          onChange={(e) => setTempName(e.target.value)}
         />
-        <LanguageSelector />
+        <LanguageSelector value={tempLanguages} onChange={setTempLanguages} />
       </DialogContent>
+      <DialogActions className="border-t border-gray-800">
+        <Button onClick={handleCancel}>Cancel</Button>
+        <Button 
+          onClick={handleApply}
+          variant="contained" 
+          disabled={tempName === name && JSON.stringify(tempLanguages) === JSON.stringify(languages)}
+        >
+          Apply
+        </Button>
+      </DialogActions>
     </Dialog>
   )
 } 

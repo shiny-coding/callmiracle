@@ -12,7 +12,11 @@ import { LANGUAGES } from '@/config/languages';
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import { useTranslations } from 'next-intl';
-import { useStore } from '@/store/useStore';
+
+interface LanguageSelectorProps {
+  value: string[];
+  onChange: (languages: string[]) => void;
+}
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -34,16 +38,15 @@ function getStyles(name: string, selectedLangs: string[], theme: Theme) {
   };
 }
 
-export default function LanguageSelector() {
-  const { languages, setLanguages } = useStore();
+export default function LanguageSelector({ value, onChange }: LanguageSelectorProps) {
   const theme = useTheme();
   const t = useTranslations();
 
-  const handleChange = (event: SelectChangeEvent<typeof languages>) => {
+  const handleChange = (event: SelectChangeEvent<typeof value>) => {
     const {
-      target: { value },
+      target: { value: newValue },
     } = event;
-    setLanguages(typeof value === 'string' ? value.split(',') : value);
+    onChange(typeof newValue === 'string' ? newValue.split(',') : newValue);
   };
 
   return (
@@ -54,17 +57,17 @@ export default function LanguageSelector() {
           labelId="language-select-label"
           id="language-select"
           multiple
-          value={languages}
+          value={value}
           onChange={handleChange}
           input={<OutlinedInput label={t('iSpeak')} />}
           renderValue={(selected) => (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {selected.map((value) => (
+              {selected.map((langCode) => (
                 <Chip 
-                  key={value} 
-                  label={LANGUAGES.find(lang => lang.code === value)?.name}
+                  key={langCode} 
+                  label={LANGUAGES.find(lang => lang.code === langCode)?.name}
                   onDelete={() => {
-                    setLanguages(prev => prev.filter(lang => lang !== value));
+                    onChange(selected.filter(code => code !== langCode));
                   }}
                   onMouseDown={(event) => {
                     event.stopPropagation();
@@ -86,7 +89,7 @@ export default function LanguageSelector() {
         >
           {LANGUAGES.map((lang) => (
             <MenuItem key={lang.code} value={lang.code}>
-              <Checkbox checked={languages.indexOf(lang.code) > -1} />
+              <Checkbox checked={value.indexOf(lang.code) > -1} />
               <ListItemText primary={lang.name} />
             </MenuItem>
           ))}
