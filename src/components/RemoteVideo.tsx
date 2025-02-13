@@ -156,18 +156,7 @@ export default function RemoteVideo() {
                     {remoteAudioEnabled ? (
                       <MicIcon className="text-white" />
                     ) : (
-                      <MicOffIcon className="text-white" />
-                    )}
-                  </IconButton>
-
-                  <IconButton
-                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-                    disabled
-                  >
-                    {remoteVideoEnabled ? (
-                      <VideocamIcon className="text-white" />
-                    ) : (
-                      <VideocamOffIcon className="text-white" />
+                      <MicOffIcon className="text-red-400" />
                     )}
                   </IconButton>
                 </div>
@@ -175,11 +164,16 @@ export default function RemoteVideo() {
             </div>
           )}
           <div className="w-full h-[calc(100%-72px)] flex items-center justify-center bg-black">
+            {!remoteVideoEnabled && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <VideocamOffIcon className="text-red-400 w-16 h-16" />
+              </div>
+            )}
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className={`w-full h-full ${isFitMode ? 'object-contain' : 'object-cover'}`}
+              className={`w-full h-full ${isFitMode ? 'object-contain' : 'object-cover'} ${!remoteVideoEnabled ? 'opacity-0 pointer-events-none' : ''}`}
             />
           </div>
         </div>

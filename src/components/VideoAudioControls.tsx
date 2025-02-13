@@ -27,7 +27,7 @@ export default function VideoAudioControls() {
   } = useWebRTCContext()
 
   return (
-    <div className="mt-auto p-4 w-full flex justify-center items-center gap-4 bg-gradient-to-b from-black to-white/50">
+    <div className="mt-auto p-4 w-full flex justify-around items-center gap-4 bg-gradient-to-b from-black to-white/50">
       {connectionStatus !== 'connected' && (
         <>
           <IconButton
@@ -50,38 +50,38 @@ export default function VideoAudioControls() {
           className="bg-red-600 hover:bg-red-700 text-white" 
           onClick={hangup}
         >
-          <CallEndIcon className="text-white" />
+          <CallEndIcon className="text-red-400" />
         </IconButton>
       )}
-      
-      <div className="flex gap-2 items-center">
-        <IconButton
-          className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-          onClick={handleAudioToggle}
-        >
-          {localAudioEnabled ? (
-            <MicIcon className="text-white" />
-          ) : (
-            <MicOffIcon className="text-white" />
-          )}
-        </IconButton>
-        <AudioDeviceSelector />
-      </div>
+      <div className="flex">
+        <div className="flex gap-2 items-center">
+          <IconButton
+            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+            onClick={handleAudioToggle}
+          >
+            {localAudioEnabled ? (
+              <MicIcon className="text-white" />
+            ) : (
+              <MicOffIcon className="text-red-400" />
+            )}
+          </IconButton>
+          <AudioDeviceSelector />
+        </div>
 
-      <div className="flex gap-2 items-center">
-        <IconButton
-          className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-          onClick={handleVideoToggle}
-        >
-          {localVideoEnabled ? (
-            <VideocamIcon className="text-white" />
-          ) : (
-            <VideocamOffIcon className="text-white" />
-          )}
-        </IconButton>
-        <VideoDeviceSelector />
+        <div className="flex gap-2 items-center">
+          <IconButton
+            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+            onClick={handleVideoToggle}
+          >
+            {localVideoEnabled ? (
+              <VideocamIcon className="text-white" />
+            ) : (
+              <VideocamOffIcon className="text-red-400" />
+            )}
+          </IconButton>
+          <VideoDeviceSelector />
+        </div>
       </div>
-      <VideoQualitySelector />
 
       <ProfileSettings 
         open={profileOpen}
