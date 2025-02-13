@@ -47,10 +47,10 @@ export default function VideoAudioControls() {
 
       {connectionStatus === 'connected' && (
         <IconButton
-          className="bg-red-600 hover:bg-red-700" 
+          className="bg-red-600 hover:bg-red-700 text-white" 
           onClick={hangup}
         >
-          <CallEndIcon className="text-red" />
+          <CallEndIcon className="text-white" />
         </IconButton>
       )}
       

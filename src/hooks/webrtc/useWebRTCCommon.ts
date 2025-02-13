@@ -92,6 +92,27 @@ export function useWebRTCCommon() {
     }
   }
 
+  const applyRemoteQuality = async (peerConnection: RTCPeerConnection, quality: VideoQuality) => {
+    try {
+      const transceiver = peerConnection.getTransceivers().find(t => t.receiver.track?.kind === 'video')
+      if (transceiver) {
+        const config = QUALITY_CONFIGS[quality]
+        await transceiver.sender.setParameters({
+          ...transceiver.sender.getParameters(),
+          encodings: [{
+            maxBitrate: config.maxBitrate,
+            maxFramerate: config.maxFramerate,
+            scaleResolutionDownBy: 1920 / config.width
+          }]
+        })
+        console.log('WebRTC: Applied remote quality:', quality)
+      }
+    } catch (err) {
+      console.error('Failed to apply remote quality settings:', err)
+      throw err
+    }
+  }
+
   const createPeerConnection = () => {
     const pc = new RTCPeerConnection({
       iceServers: [
@@ -106,7 +127,7 @@ export function useWebRTCCommon() {
     return pc
   }
 
-  const addLocalStream = (pc: RTCPeerConnection, stream: MediaStream, isInitiator: boolean, localVideoEnabled: boolean, localAudioEnabled: boolean) => {
+  const addLocalStream = (pc: RTCPeerConnection, stream: MediaStream, isInitiator: boolean, localVideoEnabled: boolean, localAudioEnabled: boolean, localQuality: VideoQuality) => {
     console.log('WebRTC: Adding local stream tracks:', {
       trackCount: stream.getTracks().length,
       tracks: stream.getTracks().map(t => ({
@@ -145,15 +166,12 @@ export function useWebRTCCommon() {
     }
 
     // Apply initial video quality settings
-    const savedQuality = localStorage.getItem('videoQuality') as VideoQuality
-    if (savedQuality && QUALITY_CONFIGS[savedQuality]) {
-      const videoTrack = stream.getVideoTracks()[0]
-      if (videoTrack) {
-        const sender = pc.getSenders().find(s => s.track?.kind === 'video') || null
-        applyVideoQuality(videoTrack, sender, savedQuality).catch(err => 
-          console.error('Failed to apply initial video quality:', err)
-        )
-      }
+    const videoTrack = stream.getVideoTracks()[0]
+    if (videoTrack) {
+      const sender = pc.getSenders().find(s => s.track?.kind === 'video') || null
+      applyVideoQuality(videoTrack, sender, localQuality).catch(err => 
+        console.error('Failed to apply initial video quality:', err)
+      )
     }
 
     configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
@@ -194,6 +212,15 @@ export function useWebRTCCommon() {
           remoteStreamRef.current = remoteStream
           remoteVideoRef.current.srcObject = remoteStream
           console.log('Received first remote track: ' + event.track.kind)
+          // Apply saved remote quality preference if it exists
+          if (event.track.kind === 'video') {
+            const savedQuality = localStorage.getItem('remoteQuality') as VideoQuality
+            if (savedQuality && QUALITY_CONFIGS[savedQuality]) {
+              applyRemoteQuality(peerConnection, savedQuality).catch(err => 
+                console.error('Failed to apply initial remote quality settings:', err)
+              )
+            }
+          }
         } else {
           console.log('Added remote track: ' + event.track.kind)
         }
@@ -339,6 +366,7 @@ export function useWebRTCCommon() {
     clearPendingCandidates,
     updateMediaState,
     createHangup,
-    applyVideoQuality
+    applyVideoQuality,
+    applyRemoteQuality
   }
 } 

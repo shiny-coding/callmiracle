@@ -42,23 +42,20 @@ export const QUALITY_CONFIGS: Record<VideoQuality, VideoQualityConfig> = {
 export default function VideoQualitySelector() {
   const [open, setOpen] = useState(false)
   const [currentQuality, setCurrentQuality] = useState<VideoQuality>('720p')
-  const { updateVideoQuality } = useWebRTCContext()
+  const { updateRemoteQuality, remoteQuality } = useWebRTCContext()
 
   useEffect(() => {
-    const savedQuality = localStorage.getItem('videoQuality') as VideoQuality
-    if (savedQuality && QUALITY_CONFIGS[savedQuality]) {
-      setCurrentQuality(savedQuality)
-      updateVideoQuality(savedQuality)
+    if (remoteQuality && QUALITY_CONFIGS[remoteQuality]) {
+      setCurrentQuality(remoteQuality)
     }
-  }, [])
+  }, [remoteQuality])
 
   const handleQualityChange = async (quality: VideoQuality) => {
     try {
-      await updateVideoQuality(quality)
+      await updateRemoteQuality(quality)
       setCurrentQuality(quality)
-      localStorage.setItem('videoQuality', quality)
     } catch (err) {
-      console.error('Failed to change video quality:', err)
+      console.error('Failed to change remote video quality:', err)
     }
     setOpen(false)
   }
@@ -82,7 +79,7 @@ export default function VideoQualitySelector() {
           className: 'bg-gray-900 text-white'
         }}
       >
-        <DialogTitle>Select Video Quality</DialogTitle>
+        <DialogTitle>Select Remote Video Quality</DialogTitle>
         <DialogContent>
           <List>
             {(Object.keys(QUALITY_CONFIGS) as VideoQuality[]).map((quality) => (

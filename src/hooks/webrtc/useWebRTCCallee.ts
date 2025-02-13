@@ -66,7 +66,7 @@ export function useWebRTCCallee({
         }
       }
 
-      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled)
+      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, localQuality)
 
       // Set remote description (offer)
       const offer = JSON.parse(incomingRequest.offer)

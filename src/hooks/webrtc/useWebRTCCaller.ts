@@ -84,7 +84,7 @@ export function useWebRTCCaller({
       }
     }
 
-    addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled)
+    addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, localQuality)
     setupIceCandidateHandler(pc, userId, connectWithUser)
 
     try {
