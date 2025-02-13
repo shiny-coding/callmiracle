@@ -30,27 +30,35 @@ export default function UserList() {
   }
 
   return (
-    <Paper className="p-4 relative">
+    <Paper 
+      className="p-4 relative bg-gray-800" 
+      sx={{ 
+        bgcolor: 'rgb(31 41 55)', 
+        '&.MuiPaper-root': { 
+          bgcolor: 'rgb(31 41 55)' 
+        } 
+      }}
+    >
       <div className="flex justify-between items-center mb-4 absolute top-0 right-0">
         <IconButton 
           onClick={() => refetch()} 
           size="small"
-          className="hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="hover:bg-gray-700 text-white"
         >
-          <RefreshIcon />
+          <RefreshIcon className="text-white" />
         </IconButton>
       </div>
       <List>
         {users?.map((user: User) => (
           <ListItem 
             key={user.userId} 
-            className="flex flex-col items-start cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+            className="flex flex-col items-start cursor-pointer hover:bg-gray-700 rounded-lg text-white"
             onClick={() => handleUserSelect(user)}
           >
             <div className="flex w-full gap-4">
               <div className="relative w-12 h-12">
-                <div className="rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 w-full h-full">
-                  <Avatar className="w-full h-full">{user.name[0]?.toUpperCase()}</Avatar>
+                <div className="rounded-full overflow-hidden bg-gray-800  w-full h-full">
+                  <Avatar className="w-full h-full bg-gray-700 text-white">{user.name[0]?.toUpperCase()}</Avatar>
                   <div className="absolute inset-0 rounded-full overflow-hidden">
                     <Image
                       src={`/profiles/${user.userId}.jpg`}
@@ -74,7 +82,7 @@ export default function UserList() {
                 }`} />
               </div>
               <div className="flex-1">
-                <Typography variant="subtitle1" className="font-medium">
+                <Typography variant="subtitle1" className="font-medium text-white">
                   {user.name}
                 </Typography>
                 <div className="flex flex-wrap gap-1 mt-1">
@@ -83,7 +91,13 @@ export default function UserList() {
                       key={status}
                       label={t(status)}
                       size="small"
-                      className="text-xs"
+                      className="text-xs text-white bg-gray-700"
+                      sx={{ 
+                        color: 'white',
+                        '& .MuiChip-label': {
+                          color: 'white'
+                        }
+                      }}
                     />
                   ))}
                 </div>
@@ -95,7 +109,13 @@ export default function UserList() {
                         key={lang}
                         label={language?.[1].name || lang}
                         size="small"
-                        className="text-xs"
+                        className="text-xs text-white bg-gray-700"
+                        sx={{ 
+                          color: 'white',
+                          '& .MuiChip-label': {
+                            color: 'white'
+                          }
+                        }}
                       />
                     )
                   })}

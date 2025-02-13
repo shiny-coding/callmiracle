@@ -133,16 +133,15 @@ export default function LocalVideo() {
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
       <div style={connectionStatus === 'connected' ? { width: '200px', height: '150px' } : { width: '400px', height: '300px' }} 
-        className="relative mx-auto bg-gray-100 dark:bg-gray-800 rounded-lg">
-        {localVideoEnabled ? (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-contain rounded-lg"
-          />
-        ) : (
+        className="relative mx-auto bg-gray-800 rounded-lg">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`w-full h-full object-contain rounded-lg ${!localVideoEnabled ? 'opacity-0 pointer-events-none absolute' : ''}`}
+        />
+        {!localVideoEnabled && (
           <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
             {t('cameraDisabled')}
           </div>

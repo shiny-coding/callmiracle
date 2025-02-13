@@ -10,7 +10,7 @@ function MainContent() {
   const { connectionStatus } = useWebRTCContext()
 
   return (
-    <div className="h-full flex flex-col items-center w-full max-w-[1536px] mx-auto">
+    <div className="h-full bg-black flex flex-col items-center w-full max-w-[1536px] mx-auto">
       <div className={`${connectionStatus === 'connected' 
         ? 'absolute bottom-[72px] right-4 z-10 w-[240px]' 
         : 'flex justify-center pt-4'
