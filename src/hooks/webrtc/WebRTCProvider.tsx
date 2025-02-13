@@ -241,6 +241,9 @@ export function WebRTCProvider({
 
   const updateRemoteQuality = async (quality: VideoQuality) => {
     if (!caller.active && !callee.active) return
+
+    setRemoteQuality(quality)
+    localStorage.setItem('remoteQuality', quality)
     
     const targetUserId = caller.active ? caller.targetUserId! : callee.targetUserId!
     await connectWithUser({

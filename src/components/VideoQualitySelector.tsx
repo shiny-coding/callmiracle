@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
-import { IconButton, Dialog, DialogTitle, DialogContent, List, ListItemButton, ListItemText, ListItemIcon } from '@mui/material'
-import HdIcon from '@mui/icons-material/Hd'
+import { Dialog, DialogTitle, DialogContent, List, ListItemButton, ListItemText } from '@mui/material'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { useEffect } from 'react'
 
 export type VideoQuality = '360p' | '480p' | '720p' | '1080p'
 
@@ -39,69 +38,57 @@ export const QUALITY_CONFIGS: Record<VideoQuality, VideoQualityConfig> = {
   }
 }
 
-export default function VideoQualitySelector() {
-  const [open, setOpen] = useState(false)
-  const [currentQuality, setCurrentQuality] = useState<VideoQuality>('720p')
+interface VideoQualitySelectorProps {
+  open: boolean
+  onClose: () => void
+}
+
+export default function VideoQualitySelector({ open, onClose }: VideoQualitySelectorProps) {
   const { updateRemoteQuality, remoteQuality } = useWebRTCContext()
 
   useEffect(() => {
-    if (remoteQuality && QUALITY_CONFIGS[remoteQuality]) {
-      setCurrentQuality(remoteQuality)
+    if (!open) return
+    if (!remoteQuality || !QUALITY_CONFIGS[remoteQuality]) {
+      onClose()
     }
-  }, [remoteQuality])
+  }, [remoteQuality, open, onClose])
 
   const handleQualityChange = async (quality: VideoQuality) => {
     try {
       await updateRemoteQuality(quality)
-      setCurrentQuality(quality)
+      onClose()
     } catch (err) {
       console.error('Failed to change remote video quality:', err)
     }
-    setOpen(false)
   }
 
   return (
-    <>
-      <IconButton
-        className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-        onClick={() => setOpen(true)}
-      >
-        <div className="flex items-center">
-          <HdIcon className="text-white" />
-          <span className="ml-1 text-xs text-white">{currentQuality}</span>
-        </div>
-      </IconButton>
-
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        PaperProps={{
-          className: 'bg-gray-900 text-white'
-        }}
-      >
-        <DialogTitle>Select Remote Video Quality</DialogTitle>
-        <DialogContent>
-          <List>
-            {(Object.keys(QUALITY_CONFIGS) as VideoQuality[]).map((quality) => (
-              <ListItemButton
-                key={quality}
-                onClick={() => handleQualityChange(quality)}
-                selected={quality === currentQuality}
-                className={quality === currentQuality ? 'bg-gray-800' : ''}
-              >
-                <ListItemIcon>
-                  <HdIcon className="text-white" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary={quality}
-                  secondary={`${QUALITY_CONFIGS[quality].width}x${QUALITY_CONFIGS[quality].height} @ ${QUALITY_CONFIGS[quality].maxFramerate}fps`}
-                  sx={{ '.MuiListItemText-secondary': { color: 'gray.400' } }}
-                />
-              </ListItemButton>
-            ))}
-          </List>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog 
+      open={open} 
+      onClose={onClose}
+      PaperProps={{
+        className: 'bg-gray-900 text-white'
+      }}
+    >
+      <DialogTitle>Select Remote Video Quality</DialogTitle>
+      <DialogContent>
+        <List>
+          {Object.entries(QUALITY_CONFIGS).map(([quality, config]) => (
+            <ListItemButton
+              key={quality}
+              onClick={() => handleQualityChange(quality as VideoQuality)}
+              selected={quality === remoteQuality}
+              className={quality === remoteQuality ? 'bg-gray-800' : ''}
+            >
+              <ListItemText
+                primary={quality}
+                secondary={`${config.width}x${config.height} @ ${config.maxFramerate}fps`}
+                sx={{ '.MuiListItemText-secondary': { color: 'gray.400' } }}
+              />
+            </ListItemButton>
+          ))}
+        </List>
+      </DialogContent>
+    </Dialog>
   )
 } 

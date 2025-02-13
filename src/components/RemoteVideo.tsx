@@ -12,12 +12,14 @@ import HdIcon from '@mui/icons-material/Hd';
 import FitScreenIcon from '@mui/icons-material/FitScreen';
 import { useTranslations } from 'next-intl';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
+import VideoQualitySelector from './VideoQualitySelector';
 
 export default function RemoteVideo() {
   const t = useTranslations('VideoChat');
   const overlayRef = useRef<HTMLDivElement>(null);
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isFitMode, setIsFitMode] = useState(true);
+  const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
   const {
     connectionStatus,
     incomingRequest,
@@ -136,10 +138,15 @@ export default function RemoteVideo() {
                   </IconButton>
 
                   {remoteQuality && (
-                    <div className="flex items-center bg-black/30 backdrop-blur-sm px-2 py-1 rounded">
-                      <HdIcon className="text-white" />
-                      <span className="ml-1 text-xs text-white">{remoteQuality}</span>
-                    </div>
+                    <IconButton
+                      className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+                      onClick={() => setQualityDialogOpen(true)}
+                    >
+                      <div className="flex items-center">
+                        <HdIcon className="text-white" />
+                        <span className="ml-1 text-xs text-white">{remoteQuality}</span>
+                      </div>
+                    </IconButton>
                   )}
 
                   <IconButton
@@ -182,6 +189,10 @@ export default function RemoteVideo() {
         user={incomingRequest?.from || null}
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
+      />
+      <VideoQualitySelector
+        open={qualityDialogOpen}
+        onClose={() => setQualityDialogOpen(false)}
       />
     </>
   );
