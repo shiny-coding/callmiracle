@@ -120,7 +120,7 @@ export default function RemoteVideo() {
     <>
         <div className="relative w-full h-full flex flex-col">
           {connectionStatus === 'connected' && (
-            <div className="p-4 bg-gradient-to-b from-black/50 to-transparent">
+            <div className="p-4 bg-gradient-to-b from-white/50 to-black">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="text-white text-sm">
@@ -167,7 +167,7 @@ export default function RemoteVideo() {
               </div>
             </div>
           )}
-          <div className="w-full h-[calc(100%-72px)] flex items-center justify-center bg-gray-900">
+          <div className="w-full h-[calc(100%-72px)] flex items-center justify-center bg-black">
             <video
               ref={remoteVideoRef}
               autoPlay

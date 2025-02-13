@@ -27,7 +27,7 @@ export default function VideoAudioControls() {
   } = useWebRTCContext()
 
   return (
-    <div className="mt-auto p-4 w-full flex justify-center items-center gap-4 bg-gradient-to-t from-black/50 to-transparent">
+    <div className="mt-auto p-4 w-full flex justify-center items-center gap-4 bg-gradient-to-b from-black to-white/50">
       {connectionStatus !== 'connected' && (
         <>
           <IconButton
