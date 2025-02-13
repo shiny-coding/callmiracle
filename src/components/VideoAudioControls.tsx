@@ -29,7 +29,7 @@ export default function VideoAudioControls() {
   return (
     <div className="mt-auto p-4 w-full flex justify-around items-center gap-4 bg-gradient-to-b from-black to-white/50">
       {connectionStatus !== 'connected' && (
-        <>
+        <div className="flex gap-2 items-center">
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
             onClick={() => setProfileOpen(true)}
@@ -42,7 +42,7 @@ export default function VideoAudioControls() {
           >
             <MoodIcon className="text-white" />
           </IconButton>
-        </>
+        </div>
       )}
 
       {connectionStatus === 'connected' && (

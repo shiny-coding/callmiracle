@@ -6,6 +6,7 @@ import LocaleSelector from '@/components/LocaleSelector';
 import { StoreInitializer } from '@/components/StoreInitializer';
 import { WebRTCProvider } from '@/hooks/webrtc/WebRTCProvider';
 import { UsersProvider } from '@/store/UsersProvider';
+import ThemeRegistry from '@/components/ThemeRegistry';
 
 export default async function LocaleLayout({
   children,
@@ -30,11 +31,13 @@ export default async function LocaleLayout({
     <AppRouterCacheProvider>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <ApolloWrapper>
+          <ThemeRegistry>
             <UsersProvider>
               <StoreInitializer />
               {/* <LocaleSelector /> */}
               {children}
             </UsersProvider>
+          </ThemeRegistry>
         </ApolloWrapper>
       </NextIntlClientProvider>
     </AppRouterCacheProvider>

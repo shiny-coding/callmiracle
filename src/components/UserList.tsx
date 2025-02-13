@@ -32,12 +32,6 @@ export default function UserList() {
   return (
     <Paper 
       className="p-4 relative bg-gray-800" 
-      sx={{ 
-        bgcolor: 'rgb(31 41 55)', 
-        '&.MuiPaper-root': { 
-          bgcolor: 'rgb(31 41 55)' 
-        } 
-      }}
     >
       <div className="flex justify-between items-center mb-4 absolute top-0 right-0">
         <IconButton 
@@ -57,7 +51,7 @@ export default function UserList() {
           >
             <div className="flex w-full gap-4">
               <div className="relative w-12 h-12">
-                <div className="rounded-full overflow-hidden bg-gray-800  w-full h-full">
+                <div className="rounded-full pl-1 pt-1 overflow-hidden bg-gray-800  w-full h-full">
                   <Avatar className="w-full h-full bg-gray-700 text-white">{user.name[0]?.toUpperCase()}</Avatar>
                   <div className="absolute inset-0 rounded-full overflow-hidden">
                     <Image
@@ -92,12 +86,6 @@ export default function UserList() {
                       label={t(status)}
                       size="small"
                       className="text-xs text-white bg-gray-700"
-                      sx={{ 
-                        color: 'white',
-                        '& .MuiChip-label': {
-                          color: 'white'
-                        }
-                      }}
                     />
                   ))}
                 </div>
