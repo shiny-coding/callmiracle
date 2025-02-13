@@ -167,12 +167,12 @@ export default function RemoteVideo() {
               </div>
             </div>
           )}
-          <div className="w-full h-[calc(100%-72px)] flex items-center justify-center">
+          <div className="w-full h-[calc(100%-72px)] flex items-center justify-center bg-gray-900">
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className={`${isFitMode ? 'object-contain' : 'object-cover'}`}
+              className={`w-full h-full ${isFitMode ? 'object-contain' : 'object-cover'}`}
             />
           </div>
         </div>
