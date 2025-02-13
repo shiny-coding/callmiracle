@@ -95,7 +95,7 @@ export function useWebRTCCommon() {
   const applyRemoteQuality = async (peerConnection: RTCPeerConnection, quality: VideoQuality) => {
     try {
       const transceiver = peerConnection.getTransceivers().find(t => t.receiver.track?.kind === 'video')
-      if (transceiver) {
+      if (transceiver && transceiver.sender.track) {
         const config = QUALITY_CONFIGS[quality]
         await transceiver.sender.setParameters({
           ...transceiver.sender.getParameters(),
@@ -106,6 +106,8 @@ export function useWebRTCCommon() {
           }]
         })
         console.log('WebRTC: Applied remote quality:', quality)
+      } else {
+        console.log('WebRTC: No active video track to apply quality settings to')
       }
     } catch (err) {
       console.error('Failed to apply remote quality settings:', err)

@@ -89,33 +89,24 @@ export default function LocalVideo() {
           videoRef.current.srcObject = null
         }
 
-        // Create new stream if video or audio is enabled
-        if (localVideoEnabled || localAudioEnabled) {
-          const constraints: MediaStreamConstraints = {}
-          if (localVideoEnabled) {
-            constraints.video = true
-          }
-          if (localAudioEnabled) {
-            constraints.audio = true
-          }
-
-          const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        // Always create stream with both video and audio tracks
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        })
           
-          // Set initial track states
-          stream.getVideoTracks().forEach(track => {
-            track.enabled = localVideoEnabled
-          })
-          stream.getAudioTracks().forEach(track => {
-            track.enabled = localAudioEnabled
-          })
+        // Set initial track states based on preferences
+        stream.getVideoTracks().forEach(track => {
+          track.enabled = localVideoEnabled
+        })
+        stream.getAudioTracks().forEach(track => {
+          track.enabled = localAudioEnabled
+        })
 
-          // Update the stream in WebRTC context
-          setLocalStream(stream)
-          setHasPermission(true)
-          setError('')
-        } else {
-          setLocalStream(undefined)
-        }
+        // Update the stream in WebRTC context
+        setLocalStream(stream)
+        setHasPermission(true)
+        setError('')
       } catch (err) {
         console.error('Error accessing media devices:', err)
         setError('Error accessing camera/microphone')
