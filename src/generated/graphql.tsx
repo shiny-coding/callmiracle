@@ -82,7 +82,14 @@ export type MutationUpdateUserArgs = {
 export type Query = {
   __typename?: 'Query';
   calls: Array<Call>;
+  getOrCreateUser: User;
   users: Array<User>;
+};
+
+
+export type QueryGetOrCreateUserArgs = {
+  defaultLanguages: Array<Scalars['String']['input']>;
+  userId: Scalars['ID']['input'];
 };
 
 export enum Status {
@@ -117,6 +124,7 @@ export type UpdateUserInput = {
 
 export type User = {
   __typename?: 'User';
+  hasImage: Scalars['Boolean']['output'];
   languages: Array<Scalars['String']['output']>;
   locale: Scalars['String']['output'];
   name: Scalars['String']['output'];

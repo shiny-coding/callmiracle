@@ -2,6 +2,14 @@ import { Status, User } from '@/generated/graphql';
 import { Db } from 'mongodb';
 import { createPubSub } from 'graphql-yoga';
 import { ObjectId } from 'mongodb';
+import { existsSync } from 'fs';
+import { join } from 'path';
+
+// Helper function to check if user has profile image
+const checkUserImage = (userId: string): boolean => {
+  const imagePath = join(process.cwd(), 'public', 'profiles', `${userId}.jpg`);
+  return existsSync(imagePath);
+};
 
 type ConnectionRequestPayload = {
   onConnectionRequest: {
@@ -43,21 +51,56 @@ export const resolvers = {
       return users.map(user => ({
         userId: user.userId,
         name: user.name,
-        statuses: user.statuses,
-        languages: user.languages,
+        statuses: user.statuses || [],
+        languages: user.languages || [],
         timestamp: user.timestamp,
         locale: user.locale,
-        online: user.online || false // Default to false if not set
+        online: user.online || false,
+        hasImage: checkUserImage(user.userId)
       }))
     },
     calls: async (_: any, __: any, { db }: Context) => {
       return await db.collection('calls').find().toArray()
-    }
+    },
+    getOrCreateUser: async (_: any, { userId, defaultLanguages }: { userId: string, defaultLanguages: string[] }, { db }: Context) => {
+      let user = await db.collection('users').findOne({ userId })
+      
+      if (!user) {
+        // Create new user with default values
+        const newUser = {
+          _id: new ObjectId(),
+          userId,
+          name: '',
+          statuses: [],
+          languages: defaultLanguages,  // Use provided default languages
+          timestamp: Date.now(),
+          locale: 'en',
+          online: false
+        }
+        
+        await db.collection('users').insertOne(newUser)
+        user = newUser
+      }
+
+      // At this point user must exist
+      if (!user) throw new Error('Failed to create user')
+
+      return {
+        userId: user.userId,
+        name: user.name,
+        statuses: user.statuses || [],
+        languages: user.languages || [],
+        timestamp: user.timestamp,
+        locale: user.locale,
+        online: user.online || false,
+        hasImage: checkUserImage(user.userId)
+      }
+    },
   },
   Mutation: {
     updateUser: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { userId, name, statuses, locale, languages, online } = input;
-      const timestamp = Date.now();
+      const { userId, name, statuses, locale, languages, online } = input
+      const timestamp = Date.now()
 
       const result = await db.collection('users').findOneAndUpdate(
         { userId },
@@ -75,27 +118,41 @@ export const resolvers = {
           upsert: true,
           returnDocument: 'after'
         }
-      );
+      )
+
+      if (!result) throw new Error('Failed to update user')
+
+      const transformedUser = {
+        userId: result.userId,
+        name: result.name,
+        statuses: result.statuses || [],
+        languages: result.languages || [],
+        timestamp: result.timestamp,
+        locale: result.locale,
+        online: result.online || false,
+        hasImage: checkUserImage(userId)
+      }
 
       // Get updated user list and publish
-      const users = await db.collection('users').find().toArray();
+      const users = await db.collection('users').find().toArray()
       
       // Map MongoDB documents to User type
       const typedUsers = users.map(user => ({
         userId: user.userId,
         name: user.name,
-        statuses: user.statuses,
-        languages: user.languages,
+        statuses: user.statuses || [],
+        languages: user.languages || [],
         timestamp: user.timestamp,
         locale: user.locale,
-        online: user.online || false // Default to false if not set
-      }));
+        online: user.online || false,
+        hasImage: checkUserImage(user.userId)
+      }))
 
-      pubsub.publish('USERS_UPDATED', typedUsers);
+      pubsub.publish('USERS_UPDATED', typedUsers)
 
-      console.log('Publishing users updated: ' + typedUsers.length )
+      console.log('Publishing users updated: ' + typedUsers.length)
 
-      return result;
+      return transformedUser
     },
     connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
       const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality } = input

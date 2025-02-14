@@ -29,6 +29,8 @@ export default function UserList() {
     await doCall(user.userId)
   }
 
+  console.log('users', users)
+
   return (
     <Paper 
       className="p-4 relative bg-gray-800" 
@@ -53,23 +55,26 @@ export default function UserList() {
               <div className="relative w-12 h-12">
                 <div className="rounded-full pl-1 pt-1 overflow-hidden bg-gray-800  w-full h-full">
                   <Avatar className="w-full h-full bg-gray-700 text-white">{user.name[0]?.toUpperCase()}</Avatar>
-                  <div className="absolute inset-0 rounded-full overflow-hidden">
-                    <Image
-                      src={`/profiles/${user.userId}.jpg`}
-                      alt={user.name}
-                      fill
-                      unoptimized
-                      className="object-cover opacity-0 transition-opacity duration-200"
-                      onLoad={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.classList.remove('opacity-0')
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                      }}
-                    />
-                  </div>
+                  {user.hasImage && (
+                    <div className="absolute inset-0 rounded-full overflow-hidden">
+                      <Image
+                        src={`/profiles/${user.userId}.jpg?t=${user.timestamp}`}
+                        alt={user.name}
+                        fill
+                        unoptimized
+                        className="object-cover opacity-0 transition-opacity duration-200"
+                        onLoad={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.classList.remove('opacity-0')
+                        }}
+                        onError={(e) => {
+                          e.preventDefault()
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
                   user.online ? 'bg-green-500' : 'bg-red-500'

@@ -16,6 +16,7 @@ type User {
   timestamp: Float!
   locale: String!
   online: Boolean!
+  hasImage: Boolean!
 }
 
 type ConnectionParams {
@@ -76,6 +77,7 @@ input ConnectionParamsInput {
 type Query {
   users: [User!]!
   calls: [Call!]!
+  getOrCreateUser(userId: ID!, defaultLanguages: [String!]!): User!
 }
 
 type Mutation {

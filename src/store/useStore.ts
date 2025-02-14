@@ -7,43 +7,34 @@ interface AppState {
   name: string
   languages: string[]
   statuses: Status[]
+  hasImage: boolean
   setName: (name: string) => void
   setLanguages: (languages: string[] | ((prev: string[]) => string[])) => void
   setStatuses: (statuses: Status[]) => void
-  initBrowserLangs: () => void
-  targetUserId: string | null
-  setTargetUserId: (userId: string | null) => void
+  setHasImage: (hasImage: boolean) => void
 }
 
-export const useStore = create<AppState>()(
+// Split into two parts: persisted and non-persisted
+const useStore = create<AppState>()(
   persist(
     (set, get) => ({
+      // Non-persisted state (initialized from server)
       name: '',
       languages: [],
       statuses: [],
+      hasImage: false,
       setName: (name) => set({ name }),
       setLanguages: (languages) => 
         set({ languages: typeof languages === 'function' ? languages(get().languages) : languages }),
       setStatuses: (statuses) => set({ statuses }),
-      initBrowserLangs: () => {
-        const { languages } = get()
-        if (languages.length === 0) {
-          const browserLangs = getBrowserLanguage()
-          set({ languages: browserLangs })
-        }
-      },
-      targetUserId: null,
-      setTargetUserId: (userId) => set({ targetUserId: userId })
+      setHasImage: (hasImage) => set({ hasImage })
     }),
     {
       name: 'app-storage',
       storage: createJSONStorage(() => localStorage),
-      skipHydration: true,
-      partialize: (state) => ({
-        name: state.name,
-        languages: state.languages,
-        statuses: state.statuses
-      })
+      partialize: () => ({})
     }
   )
-) 
+)
+
+export { useStore } 

@@ -16,9 +16,10 @@ interface ProfileSettingsProps {
 
 export default function ProfileSettings({ open, onClose }: ProfileSettingsProps) {
   const t = useTranslations('Profile')
-  const { name, setName, languages, setLanguages } = useStore()
+  const { name, setName, languages, setLanguages, hasImage, setHasImage } = useStore()
   const [tempName, setTempName] = useState(name)
   const [tempLanguages, setTempLanguages] = useState(languages)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [timestamp, setTimestamp] = useState(Date.now())
   const userId = getUserId()
@@ -28,42 +29,48 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
     if (open) {
       setTempName(name)
       setTempLanguages(languages)
+      setSelectedFile(null)
+      setTimestamp(Date.now())
     }
   }, [open, name, languages])
 
   const handleCancel = () => {
     setTempName(name)
     setTempLanguages(languages)
+    setSelectedFile(null)
     onClose()
   }
 
   const handleApply = async () => {
-    setName(tempName)
-    setLanguages(tempLanguages)
-    await updateUserData()
-    onClose()
+    setUploading(true)
+    try {
+      if (selectedFile) {
+        const formData = new FormData()
+        formData.append('photo', selectedFile)
+        formData.append('userId', userId)
+        
+        await fetch('/api/upload-photo', {
+          method: 'POST',
+          body: formData
+        })
+        setHasImage(true)
+      }
+
+      setName(tempName)
+      setLanguages(tempLanguages)
+      await updateUserData()
+      onClose()
+    } catch (error) {
+      console.error('Error updating profile:', error)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return
-    
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('photo', acceptedFiles[0])
-      formData.append('userId', userId)
-      
-      await fetch('/api/upload-photo', {
-        method: 'POST',
-        body: formData
-      })
-      setTimestamp(Date.now())
-    } catch (error) {
-      console.error('Error uploading photo:', error)
-    } finally {
-      setUploading(false)
-    }
-  }, [userId])
+    setSelectedFile(acceptedFiles[0])
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -99,22 +106,22 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
           <input {...getInputProps()} />
           {userId ? (
             <div className="relative w-full h-full">
-              <Image
-                src={`/profiles/${userId}.jpg?t=${timestamp}`}
-                alt={t('photo')}
-                fill
-                unoptimized
-                className="object-cover"
-                onError={(e) => {
-                  // Show upload text if image fails to load
-                  const target = e.target as HTMLImageElement
-                  target.style.display = 'none'
-                  target.nextElementSibling?.classList.add('flex')
-                }}
-              />
-              <div className="absolute inset-0 hidden items-center justify-center text-gray-500">
-                {uploading ? t('uploading') : t('uploadPhoto')}
+              <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                {uploading ? t('uploading') : selectedFile ? selectedFile.name : t('uploadPhoto')}
               </div>
+              {(hasImage || selectedFile) && (
+                <Image
+                  src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${userId}.jpg?t=${timestamp}`}
+                  alt={t('photo')}
+                  fill
+                  unoptimized
+                  className="object-cover"
+                  onLoad={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.nextElementSibling?.classList.remove('flex')
+                  }}
+                />
+              )}
             </div>
           ) : (
             <div className="text-gray-500">
@@ -136,7 +143,9 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
         <Button 
           onClick={handleApply}
           variant="contained" 
-          disabled={tempName === name && JSON.stringify(tempLanguages) === JSON.stringify(languages)}
+          disabled={tempName === name && 
+            JSON.stringify(tempLanguages) === JSON.stringify(languages) && 
+            !selectedFile}
         >
           Apply
         </Button>

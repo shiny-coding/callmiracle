@@ -15,6 +15,7 @@ const GET_USERS = gql`
       timestamp
       locale
       online
+      hasImage
     }
   }
 `
@@ -29,6 +30,7 @@ const USERS_SUBSCRIPTION = gql`
       timestamp
       locale
       online
+      hasImage
     }
   }
 `
