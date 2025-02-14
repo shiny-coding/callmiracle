@@ -11,6 +11,21 @@ const checkUserImage = (userId: string): boolean => {
   return existsSync(imagePath);
 };
 
+// Helper function to transform MongoDB user document to GraphQL User type
+const transformUser = (user: any): User | null => {
+  if (!user) return null
+  return {
+    userId: user.userId,
+    name: user.name || '',
+    statuses: user.statuses || [],
+    languages: user.languages || [],
+    timestamp: user.timestamp || Date.now(),
+    locale: user.locale || 'en',
+    online: user.online || false,
+    hasImage: checkUserImage(user.userId)
+  }
+}
+
 type ConnectionRequestPayload = {
   onConnectionRequest: {
     type: 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'changeTracks'
@@ -46,18 +61,8 @@ export const resolvers = {
   Query: {
     users: async (_: any, __: any, { db }: Context) => {
       const users = await db.collection('users').find().toArray()
-      
-      // Map MongoDB documents to User type
-      return users.map(user => ({
-        userId: user.userId,
-        name: user.name,
-        statuses: user.statuses || [],
-        languages: user.languages || [],
-        timestamp: user.timestamp,
-        locale: user.locale,
-        online: user.online || false,
-        hasImage: checkUserImage(user.userId)
-      }))
+      const transformedUsers = users.map(transformUser).filter((user): user is User => user !== null)
+      return transformedUsers
     },
     calls: async (_: any, __: any, { db }: Context) => {
       return await db.collection('calls').find().toArray()
@@ -82,19 +87,9 @@ export const resolvers = {
         user = newUser
       }
 
-      // At this point user must exist
-      if (!user) throw new Error('Failed to create user')
-
-      return {
-        userId: user.userId,
-        name: user.name,
-        statuses: user.statuses || [],
-        languages: user.languages || [],
-        timestamp: user.timestamp,
-        locale: user.locale,
-        online: user.online || false,
-        hasImage: checkUserImage(user.userId)
-      }
+      const transformedUser = transformUser(user)
+      if (!transformedUser) throw new Error('Failed to transform user')
+      return transformedUser
     },
   },
   Mutation: {
@@ -122,35 +117,15 @@ export const resolvers = {
 
       if (!result) throw new Error('Failed to update user')
 
-      const transformedUser = {
-        userId: result.userId,
-        name: result.name,
-        statuses: result.statuses || [],
-        languages: result.languages || [],
-        timestamp: result.timestamp,
-        locale: result.locale,
-        online: result.online || false,
-        hasImage: checkUserImage(userId)
-      }
+      const transformedUser = transformUser(result)
+      if (!transformedUser) throw new Error('Failed to transform updated user')
 
       // Get updated user list and publish
       const users = await db.collection('users').find().toArray()
-      
-      // Map MongoDB documents to User type
-      const typedUsers = users.map(user => ({
-        userId: user.userId,
-        name: user.name,
-        statuses: user.statuses || [],
-        languages: user.languages || [],
-        timestamp: user.timestamp,
-        locale: user.locale,
-        online: user.online || false,
-        hasImage: checkUserImage(user.userId)
-      }))
+      const transformedUsers = users.map(transformUser).filter((user): user is User => user !== null)
 
-      pubsub.publish('USERS_UPDATED', typedUsers)
-
-      console.log('Publishing users updated: ' + typedUsers.length)
+      pubsub.publish('USERS_UPDATED', transformedUsers)
+      console.log('Publishing users updated: ' + transformedUsers.length)
 
       return transformedUser
     },

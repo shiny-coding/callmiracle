@@ -29,8 +29,6 @@ export default function UserList() {
     await doCall(user.userId)
   }
 
-  console.log('users', users)
-
   return (
     <Paper 
       className="p-4 relative bg-gray-800" 

@@ -62,6 +62,8 @@ export function WebRTCProvider({
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const { applyRemoteQuality } = useWebRTCCommon()
 
+  const { callId, connectionStatus: storedStatus, targetUserId: storedTargetId, role: storedRole, setCallState, clearCallState } = useStore()
+
   // Initialize client-side only states
   useEffect(() => {
     setLocalVideoEnabled(localStorage.getItem('cameraEnabled') !== 'false')
@@ -70,6 +72,49 @@ export function WebRTCProvider({
     if (savedQuality && QUALITY_CONFIGS[savedQuality]) {
       setRemoteQuality(savedQuality)
     }
+  }, [])
+
+  // Attempt reconnection on mount if we have stored call state
+  useEffect(() => {
+    const attemptReconnect = async () => {
+      if (storedStatus === 'connected' && storedTargetId && callId) {
+        console.log('Attempting to reconnect to previous call:', {
+          targetUserId: storedTargetId,
+          callId,
+          role: storedRole
+        })
+
+        try {
+          // Set initial state
+          setConnectionStatus('connecting')
+
+          if (storedRole === 'caller') {
+            // If we were the caller, create a new offer
+            await caller.doCall(storedTargetId, true) // Pass true to indicate this is a reconnection
+          } else if (storedRole === 'callee') {
+            // If we were the callee, notify the caller we're ready to reconnect
+            await connectWithUser({
+              variables: {
+                input: {
+                  type: 'reconnect',
+                  targetUserId: storedTargetId,
+                  initiatorUserId: getUserId(),
+                  callId,
+                  videoEnabled: localVideoEnabled,
+                  audioEnabled: localAudioEnabled
+                }
+              }
+            })
+          }
+        } catch (err) {
+          console.error('Failed to reconnect:', err)
+          clearCallState()
+          setConnectionStatus('failed')
+        }
+      }
+    }
+
+    attemptReconnect()
   }, [])
 
   useEffect(() => {
@@ -105,106 +150,104 @@ export function WebRTCProvider({
     variables: { userId: getUserId() },
     onSubscriptionData: async ({ subscriptionData }) => {
       const request = subscriptionData.data?.onConnectionRequest
-      if (request) {
-        console.log('WebRTC: Processing connection request:', { from: request.from.name, type: request.type })
-        
-        if (request.type === 'ignore') {
-          console.log('WebRTC: Ignoring request:', { from: request.from.name, type: request.type })
-          return
+      if (!request) return
+
+      console.log('WebRTC: Processing connection request:', { from: request.from.name, type: request.type })
+      
+      // Handle reconnection request
+      if (request.type === 'reconnect') {
+        if (request.callId === callId && request.from.userId === storedTargetId && storedTargetId) {
+          console.log('WebRTC: Received reconnection request from peer')
+          if (storedRole === 'caller') {
+            // We're the original caller, send a new offer
+            await caller.doCall(storedTargetId, true)
+          }
+          // If we're the callee, we'll wait for the new offer
+        } else {
+          console.log('WebRTC: Ignoring reconnection request - mismatched IDs')
         }
-
-        // Handle finished status
-        if (request.type === 'finished') {
-          // Don't send finished signal back when receiving finished
-          if (caller.active) {
-            caller.cleanup()
-          } else if (callee.active) {
-            callee.cleanup()
-          }
-          setConnectionStatus('finished')
-          setRemoteVideoEnabled(false)
-          setRemoteAudioEnabled(false)
-          setRemoteName(null)
-
-        } else if (request.type === 'answer') { // Handle answer for initiator
-          const answer = JSON.parse(request.answer)
-          if (!caller.peerConnection.current) {
-            // Connection already closed, send expired
-            console.log('WebRTC: Connection already closed, sending expired')
-            await connectWithUser({
-              variables: {
-                input: {
-                  type: 'expired',
-                  targetUserId: request.from.userId,
-                  initiatorUserId: getUserId()
-                }
+      }
+      // Handle finished status
+      else if (request.type === 'finished') {
+        if (caller.active) {
+          caller.cleanup()
+        } else if (callee.active) {
+          callee.cleanup()
+        }
+        setConnectionStatus('finished')
+        setRemoteVideoEnabled(false)
+        setRemoteAudioEnabled(false)
+        setRemoteName(null)
+        clearCallState()
+      }
+      // Handle answer for initiator
+      else if (request.type === 'answer') {
+        const answer = JSON.parse(request.answer)
+        if (!caller.peerConnection.current) {
+          console.log('WebRTC: Connection already closed, sending expired')
+          await connectWithUser({
+            variables: {
+              input: {
+                type: 'expired',
+                targetUserId: request.from.userId,
+                initiatorUserId: getUserId(),
+                callId
               }
-            })
-            return
-          }
+            }
+          })
+        } else {
           await caller.handleAnswer(caller.peerConnection.current, answer)
-          // Initialize remote media state from answer
           setRemoteVideoEnabled(request.videoEnabled ?? true)
           setRemoteAudioEnabled(request.audioEnabled ?? true)
           setRemoteName(request.from.name)
-
-        } else if (request.type === 'expired') { // Handle expired connection
-          console.log('WebRTC: Received expired signal, cleaning up')
-          if (callee.active) {
-            callee.cleanup()
-          }
-          setConnectionStatus('timeout')
-          setRemoteVideoEnabled(false)
-          setRemoteAudioEnabled(false)
-          setRemoteName(null)
-
-        } else if (request.type === 'ice-candidate') { // Handle ICE candidates
-          const candidate = JSON.parse(request.iceCandidate)
-          if (caller.active) {
-            // We're the caller
-            await caller.handleIceCandidate(caller.peerConnection.current!, candidate)
-          } else {
-            // We're the callee (supposedly)
-            await callee.handleIceCandidate(callee.peerConnection.current!, candidate)
-          }
-
-        } else if (request.type === 'offer') { // Handle new call request
-          if (caller.active) {
-            console.log('WebRTC: Already in a call, ignoring offer')
-            return
-          }
-          // Initialize remote media state from offer
+        }
+      }
+      // Handle offer
+      else if (request.type === 'offer') {
+        if (!caller.active) {
           setRemoteVideoEnabled(request.videoEnabled ?? true)
           setRemoteAudioEnabled(request.audioEnabled ?? true)
           setRemoteName(request.from.name)
           callee.setIncomingRequest(request)
           setConnectionStatus('calling')
-
-        } else if (request.type === 'changeTracks') { // Handle track changes
-          console.log('WebRTC: Remote peer changed tracks:', {
-            from: request.from.name,
-            videoEnabled: request.videoEnabled ?? remoteVideoEnabled,
-            audioEnabled: request.audioEnabled ?? remoteAudioEnabled,
-            quality: request.quality || 'unchanged'
-          })
-
-          // Update remote media state
-          setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
-          setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
-          if (request.quality) {
-            const quality = request.quality as VideoQuality
-            setRemoteQuality(quality)
-            // Apply quality settings to remote stream
-            const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
-            if (activePeerConnection) {
-              applyRemoteQuality(activePeerConnection, quality).catch(err => 
-                console.error('Failed to apply remote quality settings:', err)
-              )
-            }
-          }
         } else {
-          throw new Error('WebRTC: Unknown request type:', request.type)
+          console.log('WebRTC: Already in a call, ignoring offer')
         }
+      }
+      // Handle ICE candidates
+      else if (request.type === 'ice-candidate') {
+        const candidate = JSON.parse(request.iceCandidate)
+        if (caller.active) {
+          await caller.handleIceCandidate(caller.peerConnection.current!, candidate)
+        } else if (callee.active) {
+          await callee.handleIceCandidate(callee.peerConnection.current!, candidate)
+        }
+      }
+      // Handle track changes
+      else if (request.type === 'changeTracks') {
+        console.log('WebRTC: Remote peer changed tracks:', {
+          from: request.from.name,
+          videoEnabled: request.videoEnabled ?? remoteVideoEnabled,
+          audioEnabled: request.audioEnabled ?? remoteAudioEnabled,
+          quality: request.quality || 'unchanged'
+        })
+
+        setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
+        setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
+        if (request.quality) {
+          const quality = request.quality as VideoQuality
+          setRemoteQuality(quality)
+          const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
+          if (activePeerConnection) {
+            applyRemoteQuality(activePeerConnection, quality).catch(err => 
+              console.error('Failed to apply remote quality settings:', err)
+            )
+          }
+        }
+      }
+      // Handle unknown request type
+      else {
+        throw new Error(`WebRTC: Unknown request type: ${request.type}`)
       }
     }
   })

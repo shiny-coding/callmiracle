@@ -57,7 +57,7 @@ export function useWebRTCCaller({
     }
   }
 
-  const doCall = async (userId: string) => {
+  const doCall = async (userId: string, isReconnect: boolean = false) => {
     if (!userId || !localStream || hasTimedOutRef.current) {
       console.log('WebRTC: Cannot initialize call - missing requirements', { 
         hasUserId: !!userId, hasLocalStream: !!localStream, hasTimedOut: hasTimedOutRef.current 
@@ -65,8 +65,8 @@ export function useWebRTCCaller({
       return
     }
 
-    console.log('WebRTC: Initializing connection with:', userId)
-    onStatusChange('calling')
+    console.log('WebRTC: Initializing connection with:', userId, isReconnect ? '(reconnecting)' : '')
+    onStatusChange(isReconnect ? 'connecting' : 'calling')
     setActive(true)
     setTargetUserId(userId)
     
@@ -99,30 +99,36 @@ export function useWebRTCCaller({
             initiatorUserId: getUserId(),
             offer: JSON.stringify(offer),
             videoEnabled: localVideoEnabled,
-            audioEnabled: localAudioEnabled
+            audioEnabled: localAudioEnabled,
+            callId: isReconnect ? callId : undefined // Only send callId if reconnecting
           }
         }
       })
       
-      const newCallId = result.data?.connectWithUser?.callId
-      setCallId(newCallId)
-      if (newCallId) {
-        setupIceCandidateHandler(pc, userId, connectWithUser, newCallId)
+      if (!isReconnect) {
+        const newCallId = result.data?.connectWithUser?.callId
+        setCallId(newCallId)
+        if (newCallId) {
+          setupIceCandidateHandler(pc, userId, connectWithUser, newCallId)
+        }
       }
 
       console.log('Offer sent, waiting for answer via subscription')
       
-      clearTimeout(answerTimeoutRef.current as any)
-      answerTimeoutRef.current = setTimeout(() => {
-        if (pc.signalingState !== 'stable') {
-          console.log('No answer received within timeout period')
-          hasTimedOutRef.current = true
-          onStatusChange('timeout')
-          cleanup()
-        }
-      }, CONNECTION_TIMEOUT_MS)
+      // Only set timeout for new calls, not reconnections
+      if (!isReconnect) {
+        clearTimeout(answerTimeoutRef.current as any)
+        answerTimeoutRef.current = setTimeout(() => {
+          if (pc.signalingState !== 'stable') {
+            console.log('No answer received within timeout period')
+            hasTimedOutRef.current = true
+            onStatusChange('timeout')
+            cleanup()
+          }
+        }, CONNECTION_TIMEOUT_MS)
+      }
     } catch (error) {
-      console.error('WebRTC setup error')
+      console.error('WebRTC setup error:', error)
       onStatusChange('failed')
       cleanup()
     }

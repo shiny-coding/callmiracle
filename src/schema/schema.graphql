@@ -64,7 +64,7 @@ input UpdateUserInput {
 input ConnectionParamsInput {
   targetUserId: ID!
   initiatorUserId: ID!
-  type: String!  # 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'changeTracks' | 'expired'
+  type: String!  # 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'changeTracks' | 'expired' | 'reconnect'
   offer: String
   answer: String
   iceCandidate: String

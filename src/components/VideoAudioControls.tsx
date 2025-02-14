@@ -53,7 +53,12 @@ export default function VideoAudioControls() {
           <CallEndIcon className="text-red-400" />
         </IconButton>
       )}
-      <div className="flex">
+
+      <div className="flex items-center gap-4">
+        <div className="text-sm text-white/80 capitalize min-w-[80px] text-center">
+          {connectionStatus === 'connected' ? 'Connected' : connectionStatus}
+        </div>
+
         <div className="flex gap-2 items-center">
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
