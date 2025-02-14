@@ -14,6 +14,7 @@ export const CONNECT_WITH_USER = gql`
       targetUserId
       initiatorUserId
       quality
+      callId
     }
   }
 `
@@ -28,6 +29,7 @@ export const ON_CONNECTION_REQUEST = gql`
       videoEnabled
       audioEnabled
       quality
+      callId
       from {
         userId
         name
@@ -52,6 +54,7 @@ export type ConnectionStatus =
 export interface IncomingRequest {
   offer: string
   iceCandidate: string
+  callId: string
   from: {
     userId: string
     name: string
@@ -246,7 +249,7 @@ export function useWebRTCCommon() {
     }
   }
 
-  const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string, connectWithUser: any) => {
+  const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string, connectWithUser: any, callId?: string | null) => {
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
         try {
@@ -256,7 +259,8 @@ export function useWebRTCCommon() {
                 type: 'ice-candidate',
                 targetUserId,
                 initiatorUserId: getUserId(),
-                iceCandidate: JSON.stringify(event.candidate)
+                iceCandidate: JSON.stringify(event.candidate),
+                callId
               }
             }
           })
@@ -293,7 +297,15 @@ export function useWebRTCCommon() {
     pendingIceCandidates.current = []
   }
 
-  const updateMediaState = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean, targetUserId: string, connectWithUser: any, localQuality: VideoQuality) => {
+  const updateMediaState = (
+    pc: RTCPeerConnection, 
+    localVideoEnabled: boolean, 
+    localAudioEnabled: boolean, 
+    targetUserId: string, 
+    connectWithUser: any, 
+    localQuality: VideoQuality,
+    callId?: string | null
+  ) => {
     // Update tracks
     const senders = pc.getSenders()
     for (const sender of senders) {
@@ -319,7 +331,8 @@ export function useWebRTCCommon() {
           initiatorUserId: getUserId(),
           videoEnabled: localVideoEnabled,
           audioEnabled: localAudioEnabled,
-          quality: localQuality
+          quality: localQuality,
+          callId
         }
       }
     }).catch((err: any) => {

@@ -37,6 +37,7 @@ export function useWebRTCCallee({
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
   const [targetUserId, setTargetUserId] = useState<string | null>(null)
+  const [callId, setCallId] = useState<string | null>(null)
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
@@ -49,6 +50,8 @@ export function useWebRTCCallee({
       onStatusChange('connecting')
       setActive(true)
       setTargetUserId(incomingRequest.from.userId)
+      setCallId(incomingRequest.callId)
+      console.log('WebRTC: Call ID:', incomingRequest.callId)
       
       const pc = createPeerConnection()
       peerConnection.current = pc
@@ -84,12 +87,13 @@ export function useWebRTCCallee({
             initiatorUserId: getUserId(),
             answer: JSON.stringify(answer),
             videoEnabled: localVideoEnabled,
-            audioEnabled: localAudioEnabled
+            audioEnabled: localAudioEnabled,
+            callId: incomingRequest.callId
           }
         }
       })
 
-      setupIceCandidateHandler(pc, incomingRequest.from.userId, connectWithUser)
+      setupIceCandidateHandler(pc, incomingRequest.from.userId, connectWithUser, incomingRequest.callId)
       await dispatchPendingIceCandidates(pc)
 
       setIncomingRequest(null)
@@ -106,6 +110,7 @@ export function useWebRTCCallee({
     onStatusChange('rejected')
     setActive(false)
     setTargetUserId(null)
+    setCallId(null)
   }
 
   const cleanup = () => {
@@ -118,20 +123,38 @@ export function useWebRTCCallee({
     setIncomingRequest(null)
     setActive(false)
     setTargetUserId(null)
+    setCallId(null)
   }
 
-  const hangup = createHangup(
-    peerConnection, 
-    targetUserId, 
-    cleanup, 
-    connectWithUser
-  )
+  const hangup = async () => {
+    console.log('WebRTC: Hanging up call')
+
+    // Send finished signal if we have a target
+    if (targetUserId) {
+      try {
+        await connectWithUser({
+          variables: {
+            input: {
+              type: 'finished',
+              targetUserId,
+              initiatorUserId: getUserId(),
+              callId
+            }
+          }
+        })
+      } catch (err) {
+        console.error('Failed to send finished signal:', err)
+      }
+    }
+    // cleanup should go after the finished signal is sent
+    cleanup()
+  }
 
   useEffect(() => {
     if (peerConnection.current && active) {
-      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser, localQuality)
+      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser, localQuality, callId)
     }
-  }, [localVideoEnabled, localAudioEnabled, localQuality, active, targetUserId])
+  }, [localVideoEnabled, localAudioEnabled, localQuality, active, targetUserId, callId])
 
   return {
     incomingRequest,
@@ -143,6 +166,7 @@ export function useWebRTCCallee({
     peerConnection,
     active,
     targetUserId,
+    callId,
     hangup
   }
 } 

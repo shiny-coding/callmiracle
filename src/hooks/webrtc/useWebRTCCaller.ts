@@ -37,6 +37,7 @@ export function useWebRTCCaller({
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
   const [targetUserId, setTargetUserId] = useState<string | null>(null)
+  const [callId, setCallId] = useState<string | null>(null)
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const answerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasTimedOutRef = useRef<boolean>(false)
@@ -85,12 +86,12 @@ export function useWebRTCCaller({
     }
 
     addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, localQuality)
-    setupIceCandidateHandler(pc, userId, connectWithUser)
+    setupIceCandidateHandler(pc, userId, connectWithUser, callId)
 
     try {
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
-      await connectWithUser({
+      const result = await connectWithUser({
         variables: {
           input: {
             type: 'offer',
@@ -102,6 +103,12 @@ export function useWebRTCCaller({
           }
         }
       })
+      
+      const newCallId = result.data?.connectWithUser?.callId
+      setCallId(newCallId)
+      if (newCallId) {
+        setupIceCandidateHandler(pc, userId, connectWithUser, newCallId)
+      }
 
       console.log('Offer sent, waiting for answer via subscription')
       
@@ -133,15 +140,37 @@ export function useWebRTCCaller({
     remoteStreamRef.current = null
     setActive(false)
     setTargetUserId(null)
+    setCallId(null)
   }
 
-  const hangup = createHangup(peerConnection, targetUserId, cleanup, connectWithUser)
+  const hangup = async () => {
+    console.log('WebRTC: Hanging up call')
+    cleanup()
+
+    // Send finished signal if we have a target
+    if (targetUserId) {
+      try {
+        await connectWithUser({
+          variables: {
+            input: {
+              type: 'finished',
+              targetUserId,
+              initiatorUserId: getUserId(),
+              callId
+            }
+          }
+        })
+      } catch (err) {
+        console.error('Failed to send finished signal:', err)
+      }
+    }
+  }
 
   useEffect(() => {
     if (peerConnection.current && active) {
-      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser, localQuality)
+      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser, localQuality, callId)
     }
-  }, [localVideoEnabled, localAudioEnabled, localQuality, active, targetUserId])
+  }, [localVideoEnabled, localAudioEnabled, localQuality, active, targetUserId, callId])
 
   return {
     doCall,
@@ -151,6 +180,7 @@ export function useWebRTCCaller({
     peerConnection,
     active,
     targetUserId,
+    callId,
     hangup,
   }
 } 

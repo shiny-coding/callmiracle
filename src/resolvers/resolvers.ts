@@ -1,6 +1,7 @@
 import { Status, User } from '@/generated/graphql';
 import { Db } from 'mongodb';
 import { createPubSub } from 'graphql-yoga';
+import { ObjectId } from 'mongodb';
 
 type ConnectionRequestPayload = {
   onConnectionRequest: {
@@ -16,6 +17,7 @@ type ConnectionRequestPayload = {
       languages: string[]
       statuses: Status[]
     }
+    callId: string
   }
   userId: string
 }
@@ -47,6 +49,9 @@ export const resolvers = {
         locale: user.locale,
         online: user.online || false // Default to false if not set
       }))
+    },
+    calls: async (_: any, __: any, { db }: Context) => {
+      return await db.collection('calls').find().toArray()
     }
   },
   Mutation: {
@@ -95,45 +100,56 @@ export const resolvers = {
     connectWithUser: async (_: any, { input }: { input: any }, { db }: Context) => {
       const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality } = input
       const initiatorUserId = input.initiatorUserId || ''
+      let callId = input.callId
 
-      // Store the connection attempt
-      const updateQuery = type === 'ice-candidate' 
-      ? { $push: { [`iceCandidates.${initiatorUserId}`]: iceCandidate } }
-      : { 
-          $set: {
-            timestamp: Date.now(),
-            ...(type === 'offer' && { offer }),
-            ...(type === 'answer' && { answer }),
-            ...(type === 'finished' && { finished: true }),
-            ...(type === 'changeTracks' && { videoEnabled, audioEnabled, quality })
-          }
-        }
-    
-      const connection = await db.collection('connections').findOneAndUpdate(
-        { $or: [
-            { initiatorUserId, targetUserId },
-            { initiatorUserId: targetUserId, targetUserId: initiatorUserId }
-          ]
-        },
-        updateQuery,
-        { upsert: true, returnDocument: 'after' }
-      )
+      let connection: any
+      
+      // Only handle calls table for specific types
+      if (type === 'offer') {
+        // Create new call record for offer
+        connection = await db.collection('calls').insertOne({
+          initiatorUserId,
+          targetUserId,
+          type: 'offer',
+          duration: 0
+        })
+        callId = connection.insertedId.toString()
+      } else if (type === 'answer' && callId) {
+        // Update call status to connected
+        connection = await db.collection('calls').findOneAndUpdate(
+          { _id: ObjectId.createFromHexString(callId) },
+          { $set: { type: 'connected' } },
+          { returnDocument: 'after' }
+        )
+      } else if (type === 'finished' && callId) {
+        // Update call status to finished and calculate duration
+        const objectId = ObjectId.createFromHexString(callId)
+        connection = await db.collection('calls').findOneAndUpdate(
+          { _id: objectId },
+          { 
+            $set: { 
+              type: 'finished',
+              duration: Math.floor((Date.now() - objectId.getTimestamp().getTime()) / 1000)
+            } 
+          },
+          { returnDocument: 'after' }
+        )
+      }
 
       // Get user info for publishing
       const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
       if (!initiator) {
-        console.error( 'no user found for initiator', { initiatorUserId })
+        console.error('no user found for initiator', { initiatorUserId })
         return connection
       }
 
       const targetUser = await db.collection('users').findOne({ userId: targetUserId })
       if (!targetUser) {
-        console.error( 'no user found for target', { targetUserId })
+        console.error('no user found for target', { targetUserId })
         return connection
       }
       
       console.log('connectWithUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
-
 
       // Prepare common payload data
       const basePayload = {
@@ -145,7 +161,8 @@ export const resolvers = {
             name: initiator.name,
             languages: initiator.languages,
             statuses: initiator.statuses
-          }
+          },
+          callId
         },
         userId: targetUserId
       }
@@ -155,7 +172,7 @@ export const resolvers = {
         offer: { offer },
         answer: { offer: connection?.offer, answer },
         'ice-candidate': { offer: connection?.offer, iceCandidate },
-        finished: { offer: '' },
+        finished: { },
         changeTracks: { videoEnabled, audioEnabled, quality }
       }
 
@@ -176,7 +193,8 @@ export const resolvers = {
         answer: connection?.answer || null,
         iceCandidate: connection?.iceCandidate || null,
         targetUserId,
-        initiatorUserId
+        initiatorUserId,
+        callId
       }
     }
   },
@@ -192,7 +210,8 @@ export const resolvers = {
         console.log('Resolving connection request:', {
           type: payload.onConnectionRequest.type,
           fromUser: payload.onConnectionRequest.from.name,
-          toUser: payload.userId
+          toUser: payload.userId,
+          callId: payload.onConnectionRequest.callId
         })
         return payload.onConnectionRequest
       }

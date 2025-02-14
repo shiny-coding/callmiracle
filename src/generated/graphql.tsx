@@ -14,13 +14,24 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type Call = {
+  __typename?: 'Call';
+  _id: Scalars['ID']['output'];
+  duration: Scalars['Int']['output'];
+  initiatorUserId: Scalars['ID']['output'];
+  targetUserId: Scalars['ID']['output'];
+  type: Scalars['String']['output'];
+};
+
 export type ConnectionParams = {
   __typename?: 'ConnectionParams';
   answer?: Maybe<Scalars['String']['output']>;
   audioEnabled?: Maybe<Scalars['Boolean']['output']>;
+  callId?: Maybe<Scalars['ID']['output']>;
   iceCandidate?: Maybe<Scalars['String']['output']>;
   initiatorUserId: Scalars['ID']['output'];
   offer?: Maybe<Scalars['String']['output']>;
+  quality?: Maybe<Scalars['String']['output']>;
   targetUserId: Scalars['ID']['output'];
   type: Scalars['String']['output'];
   videoEnabled?: Maybe<Scalars['Boolean']['output']>;
@@ -29,9 +40,11 @@ export type ConnectionParams = {
 export type ConnectionParamsInput = {
   answer?: InputMaybe<Scalars['String']['input']>;
   audioEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  callId?: InputMaybe<Scalars['ID']['input']>;
   iceCandidate?: InputMaybe<Scalars['String']['input']>;
   initiatorUserId: Scalars['ID']['input'];
   offer?: InputMaybe<Scalars['String']['input']>;
+  quality?: InputMaybe<Scalars['String']['input']>;
   targetUserId: Scalars['ID']['input'];
   type: Scalars['String']['input'];
   videoEnabled?: InputMaybe<Scalars['Boolean']['input']>;
@@ -41,6 +54,7 @@ export type ConnectionRequest = {
   __typename?: 'ConnectionRequest';
   answer?: Maybe<Scalars['String']['output']>;
   audioEnabled?: Maybe<Scalars['Boolean']['output']>;
+  callId?: Maybe<Scalars['ID']['output']>;
   from: User;
   iceCandidate?: Maybe<Scalars['String']['output']>;
   offer?: Maybe<Scalars['String']['output']>;
@@ -67,6 +81,7 @@ export type MutationUpdateUserArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  calls: Array<Call>;
   users: Array<User>;
 };
 

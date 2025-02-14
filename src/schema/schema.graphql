@@ -28,6 +28,7 @@ type ConnectionParams {
   videoEnabled: Boolean
   audioEnabled: Boolean
   quality: String
+  callId: ID
 }
 
 type ConnectionRequest {
@@ -39,6 +40,15 @@ type ConnectionRequest {
   videoEnabled: Boolean
   audioEnabled: Boolean
   quality: String
+  callId: ID
+}
+
+type Call {
+  _id: ID!
+  initiatorUserId: ID!
+  targetUserId: ID!
+  type: String!
+  duration: Int!
 }
 
 input UpdateUserInput {
@@ -60,10 +70,12 @@ input ConnectionParamsInput {
   videoEnabled: Boolean
   audioEnabled: Boolean
   quality: String
+  callId: ID
 }
 
 type Query {
   users: [User!]!
+  calls: [Call!]!
 }
 
 type Mutation {
