@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { gql } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
+import { useStore } from '@/store/useStore'
 
 export const CONNECTION_TIMEOUT_MS = 10000 // 10 seconds
 
@@ -50,7 +51,7 @@ export type ConnectionStatus =
   | 'timeout' 
   | 'finished'
   | 'expired'
-
+  | 'reconnecting'
 export interface IncomingRequest {
   offer: string
   iceCandidate: string
@@ -66,6 +67,18 @@ export interface IncomingRequest {
 export function useWebRTCCommon() {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
 
+  const applyQualityToSender = async (sender: RTCRtpSender, quality: VideoQuality) => {
+    const config = QUALITY_CONFIGS[quality]
+    const params = sender.getParameters()
+    if (!params.encodings) {
+      params.encodings = [{}]
+    }
+    params.encodings[0].maxBitrate = config.maxBitrate
+    params.encodings[0].maxFramerate = config.maxFramerate
+    params.encodings[0].scaleResolutionDownBy = 1920 / config.width
+    await sender.setParameters(params)
+  }
+
   const applyVideoQuality = async (videoTrack: MediaStreamTrack, sender: RTCRtpSender | null, quality: VideoQuality) => {
     const config = QUALITY_CONFIGS[quality]
     
@@ -80,14 +93,7 @@ export function useWebRTCCommon() {
 
       // Update sender parameters if available
       if (sender) {
-        const params = sender.getParameters()
-        if (!params.encodings) {
-          params.encodings = [{}]
-        }
-        params.encodings[0].maxBitrate = config.maxBitrate
-        params.encodings[0].maxFramerate = config.maxFramerate
-        params.encodings[0].scaleResolutionDownBy = 1920 / config.width
-        await sender.setParameters(params)
+        await applyQualityToSender(sender, quality)
       }
     } catch (err) {
       console.error('Failed to apply video quality settings:', err)
@@ -99,15 +105,7 @@ export function useWebRTCCommon() {
     try {
       const transceiver = peerConnection.getTransceivers().find(t => t.receiver.track?.kind === 'video')
       if (transceiver && transceiver.sender.track) {
-        const config = QUALITY_CONFIGS[quality]
-        await transceiver.sender.setParameters({
-          ...transceiver.sender.getParameters(),
-          encodings: [{
-            maxBitrate: config.maxBitrate,
-            maxFramerate: config.maxFramerate,
-            scaleResolutionDownBy: 1920 / config.width
-          }]
-        })
+        await applyQualityToSender(transceiver.sender, quality)
         console.log('WebRTC: Applied remote quality:', quality)
       } else {
         console.log('WebRTC: No active video track to apply quality settings to')
@@ -179,27 +177,14 @@ export function useWebRTCCommon() {
       )
     }
 
-    configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
+    configureTransceivers(pc, localVideoEnabled, localAudioEnabled, localQuality)
   }
 
-  const configureTransceivers = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean) => {
+  const configureTransceivers = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean, localQuality: VideoQuality) => {
     for (const transceiver of pc.getTransceivers()) {
       const kind = transceiver.sender.track?.kind || transceiver.mid
       if (kind === 'video' || kind === '1') {
-        if (localVideoEnabled) {
-          transceiver.direction = 'sendrecv'
-          if (transceiver.sender.setParameters) {
-            const params = transceiver.sender.getParameters()
-            if (!params.encodings) {
-              params.encodings = [{}]
-            }
-            params.encodings[0].maxBitrate = 2000000 // 2 Mbps
-            params.encodings[0].maxFramerate = 30
-            transceiver.sender.setParameters(params)
-          }
-        } else {
-          transceiver.direction = 'inactive'
-        }
+        transceiver.direction = localVideoEnabled ? 'sendrecv' : 'inactive'
       } else if (kind === 'audio' || kind === '0') {
         transceiver.direction = localAudioEnabled ? 'sendrecv' : 'inactive'
       }
@@ -249,7 +234,8 @@ export function useWebRTCCommon() {
     }
   }
 
-  const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string, connectWithUser: any, callId?: string | null) => {
+  const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string, connectWithUser: any) => {
+    const { callId } = useStore.getState()
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
         try {
@@ -260,7 +246,7 @@ export function useWebRTCCommon() {
                 targetUserId,
                 initiatorUserId: getUserId(),
                 iceCandidate: JSON.stringify(event.candidate),
-                callId
+                callId: callId || undefined // Only send if we have a callId
               }
             }
           })
@@ -314,13 +300,18 @@ export function useWebRTCCommon() {
 
       if (track.kind === 'video') {
         track.enabled = localVideoEnabled
+        if (localVideoEnabled) {
+          applyVideoQuality(track, sender, localQuality).catch(err => 
+            console.error('Failed to apply video quality in updateMediaState:', err)
+          )
+        }
       } else if (track.kind === 'audio') {
         track.enabled = localAudioEnabled
       }
     }
 
     // Update transceivers
-    configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
+    configureTransceivers(pc, localVideoEnabled, localAudioEnabled, localQuality)
 
     // Notify peer about track changes
     connectWithUser({
@@ -372,7 +363,6 @@ export function useWebRTCCommon() {
   return {
     createPeerConnection,
     addLocalStream,
-    configureTransceivers,
     handleTrack,
     parseCandidate,
     setupIceCandidateHandler,
@@ -381,7 +371,6 @@ export function useWebRTCCommon() {
     clearPendingCandidates,
     updateMediaState,
     createHangup,
-    applyVideoQuality,
     applyRemoteQuality
   }
 } 

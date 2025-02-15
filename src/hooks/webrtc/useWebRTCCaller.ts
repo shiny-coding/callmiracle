@@ -4,6 +4,7 @@ import { getUserId } from '@/lib/userId'
 import { useWebRTCCommon, CONNECT_WITH_USER, CONNECTION_TIMEOUT_MS } from './useWebRTCCommon'
 import type { ConnectionStatus } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
+import { useStore } from '@/store/useStore'
 
 interface UseWebRTCCallerProps {
   localStream?: MediaStream
@@ -11,7 +12,6 @@ interface UseWebRTCCallerProps {
   localVideoEnabled: boolean
   localAudioEnabled: boolean
   localQuality: VideoQuality
-  onStatusChange: (status: ConnectionStatus) => void
 }
 
 export function useWebRTCCaller({
@@ -20,7 +20,6 @@ export function useWebRTCCaller({
   localVideoEnabled,
   localAudioEnabled,
   localQuality,
-  onStatusChange
 }: UseWebRTCCallerProps) {
   const {
     createPeerConnection,
@@ -28,20 +27,18 @@ export function useWebRTCCaller({
     handleTrack,
     setupIceCandidateHandler,
     handleIceCandidate,
-    dispatchPendingIceCandidates,
-    clearPendingCandidates,
-    updateMediaState,
-    createHangup
+    createHangup,
+    dispatchPendingIceCandidates
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
   const [targetUserId, setTargetUserId] = useState<string | null>(null)
-  const [callId, setCallId] = useState<string | null>(null)
+  const { callId, setCallId, connectionStatus, setConnectionStatus } = useStore()
   const peerConnection = useRef<RTCPeerConnection | null>(null)
-  const answerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const hasTimedOutRef = useRef<boolean>(false)
   const remoteStreamRef = useRef<MediaStream | null>(null)
+  const answerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const hasTimedOutRef = useRef(false)
 
   const handleAnswer = async (pc: RTCPeerConnection, answer: RTCSessionDescriptionInit) => {
     try {
@@ -53,7 +50,7 @@ export function useWebRTCCaller({
       }
     } catch (err) {
       console.error('WebRTC: Failed to process answer:', err)
-      onStatusChange('failed')
+      setConnectionStatus('failed')
     }
   }
 
@@ -66,7 +63,7 @@ export function useWebRTCCaller({
     }
 
     console.log('WebRTC: Initializing connection with:', userId, isReconnect ? '(reconnecting)' : '')
-    onStatusChange(isReconnect ? 'connecting' : 'calling')
+    setConnectionStatus(isReconnect ? 'connecting' : 'calling')
     setActive(true)
     setTargetUserId(userId)
     
@@ -77,16 +74,17 @@ export function useWebRTCCaller({
     pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
-        onStatusChange('connected')
+        setConnectionStatus('connected')
       } else if (pc.connectionState === 'failed') {
         pc.close()
         peerConnection.current = null
-        onStatusChange('failed')
+        console.log('WebRTC: onconnectionstatechange -> failed')
+        setConnectionStatus('failed')
       }
     }
 
     addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, localQuality)
-    setupIceCandidateHandler(pc, userId, connectWithUser, callId)
+    setupIceCandidateHandler(pc, userId, connectWithUser)
 
     try {
       const offer = await pc.createOffer()
@@ -108,12 +106,9 @@ export function useWebRTCCaller({
       if (!isReconnect) {
         const newCallId = result.data?.connectWithUser?.callId
         setCallId(newCallId)
-        if (newCallId) {
-          setupIceCandidateHandler(pc, userId, connectWithUser, newCallId)
-        }
       }
 
-      console.log('Offer sent, waiting for answer via subscription')
+      console.log('Offer sent with callId:', useStore.getState().callId)
       
       // Only set timeout for new calls, not reconnections
       if (!isReconnect) {
@@ -122,14 +117,14 @@ export function useWebRTCCaller({
           if (pc.signalingState !== 'stable') {
             console.log('No answer received within timeout period')
             hasTimedOutRef.current = true
-            onStatusChange('timeout')
+            setConnectionStatus('timeout')
             cleanup()
           }
         }, CONNECTION_TIMEOUT_MS)
       }
     } catch (error) {
       console.error('WebRTC setup error:', error)
-      onStatusChange('failed')
+      setConnectionStatus('failed')
       cleanup()
     }
   }
@@ -141,52 +136,23 @@ export function useWebRTCCaller({
     }
     clearTimeout(answerTimeoutRef.current as any)
     answerTimeoutRef.current = null
-    clearPendingCandidates()
-    hasTimedOutRef.current = false
     remoteStreamRef.current = null
     setActive(false)
     setTargetUserId(null)
     setCallId(null)
+    hasTimedOutRef.current = false
   }
 
-  const hangup = async () => {
-    console.log('WebRTC: Hanging up call')
-    cleanup()
-
-    // Send finished signal if we have a target
-    if (targetUserId) {
-      try {
-        await connectWithUser({
-          variables: {
-            input: {
-              type: 'finished',
-              targetUserId,
-              initiatorUserId: getUserId(),
-              callId
-            }
-          }
-        })
-      } catch (err) {
-        console.error('Failed to send finished signal:', err)
-      }
-    }
-  }
-
-  useEffect(() => {
-    if (peerConnection.current && active) {
-      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser, localQuality, callId)
-    }
-  }, [localVideoEnabled, localAudioEnabled, localQuality, active, targetUserId, callId])
+  const hangup = createHangup(peerConnection, targetUserId, cleanup, connectWithUser)
 
   return {
     doCall,
-    handleAnswer,
     handleIceCandidate,
     cleanup,
     peerConnection,
     active,
     targetUserId,
-    callId,
     hangup,
+    handleAnswer
   }
 } 

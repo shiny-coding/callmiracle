@@ -4,6 +4,7 @@ import { getUserId } from '@/lib/userId'
 import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
 import type { ConnectionStatus, IncomingRequest } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
+import { useStore } from '@/store/useStore'
 
 interface UseWebRTCCalleeProps {
   localStream?: MediaStream
@@ -11,7 +12,6 @@ interface UseWebRTCCalleeProps {
   localVideoEnabled: boolean
   localAudioEnabled: boolean
   localQuality: VideoQuality
-  onStatusChange: (status: ConnectionStatus) => void
 }
 
 export function useWebRTCCallee({
@@ -20,7 +20,6 @@ export function useWebRTCCallee({
   localVideoEnabled,
   localAudioEnabled,
   localQuality,
-  onStatusChange
 }: UseWebRTCCalleeProps) {
   const {
     createPeerConnection,
@@ -31,13 +30,11 @@ export function useWebRTCCallee({
     dispatchPendingIceCandidates,
     clearPendingCandidates,
     updateMediaState,
-    createHangup
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
-  const [targetUserId, setTargetUserId] = useState<string | null>(null)
-  const [callId, setCallId] = useState<string | null>(null)
+  const { callId, setCallId, targetUserId, setTargetUserId, setConnectionStatus } = useStore()
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
@@ -46,12 +43,11 @@ export function useWebRTCCallee({
     if (!incomingRequest || !localStream) return
 
     try {
-      console.log('WebRTC: Accepting call from:', incomingRequest.from.name)
-      onStatusChange('connecting')
+      console.log('WebRTC: Accepting call from:', incomingRequest.from.name, 'with callId:', incomingRequest.callId)
+      setConnectionStatus('connecting')
       setActive(true)
       setTargetUserId(incomingRequest.from.userId)
       setCallId(incomingRequest.callId)
-      console.log('WebRTC: Call ID:', incomingRequest.callId)
       
       const pc = createPeerConnection()
       peerConnection.current = pc
@@ -60,11 +56,11 @@ export function useWebRTCCallee({
       pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'connected') {
-          onStatusChange('connected')
+          setConnectionStatus('connected')
         } else if (pc.connectionState === 'failed') {
           pc.close()
           peerConnection.current = null
-          onStatusChange('failed')
+          setConnectionStatus('failed')
           setActive(false)
         }
       }
@@ -93,13 +89,13 @@ export function useWebRTCCallee({
         }
       })
 
-      setupIceCandidateHandler(pc, incomingRequest.from.userId, connectWithUser, incomingRequest.callId)
+      setupIceCandidateHandler(pc, incomingRequest.from.userId, connectWithUser)
       await dispatchPendingIceCandidates(pc)
 
       setIncomingRequest(null)
     } catch (error) {
       console.error('Error accepting call:', error)
-      onStatusChange('failed')
+      setConnectionStatus('failed')
       cleanup()
     }
   }
@@ -107,7 +103,7 @@ export function useWebRTCCallee({
   const handleRejectCall = () => {
     console.log('Rejecting call from:', incomingRequest?.from.name)
     setIncomingRequest(null)
-    onStatusChange('rejected')
+    setConnectionStatus('rejected')
     setActive(false)
     setTargetUserId(null)
     setCallId(null)
@@ -150,12 +146,6 @@ export function useWebRTCCallee({
     cleanup()
   }
 
-  useEffect(() => {
-    if (peerConnection.current && active) {
-      updateMediaState(peerConnection.current, localVideoEnabled, localAudioEnabled, targetUserId!, connectWithUser, localQuality, callId)
-    }
-  }, [localVideoEnabled, localAudioEnabled, localQuality, active, targetUserId, callId])
-
   return {
     incomingRequest,
     setIncomingRequest,
@@ -165,8 +155,6 @@ export function useWebRTCCallee({
     cleanup,
     peerConnection,
     active,
-    targetUserId,
-    callId,
     hangup
   }
 } 

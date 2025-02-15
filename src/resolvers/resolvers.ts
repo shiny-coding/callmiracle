@@ -34,6 +34,7 @@ type ConnectionRequestPayload = {
     iceCandidate?: string
     videoEnabled?: boolean
     audioEnabled?: boolean
+    quality?: string
     from: {
       userId: string
       name: string
