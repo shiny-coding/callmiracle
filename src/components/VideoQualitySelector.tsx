@@ -45,7 +45,7 @@ interface VideoQualitySelectorProps {
 
 export default function VideoQualitySelector({ open, onClose }: VideoQualitySelectorProps) {
   const { updateRemoteQuality, remoteQuality } = useWebRTCContext()
-  const [selectedQuality, setSelectedQuality] = useState<VideoQuality | null>(null)
+  const [selectedQuality, setSelectedQuality] = useState<VideoQuality | null>(remoteQuality)
 
   useEffect(() => {
     if (!open) return

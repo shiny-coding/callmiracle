@@ -105,19 +105,6 @@ export default function RemoteVideo() {
     }
   }, [connectionStatus, remoteVideoRef])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'rejected':
-      case 'timeout':
-      case 'failed':
-        return 'text-red-600 dark:text-red-400'
-      case 'finished':
-        return 'text-blue-600 dark:text-blue-400'
-      default:
-        return 'text-gray-600 dark:text-gray-300'
-    }
-  };
-
   return (
     <>
         <div className="relative w-full h-full flex flex-col">

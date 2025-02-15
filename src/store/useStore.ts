@@ -18,7 +18,7 @@ interface AppState {
   // Media settings
   localAudioEnabled: boolean
   localVideoEnabled: boolean
-  remoteQuality: VideoQuality | null
+  remoteQuality: VideoQuality
   setName: (name: string) => void
   setLanguages: (languages: string[] | ((prev: string[]) => string[])) => void
   setStatuses: (statuses: Status[]) => void
@@ -33,7 +33,7 @@ interface AppState {
   // Media settings setters
   setLocalAudioEnabled: (enabled: boolean) => void
   setLocalVideoEnabled: (enabled: boolean) => void
-  setRemoteQuality: (quality: VideoQuality | null) => void
+  setRemoteQuality: (quality: VideoQuality) => void
 }
 
 const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
@@ -88,7 +88,7 @@ const useStore = create<AppState>()(
         set({ localVideoEnabled: enabled })
       },
       setRemoteQuality: (quality) => {
-        set({ remoteQuality: quality })
+        set({ remoteQuality: quality || '720p' })
       }
     }),
     {

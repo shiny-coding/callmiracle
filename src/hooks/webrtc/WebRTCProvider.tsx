@@ -52,7 +52,6 @@ export function WebRTCProvider({
   const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(false)
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [remoteName, setRemoteName] = useState<string | null>(null)
-  const [localQuality, setLocalQuality] = useState<VideoQuality>('720p')
   const [localStream, setLocalStream] = useState<MediaStream>()
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
@@ -63,7 +62,6 @@ export function WebRTCProvider({
     connectionStatus, 
     targetUserId, 
     role,
-    setCallId,
     setConnectionStatus,
     setTargetUserId,
     setRole,
@@ -81,7 +79,6 @@ export function WebRTCProvider({
     remoteVideoRef,
     localVideoEnabled,
     localAudioEnabled,
-    localQuality,
   }
   const caller = useWebRTCCaller(childProps)
   const callee = useWebRTCCallee(childProps)
@@ -206,15 +203,13 @@ export function WebRTCProvider({
       else if (request.type === 'changeTracks') {
         setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
         setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
-        if (request.quality) {
-          const quality = request.quality as VideoQuality
-          setRemoteQuality(quality)
-          const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
-          if (activePeerConnection) {
-            applyRemoteQuality(activePeerConnection, quality).catch(err => 
-              console.error('WebRTC: Failed to apply quality settings:', err)
-            )
-          }
+        const quality = request.quality as VideoQuality
+        setRemoteQuality(quality)
+        const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
+        if (activePeerConnection) {
+          applyRemoteQuality(activePeerConnection, quality).catch(err => 
+            console.error('WebRTC: Failed to apply quality settings:', err)
+          )
         }
       }
       // Handle unknown request type
@@ -253,13 +248,13 @@ export function WebRTCProvider({
       localAudioEnabled,
       targetUserId,
       connectWithUser,
-      localQuality,
+      remoteQuality,
       callId
     )
   }, [
     localVideoEnabled,
     localAudioEnabled,
-    localQuality,
+    remoteQuality,
   ])
 
   const handleAudioToggle = () => {
@@ -270,11 +265,12 @@ export function WebRTCProvider({
     setLocalVideoEnabled(!localVideoEnabled)
   }
 
-  const updateRemoteQuality = async (quality: VideoQuality) => {
+  const updateRemoteQuality = async (remoteQuality: VideoQuality) => {
     if (!caller.active && !callee.active) return
     if (!targetUserId) return
 
-    setRemoteQuality(quality)
+    console.log('WebRTC: Updating remote quality to:', remoteQuality)
+    setRemoteQuality(remoteQuality)
 
     await connectWithUser({
       variables: {
@@ -284,7 +280,7 @@ export function WebRTCProvider({
           initiatorUserId: getUserId(),
           videoEnabled: localVideoEnabled,
           audioEnabled: localAudioEnabled,
-          quality
+          quality: remoteQuality
         }
       }
     })

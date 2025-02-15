@@ -11,7 +11,6 @@ interface UseWebRTCCallerProps {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   localVideoEnabled: boolean
   localAudioEnabled: boolean
-  localQuality: VideoQuality
 }
 
 export function useWebRTCCaller({
@@ -19,7 +18,6 @@ export function useWebRTCCaller({
   remoteVideoRef,
   localVideoEnabled,
   localAudioEnabled,
-  localQuality,
 }: UseWebRTCCallerProps) {
   const {
     createPeerConnection,
@@ -33,8 +31,7 @@ export function useWebRTCCaller({
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
-  const [targetUserId, setTargetUserId] = useState<string | null>(null)
-  const { callId, setCallId, connectionStatus, setConnectionStatus } = useStore()
+  const { callId, setCallId, connectionStatus, setConnectionStatus, targetUserId, setTargetUserId, remoteQuality } = useStore()
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const answerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -83,7 +80,7 @@ export function useWebRTCCaller({
       }
     }
 
-    addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, localQuality)
+    addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, remoteQuality)
     setupIceCandidateHandler(pc, userId, connectWithUser)
 
     try {

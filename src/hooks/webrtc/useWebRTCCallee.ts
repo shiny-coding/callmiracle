@@ -11,7 +11,6 @@ interface UseWebRTCCalleeProps {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   localVideoEnabled: boolean
   localAudioEnabled: boolean
-  localQuality: VideoQuality
 }
 
 export function useWebRTCCallee({
@@ -19,7 +18,6 @@ export function useWebRTCCallee({
   remoteVideoRef,
   localVideoEnabled,
   localAudioEnabled,
-  localQuality,
 }: UseWebRTCCalleeProps) {
   const {
     createPeerConnection,
@@ -34,7 +32,7 @@ export function useWebRTCCallee({
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
-  const { callId, setCallId, targetUserId, setTargetUserId, setConnectionStatus } = useStore()
+  const { callId, setCallId, targetUserId, setTargetUserId, setConnectionStatus, remoteQuality } = useStore()
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
@@ -65,7 +63,7 @@ export function useWebRTCCallee({
         }
       }
 
-      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, localQuality)
+      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, remoteQuality)
 
       // Set remote description (offer)
       const offer = JSON.parse(incomingRequest.offer)
