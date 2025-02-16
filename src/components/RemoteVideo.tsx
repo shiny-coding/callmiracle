@@ -13,6 +13,7 @@ import FitScreenIcon from '@mui/icons-material/FitScreen';
 import { useTranslations } from 'next-intl';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 import VideoQualitySelector from './VideoQualitySelector';
+import { useStore } from '@/store/useStore';
 
 export default function RemoteVideo() {
   const t = useTranslations('VideoChat');
@@ -20,6 +21,7 @@ export default function RemoteVideo() {
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isFitMode, setIsFitMode] = useState(true);
   const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
+  const { qualityWeWantFromRemote } = useStore()
   const {
     connectionStatus,
     incomingRequest,
@@ -29,7 +31,6 @@ export default function RemoteVideo() {
     remoteAudioEnabled,
     remoteName,
     remoteVideoRef,
-    remoteQuality
   } = useWebRTCContext();
 
   // Update overlay dimensions when video loads or resizes
@@ -124,17 +125,17 @@ export default function RemoteVideo() {
                     <FitScreenIcon className={`text-white transform ${!isFitMode ? 'rotate-90' : ''}`} />
                   </IconButton>
 
-                  {remoteQuality && (
+                  {
                     <IconButton
                       className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
                       onClick={() => setQualityDialogOpen(true)}
                     >
                       <div className="flex items-center">
                         <HdIcon className="text-white" />
-                        <span className="ml-1 text-xs text-white">{remoteQuality}</span>
+                        <span className="ml-1 text-xs text-white">{qualityWeWantFromRemote}</span>
                       </div>
                     </IconButton>
-                  )}
+                  }
 
                   <IconButton
                     className="bg-black/30 backdrop-blur-sm hover:bg-black/40"

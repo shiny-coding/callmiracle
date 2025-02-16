@@ -28,7 +28,7 @@ const transformUser = (user: any): User | null => {
 
 type ConnectionRequestPayload = {
   onConnectionRequest: {
-    type: 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'changeTracks'
+    type: 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'updateMediaState'
     offer: string
     answer?: string
     iceCandidate?: string
@@ -188,7 +188,6 @@ export const resolvers = {
       const basePayload = {
         onConnectionRequest: {
           type,
-          offer: '',  // Default empty offer
           from: {
             userId: initiator.userId,
             name: initiator.name,
@@ -202,11 +201,11 @@ export const resolvers = {
 
       // Additional fields based on type
       const additionalFields: Record<string, Record<string, any>> = {
-        offer: { offer },
-        answer: { offer: connection?.offer, answer },
-        'ice-candidate': { offer: connection?.offer, iceCandidate },
+        offer: { videoEnabled, audioEnabled, quality, offer },
+        answer: { videoEnabled, audioEnabled, quality, answer },
+        'ice-candidate': { iceCandidate },
         finished: { },
-        changeTracks: { videoEnabled, audioEnabled, quality }
+        updateMediaState: { videoEnabled, audioEnabled, quality }
       }
 
       // Create a unique topic for this user's connection requests

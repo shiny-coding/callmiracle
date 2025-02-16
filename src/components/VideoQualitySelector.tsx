@@ -1,6 +1,7 @@
 import { Dialog, DialogTitle, DialogContent, List, ListItemButton, ListItemText, DialogActions, Button } from '@mui/material'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useEffect, useState } from 'react'
+import { useStore } from '@/store/useStore'
 
 export type VideoQuality = '360p' | '480p' | '720p' | '1080p'
 
@@ -44,18 +45,18 @@ interface VideoQualitySelectorProps {
 }
 
 export default function VideoQualitySelector({ open, onClose }: VideoQualitySelectorProps) {
-  const { updateRemoteQuality, remoteQuality } = useWebRTCContext()
-  const [selectedQuality, setSelectedQuality] = useState<VideoQuality | null>(remoteQuality)
+  const { setQualityWeWantFromRemote, qualityWeWantFromRemote } = useStore()
+  const [selectedQuality, setSelectedQuality] = useState<VideoQuality | null>(qualityWeWantFromRemote)
 
   useEffect(() => {
     if (!open) return
-    setSelectedQuality(remoteQuality)
-  }, [remoteQuality, open])
+    setSelectedQuality(qualityWeWantFromRemote)
+  }, [qualityWeWantFromRemote, open])
 
   const handleApply = async () => {
     if (!selectedQuality) return
     try {
-      await updateRemoteQuality(selectedQuality)
+      setQualityWeWantFromRemote(selectedQuality)
       onClose()
     } catch (err) {
       console.error('Failed to change remote video quality:', err)
@@ -78,7 +79,7 @@ export default function VideoQualitySelector({ open, onClose }: VideoQualitySele
               key={quality}
               onClick={() => setSelectedQuality(quality as VideoQuality)}
               selected={quality === selectedQuality}
-              className={quality === remoteQuality ? 'bg-gray-800' : ''}
+              className={quality === qualityWeWantFromRemote ? 'bg-gray-800' : ''}
             >
               <ListItemText
                 primary={quality}
@@ -94,7 +95,7 @@ export default function VideoQualitySelector({ open, onClose }: VideoQualitySele
         <Button 
           onClick={handleApply}
           variant="contained" 
-          disabled={!selectedQuality || selectedQuality === remoteQuality}
+          disabled={!selectedQuality || selectedQuality === qualityWeWantFromRemote}
         >
           Apply
         </Button>

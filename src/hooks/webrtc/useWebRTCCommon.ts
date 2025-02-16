@@ -56,6 +56,7 @@ export interface IncomingRequest {
   offer: string
   iceCandidate: string
   callId: string
+  quality: VideoQuality
   from: {
     userId: string
     name: string
@@ -67,7 +68,7 @@ export interface IncomingRequest {
 export function useWebRTCCommon() {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
 
-  const applyRemoteQuality = async (peerConnection: RTCPeerConnection, quality: VideoQuality) => {
+  const applyLocalQuality = async (peerConnection: RTCPeerConnection, quality: VideoQuality) => {
     try {
       const transceiver = peerConnection.getTransceivers().find(t => t.receiver.track?.kind === 'video')
       if (transceiver && transceiver.sender) {
@@ -89,18 +90,19 @@ export function useWebRTCCommon() {
           if (!params.encodings) {
             params.encodings = [{}]
           }
-          params.encodings[0].maxBitrate = config.maxBitrate
-          params.encodings[0].maxFramerate = config.maxFramerate
-          params.encodings[0].scaleResolutionDownBy = 1920 / config.width
-          await sender.setParameters(params)
+          if (params.encodings.length ) {
+            // checking because when closing the call, encodings may be empty            
+            params.encodings[0].maxBitrate = config.maxBitrate
+            params.encodings[0].maxFramerate = config.maxFramerate
+            params.encodings[0].scaleResolutionDownBy = 1920 / config.width
+            await sender.setParameters(params)
+          }
         }
-          
-        console.log('WebRTC: Applied remote quality:', quality)
       } else {
         console.log('WebRTC: No sender with video track found')
       }
     } catch (err) {
-      console.error('Failed to apply remote quality settings:', err)
+      console.error('Failed to apply quality settings:', err)
       throw err
     }
   }
@@ -119,7 +121,7 @@ export function useWebRTCCommon() {
     return pc
   }
 
-  const addLocalStream = (pc: RTCPeerConnection, stream: MediaStream, isInitiator: boolean, localVideoEnabled: boolean, localAudioEnabled: boolean, remoteQuality: VideoQuality) => {
+  const addLocalStream = (pc: RTCPeerConnection, stream: MediaStream, isInitiator: boolean, localVideoEnabled: boolean, localAudioEnabled: boolean, localQuality: VideoQuality) => {
     console.log('WebRTC: Adding local stream tracks:', {
       trackCount: stream.getTracks().length,
       tracks: stream.getTracks().map(t => ({
@@ -158,7 +160,7 @@ export function useWebRTCCommon() {
     }
 
     configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
-    applyRemoteQuality(pc, remoteQuality).catch(err => 
+    applyLocalQuality(pc, localQuality).catch(err => 
       console.error('Failed to apply initial remote quality settings:', err)
     )
   }
@@ -187,8 +189,8 @@ export function useWebRTCCommon() {
           console.log('Received first remote track: ' + event.track.kind)
           // Apply saved remote quality preference if it exists
           if (event.track.kind === 'video') {
-            const remoteQuality = useStore.getState().remoteQuality
-            applyRemoteQuality(peerConnection, remoteQuality).catch(err => 
+            const qualityRemoteWantsFromUs = useStore.getState().qualityRemoteWantsFromUs
+            applyLocalQuality(peerConnection, qualityRemoteWantsFromUs).catch(err => 
               console.error('Failed to apply initial remote quality settings:', err)
             )
           }
@@ -264,13 +266,13 @@ export function useWebRTCCommon() {
     pendingIceCandidates.current = []
   }
 
-  const updateMediaState = (
+  const sendWantedMediaStateImpl = (
     pc: RTCPeerConnection, 
     localVideoEnabled: boolean, 
     localAudioEnabled: boolean, 
     targetUserId: string, 
     connectWithUser: any, 
-    remoteQuality: VideoQuality,
+    qualityWeWantFromRemote: VideoQuality,
     callId?: string | null
   ) => {
 
@@ -284,25 +286,26 @@ export function useWebRTCCommon() {
         track.enabled = localAudioEnabled
       }
     }
-
-    //Serhii: do we need this?
-    applyRemoteQuality(pc, remoteQuality).catch(err => 
-      console.error('Failed to apply initial remote quality settings:', err)
-    )
     
     // Update transceivers
     configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
 
     // Notify peer about track changes
+    console.log('WebRTC: Updating media state:', {
+      videoEnabled: localVideoEnabled,
+      audioEnabled: localAudioEnabled,
+      quality: qualityWeWantFromRemote,
+      callId
+    })
     connectWithUser({
       variables: {
         input: {
-          type: 'changeTracks',
+          type: 'updateMediaState',
           targetUserId,
           initiatorUserId: getUserId(),
           videoEnabled: localVideoEnabled,
           audioEnabled: localAudioEnabled,
-          quality: remoteQuality,
+          quality: qualityWeWantFromRemote,
           callId
         }
       }
@@ -349,8 +352,8 @@ export function useWebRTCCommon() {
     handleIceCandidate,
     dispatchPendingIceCandidates,
     clearPendingCandidates,
-    updateMediaState,
+    sendWantedMediaStateImpl,
     createHangup,
-    applyRemoteQuality
+    applyLocalQuality
   }
 } 

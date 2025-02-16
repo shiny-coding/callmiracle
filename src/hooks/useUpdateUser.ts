@@ -19,10 +19,10 @@ export const UPDATE_USER = gql`
 
 export function useUpdateUser() {
   const [updateUser] = useMutation(UPDATE_USER)
-  const { name, languages, statuses, setHasImage } = useStore()
   const userId = getUserId()
 
   const updateUserData = async (online: boolean = false) => {
+    const { name, languages, statuses, setHasImage } = useStore.getState()
     try {
       const result = await updateUser({
         variables: {

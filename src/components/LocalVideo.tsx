@@ -29,13 +29,9 @@ export default function LocalVideo() {
   const { 
     localStream, 
     setLocalStream, 
-    localVideoEnabled, 
-    setLocalVideoEnabled, 
-    localAudioEnabled, 
-    setLocalAudioEnabled,
     connectionStatus
   } = useWebRTCContext()
-
+  const { localVideoEnabled, localAudioEnabled } = useStore()
   const { updateUserData } = useUpdateUser()
 
   const handleOnlineToggle = async () => {
@@ -48,36 +44,7 @@ export default function LocalVideo() {
     }
   }
 
-  // Update video element when stream changes
-  useEffect(() => {
-    if (!videoRef.current) return
-
-    // Update video source with new stream
-    if (localStream && localVideoEnabled) {
-      videoRef.current.srcObject = localStream
-      setHasPermission(true)
-      setError('')
-    } else {
-      if (videoRef.current.srcObject instanceof MediaStream) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop())
-      }
-      videoRef.current.srcObject = null
-    }
-  }, [localStream, localVideoEnabled])
-
-  // Initialize client-side only states
-  useEffect(() => {
-    const savedCameraEnabled = localStorage.getItem('cameraEnabled')
-    const savedAudioEnabled = localStorage.getItem('audioEnabled')
-    if (savedCameraEnabled !== null) {
-      setLocalVideoEnabled(savedCameraEnabled !== 'false')
-    }
-    if (savedAudioEnabled !== null) {
-      setLocalAudioEnabled(savedAudioEnabled !== 'false')
-    }
-  }, [setLocalVideoEnabled, setLocalAudioEnabled])
-
-  // Initial stream setup
+  // Stream management and video element updates
   useEffect(() => {
     async function setupStream() {
       try {
@@ -107,11 +74,20 @@ export default function LocalVideo() {
         setLocalStream(stream)
         setHasPermission(true)
         setError('')
+
+        // Update video source with new stream if video is enabled
+        if (localVideoEnabled) {
+          videoRef.current.srcObject = stream
+        }
       } catch (err) {
         console.error('Error accessing media devices:', err)
         setError('Error accessing camera/microphone')
         setHasPermission(false)
         setLocalStream(undefined)
+        if (videoRef.current?.srcObject instanceof MediaStream) {
+          videoRef.current.srcObject.getTracks().forEach(track => track.stop())
+          videoRef.current.srcObject = null
+        }
       }
     }
 

@@ -9,15 +9,11 @@ import { useStore } from '@/store/useStore'
 interface UseWebRTCCallerProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
-  localVideoEnabled: boolean
-  localAudioEnabled: boolean
 }
 
 export function useWebRTCCaller({
   localStream,
-  remoteVideoRef,
-  localVideoEnabled,
-  localAudioEnabled,
+  remoteVideoRef
 }: UseWebRTCCallerProps) {
   const {
     createPeerConnection,
@@ -26,20 +22,34 @@ export function useWebRTCCaller({
     setupIceCandidateHandler,
     handleIceCandidate,
     createHangup,
-    dispatchPendingIceCandidates
+    dispatchPendingIceCandidates,
+    applyLocalQuality
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
-  const { callId, setCallId, connectionStatus, setConnectionStatus, targetUserId, setTargetUserId, remoteQuality } = useStore()
+  const {
+    callId,
+    setCallId,
+    setConnectionStatus,
+    targetUserId,
+    setTargetUserId,
+    qualityWeWantFromRemote,
+    setQualityRemoteWantsFromUs,
+    qualityRemoteWantsFromUs,
+    localVideoEnabled,
+    localAudioEnabled } = useStore()
+
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const answerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasTimedOutRef = useRef(false)
 
-  const handleAnswer = async (pc: RTCPeerConnection, answer: RTCSessionDescriptionInit) => {
+  const handleAnswer = async (pc: RTCPeerConnection, quality: VideoQuality, answer: RTCSessionDescriptionInit) => {
     try {
       if (pc.signalingState === 'have-local-offer') {
+        setQualityRemoteWantsFromUs(quality)
+        applyLocalQuality(pc, quality)
         await pc.setRemoteDescription(new RTCSessionDescription(answer))
         await dispatchPendingIceCandidates(pc)
       } else {
@@ -80,7 +90,7 @@ export function useWebRTCCaller({
       }
     }
 
-    addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, remoteQuality)
+    addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
     setupIceCandidateHandler(pc, userId, connectWithUser)
 
     try {
@@ -95,6 +105,7 @@ export function useWebRTCCaller({
             offer: JSON.stringify(offer),
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,
+            quality: qualityWeWantFromRemote,
             callId: isReconnect ? callId : undefined // Only send callId if reconnecting
           }
         }

@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { Status } from '@/generated/graphql'
-import { getBrowserLanguage } from '@/utils/language'
 import { type VideoQuality } from '@/components/VideoQualitySelector'
 
 interface AppState {
@@ -18,7 +17,8 @@ interface AppState {
   // Media settings
   localAudioEnabled: boolean
   localVideoEnabled: boolean
-  remoteQuality: VideoQuality
+  qualityWeWantFromRemote: VideoQuality
+  qualityRemoteWantsFromUs: VideoQuality
   setName: (name: string) => void
   setLanguages: (languages: string[] | ((prev: string[]) => string[])) => void
   setStatuses: (statuses: Status[]) => void
@@ -33,7 +33,8 @@ interface AppState {
   // Media settings setters
   setLocalAudioEnabled: (enabled: boolean) => void
   setLocalVideoEnabled: (enabled: boolean) => void
-  setRemoteQuality: (quality: VideoQuality) => void
+  setQualityWeWantFromRemote: (quality: VideoQuality) => void
+  setQualityRemoteWantsFromUs: (quality: VideoQuality) => void
 }
 
 const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
@@ -56,7 +57,8 @@ const useStore = create<AppState>()(
       // Media settings (persisted)
       localAudioEnabled: true,
       localVideoEnabled: true,
-      remoteQuality: '720p',
+      qualityWeWantFromRemote: '720p',
+      qualityRemoteWantsFromUs: '720p',
       setName: (name) => set({ name }),
       setLanguages: (languages) => 
         set({ languages: typeof languages === 'function' ? languages(get().languages) : languages }),
@@ -87,8 +89,11 @@ const useStore = create<AppState>()(
       setLocalVideoEnabled: (enabled) => {
         set({ localVideoEnabled: enabled })
       },
-      setRemoteQuality: (quality) => {
-        set({ remoteQuality: quality || '720p' })
+      setQualityWeWantFromRemote: (quality) => {
+        set({ qualityWeWantFromRemote: quality })
+      },
+      setQualityRemoteWantsFromUs: (quality) => {
+        set({ qualityRemoteWantsFromUs: quality })
       }
     }),
     {
@@ -102,7 +107,8 @@ const useStore = create<AppState>()(
         lastConnectedTime: state.lastConnectedTime,
         localAudioEnabled: state.localAudioEnabled,
         localVideoEnabled: state.localVideoEnabled,
-        remoteQuality: state.remoteQuality
+        qualityWeWantFromRemote: state.qualityWeWantFromRemote,
+        qualityRemoteWantsFromUs: state.qualityRemoteWantsFromUs
       }),
       onRehydrateStorage: () => (state) => {
         // Check if we need to handle reconnection

@@ -13,6 +13,7 @@ import ProfileSettings from './ProfileSettings'
 import StatusSettings from './StatusSettings'
 import VideoQualitySelector from './VideoQualitySelector'
 import { useState } from 'react'
+import { useStore } from '@/store/useStore'
 
 export default function VideoAudioControls() {
   const [profileOpen, setProfileOpen] = useState(false)
@@ -20,11 +21,25 @@ export default function VideoAudioControls() {
   const {
     localAudioEnabled,
     localVideoEnabled,
-    handleAudioToggle,
-    handleVideoToggle,
+    setLocalAudioEnabled,
+    setLocalVideoEnabled,
+  } = useStore()
+  const {
     connectionStatus,
-    hangup
+    hangup,
+    sendWantedMediaState
   } = useWebRTCContext()
+
+  const handleAudioToggle = () => {
+    setLocalAudioEnabled(!localAudioEnabled)
+    sendWantedMediaState()
+  }
+
+  const handleVideoToggle = () => {
+    setLocalVideoEnabled(!localVideoEnabled)
+    sendWantedMediaState()
+  }
+
 
   return (
     <div className="mt-auto p-4 w-full flex justify-around items-center gap-4 bg-gradient-to-b from-black to-white/50">

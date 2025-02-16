@@ -9,15 +9,11 @@ import { useStore } from '@/store/useStore'
 interface UseWebRTCCalleeProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
-  localVideoEnabled: boolean
-  localAudioEnabled: boolean
 }
 
 export function useWebRTCCallee({
   localStream,
   remoteVideoRef,
-  localVideoEnabled,
-  localAudioEnabled,
 }: UseWebRTCCalleeProps) {
   const {
     createPeerConnection,
@@ -27,12 +23,21 @@ export function useWebRTCCallee({
     handleIceCandidate,
     dispatchPendingIceCandidates,
     clearPendingCandidates,
-    updateMediaState,
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
-  const { callId, setCallId, targetUserId, setTargetUserId, setConnectionStatus, remoteQuality } = useStore()
+  const {
+    callId,
+    setCallId,
+    targetUserId,
+    setTargetUserId,
+    setConnectionStatus,
+    setQualityRemoteWantsFromUs,
+    qualityWeWantFromRemote,
+    localVideoEnabled,
+    localAudioEnabled } = useStore()
+
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
@@ -45,6 +50,7 @@ export function useWebRTCCallee({
       setConnectionStatus('connecting')
       setActive(true)
       setTargetUserId(incomingRequest.from.userId)
+      setQualityRemoteWantsFromUs(incomingRequest.quality)
       setCallId(incomingRequest.callId)
       
       const pc = createPeerConnection()
@@ -63,7 +69,7 @@ export function useWebRTCCallee({
         }
       }
 
-      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, remoteQuality)
+      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, incomingRequest.quality)
 
       // Set remote description (offer)
       const offer = JSON.parse(incomingRequest.offer)
@@ -82,6 +88,7 @@ export function useWebRTCCallee({
             answer: JSON.stringify(answer),
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,
+            quality: qualityWeWantFromRemote,
             callId: incomingRequest.callId
           }
         }

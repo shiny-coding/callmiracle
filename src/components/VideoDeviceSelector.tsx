@@ -1,5 +1,6 @@
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import DeviceSelector from './DeviceSelector'
+import { useStore } from '@/store/useStore'
 
 async function getDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
   try {
@@ -31,7 +32,8 @@ async function getDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
 }
 
 export default function VideoDeviceSelector() {
-  const { localVideoEnabled, setLocalStream } = useWebRTCContext()
+  const { setLocalStream } = useWebRTCContext()
+  const { localVideoEnabled } = useStore()
 
   const getStream = async (deviceId: string) => {
     return navigator.mediaDevices.getUserMedia({

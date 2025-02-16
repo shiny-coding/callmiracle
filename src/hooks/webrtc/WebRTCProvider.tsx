@@ -19,17 +19,10 @@ interface WebRTCContextType {
   remoteVideoEnabled: boolean
   remoteAudioEnabled: boolean
   remoteName: string | null
-  remoteQuality: VideoQuality | null
   localStream: MediaStream | undefined
   setLocalStream: (stream: MediaStream | undefined) => void
-  localVideoEnabled: boolean
-  setLocalVideoEnabled: (enabled: boolean) => void
-  localAudioEnabled: boolean
-  setLocalAudioEnabled: (enabled: boolean) => void
   remoteVideoRef: React.RefObject<HTMLVideoElement>
-  handleAudioToggle: () => void
-  handleVideoToggle: () => void
-  updateRemoteQuality: (quality: VideoQuality) => Promise<void>
+  sendWantedMediaState: () => void
 }
 
 interface WebRTCProviderProps {
@@ -55,7 +48,7 @@ export function WebRTCProvider({
   const [localStream, setLocalStream] = useState<MediaStream>()
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
-  const { applyRemoteQuality, updateMediaState } = useWebRTCCommon()
+  const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon()
 
   const { 
     callId, 
@@ -66,19 +59,13 @@ export function WebRTCProvider({
     setTargetUserId,
     setRole,
     clearCallState,
-    setLocalAudioEnabled,
-    setLocalVideoEnabled,
-    setRemoteQuality,
     localVideoEnabled,
-    localAudioEnabled,
-    remoteQuality
+    localAudioEnabled
   } = useStore()
 
   const childProps = {
     localStream,
     remoteVideoRef,
-    localVideoEnabled,
-    localAudioEnabled,
   }
   const caller = useWebRTCCaller(childProps)
   const callee = useWebRTCCallee(childProps)
@@ -170,17 +157,17 @@ export function WebRTCProvider({
         } else {
           console.log('WebRTC: Processing answer')
           const answer = JSON.parse(request.answer)
-          await caller.handleAnswer(caller.peerConnection.current, answer)
-          setRemoteVideoEnabled(request.videoEnabled ?? true)
-          setRemoteAudioEnabled(request.audioEnabled ?? true)
+          setRemoteVideoEnabled(request.videoEnabled)
+          setRemoteAudioEnabled(request.audioEnabled)
           setRemoteName(request.from.name)
+          await caller.handleAnswer(caller.peerConnection.current, request.quality, answer)
         }
       }
       // Handle offer
       else if (request.type === 'offer') {
         if (!caller.active) {
-          setRemoteVideoEnabled(request.videoEnabled ?? true)
-          setRemoteAudioEnabled(request.audioEnabled ?? true)
+          setRemoteVideoEnabled(request.videoEnabled)
+          setRemoteAudioEnabled(request.audioEnabled)
           setRemoteName(request.from.name)
           callee.setIncomingRequest(request)
           setConnectionStatus('calling')
@@ -200,18 +187,28 @@ export function WebRTCProvider({
         }
       }
       // Handle track changes
-      else if (request.type === 'changeTracks') {
+      else if (request.type === 'updateMediaState') {
         setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
         setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
         const quality = request.quality as VideoQuality
-        setRemoteQuality(quality)
         const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
         if (activePeerConnection) {
-          applyRemoteQuality(activePeerConnection, quality).catch(err => 
+          applyLocalQuality(activePeerConnection, quality).catch(err => 
             console.error('WebRTC: Failed to apply quality settings:', err)
           )
         }
       }
+      else if (request.type === 'expired') { // Handle expired connection
+        console.log('WebRTC: Received expired signal, cleaning up')
+        if (callee.active) {
+          callee.cleanup()
+        }
+        setConnectionStatus('timeout')
+        setRemoteVideoEnabled(false)
+        setRemoteAudioEnabled(false)
+        setRemoteName(null)
+        clearCallState()
+      } 
       // Handle unknown request type
       else {
         throw new Error(`WebRTC: Unknown request type: ${request.type}`)
@@ -238,52 +235,21 @@ export function WebRTCProvider({
   }, [localStream, caller.active, caller.peerConnection, callee.active, callee.peerConnection])
 
   // Handle media state changes (video/audio/quality)
-  useEffect(() => {
+  const sendWantedMediaState = () => {
     const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
-    if (!activePeerConnection || !targetUserId || !(caller.active || callee.active)) return
+    if (!callId || !activePeerConnection || !targetUserId || !(caller.active || callee.active)) return
 
-    updateMediaState(
+    const { localVideoEnabled, localAudioEnabled, qualityWeWantFromRemote } = useStore.getState()
+
+    sendWantedMediaStateImpl(
       activePeerConnection,
       localVideoEnabled,
       localAudioEnabled,
       targetUserId,
       connectWithUser,
-      remoteQuality,
+      qualityWeWantFromRemote,
       callId
     )
-  }, [
-    localVideoEnabled,
-    localAudioEnabled,
-    remoteQuality,
-  ])
-
-  const handleAudioToggle = () => {
-    setLocalAudioEnabled(!localAudioEnabled)
-  }
-
-  const handleVideoToggle = () => {
-    setLocalVideoEnabled(!localVideoEnabled)
-  }
-
-  const updateRemoteQuality = async (remoteQuality: VideoQuality) => {
-    if (!caller.active && !callee.active) return
-    if (!targetUserId) return
-
-    console.log('WebRTC: Updating remote quality to:', remoteQuality)
-    setRemoteQuality(remoteQuality)
-
-    await connectWithUser({
-      variables: {
-        input: {
-          type: 'changeTracks',
-          targetUserId,
-          initiatorUserId: getUserId(),
-          videoEnabled: localVideoEnabled,
-          audioEnabled: localAudioEnabled,
-          quality: remoteQuality
-        }
-      }
-    })
   }
 
   const hangup = async () => {
@@ -309,17 +275,10 @@ export function WebRTCProvider({
     remoteVideoEnabled,
     remoteAudioEnabled,
     remoteName,
-    remoteQuality,
     localStream,
     setLocalStream,
-    localVideoEnabled,
-    setLocalVideoEnabled,
-    localAudioEnabled,
-    setLocalAudioEnabled,
     remoteVideoRef,
-    handleAudioToggle,
-    handleVideoToggle,
-    updateRemoteQuality,
+    sendWantedMediaState
   }
 
   return (
