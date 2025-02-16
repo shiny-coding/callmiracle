@@ -47,7 +47,7 @@ interface VideoQualitySelectorProps {
 export default function VideoQualitySelector({ open, onClose }: VideoQualitySelectorProps) {
   const { setQualityWeWantFromRemote, qualityWeWantFromRemote } = useStore()
   const [selectedQuality, setSelectedQuality] = useState<VideoQuality | null>(qualityWeWantFromRemote)
-
+  const { sendWantedMediaState } = useWebRTCContext()
   useEffect(() => {
     if (!open) return
     setSelectedQuality(qualityWeWantFromRemote)
@@ -57,6 +57,7 @@ export default function VideoQualitySelector({ open, onClose }: VideoQualitySele
     if (!selectedQuality) return
     try {
       setQualityWeWantFromRemote(selectedQuality)
+      sendWantedMediaState()
       onClose()
     } catch (err) {
       console.error('Failed to change remote video quality:', err)

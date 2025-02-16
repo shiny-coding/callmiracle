@@ -188,6 +188,7 @@ export function WebRTCProvider({
       }
       // Handle track changes
       else if (request.type === 'updateMediaState') {
+        console.log('WebRTC: updateMediaState')
         setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
         setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
         const quality = request.quality as VideoQuality
