@@ -35,12 +35,7 @@ type ConnectionRequestPayload = {
     videoEnabled?: boolean
     audioEnabled?: boolean
     quality?: string
-    from: {
-      userId: string
-      name: string
-      languages: string[]
-      statuses: Status[]
-    }
+    from?: User
     callId: string
   }
   userId: string
@@ -188,12 +183,7 @@ export const resolvers = {
       const basePayload = {
         onConnectionRequest: {
           type,
-          from: {
-            userId: initiator.userId,
-            name: initiator.name,
-            languages: initiator.languages,
-            statuses: initiator.statuses
-          },
+          from: initiator,
           callId
         },
         userId: targetUserId
@@ -210,14 +200,18 @@ export const resolvers = {
 
       // Create a unique topic for this user's connection requests
       const topic = `CONNECTION_REQUEST:${targetUserId}`
-      
-      pubsub.publish(topic, {
+
+      const publishData = {
         ...basePayload,
         onConnectionRequest: {
           ...basePayload.onConnectionRequest,
           ...additionalFields[type]
         }
-      })
+      }
+
+      console.log('Publishing connection request:', publishData)
+      
+      pubsub.publish(topic, publishData)
 
       return {
         type,
@@ -241,7 +235,7 @@ export const resolvers = {
       resolve: (payload: ConnectionRequestPayload) => {
         console.log('Resolving connection request:', {
           type: payload.onConnectionRequest.type,
-          fromUser: payload.onConnectionRequest.from.name,
+          fromUser: payload.onConnectionRequest.from?.name,
           toUser: payload.userId,
           callId: payload.onConnectionRequest.callId
         })

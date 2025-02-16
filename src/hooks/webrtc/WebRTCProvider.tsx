@@ -8,6 +8,7 @@ import { useWebRTCCallee } from './useWebRTCCallee'
 import { ON_CONNECTION_REQUEST, CONNECT_WITH_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
+import CalleeDialog from '@/components/CalleeDialog'
 
 interface WebRTCContextType {
   doCall: (userId: string) => Promise<void>
@@ -201,9 +202,7 @@ export function WebRTCProvider({
       }
       else if (request.type === 'expired') { // Handle expired connection
         console.log('WebRTC: Received expired signal, cleaning up')
-        if (callee.active) {
-          callee.cleanup()
-        }
+        callee.cleanup()
         setConnectionStatus('timeout')
         setRemoteVideoEnabled(false)
         setRemoteAudioEnabled(false)
@@ -285,6 +284,12 @@ export function WebRTCProvider({
   return (
     <WebRTCContext.Provider value={value}>
       {children}
+      <CalleeDialog
+        open={!!callee.incomingRequest}
+        user={callee.incomingRequest?.from || null}
+        onAccept={callee.handleAcceptCall}
+        onReject={callee.handleRejectCall}
+      />
     </WebRTCContext.Provider>
   )
 } 

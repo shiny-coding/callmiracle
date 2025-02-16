@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video';
-import ConnectionRequest from './ConnectionRequest';
 import { Typography, IconButton } from '@mui/material';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import VideocamOffIcon from '@mui/icons-material/VideocamOff';
@@ -24,9 +23,6 @@ export default function RemoteVideo() {
   const { qualityWeWantFromRemote } = useStore()
   const {
     connectionStatus,
-    incomingRequest,
-    handleAcceptCall,
-    handleRejectCall,
     remoteVideoEnabled,
     remoteAudioEnabled,
     remoteName,
@@ -166,12 +162,6 @@ export default function RemoteVideo() {
           </div>
         </div>
 
-      <ConnectionRequest
-        open={!!incomingRequest}
-        user={incomingRequest?.from || null}
-        onAccept={handleAcceptCall}
-        onReject={handleRejectCall}
-      />
       <VideoQualitySelector
         open={qualityDialogOpen}
         onClose={() => setQualityDialogOpen(false)}

@@ -6,9 +6,9 @@
   "Profile": {
     "title": "Profile Settings",
     "name": "Name",
-    "photo": "Photo",
     "uploadPhoto": "Upload Photo",
-    "uploading": "Uploading..."
+    "uploading": "Uploading...",
+    "photo": "Profile photo"
   },
   "Status": {
     "MEET_NEW_PEOPLE": "Meet New People",
@@ -22,6 +22,10 @@
   "connect": "Find Partner",
   "iSpeak": "I speak",
   "cameraDisabled": "Camera disabled",
+  "languages": "Languages",
+  "status": "Status",
+  "calling": "Calling...",
+  "cancel": "Cancel",
   "VideoChat": {
     "selectUser": "Select a user",
     "status": {
@@ -40,6 +44,9 @@
     },
     "common": {
       "close": "Close"
-    }
+    },
+    "accept": "Accept",
+    "reject": "Reject",
+    "incomingCall": "Incoming call from"
   }
 } 

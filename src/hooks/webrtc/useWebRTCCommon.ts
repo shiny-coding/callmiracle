@@ -3,6 +3,7 @@ import { gql } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
+import { User } from '@/generated/graphql'
 
 export const CONNECTION_TIMEOUT_MS = 10000 // 10 seconds
 
@@ -57,12 +58,7 @@ export interface IncomingRequest {
   iceCandidate: string
   callId: string
   quality: VideoQuality
-  from: {
-    userId: string
-    name: string
-    languages: string[]
-    statuses: string[]
-  }
+  from: User
 }
 
 export function useWebRTCCommon() {
