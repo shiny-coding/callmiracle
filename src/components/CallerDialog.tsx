@@ -2,8 +2,9 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/
 import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
-import { CONNECTION_TIMEOUT_MS } from '@/hooks/webrtc/useWebRTCCommon'
 import UserInfoDisplay from './UserInfoDisplay'
+
+const MAX_CALLING_TIME_MS = 10000
 
 interface CallerDialogProps {
   open: boolean
@@ -19,7 +20,7 @@ export default function CallerDialog({ open, user, onCancel }: CallerDialogProps
     
     const timeout = setTimeout(() => {
       onCancel()
-    }, CONNECTION_TIMEOUT_MS)
+    }, MAX_CALLING_TIME_MS)
 
     return () => clearTimeout(timeout)
   }, [open, onCancel])

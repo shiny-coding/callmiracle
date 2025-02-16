@@ -1,8 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
-import { useWebRTCCommon, CONNECT_WITH_USER, CONNECTION_TIMEOUT_MS } from './useWebRTCCommon'
-import type { ConnectionStatus } from './useWebRTCCommon'
+import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
 
@@ -117,19 +116,6 @@ export function useWebRTCCaller({
       }
 
       console.log('Offer sent with callId:', useStore.getState().callId)
-      
-      // Only set timeout for new calls, not reconnections
-      if (!isReconnect) {
-        clearTimeout(answerTimeoutRef.current as any)
-        answerTimeoutRef.current = setTimeout(() => {
-          if (pc.signalingState !== 'stable') {
-            console.log('No answer received within timeout period')
-            hasTimedOutRef.current = true
-            setConnectionStatus('timeout')
-            cleanup()
-          }
-        }, CONNECTION_TIMEOUT_MS)
-      }
     } catch (error) {
       console.error('WebRTC setup error:', error)
       setConnectionStatus('failed')

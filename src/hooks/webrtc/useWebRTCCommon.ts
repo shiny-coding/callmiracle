@@ -5,8 +5,6 @@ import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySel
 import { useStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 
-export const CONNECTION_TIMEOUT_MS = 10000 // 10 seconds
-
 export const CONNECT_WITH_USER = gql`
   mutation ConnectWithUser($input: ConnectionParamsInput!) {
     connectWithUser(input: $input) {

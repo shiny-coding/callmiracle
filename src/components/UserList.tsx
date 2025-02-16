@@ -19,7 +19,7 @@ export default function UserList() {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations('Status')
   const tRoot = useTranslations()
-  const { doCall, connectionStatus } = useWebRTCContext()
+  const { doCall, connectionStatus, hangup } = useWebRTCContext()
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const { callId, targetUserId } = useStore()
@@ -49,6 +49,8 @@ export default function UserList() {
           }
         }
       })
+
+      hangup()
     }
     setSelectedUser(null)
   }
