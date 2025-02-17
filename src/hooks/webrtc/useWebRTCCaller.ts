@@ -8,11 +8,13 @@ import { useStore } from '@/store/useStore'
 interface UseWebRTCCallerProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
+  connectWithUser: any
 }
 
 export function useWebRTCCaller({
   localStream,
-  remoteVideoRef
+  remoteVideoRef,
+  connectWithUser
 }: UseWebRTCCallerProps) {
   const {
     createPeerConnection,
@@ -23,9 +25,8 @@ export function useWebRTCCaller({
     createHangup,
     dispatchPendingIceCandidates,
     applyLocalQuality
-  } = useWebRTCCommon()
+  } = useWebRTCCommon(connectWithUser)
 
-  const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
   const {
     callId,
@@ -108,7 +109,7 @@ export function useWebRTCCaller({
       }
 
       addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
-      setupIceCandidateHandler(pc, userId, connectWithUser)
+      setupIceCandidateHandler(pc, userId)
 
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
@@ -148,7 +149,7 @@ export function useWebRTCCaller({
     setCallId(null)
   }
 
-  const hangup = createHangup(targetUserId, cleanup, connectWithUser)
+  const hangup = createHangup(cleanup)
 
   return {
     doCall,

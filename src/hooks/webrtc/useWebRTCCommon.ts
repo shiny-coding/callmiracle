@@ -61,7 +61,7 @@ export interface IncomingRequest {
   from: User
 }
 
-export function useWebRTCCommon() {
+export function useWebRTCCommon(connectWithUser: any) {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
 
   const applyLocalQuality = async (peerConnection: RTCPeerConnection, quality: VideoQuality) => {
@@ -213,7 +213,7 @@ export function useWebRTCCommon() {
     }
   }
 
-  const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string, connectWithUser: any) => {
+  const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string) => {
     const { callId } = useStore.getState()
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
@@ -267,7 +267,6 @@ export function useWebRTCCommon() {
     localVideoEnabled: boolean, 
     localAudioEnabled: boolean, 
     targetUserId: string, 
-    connectWithUser: any, 
     qualityWeWantFromRemote: VideoQuality,
     callId?: string | null
   ) => {
@@ -311,11 +310,10 @@ export function useWebRTCCommon() {
   }
 
   const createHangup = (
-    targetUserId: string | null,
     cleanup: () => void,
-    connectWithUser: any
   ) => {
     return async () => {
+      const { targetUserId, callId } = useStore.getState()
       console.log('WebRTC: Hanging up call')
       cleanup()
 
@@ -327,7 +325,8 @@ export function useWebRTCCommon() {
               input: {
                 type: 'finished',
                 targetUserId,
-                initiatorUserId: getUserId()
+                initiatorUserId: getUserId(),
+                callId
               }
             }
           })

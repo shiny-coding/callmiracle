@@ -131,7 +131,21 @@ export const resolvers = {
       let callId = input.callId
 
       let connection: any
-      
+
+      // Get user info for publishing
+      const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
+      if (!initiator) {
+        console.error('no user found for initiator', { initiatorUserId })
+        return connection
+      }
+
+      const targetUser = await db.collection('users').findOne({ userId: targetUserId })
+      if (!targetUser) {
+        console.error('no user found for target', { targetUserId })
+        return connection
+      }      
+      console.log('connectWithUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
+
       // Only handle calls table for specific types
       if (type === 'initiate') {
         // Create new call record
@@ -143,7 +157,7 @@ export const resolvers = {
         })
         callId = connection.insertedId.toString()
       } else if (!callId) {
-        throw new Error('CallId is required for offer')
+        throw new Error('CallId is required')
       }
     
       const objectId = ObjectId.createFromHexString(callId)
@@ -167,21 +181,6 @@ export const resolvers = {
           { returnDocument: 'after' }
         )
       }
-
-      // Get user info for publishing
-      const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
-      if (!initiator) {
-        console.error('no user found for initiator', { initiatorUserId })
-        return connection
-      }
-
-      const targetUser = await db.collection('users').findOne({ userId: targetUserId })
-      if (!targetUser) {
-        console.error('no user found for target', { targetUserId })
-        return connection
-      }
-      
-      console.log('connectWithUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
 
       // Prepare common payload data
       const basePayload = {

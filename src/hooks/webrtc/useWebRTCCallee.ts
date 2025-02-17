@@ -9,11 +9,13 @@ import { useStore } from '@/store/useStore'
 interface UseWebRTCCalleeProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
+  connectWithUser: any
 }
 
 export function useWebRTCCallee({
   localStream,
   remoteVideoRef,
+  connectWithUser
 }: UseWebRTCCalleeProps) {
   const {
     createPeerConnection,
@@ -24,9 +26,8 @@ export function useWebRTCCallee({
     dispatchPendingIceCandidates,
     clearPendingCandidates,
     createHangup
-  } = useWebRTCCommon()
+  } = useWebRTCCommon(connectWithUser)
 
-  const [connectWithUser] = useMutation(CONNECT_WITH_USER)
   const [active, setActive] = useState(false)
   const {
     callId,
@@ -95,7 +96,7 @@ export function useWebRTCCallee({
         }
       })
 
-      setupIceCandidateHandler(pc, incomingRequest.from.userId, connectWithUser)
+      setupIceCandidateHandler(pc, incomingRequest.from.userId)
       await dispatchPendingIceCandidates(pc)
 
       setIncomingRequest(null)
@@ -128,7 +129,7 @@ export function useWebRTCCallee({
     setCallId(null)
   }
 
-  const hangup = createHangup(targetUserId, cleanup, connectWithUser)
+  const hangup = createHangup(cleanup)
 
   return {
     incomingRequest,

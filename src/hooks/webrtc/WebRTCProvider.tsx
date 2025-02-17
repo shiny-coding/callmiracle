@@ -49,7 +49,7 @@ export function WebRTCProvider({
   const [localStream, setLocalStream] = useState<MediaStream>()
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
-  const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon()
+  const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon(connectWithUser)
 
   const { 
     callId, 
@@ -68,6 +68,7 @@ export function WebRTCProvider({
   const childProps = {
     localStream,
     remoteVideoRef,
+    connectWithUser
   }
   const caller = useWebRTCCaller(childProps)
   const callee = useWebRTCCallee(childProps)
@@ -272,7 +273,6 @@ export function WebRTCProvider({
       localVideoEnabled,
       localAudioEnabled,
       targetUserId,
-      connectWithUser,
       qualityWeWantFromRemote,
       callId
     )
