@@ -107,13 +107,30 @@ export function useWebRTCCallee({
     }
   }
 
-  const handleRejectCall = () => {
+  const handleRejectCall = async () => {
     console.log('Rejecting call from:', incomingRequest?.from.name)
     setIncomingRequest(null)
     setConnectionStatus('rejected')
     setActive(false)
     setTargetUserId(null)
     setCallId(null)
+
+    if (callId) {
+      try {
+        await connectWithUser({
+          variables: {
+            input: {
+              type: 'busy',
+              targetUserId,
+              initiatorUserId: getUserId(),
+              callId
+            }
+          }
+        })
+      } catch (err) {
+        console.error('Failed to send busy signal:', err)
+      }
+    }
   }
 
   const cleanup = () => {

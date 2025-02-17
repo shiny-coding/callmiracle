@@ -25,19 +25,26 @@
   "languages": "Languages",
   "status": "Status",
   "calling": "Calling...",
+  "connecting": "Connecting...",
   "cancel": "Cancel",
+  "callAgain": "Call Again",
+  "ConnectionStatus": {
+    "disconnected": "Disconnected",
+    "calling": "Calling...",
+    "connecting": "Connecting...",
+    "connected": "Connected",
+    "failed": "Connection failed",
+    "rejected": "Call rejected",
+    "timeout": "No response",
+    "finished": "Call Finished",
+    "expired": "Call expired",
+    "reconnecting": "Reconnecting...",
+    "receiving-call": "Receiving call...",
+    "busy": "Busy",
+    "no-answer": "No answer"
+  },
   "VideoChat": {
     "selectUser": "Select a user",
-    "status": {
-      "disconnected": "Disconnected",
-      "calling": "Calling...",
-      "connecting": "Connecting...",
-      "connected": "Connected",
-      "failed": "Connection failed",
-      "rejected": "Call rejected",
-      "timeout": "No response",
-      "finished": "Call Finished"
-    },
     "profile": {
       "settings": "Profile Settings",
       "name": "Name"

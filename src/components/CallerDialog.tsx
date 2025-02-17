@@ -3,44 +3,85 @@ import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import UserInfoDisplay from './UserInfoDisplay'
+import { useStore } from '@/store/useStore'
+import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { getUserId } from '@/lib/userId'
 
 const MAX_CALLING_TIME_MS = 10000
 
 interface CallerDialogProps {
-  open: boolean
   user: User | null
-  onCancel: () => void
 }
 
-export default function CallerDialog({ open, user, onCancel }: CallerDialogProps) {
+export default function CallerDialog({ user }: CallerDialogProps) {
   const t = useTranslations()
+  const { connectionStatus, setConnectionStatus, targetUserId } = useStore()
+  const tStatus = useTranslations('ConnectionStatus')
+  const { doCall, connectWithUser, hangup } = useWebRTCContext()
+  const open = !!user && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer'].includes(connectionStatus)
 
   useEffect(() => {
     if (!open) return
     
     const timeout = setTimeout(() => {
-      onCancel()
+      if (connectionStatus === 'calling') {
+        sendExpired()
+        setConnectionStatus('no-answer')
+      }
     }, MAX_CALLING_TIME_MS)
 
     return () => clearTimeout(timeout)
-  }, [open, onCancel])
+  }, [open, connectionStatus, setConnectionStatus])
 
   if (!user) return null
 
-  return (
+  const handleCallAgain = async () => {
+    await doCall(user.userId)
+  }
+
+  const sendExpired = async () => {
+    const { targetUserId, callId } = useStore.getState()
+    if (callId) {
+      console.log('Sending expired', callId)
+      await connectWithUser({
+        variables: {
+          input: {
+            type: 'expired',
+            targetUserId,
+            initiatorUserId: getUserId(),
+            callId
+          }
+        }
+      })
+    }
+  }
+
+  const handleCancel = async () => {
+    if (targetUserId) {
+      await sendExpired()
+      await hangup()
+    }
+  }
+
+  return ( open &&
     <Dialog 
       open={open}
-      onClose={onCancel}
+      onClose={handleCancel}
       PaperProps={{
         className: 'bg-gray-900 text-white'
       }}
     >
-      <DialogTitle>{t('calling')}</DialogTitle>
+      <DialogTitle>{tStatus(connectionStatus)}</DialogTitle>
       <DialogContent>
         <UserInfoDisplay user={user} />
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
-        <Button onClick={onCancel} variant="contained" color="error">
+        {connectionStatus === 'no-answer' &&
+          <Button onClick={handleCallAgain} variant="contained" color="primary">
+            {t('callAgain')}
+          </Button>
+        }
+        <Button onClick={handleCancel} variant="contained" color="error">
           {t('cancel')}
         </Button>
       </DialogActions>

@@ -47,6 +47,7 @@ export function useWebRTCCaller({
   const handleAnswer = async (pc: RTCPeerConnection, quality: VideoQuality, answer: RTCSessionDescriptionInit) => {
     try {
       if (pc.signalingState === 'have-local-offer') {
+        setConnectionStatus('connecting')
         setQualityRemoteWantsFromUs(quality)
         applyLocalQuality(pc, quality)
         await pc.setRemoteDescription(new RTCSessionDescription(answer))
@@ -137,6 +138,7 @@ export function useWebRTCCaller({
   }
 
   const cleanup = () => {
+    console.log('Cleaning up caller')
     if (peerConnection.current) {
       peerConnection.current.close()
       peerConnection.current = null

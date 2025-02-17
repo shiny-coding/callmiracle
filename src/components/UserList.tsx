@@ -19,10 +19,9 @@ export default function UserList() {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations('Status')
   const tRoot = useTranslations()
-  const { doCall, connectionStatus, hangup } = useWebRTCContext()
+  const { doCall } = useWebRTCContext()
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [connectWithUser] = useMutation(CONNECT_WITH_USER)
-  const { callId, targetUserId } = useStore()
+  const { connectionStatus } = useStore()
 
   if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
@@ -35,24 +34,6 @@ export default function UserList() {
     })
     setSelectedUser(user)
     await doCall(user.userId)
-  }
-
-  const handleCancel = async () => {
-    if (targetUserId) {
-      await connectWithUser({
-        variables: {
-          input: {
-            type: 'expired',
-            targetUserId,
-            initiatorUserId: getUserId(),
-            callId
-          }
-        }
-      })
-
-      hangup()
-    }
-    setSelectedUser(null)
   }
 
   return (
@@ -145,11 +126,7 @@ export default function UserList() {
         </List>
       </Paper>
 
-      <CallerDialog
-        open={!!selectedUser && connectionStatus === 'calling'}
-        user={selectedUser}
-        onCancel={handleCancel}
-      />
+      <CallerDialog user={selectedUser}/>
     </>
   )
 } 

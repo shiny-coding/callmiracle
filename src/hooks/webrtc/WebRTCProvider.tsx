@@ -24,6 +24,7 @@ interface WebRTCContextType {
   setLocalStream: (stream: MediaStream | undefined) => void
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   sendWantedMediaState: () => void
+  connectWithUser: any
 }
 
 interface WebRTCProviderProps {
@@ -198,9 +199,6 @@ export function WebRTCProvider({
           setRemoteAudioEnabled(request.audioEnabled)
           setRemoteName(request.from.name)
           callee.setIncomingRequest(request)
-          setConnectionStatus('calling')
-          setTargetUserId(request.from.userId)
-          setRole('callee')
         } else {
           console.log('WebRTC: Ignoring offer - already in call')
         }
@@ -236,6 +234,17 @@ export function WebRTCProvider({
         setRemoteName(null)
         clearCallState()
       } 
+      else if (request.type === 'busy') { // Handle busy signal
+        console.log('WebRTC: Received busy signal')
+        if (caller.active) {
+          await caller.cleanup()
+        }
+        setConnectionStatus('busy')
+        setRemoteVideoEnabled(false)
+        setRemoteAudioEnabled(false)
+        setRemoteName(null)
+        clearCallState()
+      }
       // Handle unknown request type
       else {
         throw new Error(`WebRTC: Unknown request type: ${request.type}`)
@@ -304,7 +313,8 @@ export function WebRTCProvider({
     localStream,
     setLocalStream,
     remoteVideoRef,
-    sendWantedMediaState
+    sendWantedMediaState,
+    connectWithUser
   }
 
   return (

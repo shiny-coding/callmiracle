@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { Status } from '@/generated/graphql'
 import { type VideoQuality } from '@/components/VideoQualitySelector'
+import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 
 interface AppState {
   name: string
@@ -10,18 +11,7 @@ interface AppState {
   hasImage: boolean
   // Call state
   callId: string | null
-  connectionStatus: 'disconnected' |
-                    'calling' |
-                    'connecting' |
-                    'connected' |
-                    'failed' |
-                    'rejected' |
-                    'timeout' |
-                    'finished' |
-                    'expired' |
-                    'reconnecting' |
-                    'receiving-call' |
-                    null
+  connectionStatus: ConnectionStatus | null
   targetUserId: string | null
   role: 'caller' | 'callee' | null
   lastConnectedTime: number | null
@@ -133,6 +123,11 @@ const useStore = create<AppState>()(
             state.setConnectionStatus('disconnected')
             state.clearCallState()
           }
+        }
+
+        if (state) { // temp
+          state.setConnectionStatus('disconnected')
+          state.clearCallState()
         }
       }
     }

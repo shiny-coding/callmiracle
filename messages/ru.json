@@ -22,24 +22,36 @@
   "connect": "Найти собеседника",
   "iSpeak": "Я говорю на",
   "cameraDisabled": "Камера отключена",
+  "languages": "Языки",
+  "status": "Статус",
+  "calling": "Вызов...",
+  "connecting": "Подключение...",
+  "cancel": "Отмена",
+  "ConnectionStatus": {
+    "disconnected": "Отключено",
+    "calling": "Вызов...",
+    "connecting": "Подключение...",
+    "connected": "Подключено",
+    "failed": "Ошибка подключения",
+    "rejected": "Вызов отклонен",
+    "timeout": "Нет ответа",
+    "finished": "Вызов завершен",
+    "expired": "Вызов истек",
+    "reconnecting": "Переподключение...",
+    "receiving-call": "Входящий вызов...",
+    "busy": "Занято"
+  },
   "VideoChat": {
     "selectUser": "Выберите собеседника",
-    "status": {
-      "disconnected": "Отключено",
-      "calling": "Вызов...",
-      "connecting": "Подключение...",
-      "connected": "Подключено",
-      "failed": "Ошибка подключения",
-      "rejected": "Вызов отклонен",
-      "timeout": "Нет ответа",
-      "finished": "Вызов завершен"
-    },
     "profile": {
       "settings": "Настройки профиля",
       "name": "Имя"
     },
     "common": {
       "close": "Закрыть"
-    }
+    },
+    "accept": "Принять",
+    "reject": "Отклонить",
+    "incomingCall": "Входящий вызов от"
   }
 } 

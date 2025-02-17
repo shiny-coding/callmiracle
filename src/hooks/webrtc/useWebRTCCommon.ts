@@ -53,6 +53,8 @@ export type ConnectionStatus =
   | 'reconnecting'
   | 'receiving-call'
   | 'busy'
+  | 'no-answer'
+
 export interface IncomingRequest {
   offer: string
   iceCandidate: string
