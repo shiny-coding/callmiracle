@@ -42,7 +42,6 @@ export function useWebRTCCaller({
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const answerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const hasTimedOutRef = useRef(false)
 
   const handleAnswer = async (pc: RTCPeerConnection, quality: VideoQuality, answer: RTCSessionDescriptionInit) => {
     try {
@@ -61,9 +60,9 @@ export function useWebRTCCaller({
   }
 
   const doCall = async (userId: string, isReconnect: boolean = false) => {
-    if (!userId || !localStream || hasTimedOutRef.current) {
+    if (!userId || !localStream ) {
       console.log('WebRTC: Cannot initialize call - missing requirements', { 
-        hasUserId: !!userId, hasLocalStream: !!localStream, hasTimedOut: hasTimedOutRef.current 
+        hasUserId: !!userId, hasLocalStream: !!localStream 
       })
       return
     }
@@ -73,29 +72,47 @@ export function useWebRTCCaller({
     setActive(true)
     setTargetUserId(userId)
     
-    const pc = createPeerConnection()
-    peerConnection.current = pc
-
-    // Set up event handlers
-    pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'connected') {
-        setConnectionStatus('connected')
-      } else if (pc.connectionState === 'failed') {
-        pc.close()
-        peerConnection.current = null
-        console.log('WebRTC: onconnectionstatechange -> failed')
-        setConnectionStatus('failed')
-      }
-    }
-
-    addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
-    setupIceCandidateHandler(pc, userId, connectWithUser)
-
     try {
+      // Initialize call and get callId if not reconnecting
+      if (!isReconnect) {
+        const initResult = await connectWithUser({
+          variables: {
+            input: {
+              type: 'initiate',
+              targetUserId: userId,
+              initiatorUserId: getUserId()
+            }
+          }
+        })
+        const newCallId = initResult.data?.connectWithUser?.callId
+        if (!newCallId) {
+          throw new Error('Failed to get callId from initiate')
+        }
+        setCallId(newCallId)
+      }
+
+      const pc = createPeerConnection()
+      peerConnection.current = pc
+
+      // Set up event handlers
+      pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'connected') {
+          setConnectionStatus('connected')
+        } else if (pc.connectionState === 'failed') {
+          pc.close()
+          peerConnection.current = null
+          console.log('WebRTC: onconnectionstatechange -> failed')
+          setConnectionStatus('failed')
+        }
+      }
+
+      addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
+      setupIceCandidateHandler(pc, userId, connectWithUser)
+
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
-      const result = await connectWithUser({
+      await connectWithUser({
         variables: {
           input: {
             type: 'offer',
@@ -105,15 +122,10 @@ export function useWebRTCCaller({
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,
             quality: qualityWeWantFromRemote,
-            callId: isReconnect ? callId : undefined // Only send callId if reconnecting
+            callId: useStore.getState().callId // Use current callId for both reconnect and new calls
           }
         }
       })
-      
-      if (!isReconnect) {
-        const newCallId = result.data?.connectWithUser?.callId
-        setCallId(newCallId)
-      }
 
       console.log('Offer sent with callId:', useStore.getState().callId)
     } catch (error) {
@@ -134,10 +146,9 @@ export function useWebRTCCaller({
     setActive(false)
     setTargetUserId(null)
     setCallId(null)
-    hasTimedOutRef.current = false
   }
 
-  const hangup = createHangup(peerConnection, targetUserId, cleanup, connectWithUser)
+  const hangup = createHangup(targetUserId, cleanup, connectWithUser)
 
   return {
     doCall,

@@ -51,6 +51,8 @@ export type ConnectionStatus =
   | 'finished'
   | 'expired'
   | 'reconnecting'
+  | 'receiving-call'
+  | 'busy'
 export interface IncomingRequest {
   offer: string
   iceCandidate: string
@@ -309,7 +311,6 @@ export function useWebRTCCommon() {
   }
 
   const createHangup = (
-    peerConnection: React.RefObject<RTCPeerConnection | null>,
     targetUserId: string | null,
     cleanup: () => void,
     connectWithUser: any

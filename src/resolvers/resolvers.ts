@@ -133,25 +133,29 @@ export const resolvers = {
       let connection: any
       
       // Only handle calls table for specific types
-      if (type === 'offer') {
-        // Create new call record for offer
+      if (type === 'initiate') {
+        // Create new call record
         connection = await db.collection('calls').insertOne({
           initiatorUserId,
           targetUserId,
-          type: 'offer',
+          type: 'initiated',
           duration: 0
         })
         callId = connection.insertedId.toString()
-      } else if (type === 'answer' && callId) {
+      } else if (!callId) {
+        throw new Error('CallId is required for offer')
+      }
+    
+      const objectId = ObjectId.createFromHexString(callId)
+      if (type === 'answer') {
         // Update call status to connected
         connection = await db.collection('calls').findOneAndUpdate(
-          { _id: ObjectId.createFromHexString(callId) },
+          { _id: objectId },
           { $set: { type: 'connected' } },
           { returnDocument: 'after' }
         )
-      } else if (type === 'finished' && callId) {
+      } else if (type === 'finished' || type == 'expired') {
         // Update call status to finished and calculate duration
-        const objectId = ObjectId.createFromHexString(callId)
         connection = await db.collection('calls').findOneAndUpdate(
           { _id: objectId },
           { 

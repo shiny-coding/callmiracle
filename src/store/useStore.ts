@@ -10,7 +10,18 @@ interface AppState {
   hasImage: boolean
   // Call state
   callId: string | null
-  connectionStatus: 'disconnected' | 'calling' | 'connecting' | 'connected' | 'failed' | 'rejected' | 'timeout' | 'finished' | 'expired' | 'reconnecting' | null
+  connectionStatus: 'disconnected' |
+                    'calling' |
+                    'connecting' |
+                    'connected' |
+                    'failed' |
+                    'rejected' |
+                    'timeout' |
+                    'finished' |
+                    'expired' |
+                    'reconnecting' |
+                    'receiving-call' |
+                    null
   targetUserId: string | null
   role: 'caller' | 'callee' | null
   lastConnectedTime: number | null

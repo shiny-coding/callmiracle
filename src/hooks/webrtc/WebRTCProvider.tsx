@@ -61,7 +61,8 @@ export function WebRTCProvider({
     setRole,
     clearCallState,
     localVideoEnabled,
-    localAudioEnabled
+    localAudioEnabled,
+    setCallId
   } = useStore()
 
   const childProps = {
@@ -126,6 +127,31 @@ export function WebRTCProvider({
           }
         } else {
           console.log('WebRTC: Ignoring reconnection - mismatched IDs')
+        }
+      }
+      // Handle initiate request
+      else if (request.type === 'initiate') {
+        if (callId) {
+          // Already in a call, send busy response
+          console.log('WebRTC: Already in call, sending busy signal')
+          await connectWithUser({
+            variables: {
+              input: {
+                type: 'busy',
+                targetUserId: request.from.userId,
+                initiatorUserId: getUserId(),
+                callId: request.callId
+              }
+            }
+          })
+        } else {
+          // Set up for receiving call
+          console.log('WebRTC: Received initiate request')
+          setCallId(request.callId)
+          setTargetUserId(request.from.userId)
+          setRole('callee')
+          setConnectionStatus('receiving-call')
+          callee.active = true
         }
       }
       // Handle finished status

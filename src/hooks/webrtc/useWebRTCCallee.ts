@@ -23,6 +23,7 @@ export function useWebRTCCallee({
     handleIceCandidate,
     dispatchPendingIceCandidates,
     clearPendingCandidates,
+    createHangup
   } = useWebRTCCommon()
 
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
@@ -127,29 +128,7 @@ export function useWebRTCCallee({
     setCallId(null)
   }
 
-  const hangup = async () => {
-    console.log('WebRTC: Hanging up call')
-
-    // Send finished signal if we have a target
-    if (targetUserId) {
-      try {
-        await connectWithUser({
-          variables: {
-            input: {
-              type: 'finished',
-              targetUserId,
-              initiatorUserId: getUserId(),
-              callId
-            }
-          }
-        })
-      } catch (err) {
-        console.error('Failed to send finished signal:', err)
-      }
-    }
-    // cleanup should go after the finished signal is sent
-    cleanup()
-  }
+  const hangup = createHangup(targetUserId, cleanup, connectWithUser)
 
   return {
     incomingRequest,
