@@ -42,7 +42,6 @@ export function useWebRTCCaller({
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
-  const answerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleAnswer = async (pc: RTCPeerConnection, quality: VideoQuality, answer: RTCSessionDescriptionInit) => {
     try {
@@ -143,8 +142,6 @@ export function useWebRTCCaller({
       peerConnection.current.close()
       peerConnection.current = null
     }
-    clearTimeout(answerTimeoutRef.current as any)
-    answerTimeoutRef.current = null
     remoteStreamRef.current = null
     setActive(false)
     setTargetUserId(null)

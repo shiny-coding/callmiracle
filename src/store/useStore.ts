@@ -11,7 +11,7 @@ interface AppState {
   hasImage: boolean
   // Call state
   callId: string | null
-  connectionStatus: ConnectionStatus | null
+  connectionStatus: ConnectionStatus
   targetUserId: string | null
   role: 'caller' | 'callee' | null
   lastConnectedTime: number | null
@@ -51,7 +51,7 @@ const useStore = create<AppState>()(
       hasImage: false,
       // Call state (persisted)
       callId: null,
-      connectionStatus: null,
+      connectionStatus: 'disconnected',
       targetUserId: null,
       role: null,
       lastConnectedTime: null,
@@ -78,7 +78,6 @@ const useStore = create<AppState>()(
       setLastConnectedTime: (time) => set({ lastConnectedTime: time }),
       clearCallState: () => set({ 
         callId: null, 
-        connectionStatus: null, 
         targetUserId: null,
         role: null,
         lastConnectedTime: null

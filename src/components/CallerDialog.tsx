@@ -57,6 +57,7 @@ export default function CallerDialog({ user }: CallerDialogProps) {
   }
 
   const handleCancel = async () => {
+    setConnectionStatus('disconnected')
     if (targetUserId) {
       await sendExpired()
       await hangup()

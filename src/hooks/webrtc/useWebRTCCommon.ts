@@ -65,7 +65,7 @@ export interface IncomingRequest {
 
 export function useWebRTCCommon(connectWithUser: any) {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
-
+  const { setConnectionStatus } = useStore()
   const applyLocalQuality = async (peerConnection: RTCPeerConnection, quality: VideoQuality) => {
     try {
       const transceiver = peerConnection.getTransceivers().find(t => t.receiver.track?.kind === 'video')
@@ -318,6 +318,7 @@ export function useWebRTCCommon(connectWithUser: any) {
       const { targetUserId, callId } = useStore.getState()
       console.log('WebRTC: Hanging up call')
       cleanup()
+      setConnectionStatus('disconnected')
 
       // Send finished signal if we have a target
       if (targetUserId) {
