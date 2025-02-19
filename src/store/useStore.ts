@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { Status } from '@/generated/graphql'
+import { Status, User } from '@/generated/graphql'
 import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 
@@ -12,7 +12,7 @@ interface AppState {
   // Call state
   callId: string | null
   connectionStatus: ConnectionStatus
-  targetUserId: string | null
+  targetUser: User | null
   role: 'caller' | 'callee' | null
   lastConnectedTime: number | null
   // Media settings
@@ -27,7 +27,7 @@ interface AppState {
   // Call state setters
   setCallId: (callId: string | null) => void
   setConnectionStatus: (status: AppState['connectionStatus']) => void
-  setTargetUserId: (userId: string | null) => void
+  setTargetUser: (user: User | null) => void
   setRole: (role: AppState['role']) => void
   setLastConnectedTime: (time: number | null) => void
   clearCallState: () => void
@@ -39,6 +39,8 @@ interface AppState {
 }
 
 const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
+
+let rehydrated = false
 
 // Split into two parts: persisted and non-persisted
 const useStore = create<AppState>()(
@@ -52,7 +54,7 @@ const useStore = create<AppState>()(
       // Call state (persisted)
       callId: null,
       connectionStatus: 'disconnected',
-      targetUserId: null,
+      targetUser: null,
       role: null,
       lastConnectedTime: null,
       // Media settings (persisted)
@@ -73,14 +75,14 @@ const useStore = create<AppState>()(
           set({ lastConnectedTime: Date.now() })
         }
       },
-      setTargetUserId: (targetUserId) => set({ targetUserId }),
+      setTargetUser: (targetUser) => set({ targetUser }),
       setRole: (role) => set({ role }),
       setLastConnectedTime: (time) => set({ lastConnectedTime: time }),
       clearCallState: () => set({ 
         callId: null, 
-        targetUserId: null,
+        targetUser: null,
         role: null,
-        lastConnectedTime: null
+        lastConnectedTime: null,
       }),
       // Media settings setters
       setLocalAudioEnabled: (enabled) => {
@@ -94,7 +96,7 @@ const useStore = create<AppState>()(
       },
       setQualityRemoteWantsFromUs: (quality) => {
         set({ qualityRemoteWantsFromUs: quality })
-      }
+      },
     }),
     {
       name: 'app-storage',
@@ -102,31 +104,32 @@ const useStore = create<AppState>()(
       partialize: (state) => ({
         callId: state.callId,
         connectionStatus: state.connectionStatus,
-        targetUserId: state.targetUserId,
+        targetUser: state.targetUser,
         role: state.role,
         lastConnectedTime: state.lastConnectedTime,
         localAudioEnabled: state.localAudioEnabled,
         localVideoEnabled: state.localVideoEnabled,
         qualityWeWantFromRemote: state.qualityWeWantFromRemote,
-        qualityRemoteWantsFromUs: state.qualityRemoteWantsFromUs
+        qualityRemoteWantsFromUs: state.qualityRemoteWantsFromUs,
       }),
       onRehydrateStorage: () => (state) => {
-        // Check if we need to handle reconnection
-        if (state && state.connectionStatus === 'connected' && state.lastConnectedTime) {
-          const timeSinceLastConnection = Date.now() - state.lastConnectedTime
-          if (timeSinceLastConnection < TWO_MINUTES) {
-            // Within 2 minutes, set to reconnecting
-            state.setConnectionStatus('reconnecting')
+        if (state && !rehydrated) {
+          rehydrated = true
+          // Check if we need to handle reconnection
+          if ( state.connectionStatus === 'connected' ) {
+            const timeSinceLastConnection = Date.now() - (state.lastConnectedTime ?? 0)
+            if (timeSinceLastConnection < TWO_MINUTES) {
+              // Within 2 minutes, set to reconnecting
+              state.setConnectionStatus('need-reconnect')
+            } else {
+              // More than 2 minutes, set to disconnected
+              state.setConnectionStatus('disconnected')
+              state.clearCallState()
+            }
           } else {
-            // More than 2 minutes, set to disconnected
             state.setConnectionStatus('disconnected')
             state.clearCallState()
           }
-        }
-
-        if (state) { // temp
-          state.setConnectionStatus('disconnected')
-          state.clearCallState()
         }
       }
     }

@@ -27,6 +27,7 @@
   "calling": "Вызов...",
   "connecting": "Подключение...",
   "cancel": "Отмена",
+  "callAgain": "Вызвать снова",
   "ConnectionStatus": {
     "disconnected": "Отключено",
     "calling": "Вызов...",
@@ -37,9 +38,11 @@
     "timeout": "Нет ответа",
     "finished": "Вызов завершен",
     "expired": "Вызов истек",
+    "need-reconnect": "Переподключение...",
     "reconnecting": "Переподключение...",
     "receiving-call": "Входящий вызов...",
-    "busy": "Занято"
+    "busy": "Занято",
+    "no-answer": "Нет ответа"
   },
   "VideoChat": {
     "selectUser": "Выберите собеседника",

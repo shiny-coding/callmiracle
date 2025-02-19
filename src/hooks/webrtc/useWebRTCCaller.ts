@@ -4,6 +4,7 @@ import { getUserId } from '@/lib/userId'
 import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
+import { User } from '@/generated/graphql'
 
 interface UseWebRTCCallerProps {
   localStream?: MediaStream
@@ -32,13 +33,16 @@ export function useWebRTCCaller({
     callId,
     setCallId,
     setConnectionStatus,
-    targetUserId,
-    setTargetUserId,
+    targetUser,
+    setTargetUser,
     qualityWeWantFromRemote,
     setQualityRemoteWantsFromUs,
     qualityRemoteWantsFromUs,
     localVideoEnabled,
-    localAudioEnabled } = useStore()
+    localAudioEnabled,
+    setRole,
+    connectionStatus
+  } = useStore()
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
@@ -46,7 +50,9 @@ export function useWebRTCCaller({
   const handleAnswer = async (pc: RTCPeerConnection, quality: VideoQuality, answer: RTCSessionDescriptionInit) => {
     try {
       if (pc.signalingState === 'have-local-offer') {
-        setConnectionStatus('connecting')
+        if (connectionStatus !== 'reconnecting') {
+          setConnectionStatus('connecting')
+        }
         setQualityRemoteWantsFromUs(quality)
         applyLocalQuality(pc, quality)
         await pc.setRemoteDescription(new RTCSessionDescription(answer))
@@ -60,18 +66,21 @@ export function useWebRTCCaller({
     }
   }
 
-  const doCall = async (userId: string, isReconnect: boolean = false) => {
-    if (!userId || !localStream ) {
+  const doCall = async (user: User, isReconnect: boolean = false) => {
+    if (!user || !localStream ) {
       console.log('WebRTC: Cannot initialize call - missing requirements', { 
-        hasUserId: !!userId, hasLocalStream: !!localStream 
+        hasUserId: !!user, hasLocalStream: !!localStream 
       })
       return
     }
 
-    console.log('WebRTC: Initializing connection with:', userId, isReconnect ? '(reconnecting)' : '')
-    setConnectionStatus(isReconnect ? 'connecting' : 'calling')
+    console.log('WebRTC: Initializing connection with:', user.userId, isReconnect ? '(reconnecting)' : '')
+    if ( !isReconnect ) {
+      setConnectionStatus('calling')
+    }
     setActive(true)
-    setTargetUserId(userId)
+    setRole('caller')
+    setTargetUser(user)
     
     try {
       // Initialize call and get callId if not reconnecting
@@ -80,7 +89,7 @@ export function useWebRTCCaller({
           variables: {
             input: {
               type: 'initiate',
-              targetUserId: userId,
+              targetUserId: user.userId,
               initiatorUserId: getUserId()
             }
           }
@@ -109,7 +118,7 @@ export function useWebRTCCaller({
       }
 
       addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
-      setupIceCandidateHandler(pc, userId)
+      setupIceCandidateHandler(pc, user.userId)
 
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
@@ -117,7 +126,7 @@ export function useWebRTCCaller({
         variables: {
           input: {
             type: 'offer',
-            targetUserId: userId,
+            targetUserId: user.userId,
             initiatorUserId: getUserId(),
             offer: JSON.stringify(offer),
             videoEnabled: localVideoEnabled,
@@ -144,7 +153,7 @@ export function useWebRTCCaller({
     }
     remoteStreamRef.current = null
     setActive(false)
-    setTargetUserId(null)
+    setTargetUser(null)
     setCallId(null)
   }
 
@@ -156,7 +165,7 @@ export function useWebRTCCaller({
     cleanup,
     peerConnection,
     active,
-    targetUserId,
+    targetUser,
     hangup,
     handleAnswer
   }

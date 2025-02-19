@@ -9,16 +9,12 @@ import { getUserId } from '@/lib/userId'
 
 const MAX_CALLING_TIME_MS = 10000
 
-interface CallerDialogProps {
-  user: User | null
-}
-
-export default function CallerDialog({ user }: CallerDialogProps) {
+export default function CallerDialog() {
   const t = useTranslations()
-  const { connectionStatus, setConnectionStatus, targetUserId } = useStore()
+  const { connectionStatus, setConnectionStatus, targetUser } = useStore()
   const tStatus = useTranslations('ConnectionStatus')
   const { doCall, connectWithUser, hangup } = useWebRTCContext()
-  const open = !!user && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer'].includes(connectionStatus)
+  const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
 
   useEffect(() => {
     if (!open) return
@@ -33,21 +29,21 @@ export default function CallerDialog({ user }: CallerDialogProps) {
     return () => clearTimeout(timeout)
   }, [open, connectionStatus, setConnectionStatus])
 
-  if (!user) return null
+  if (!targetUser) return null
 
   const handleCallAgain = async () => {
-    await doCall(user.userId)
+    await doCall(targetUser)
   }
 
   const sendExpired = async () => {
-    const { targetUserId, callId } = useStore.getState()
-    if (callId) {
+    const { targetUser, callId } = useStore.getState()
+    if (callId && targetUser) {
       console.log('Sending expired', callId)
       await connectWithUser({
         variables: {
           input: {
             type: 'expired',
-            targetUserId,
+            targetUserId: targetUser.userId,
             initiatorUserId: getUserId(),
             callId
           }
@@ -58,7 +54,7 @@ export default function CallerDialog({ user }: CallerDialogProps) {
 
   const handleCancel = async () => {
     setConnectionStatus('disconnected')
-    if (targetUserId) {
+    if (targetUser.userId) {
       await sendExpired()
       await hangup()
     }
@@ -74,10 +70,10 @@ export default function CallerDialog({ user }: CallerDialogProps) {
     >
       <DialogTitle>{tStatus(connectionStatus)}</DialogTitle>
       <DialogContent>
-        <UserInfoDisplay user={user} />
+        <UserInfoDisplay user={targetUser} />
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
-        {connectionStatus === 'no-answer' &&
+        {(connectionStatus === 'no-answer' || connectionStatus === 'busy') &&
           <Button onClick={handleCallAgain} variant="contained" color="primary">
             {t('callAgain')}
           </Button>

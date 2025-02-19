@@ -43,14 +43,15 @@ export const ON_CONNECTION_REQUEST = gql`
 export type ConnectionStatus = 
   | 'disconnected' 
   | 'calling' 
-  | 'connecting' 
+  | 'connecting'
+  | 'need-reconnect'
+  | 'reconnecting'
   | 'connected' 
   | 'failed' 
   | 'rejected' 
   | 'timeout' 
   | 'finished'
   | 'expired'
-  | 'reconnecting'
   | 'receiving-call'
   | 'busy'
   | 'no-answer'
@@ -315,19 +316,19 @@ export function useWebRTCCommon(connectWithUser: any) {
     cleanup: () => void,
   ) => {
     return async () => {
-      const { targetUserId, callId } = useStore.getState()
+      const { targetUser, callId } = useStore.getState()
       console.log('WebRTC: Hanging up call')
       cleanup()
       setConnectionStatus('disconnected')
 
       // Send finished signal if we have a target
-      if (targetUserId) {
+      if (targetUser) {
         try {
           await connectWithUser({
             variables: {
               input: {
                 type: 'finished',
-                targetUserId,
+                targetUserId: targetUser.userId,
                 initiatorUserId: getUserId(),
                 callId
               }

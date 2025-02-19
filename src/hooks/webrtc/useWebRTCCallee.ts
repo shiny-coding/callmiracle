@@ -32,28 +32,41 @@ export function useWebRTCCallee({
   const {
     callId,
     setCallId,
-    targetUserId,
-    setTargetUserId,
+    targetUser,
+    setTargetUser,
     setConnectionStatus,
     setQualityRemoteWantsFromUs,
     qualityWeWantFromRemote,
     localVideoEnabled,
-    localAudioEnabled } = useStore()
+    localAudioEnabled,
+    connectionStatus
+  } = useStore()
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
 
-  const handleAcceptCall = async () => {
-    if (!incomingRequest || !localStream) return
+  const handleAcceptCall = async (reconnectRequest: IncomingRequest | null = null) => {
+    const requestToAccept = reconnectRequest || incomingRequest
+    if (!requestToAccept || !localStream) {
+      console.log('WebRTC: Cannot accept call - missing requirements', { 
+        hasIncomingRequest: !!requestToAccept, hasLocalStream: !!localStream 
+      })
+      return
+    }
 
     try {
-      console.log('WebRTC: Accepting call from:', incomingRequest.from.name, 'with callId:', incomingRequest.callId)
-      setConnectionStatus('connecting')
+      console.log('WebRTC: Accepting call from:', requestToAccept.from.name, 'with callId:', requestToAccept.callId)
+      if ( reconnectRequest ) {
+        cleanup();
+        setConnectionStatus('reconnecting')
+      } else {
+        setConnectionStatus('connecting')
+      }
       setActive(true)
-      setTargetUserId(incomingRequest.from.userId)
-      setQualityRemoteWantsFromUs(incomingRequest.quality)
-      setCallId(incomingRequest.callId)
+      setTargetUser(requestToAccept.from)
+      setQualityRemoteWantsFromUs(requestToAccept.quality)
+      setCallId(requestToAccept.callId)
       
       const pc = createPeerConnection()
       peerConnection.current = pc
@@ -71,10 +84,10 @@ export function useWebRTCCallee({
         }
       }
 
-      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, incomingRequest.quality)
+      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, requestToAccept.quality)
 
       // Set remote description (offer)
-      const offer = JSON.parse(incomingRequest.offer)
+      const offer = JSON.parse(requestToAccept.offer)
       await pc.setRemoteDescription(new RTCSessionDescription(offer))
 
       // Create and send answer
@@ -85,18 +98,18 @@ export function useWebRTCCallee({
         variables: {
           input: {
             type: 'answer',
-            targetUserId: incomingRequest.from.userId,
+            targetUserId: requestToAccept.from.userId,
             initiatorUserId: getUserId(),
             answer: JSON.stringify(answer),
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,
             quality: qualityWeWantFromRemote,
-            callId: incomingRequest.callId
+            callId: requestToAccept.callId
           }
         }
       })
 
-      setupIceCandidateHandler(pc, incomingRequest.from.userId)
+      setupIceCandidateHandler(pc, requestToAccept.from.userId)
       await dispatchPendingIceCandidates(pc)
 
       setIncomingRequest(null)
@@ -112,16 +125,16 @@ export function useWebRTCCallee({
     setIncomingRequest(null)
     setConnectionStatus('rejected')
     setActive(false)
-    setTargetUserId(null)
+    setTargetUser(null)
     setCallId(null)
 
-    if (callId) {
+    if (callId && targetUser) {
       try {
         await connectWithUser({
           variables: {
             input: {
               type: 'busy',
-              targetUserId,
+              targetUserId: targetUser.userId,
               initiatorUserId: getUserId(),
               callId
             }
@@ -142,7 +155,7 @@ export function useWebRTCCallee({
     remoteStreamRef.current = null
     setIncomingRequest(null)
     setActive(false)
-    setTargetUserId(null)
+    setTargetUser(null)
     setCallId(null)
   }
 

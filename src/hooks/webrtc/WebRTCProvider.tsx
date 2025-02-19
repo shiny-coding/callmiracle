@@ -9,9 +9,9 @@ import { ON_CONNECTION_REQUEST, CONNECT_WITH_USER, type ConnectionStatus, type I
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
 import CalleeDialog from '@/components/CalleeDialog'
-
+import { User } from '@/generated/graphql'
 interface WebRTCContextType {
-  doCall: (userId: string) => Promise<void>
+  doCall: (user: User) => Promise<void>
   connectionStatus: ConnectionStatus
   incomingRequest: IncomingRequest | null
   handleAcceptCall: () => void
@@ -55,14 +55,12 @@ export function WebRTCProvider({
   const { 
     callId, 
     connectionStatus, 
-    targetUserId, 
+    targetUser, 
     role,
     setConnectionStatus,
-    setTargetUserId,
+    setTargetUser,
     setRole,
     clearCallState,
-    localVideoEnabled,
-    localAudioEnabled,
     setCallId
   } = useStore()
 
@@ -76,42 +74,27 @@ export function WebRTCProvider({
 
   // Attempt reconnection on mount if we have stored call state
   useEffect(() => {
+    if (connectionStatus !== 'need-reconnect' || !localStream) return;
+    setConnectionStatus('reconnecting')
     const attemptReconnect = async () => {
-      if (connectionStatus === 'reconnecting' && targetUserId && callId && role) {
-        console.log('Attempting to reconnect to previous call:', {
-          targetUserId,
-          callId,
-          role
-        })
+      console.log('Attempting to reconnect to previous call:', {
+        targetUser,
+        callId,
+        role
+      })
 
-        try {
-          setConnectionStatus('connecting')
-
-          if (role === 'caller' && targetUserId) {
-            await caller.doCall(targetUserId, true)
-          } else if (role === 'callee' && targetUserId) {
-            await connectWithUser({
-              variables: {
-                input: {
-                  type: 'reconnect',
-                  targetUserId,
-                  initiatorUserId: getUserId(),
-                  callId,
-                  videoEnabled: localVideoEnabled,
-                  audioEnabled: localAudioEnabled
-                }
-              }
-            })
-          }
-        } catch (err) {
-          console.error('Failed to reconnect:', err)
-          clearCallState()
+      try {
+        if (role === 'caller' && targetUser) {
+          await caller.doCall(targetUser, true)
         }
+      } catch (err) {
+        console.error('Failed to reconnect:', err)
+        clearCallState()
       }
     }
 
     attemptReconnect()
-  }, [])
+  }, [connectionStatus, localStream])
 
   // Subscribe to incoming connection requests
   useSubscription(ON_CONNECTION_REQUEST, {
@@ -120,19 +103,12 @@ export function WebRTCProvider({
       const request = subscriptionData.data?.onConnectionRequest
       if (!request) return
 
-      // Handle reconnection request
-      if (request.type === 'reconnect') {
-        if (request.callId === callId && request.from.userId === targetUserId && targetUserId) {
-          console.log('WebRTC: Reconnection request received')
-          if (role === 'caller') {
-            await caller.doCall(targetUserId, true)
-          }
-        } else {
-          console.log('WebRTC: Ignoring reconnection - mismatched IDs')
-        }
+      if (request.type !== 'initiate' && request.callId !== callId) {
+        console.log('WebRTC: Ignoring connection request - mismatched IDs: ', { request, callId })
+        return
       }
-      // Handle initiate request
-      else if (request.type === 'initiate') {
+
+      if (request.type === 'initiate') {
         if (callId) {
           // Already in a call, send busy response
           console.log('WebRTC: Already in call, sending busy signal')
@@ -150,7 +126,7 @@ export function WebRTCProvider({
           // Set up for receiving call
           console.log('WebRTC: Received initiate request')
           setCallId(request.callId)
-          setTargetUserId(request.from.userId)
+          setTargetUser(request.from)
           setRole('callee')
           setConnectionStatus('receiving-call')
           callee.active = true
@@ -194,13 +170,13 @@ export function WebRTCProvider({
       }
       // Handle offer
       else if (request.type === 'offer') {
-        if (!caller.active) {
-          setRemoteVideoEnabled(request.videoEnabled)
-          setRemoteAudioEnabled(request.audioEnabled)
-          setRemoteName(request.from.name)
-          callee.setIncomingRequest(request)
-        } else {
-          console.log('WebRTC: Ignoring offer - already in call')
+        setRemoteVideoEnabled(request.videoEnabled)
+        setRemoteAudioEnabled(request.audioEnabled)
+        setRemoteName(request.from.name)
+        callee.setIncomingRequest(request)
+        if ( connectionStatus === 'need-reconnect' || connectionStatus === 'connected' ) {
+          console.log('WebRTC: Reconnecting, automatically accepting call')
+          callee.handleAcceptCall(request)
         }
       }
       // Handle ICE candidates
@@ -238,12 +214,13 @@ export function WebRTCProvider({
         console.log('WebRTC: Received busy signal')
         if (caller.active) {
           await caller.cleanup()
+        
+          setConnectionStatus('busy')
+          setRemoteVideoEnabled(false)
+          setRemoteAudioEnabled(false)
+          setRemoteName(null)
+          clearCallState()
         }
-        setConnectionStatus('busy')
-        setRemoteVideoEnabled(false)
-        setRemoteAudioEnabled(false)
-        setRemoteName(null)
-        clearCallState()
       }
       // Handle unknown request type
       else {
@@ -273,7 +250,7 @@ export function WebRTCProvider({
   // Handle media state changes (video/audio/quality)
   const sendWantedMediaState = () => {
     const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
-    if (!callId || !activePeerConnection || !targetUserId || !(caller.active || callee.active)) return
+    if (!callId || !activePeerConnection || !targetUser || !(caller.active || callee.active)) return
 
     const { localVideoEnabled, localAudioEnabled, qualityWeWantFromRemote } = useStore.getState()
 
@@ -281,7 +258,7 @@ export function WebRTCProvider({
       activePeerConnection,
       localVideoEnabled,
       localAudioEnabled,
-      targetUserId,
+      targetUser.userId,
       qualityWeWantFromRemote,
       callId
     )
@@ -320,12 +297,7 @@ export function WebRTCProvider({
   return (
     <WebRTCContext.Provider value={value}>
       {children}
-      <CalleeDialog
-        open={!!callee.incomingRequest}
-        user={callee.incomingRequest?.from || null}
-        onAccept={callee.handleAcceptCall}
-        onReject={callee.handleRejectCall}
-      />
+      <CalleeDialog calee={callee} />
     </WebRTCContext.Provider>
   )
 } 

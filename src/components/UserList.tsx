@@ -20,20 +20,12 @@ export default function UserList() {
   const t = useTranslations('Status')
   const tRoot = useTranslations()
   const { doCall } = useWebRTCContext()
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const { connectionStatus } = useStore()
 
   if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
 
   const handleUserSelect = async (user: User) => {
-    console.log('Selected user:', {
-      userId: user.userId,
-      name: user.name,
-      timestamp: new Date().toISOString()
-    })
-    setSelectedUser(user)
-    await doCall(user.userId)
+    await doCall(user)
   }
 
   return (
@@ -126,7 +118,7 @@ export default function UserList() {
         </List>
       </Paper>
 
-      <CallerDialog user={selectedUser}/>
+      <CallerDialog />
     </>
   )
 } 
