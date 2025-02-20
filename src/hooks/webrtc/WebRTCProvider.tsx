@@ -25,6 +25,7 @@ interface WebRTCContextType {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   sendWantedMediaState: () => void
   connectWithUser: any
+  callee: ReturnType<typeof useWebRTCCallee>
 }
 
 interface WebRTCProviderProps {
@@ -318,13 +319,13 @@ export function WebRTCProvider({
     setLocalStream,
     remoteVideoRef,
     sendWantedMediaState,
-    connectWithUser
+    connectWithUser,
+    callee
   }
 
   return (
     <WebRTCContext.Provider value={value}>
       {children}
-      <CalleeDialog calee={callee} />
     </WebRTCContext.Provider>
   )
 } 

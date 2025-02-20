@@ -6,25 +6,25 @@ import { useStore } from '@/store/useStore'
 import { useWebRTCCallee } from '@/hooks/webrtc/useWebRTCCallee'
 
 interface CalleeDialogProps {
-  calee: ReturnType<typeof useWebRTCCallee>
+  callee: ReturnType<typeof useWebRTCCallee>
 }
 
-export default function CalleeDialog({ calee }: CalleeDialogProps) {
+export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const t = useTranslations()
   const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
   const { connectionStatus } = useStore()
 
   const isReconnecting = connectionStatus === 'reconnecting' || connectionStatus === 'need-reconnect'
-  const open = isReconnecting || !!calee.incomingRequest
-  const user = calee.incomingRequest?.from || null
-  const onAccept = calee.handleAcceptCall
-  const onReject = calee.handleRejectCall
+  const open = isReconnecting || !!callee.incomingRequest
+  const user = callee.incomingRequest?.from || null
+  const onAccept = callee.handleAcceptCall
+  const onReject = callee.handleRejectCall
 
   if (!user) return null
 
   const isConnecting = connectionStatus === 'connecting'
-  const onCancelReconnect = calee.hangup
+  const onCancelReconnect = callee.hangup
 
   return (
     <Dialog 

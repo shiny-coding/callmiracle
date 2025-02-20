@@ -74,10 +74,19 @@ input ConnectionParamsInput {
   callId: ID
 }
 
+type CallHistoryEntry {
+  user: User!
+  lastCallAt: Float!
+  duration: Int!
+  totalCalls: Int!
+}
+
 type Query {
   users: [User!]!
   calls: [Call!]!
   getOrCreateUser(userId: ID!, defaultLanguages: [String!]!): User!
+  callHistory(userId: ID!): [CallHistoryEntry!]!
+  detailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
 }
 
 type Mutation {

@@ -28,6 +28,10 @@
   "connecting": "Подключение...",
   "cancel": "Отмена",
   "callAgain": "Вызвать снова",
+  "callHistory": "История звонков",
+  "callHistoryWith": "История звонков с",
+  "noCallHistory": "История звонков пуста",
+  "close": "Закрыть",
   "ConnectionStatus": {
     "disconnected": "Отключено",
     "calling": "Вызов...",

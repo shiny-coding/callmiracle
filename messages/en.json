@@ -28,6 +28,10 @@
   "connecting": "Connecting...",
   "cancel": "Cancel",
   "callAgain": "Call Again",
+  "callHistory": "Call History",
+  "callHistoryWith": "Call History with",
+  "noCallHistory": "No call history yet",
+  "close": "Close",
   "ConnectionStatus": {
     "disconnected": "Disconnected",
     "calling": "Calling...",

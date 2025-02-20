@@ -4,10 +4,15 @@ import VideoAudioControls from '@/components/VideoAudioControls'
 import LocalVideo from '@/components/LocalVideo'
 import RemoteVideo from '@/components/RemoteVideo'
 import UserList from '@/components/UserList'
+import CallHistory from '@/components/CallHistory'
 import { useWebRTCContext, WebRTCProvider } from '@/hooks/webrtc/WebRTCProvider'
+import { DetailedCallHistoryProvider } from '@/store/DetailedCallHistoryProvider'
+import DetailedCallHistoryDialog from '@/components/DetailedCallHistoryDialog'
+import CallerDialog from '@/components/CallerDialog'
+import CalleeDialog from '@/components/CalleeDialog'
 
 function MainContent() {
-  const { connectionStatus } = useWebRTCContext()
+  const { connectionStatus, callee } = useWebRTCContext()
 
   return (
     <div className="h-full bg-black flex flex-col items-center w-full max-w-[1536px] mx-auto">
@@ -24,11 +29,17 @@ function MainContent() {
       </div>
 
       {connectionStatus !== 'connected' && (
-        <div className="px-4 mt-4 overflow-y-auto pb-4">
-          <UserList />
+        <div className="px-4 mt-4 overflow-y-auto pb-4 w-full max-w-[800px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <UserList />
+            <CallHistory />
+          </div>
         </div>
       )}
       <VideoAudioControls />
+      <DetailedCallHistoryDialog />
+      <CallerDialog />
+      <CalleeDialog callee={callee} />
     </div>
   )
 }
@@ -36,7 +47,9 @@ function MainContent() {
 export default function Home() {
   return (
     <WebRTCProvider>
-      <MainContent />
+      <DetailedCallHistoryProvider>
+        <MainContent />
+      </DetailedCallHistoryProvider>
     </WebRTCProvider>
   )
 } 
