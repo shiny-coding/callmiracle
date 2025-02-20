@@ -13,7 +13,7 @@ export default function CallerDialog() {
   const t = useTranslations()
   const { connectionStatus, setConnectionStatus, targetUser } = useStore()
   const tStatus = useTranslations('ConnectionStatus')
-  const { doCall, connectWithUser, hangup } = useWebRTCContext()
+  const { doCall, connectWithUser, caller } = useWebRTCContext()
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function CallerDialog() {
     setConnectionStatus('disconnected')
     if (targetUser.userId) {
       await sendExpired()
-      await hangup()
+      await caller.cleanup()
     }
   }
 

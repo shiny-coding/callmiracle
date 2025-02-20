@@ -1,4 +1,4 @@
-'use client'
+  'use client'
 import { useState, createContext, useContext, ReactNode, useRef, useEffect } from 'react'
 import { useSubscription, useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
@@ -26,6 +26,7 @@ interface WebRTCContextType {
   sendWantedMediaState: () => void
   connectWithUser: any
   callee: ReturnType<typeof useWebRTCCallee>
+  caller: ReturnType<typeof useWebRTCCaller>
 }
 
 interface WebRTCProviderProps {
@@ -320,7 +321,8 @@ export function WebRTCProvider({
     remoteVideoRef,
     sendWantedMediaState,
     connectWithUser,
-    callee
+    callee,
+    caller
   }
 
   return (

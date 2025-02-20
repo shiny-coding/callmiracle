@@ -240,15 +240,21 @@ export const resolvers = {
           { returnDocument: 'after' }
         )
       } else if (type === 'finished' || type == 'expired') {
-        // Update call status to finished and calculate duration
-        connection = await db.collection('calls').findOneAndUpdate(
-          { _id: objectId },
-          { 
-            $set: { 
+        // Get current call state
+        const currentCall = await db.collection('calls').findOne({ _id: objectId })
+        
+        // Only set duration if the call was connected and is now finished
+        const updateFields = type === 'finished' || (type === 'expired' && currentCall?.type === 'connected')
+          ? { 
               type: 'finished',
               duration: Math.floor((Date.now() - objectId.getTimestamp().getTime()) / 1000)
-            } 
-          },
+            }
+          : { type: 'expired', duration: 0 }
+
+        // Update call status
+        connection = await db.collection('calls').findOneAndUpdate(
+          { _id: objectId },
+          { $set: updateFields },
           { returnDocument: 'after' }
         )
       }
