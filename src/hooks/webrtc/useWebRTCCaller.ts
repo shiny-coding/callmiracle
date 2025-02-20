@@ -10,12 +10,14 @@ interface UseWebRTCCallerProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   connectWithUser: any
+  attemptReconnect: () => Promise<void>
 }
 
 export function useWebRTCCaller({
   localStream,
   remoteVideoRef,
-  connectWithUser
+  connectWithUser,
+  attemptReconnect
 }: UseWebRTCCallerProps) {
   const {
     createPeerConnection,
@@ -25,7 +27,8 @@ export function useWebRTCCaller({
     handleIceCandidate,
     createHangup,
     dispatchPendingIceCandidates,
-    applyLocalQuality
+    applyLocalQuality,
+    handleConnectionStateChange
   } = useWebRTCCommon(connectWithUser)
 
   const [active, setActive] = useState(false)
@@ -101,21 +104,18 @@ export function useWebRTCCaller({
         setCallId(newCallId)
       }
 
+      if ( peerConnection.current ) {
+        console.log('WebRTC: Closing existing peer connection')
+        peerConnection.current.close()
+        peerConnection.current = null
+      }
+
       const pc = createPeerConnection()
       peerConnection.current = pc
 
       // Set up event handlers
       pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'connected') {
-          setConnectionStatus('connected')
-        } else if (pc.connectionState === 'failed') {
-          pc.close()
-          peerConnection.current = null
-          console.log('WebRTC: onconnectionstatechange -> failed')
-          setConnectionStatus('failed')
-        }
-      }
+      pc.onconnectionstatechange = () => handleConnectionStateChange(pc, peerConnection, active, attemptReconnect)
 
       addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
       setupIceCandidateHandler(pc, user.userId)

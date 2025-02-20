@@ -10,12 +10,14 @@ interface UseWebRTCCalleeProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   connectWithUser: any
+  attemptReconnect: () => Promise<void>
 }
 
 export function useWebRTCCallee({
   localStream,
   remoteVideoRef,
-  connectWithUser
+  connectWithUser,
+  attemptReconnect
 }: UseWebRTCCalleeProps) {
   const {
     createPeerConnection,
@@ -25,6 +27,7 @@ export function useWebRTCCallee({
     handleIceCandidate,
     dispatchPendingIceCandidates,
     clearPendingCandidates,
+    handleConnectionStateChange,
     createHangup
   } = useWebRTCCommon(connectWithUser)
 
@@ -73,16 +76,7 @@ export function useWebRTCCallee({
 
       // Set up event handlers
       pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'connected') {
-          setConnectionStatus('connected')
-        } else if (pc.connectionState === 'failed') {
-          pc.close()
-          peerConnection.current = null
-          setConnectionStatus('failed')
-          setActive(false)
-        }
-      }
+      pc.onconnectionstatechange = () => handleConnectionStateChange(pc, peerConnection, active, attemptReconnect)
 
       addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, requestToAccept.quality)
 

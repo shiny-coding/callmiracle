@@ -64,11 +64,38 @@ export function WebRTCProvider({
     setCallId
   } = useStore()
 
+  const attemptReconnect = async () => {
+    if (!targetUser) {
+      throw new Error('target user set to null')
+    }
+    console.log('Attempting to reconnect to previous call:', { targetUser, callId, role })
+    try {
+      if (role === 'caller') {
+        await caller.doCall(targetUser, true)
+      } else {
+        await connectWithUser({
+          variables: {
+            input: {
+              type: 'need-reconnect',
+              targetUserId: targetUser.userId,
+              initiatorUserId: getUserId(),
+              callId
+            }
+          }
+        })
+      }
+    } catch (err) {
+      console.error('Failed to reconnect:', err)
+      clearCallState()
+    }
+  }
   const childProps = {
     localStream,
     remoteVideoRef,
-    connectWithUser
+    connectWithUser,
+    attemptReconnect
   }
+  
   const caller = useWebRTCCaller(childProps)
   const callee = useWebRTCCallee(childProps)
 
@@ -76,23 +103,6 @@ export function WebRTCProvider({
   useEffect(() => {
     if (connectionStatus !== 'need-reconnect' || !localStream) return;
     setConnectionStatus('reconnecting')
-    const attemptReconnect = async () => {
-      console.log('Attempting to reconnect to previous call:', {
-        targetUser,
-        callId,
-        role
-      })
-
-      try {
-        if (role === 'caller' && targetUser) {
-          await caller.doCall(targetUser, true)
-        }
-      } catch (err) {
-        console.error('Failed to reconnect:', err)
-        clearCallState()
-      }
-    }
-
     attemptReconnect()
   }, [connectionStatus, localStream])
 
@@ -131,11 +141,15 @@ export function WebRTCProvider({
           setConnectionStatus('receiving-call')
           callee.active = true
         }
-      }
-      // Handle finished status
-      else if (request.type === 'finished') {
+      } else if (request.type === 'need-reconnect') {
+        console.log('WebRTC: Received need-reconnect request, reconnecting')
+        setConnectionStatus('reconnecting')
+        await caller.doCall( request.from, true )
+      } else if (request.type === 'finished') {
+        console.log('WebRTC: Received finished request, cleaning up')
+        // Handle finished status
         if (caller.active) {
-          await caller.hangup()
+          await caller.cleanup()
         } else if (callee.active) {
           await callee.cleanup()
         }
@@ -174,7 +188,7 @@ export function WebRTCProvider({
         setRemoteAudioEnabled(request.audioEnabled)
         setRemoteName(request.from.name)
         callee.setIncomingRequest(request)
-        if ( connectionStatus === 'need-reconnect' || connectionStatus === 'connected' ) {
+        if ( connectionStatus === 'reconnecting' || connectionStatus === 'connected' ) {
           console.log('WebRTC: Reconnecting, automatically accepting call')
           callee.handleAcceptCall(request)
         }
@@ -276,6 +290,19 @@ export function WebRTCProvider({
     setRemoteName(null)
     clearCallState()
   }
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      caller.peerConnection?.current?.close()
+      callee.peerConnection?.current?.close()
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   const value: WebRTCContextType = {
     doCall: caller.doCall,

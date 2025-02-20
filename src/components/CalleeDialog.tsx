@@ -10,9 +10,10 @@ interface CalleeDialogProps {
 }
 
 export default function CalleeDialog({ calee }: CalleeDialogProps) {
-  const t = useTranslations('VideoChat')
-  const { connectionStatus } = useStore()
+  const t = useTranslations()
+  const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
+  const { connectionStatus } = useStore()
 
   const isReconnecting = connectionStatus === 'reconnecting' || connectionStatus === 'need-reconnect'
   const open = isReconnecting || !!calee.incomingRequest
@@ -42,12 +43,12 @@ export default function CalleeDialog({ calee }: CalleeDialogProps) {
       <DialogActions className="border-t border-gray-800">
         {!isReconnecting && (
         <Button onClick={onReject} variant="contained" color="error">
-          {t('reject')}
+          {tVideoChat('reject')}
           </Button>
         )}
         {!isReconnecting && !isConnecting && (
-          <Button onClick={() => onAccept(false)} variant="contained" color="success">
-            {t('accept')}
+          <Button onClick={() => onAccept(null)} variant="contained" color="success">
+            {tVideoChat('accept')}
           </Button>
         )}
         {isReconnecting && (

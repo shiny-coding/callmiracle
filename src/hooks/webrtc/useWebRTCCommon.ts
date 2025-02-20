@@ -67,6 +67,24 @@ export interface IncomingRequest {
 export function useWebRTCCommon(connectWithUser: any) {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
   const { setConnectionStatus } = useStore()
+
+  const handleConnectionStateChange = (pc: RTCPeerConnection, peerConnection: React.MutableRefObject<RTCPeerConnection | null>, active: boolean, attemptReconnect: () => Promise<void>) => {
+    if (pc.connectionState === 'connected') {
+      setConnectionStatus('connected')
+    } else if (pc.connectionState === 'failed') {
+      pc.close()
+      peerConnection.current = null
+
+      console.log('WebRTC: onconnectionstatechange gone failed')
+      if ( active ) {
+        setConnectionStatus('reconnecting')
+        attemptReconnect()
+      } else {
+        setConnectionStatus('failed')
+      }
+    }
+  }
+
   const applyLocalQuality = async (peerConnection: RTCPeerConnection, quality: VideoQuality) => {
     try {
       const transceiver = peerConnection.getTransceivers().find(t => t.receiver.track?.kind === 'video')
@@ -176,7 +194,10 @@ export function useWebRTCCommon(connectWithUser: any) {
   }
 
   const handleTrack = (event: RTCTrackEvent, peerConnection: RTCPeerConnection, remoteVideoRef: React.RefObject<HTMLVideoElement>, remoteStreamRef: React.MutableRefObject<MediaStream | null>) => {
-    if (!peerConnection) return
+    if (!peerConnection) {
+      console.log('WebRTC: OnTrack, but no peer connection found')
+      return
+    }
     
     console.log('WebRTC: OnTrack', event)
     if (!event.streams[0]?.id.includes(getUserId())) {
@@ -184,17 +205,15 @@ export function useWebRTCCommon(connectWithUser: any) {
       if (remoteStream && remoteVideoRef?.current) {
         if (!remoteStreamRef.current) {
           remoteStreamRef.current = remoteStream
-          remoteVideoRef.current.srcObject = remoteStream
-          console.log('Received first remote track: ' + event.track.kind)
-          // Apply saved remote quality preference if it exists
-          if (event.track.kind === 'video') {
-            const qualityRemoteWantsFromUs = useStore.getState().qualityRemoteWantsFromUs
-            applyLocalQuality(peerConnection, qualityRemoteWantsFromUs).catch(err => 
-              console.error('Failed to apply initial remote quality settings:', err)
-            )
-          }
-        } else {
-          console.log('Added remote track: ' + event.track.kind)
+        }
+        remoteVideoRef.current.srcObject = remoteStream
+        console.log('Received first remote track: ' + event.track.kind)
+        // Apply saved remote quality preference if it exists
+        if (event.track.kind === 'video') {
+          const qualityRemoteWantsFromUs = useStore.getState().qualityRemoteWantsFromUs
+          applyLocalQuality(peerConnection, qualityRemoteWantsFromUs).catch(err => 
+            console.error('Failed to apply initial remote quality settings:', err)
+          )
         }
       }
     } else {
@@ -352,6 +371,7 @@ export function useWebRTCCommon(connectWithUser: any) {
     clearPendingCandidates,
     sendWantedMediaStateImpl,
     createHangup,
-    applyLocalQuality
+    applyLocalQuality,
+    handleConnectionStateChange
   }
 } 
