@@ -149,7 +149,6 @@ export function useWebRTCCallee({
     remoteStreamRef.current = null
     setIncomingRequest(null)
     setActive(false)
-    setTargetUser(null)
     setCallId(null)
   }
 

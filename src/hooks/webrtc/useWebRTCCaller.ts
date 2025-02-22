@@ -33,7 +33,6 @@ export function useWebRTCCaller({
 
   const [active, setActive] = useState(false)
   const {
-    callId,
     setCallId,
     setConnectionStatus,
     targetUser,
@@ -153,7 +152,6 @@ export function useWebRTCCaller({
     }
     remoteStreamRef.current = null
     setActive(false)
-    setTargetUser(null)
     setCallId(null)
   }
 

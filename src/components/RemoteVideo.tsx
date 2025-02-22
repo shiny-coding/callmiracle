@@ -20,12 +20,11 @@ export default function RemoteVideo() {
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isFitMode, setIsFitMode] = useState(true);
   const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
-  const { qualityWeWantFromRemote } = useStore()
+  const { qualityWeWantFromRemote, targetUser } = useStore()
   const {
     connectionStatus,
     remoteVideoEnabled,
     remoteAudioEnabled,
-    remoteName,
     remoteVideoRef,
   } = useWebRTCContext();
 
@@ -110,7 +109,7 @@ export default function RemoteVideo() {
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="text-white text-sm">
-                    {remoteName}
+                    {targetUser?.name}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center">

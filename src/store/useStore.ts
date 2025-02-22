@@ -67,7 +67,10 @@ const useStore = create<AppState>()(
         set({ languages: typeof languages === 'function' ? languages(get().languages) : languages }),
       setStatuses: (statuses) => set({ statuses }),
       setHasImage: (hasImage) => set({ hasImage }),
-      setCallId: (callId) => set({ callId }),
+      setCallId: (callId) => {
+        set({ callId })
+        console.log('setCallId', callId)
+      },
       setConnectionStatus: (connectionStatus) => {
         set({ connectionStatus })
         // Update lastConnectedTime when status changes to connected
@@ -75,12 +78,13 @@ const useStore = create<AppState>()(
           set({ lastConnectedTime: Date.now() })
         }
       },
-      setTargetUser: (targetUser) => set({ targetUser }),
+      setTargetUser: (targetUser) => {
+        set({ targetUser })
+      },
       setRole: (role) => set({ role }),
       setLastConnectedTime: (time) => set({ lastConnectedTime: time }),
       clearCallState: () => set({ 
         callId: null, 
-        targetUser: null,
         role: null,
         lastConnectedTime: null,
       }),

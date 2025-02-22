@@ -19,7 +19,6 @@ interface WebRTCContextType {
   hangup: () => Promise<void>
   remoteVideoEnabled: boolean
   remoteAudioEnabled: boolean
-  remoteName: string | null
   localStream: MediaStream | undefined
   setLocalStream: (stream: MediaStream | undefined) => void
   remoteVideoRef: React.RefObject<HTMLVideoElement>
@@ -48,7 +47,6 @@ export function WebRTCProvider({
 }: WebRTCProviderProps) {
   const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(false)
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
-  const [remoteName, setRemoteName] = useState<string | null>(null)
   const [localStream, setLocalStream] = useState<MediaStream>()
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
   const [connectWithUser] = useMutation(CONNECT_WITH_USER)
@@ -124,16 +122,18 @@ export function WebRTCProvider({
         if (callId) {
           // Already in a call, send busy response
           console.log('WebRTC: Already in call, sending busy signal')
-          await connectWithUser({
-            variables: {
-              input: {
+          setTimeout(async () => {
+            await connectWithUser({
+              variables: {
+                input: {
                 type: 'busy',
                 targetUserId: request.from.userId,
                 initiatorUserId: getUserId(),
                 callId: request.callId
               }
-            }
-          })
+              }
+            })
+          }, 1000) // we're not immediately sending the busy, so that the callee has time to receive the callId (sic!)
         } else {
           // Set up for receiving call
           console.log('WebRTC: Received initiate request')
@@ -158,7 +158,6 @@ export function WebRTCProvider({
         setConnectionStatus('finished')
         setRemoteVideoEnabled(false)
         setRemoteAudioEnabled(false)
-        setRemoteName(null)
         clearCallState()
       }
       // Handle answer for initiator
@@ -180,7 +179,6 @@ export function WebRTCProvider({
           const answer = JSON.parse(request.answer)
           setRemoteVideoEnabled(request.videoEnabled)
           setRemoteAudioEnabled(request.audioEnabled)
-          setRemoteName(request.from.name)
           await caller.handleAnswer(caller.peerConnection.current, request.quality, answer)
         }
       }
@@ -188,7 +186,6 @@ export function WebRTCProvider({
       else if (request.type === 'offer') {
         setRemoteVideoEnabled(request.videoEnabled)
         setRemoteAudioEnabled(request.audioEnabled)
-        setRemoteName(request.from.name)
         callee.setIncomingRequest(request)
         if ( connectionStatus === 'reconnecting' || connectionStatus === 'connected' ) {
           console.log('WebRTC: Reconnecting, automatically accepting call')
@@ -223,7 +220,6 @@ export function WebRTCProvider({
         setConnectionStatus('timeout')
         setRemoteVideoEnabled(false)
         setRemoteAudioEnabled(false)
-        setRemoteName(null)
         clearCallState()
       } 
       else if (request.type === 'busy') { // Handle busy signal
@@ -234,7 +230,6 @@ export function WebRTCProvider({
           setConnectionStatus('busy')
           setRemoteVideoEnabled(false)
           setRemoteAudioEnabled(false)
-          setRemoteName(null)
           clearCallState()
         }
       }
@@ -289,7 +284,6 @@ export function WebRTCProvider({
     setConnectionStatus('finished')
     setRemoteVideoEnabled(false)
     setRemoteAudioEnabled(false)
-    setRemoteName(null)
     clearCallState()
   }
 
@@ -315,7 +309,6 @@ export function WebRTCProvider({
     hangup,
     remoteVideoEnabled,
     remoteAudioEnabled,
-    remoteName,
     localStream,
     setLocalStream,
     remoteVideoRef,

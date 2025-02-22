@@ -57,7 +57,7 @@ interface Context {
 export const resolvers = {
   Query: {
     users: async (_: any, __: any, { db }: Context) => {
-      const users = await db.collection('users').find().toArray()
+      const users = await db.collection('users').find().sort({ timestamp: -1 }).toArray()
       const transformedUsers = users.map(transformUser).filter((user): user is User => user !== null)
       return transformedUsers
     },
