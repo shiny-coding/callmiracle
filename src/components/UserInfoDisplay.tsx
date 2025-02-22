@@ -82,9 +82,6 @@ export default function UserInfoDisplay({
 
       {showDetails && user.languages.length > 0 && (
         <div className="mb-4">
-          <Typography variant="subtitle2" className="mb-2 text-gray-400">
-            {t('languages')}
-          </Typography>
           <div className="flex flex-wrap gap-1">
             {user.languages.map(lang => {
               const language = LANGUAGES.find(l => l.code === lang)
@@ -103,9 +100,6 @@ export default function UserInfoDisplay({
 
       {showDetails && user.statuses.length > 0 && (
         <div>
-          <Typography variant="subtitle2" className="mb-2 text-gray-400">
-            {t('status')}
-          </Typography>
           <div className="flex flex-wrap gap-1">
             {user.statuses.map(status => (
               <Chip

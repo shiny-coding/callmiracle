@@ -8,7 +8,9 @@
     "name": "Name",
     "uploadPhoto": "Upload Photo",
     "uploading": "Uploading...",
-    "photo": "Profile photo"
+    "photo": "Profile photo",
+    "takePhoto": "Take Photo",
+    "cancel": "Cancel"
   },
   "Status": {
     "MEET_NEW_PEOPLE": "Meet New People",
