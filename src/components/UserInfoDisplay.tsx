@@ -34,7 +34,7 @@ export default function UserInfoDisplay({
     <>
       <div className="flex items-center gap-4 mb-4">
         <div className="relative w-16 h-16">
-          <div className="rounded-full pl-1 pt-1 overflow-hidden bg-gray-800 w-full h-full">
+          <div className="rounded-full overflow-hidden bg-gray-800 w-full h-full">
             {user.hasImage ? (
               <div className="absolute inset-0 rounded-full overflow-hidden">
                 <Image
@@ -80,7 +80,7 @@ export default function UserInfoDisplay({
         </div>
       </div>
 
-      {user.languages.length > 0 && (
+      {showDetails && user.languages.length > 0 && (
         <div className="mb-4">
           <Typography variant="subtitle2" className="mb-2 text-gray-400">
             {t('languages')}

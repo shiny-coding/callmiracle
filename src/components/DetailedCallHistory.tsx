@@ -3,6 +3,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, List, ListIt
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import { getUserId } from '@/lib/userId'
+import { formatDuration } from '@/utils/formatDuration'
 
 const DETAILED_CALL_HISTORY = gql`
   query DetailedCallHistory($userId: ID!, $targetUserId: ID!) {
@@ -31,15 +32,6 @@ export default function DetailedCallHistory({ user, open, onClose }: DetailedCal
     },
     skip: !open
   })
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`
-    }
-    return `${minutes}m`
-  }
 
   const formatDate = (id: string) => {
     // MongoDB ObjectId contains a timestamp in the first 4 bytes

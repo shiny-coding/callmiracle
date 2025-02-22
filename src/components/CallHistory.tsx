@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import UserInfoDisplay from './UserInfoDisplay'
 import { getUserId } from '@/lib/userId'
+import { formatDuration } from '@/utils/formatDuration'
 
 const CALL_HISTORY = gql`
   query CallHistory($userId: ID!) {
@@ -41,15 +42,6 @@ export default function CallHistory() {
   if (loading) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading call history</Typography>
 
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`
-    }
-    return `${minutes}m`
-  }
-
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp)
     return date.toLocaleDateString(undefined, { 
@@ -81,7 +73,7 @@ export default function CallHistory() {
                   />
                 </div>
               </div>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 <Chip
                   label={`${entry.totalCalls} calls`}
                   size="small"
