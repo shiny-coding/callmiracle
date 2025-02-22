@@ -6,6 +6,8 @@
   "Profile": {
     "title": "Profile Settings",
     "name": "Name",
+    "about": "About Me",
+    "contacts": "Contacts",
     "uploadPhoto": "Upload Photo",
     "uploading": "Uploading...",
     "photo": "Profile photo",

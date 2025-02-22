@@ -19,13 +19,12 @@ import { getUserId } from '@/lib/userId'
 export default function LocalVideo() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
-  const [isOnline, setIsOnline] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
   const t = useTranslations()
   const tStatus = useTranslations('Status')
-  const { name, languages, statuses } = useStore()
+  const { name, languages, statuses, online, setOnline } = useStore()
   const { 
     localStream, 
     setLocalStream, 
@@ -35,10 +34,9 @@ export default function LocalVideo() {
   const { updateUserData } = useUpdateUser()
 
   const handleOnlineToggle = async () => {
-    const newOnlineState = !isOnline
+    setOnline(!online)
     try {
-      await updateUserData(newOnlineState)
-      setIsOnline(newOnlineState)
+      await updateUserData()
     } catch (error) {
       console.error('Failed to update online status:', error)
     }
@@ -161,12 +159,12 @@ export default function LocalVideo() {
       {connectionStatus !== 'connected' && (
         <div className="mt-4 flex justify-center">
           <Button
-            variant={isOnline ? "contained" : "outlined"}
-            color={isOnline ? "primary" : "inherit"}
+            variant={online ? "contained" : "outlined"}
+            color={online ? "primary" : "inherit"}
             onClick={handleOnlineToggle}
             className="w-full max-w-[200px]"
           >
-            {isOnline ? t('online') : t('offline')}
+            {online ? t('online') : t('offline')}
           </Button>
         </div>
       )}

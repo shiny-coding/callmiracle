@@ -23,6 +23,14 @@ export type Call = {
   type: Scalars['String']['output'];
 };
 
+export type CallHistoryEntry = {
+  __typename?: 'CallHistoryEntry';
+  duration: Scalars['Int']['output'];
+  lastCallAt: Scalars['Float']['output'];
+  totalCalls: Scalars['Int']['output'];
+  user: User;
+};
+
 export type ConnectionParams = {
   __typename?: 'ConnectionParams';
   answer?: Maybe<Scalars['String']['output']>;
@@ -81,9 +89,22 @@ export type MutationUpdateUserArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  callHistory: Array<CallHistoryEntry>;
   calls: Array<Call>;
+  detailedCallHistory: Array<Call>;
   getOrCreateUser: User;
   users: Array<User>;
+};
+
+
+export type QueryCallHistoryArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryDetailedCallHistoryArgs = {
+  targetUserId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -114,6 +135,8 @@ export type SubscriptionOnConnectionRequestArgs = {
 };
 
 export type UpdateUserInput = {
+  about: Scalars['String']['input'];
+  contacts: Scalars['String']['input'];
   languages: Array<Scalars['String']['input']>;
   locale: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -124,6 +147,8 @@ export type UpdateUserInput = {
 
 export type User = {
   __typename?: 'User';
+  about: Scalars['String']['output'];
+  contacts: Scalars['String']['output'];
   hasImage: Scalars['Boolean']['output'];
   languages: Array<Scalars['String']['output']>;
   locale: Scalars['String']['output'];

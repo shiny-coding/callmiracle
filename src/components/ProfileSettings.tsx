@@ -19,9 +19,18 @@ interface ProfileSettingsProps {
 
 export default function ProfileSettings({ open, onClose }: ProfileSettingsProps) {
   const t = useTranslations('Profile')
-  const { name, setName, languages, setLanguages, hasImage, setHasImage, localVideoEnabled } = useStore()
+  const { 
+    name, setName, 
+    languages, setLanguages, 
+    hasImage, setHasImage, 
+    localVideoEnabled, 
+    about, setAbout,
+    contacts, setContacts 
+  } = useStore()
   const [tempName, setTempName] = useState(name)
   const [tempLanguages, setTempLanguages] = useState(languages)
+  const [tempAbout, setTempAbout] = useState(about)
+  const [tempContacts, setTempContacts] = useState(contacts)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [timestamp, setTimestamp] = useState(Date.now())
@@ -35,13 +44,15 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
     if (open) {
       setTempName(name)
       setTempLanguages(languages)
+      setTempAbout(about)
+      setTempContacts(contacts)
       setSelectedFile(null)
       setTimestamp(Date.now())
     }
     return () => {
       setShowCameraPreview(false)
     }
-  }, [open, name, languages])
+  }, [open, name, languages, about, contacts])
 
   const onCameraDialogReady = () => {
     if (videoRef.current && localStream) {
@@ -54,6 +65,8 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
   const handleCancel = () => {
     setTempName(name)
     setTempLanguages(languages)
+    setTempAbout(about)
+    setTempContacts(contacts)
     setSelectedFile(null)
     onClose()
   }
@@ -75,6 +88,8 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
 
       setName(tempName)
       setLanguages(tempLanguages)
+      setAbout(tempAbout)
+      setContacts(tempContacts)
       await updateUserData()
       onClose()
     } catch (error) {
@@ -189,6 +204,26 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
           value={tempName}
           onChange={(e) => setTempName(e.target.value)}
         />
+        <TextField
+          label={t('about')}
+          fullWidth
+          multiline
+          minRows={2}
+          maxRows={Math.floor(window.innerHeight * 0.5 / 24)}
+          value={tempAbout}
+          onChange={(e) => setTempAbout(e.target.value)}
+          className="resize-none"
+        />
+        <TextField
+          label={t('contacts')}
+          fullWidth
+          multiline
+          minRows={2}
+          maxRows={Math.floor(window.innerHeight * 0.5 / 24)}
+          value={tempContacts}
+          onChange={(e) => setTempContacts(e.target.value)}
+          className="resize-none"
+        />
         <LanguageSelector value={tempLanguages} onChange={setTempLanguages} />
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
@@ -196,9 +231,13 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
         <Button 
           onClick={handleApply}
           variant="contained" 
-          disabled={tempName === name && 
+          disabled={
+            tempName === name && 
             JSON.stringify(tempLanguages) === JSON.stringify(languages) && 
-            !selectedFile}
+            tempAbout === about &&
+            tempContacts === contacts &&
+            !selectedFile
+          }
         >
           Apply
         </Button>

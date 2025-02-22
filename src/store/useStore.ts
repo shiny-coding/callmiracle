@@ -9,6 +9,9 @@ interface AppState {
   languages: string[]
   statuses: Status[]
   hasImage: boolean
+  about: string
+  contacts: string
+  online: boolean
   // Call state
   callId: string | null
   connectionStatus: ConnectionStatus
@@ -24,6 +27,9 @@ interface AppState {
   setLanguages: (languages: string[] | ((prev: string[]) => string[])) => void
   setStatuses: (statuses: Status[]) => void
   setHasImage: (hasImage: boolean) => void
+  setAbout: (about: string) => void
+  setContacts: (contacts: string) => void
+  setOnline: (online: boolean) => void
   // Call state setters
   setCallId: (callId: string | null) => void
   setConnectionStatus: (status: AppState['connectionStatus']) => void
@@ -51,6 +57,9 @@ const useStore = create<AppState>()(
       languages: [],
       statuses: [],
       hasImage: false,
+      about: '',
+      contacts: '',
+      online: false,
       // Call state (persisted)
       callId: null,
       connectionStatus: 'disconnected',
@@ -67,6 +76,9 @@ const useStore = create<AppState>()(
         set({ languages: typeof languages === 'function' ? languages(get().languages) : languages }),
       setStatuses: (statuses) => set({ statuses }),
       setHasImage: (hasImage) => set({ hasImage }),
+      setAbout: (about) => set({ about }),
+      setContacts: (contacts) => set({ contacts }),
+      setOnline: (online) => set({ online }),
       setCallId: (callId) => {
         set({ callId })
         console.log('setCallId', callId)

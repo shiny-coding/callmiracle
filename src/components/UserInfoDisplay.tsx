@@ -8,7 +8,7 @@ import HistoryIcon from '@mui/icons-material/History'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useDetailedCallHistory } from '@/store/DetailedCallHistoryProvider'
 import { useState } from 'react'
-import UserImagePopup from './UserImagePopup'
+import UserDetailsPopup from './UserDetailsPopup'
 
 interface UserInfoDisplayProps {
   user: User
@@ -27,7 +27,7 @@ export default function UserInfoDisplay({
   const tStatus = useTranslations('Status')
   const { doCall } = useWebRTCContext()
   const { setSelectedUser } = useDetailedCallHistory()
-  const [imagePopupOpen, setImagePopupOpen] = useState(false)
+  const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
 
   const handleCall = async () => {
     await doCall(user)
@@ -35,15 +35,16 @@ export default function UserInfoDisplay({
 
   return (
     <>
-      <div className="flex items-center gap-4 mb-4">
+      <div 
+        className="flex items-center gap-4 mb-4 cursor-pointer"
+        onClick={() => setDetailsPopupOpen(true)}
+      >
         <div className="relative">
           <Avatar
             src={user.hasImage ? `/profiles/${user.userId}.jpg` : undefined}
             className={`
               w-12 h-12
-              ${user.hasImage ? 'cursor-pointer' : ''}
             `}
-            onClick={() => user.hasImage && setImagePopupOpen(true)}
           >
             {!user.hasImage && user.name?.[0]?.toUpperCase()}
           </Avatar>
@@ -59,7 +60,10 @@ export default function UserInfoDisplay({
         <div className="flex gap-2">
           {showHistoryButton && (
             <IconButton
-              onClick={() => setSelectedUser(user)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedUser(user)
+              }}
               className="text-white hover:bg-gray-600"
             >
               <HistoryIcon />
@@ -67,7 +71,10 @@ export default function UserInfoDisplay({
           )}
           {showCallButton && (
             <IconButton 
-              onClick={handleCall}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleCall()
+              }}
               className="bg-green-600 hover:bg-green-700"
             >
               <CallIcon className="text-white" />
@@ -109,10 +116,10 @@ export default function UserInfoDisplay({
         </div>
       )}
 
-      <UserImagePopup
-        userId={user.userId}
-        open={imagePopupOpen}
-        onClose={() => setImagePopupOpen(false)}
+      <UserDetailsPopup
+        user={user}
+        open={detailsPopupOpen}
+        onClose={() => setDetailsPopupOpen(false)}
       />
     </>
   )

@@ -16,6 +16,8 @@ const GET_USERS = gql`
       locale
       online
       hasImage
+      about
+      contacts
     }
   }
 `
@@ -31,6 +33,8 @@ const USERS_SUBSCRIPTION = gql`
       locale
       online
       hasImage
+      about
+      contacts
     }
   }
 `

@@ -17,6 +17,8 @@ type User {
   locale: String!
   online: Boolean!
   hasImage: Boolean!
+  about: String!
+  contacts: String!
 }
 
 type ConnectionParams {
@@ -59,6 +61,8 @@ input UpdateUserInput {
   languages: [String!]!
   locale: String!
   online: Boolean!
+  about: String!
+  contacts: String!
 }
 
 input ConnectionParamsInput {
