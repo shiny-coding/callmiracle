@@ -1,4 +1,4 @@
-import { Typography, Chip, IconButton } from '@mui/material'
+import { Typography, Chip, IconButton, Avatar } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import { LANGUAGES } from '@/config/languages'
@@ -7,6 +7,8 @@ import CallIcon from '@mui/icons-material/Call'
 import HistoryIcon from '@mui/icons-material/History'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useDetailedCallHistory } from '@/store/DetailedCallHistoryProvider'
+import { useState } from 'react'
+import UserImagePopup from './UserImagePopup'
 
 interface UserInfoDisplayProps {
   user: User
@@ -25,6 +27,7 @@ export default function UserInfoDisplay({
   const tStatus = useTranslations('Status')
   const { doCall } = useWebRTCContext()
   const { setSelectedUser } = useDetailedCallHistory()
+  const [imagePopupOpen, setImagePopupOpen] = useState(false)
 
   const handleCall = async () => {
     await doCall(user)
@@ -33,27 +36,20 @@ export default function UserInfoDisplay({
   return (
     <>
       <div className="flex items-center gap-4 mb-4">
-        <div className="relative w-16 h-16">
-          <div className="rounded-full overflow-hidden bg-gray-800 w-full h-full">
-            {user.hasImage ? (
-              <div className="absolute inset-0 rounded-full overflow-hidden">
-                <Image
-                  src={`/profiles/${user.userId}.jpg?t=${user.timestamp}`}
-                  alt={user.name}
-                  fill
-                  unoptimized
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-2xl text-white">
-                {user.name[0]?.toUpperCase()}
-              </div>
-            )}
-          </div>
-          <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-            user.online ? 'bg-green-500' : 'bg-red-500'
-          }`} />
+        <div className="relative">
+          <Avatar
+            src={user.hasImage ? `/profiles/${user.userId}.jpg` : undefined}
+            className={`
+              w-12 h-12
+              ${user.hasImage ? 'cursor-pointer' : ''}
+            `}
+            onClick={() => user.hasImage && setImagePopupOpen(true)}
+          >
+            {!user.hasImage && user.name?.[0]?.toUpperCase()}
+          </Avatar>
+          {user.online && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+          )}
         </div>
         <div className="flex-grow">
           <Typography variant="h6" className="text-white">
@@ -112,6 +108,12 @@ export default function UserInfoDisplay({
           </div>
         </div>
       )}
+
+      <UserImagePopup
+        userId={user.userId}
+        open={imagePopupOpen}
+        onClose={() => setImagePopupOpen(false)}
+      />
     </>
   )
 } 
