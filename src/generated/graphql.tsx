@@ -136,11 +136,13 @@ export type SubscriptionOnConnectionRequestArgs = {
 
 export type UpdateUserInput = {
   about: Scalars['String']['input'];
+  birthYear?: InputMaybe<Scalars['Int']['input']>;
   contacts: Scalars['String']['input'];
   languages: Array<Scalars['String']['input']>;
   locale: Scalars['String']['input'];
   name: Scalars['String']['input'];
   online: Scalars['Boolean']['input'];
+  sex?: InputMaybe<Scalars['String']['input']>;
   statuses: Array<Status>;
   userId: Scalars['ID']['input'];
 };
@@ -148,12 +150,14 @@ export type UpdateUserInput = {
 export type User = {
   __typename?: 'User';
   about: Scalars['String']['output'];
+  birthYear?: Maybe<Scalars['Int']['output']>;
   contacts: Scalars['String']['output'];
   hasImage: Scalars['Boolean']['output'];
   languages: Array<Scalars['String']['output']>;
   locale: Scalars['String']['output'];
   name: Scalars['String']['output'];
   online: Scalars['Boolean']['output'];
+  sex?: Maybe<Scalars['String']['output']>;
   statuses: Array<Status>;
   timestamp: Scalars['Float']['output'];
   userId: Scalars['ID']['output'];

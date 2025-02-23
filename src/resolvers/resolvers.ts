@@ -25,7 +25,9 @@ const transformUser = (user: any): User | null => {
     online: user.online || false,
     hasImage: checkUserImage(user.userId),
     about: user.about || '',
-    contacts: user.contacts || ''
+    contacts: user.contacts || '',
+    sex: user.sex || null,
+    birthYear: user.birthYear || null
   }
 }
 
@@ -163,7 +165,7 @@ export const resolvers = {
   },
   Mutation: {
     updateUser: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { userId, name, statuses, locale, languages, online, about, contacts } = input
+      const { userId, name, statuses, locale, languages, online, about, contacts, sex, birthYear } = input
       const timestamp = Date.now()
 
       const result = await db.collection('users').findOneAndUpdate(
@@ -177,7 +179,9 @@ export const resolvers = {
             languages,
             online,
             about,
-            contacts
+            contacts,
+            sex,
+            birthYear
           } 
         },
         { 

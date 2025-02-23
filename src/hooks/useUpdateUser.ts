@@ -15,6 +15,8 @@ const UPDATE_USER = gql`
       hasImage
       about
       contacts
+      sex
+      birthYear
     }
   }
 `
@@ -26,25 +28,22 @@ export const useUpdateUser = () => {
     const userId = getUserId()
     if (!userId) return
     const { 
-      name, 
-      languages, 
-      statuses, 
-      online,
-      about,
-      contacts 
+      user
     } = useStore.getState()
   
     await updateUser({
       variables: {
         input: {
           userId,
-          name,
-          languages,
-          statuses,
+          name: user?.name,
+          languages: user?.languages,
+          statuses: user?.statuses,
           locale: 'en',
-          online,
-          about,
-          contacts
+          online: user?.online,
+          about: user?.about,
+          contacts: user?.contacts,
+          sex: user?.sex,
+          birthYear: user?.birthYear
         }
       }
     })

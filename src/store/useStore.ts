@@ -5,13 +5,7 @@ import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 
 interface AppState {
-  name: string
-  languages: string[]
-  statuses: Status[]
-  hasImage: boolean
-  about: string
-  contacts: string
-  online: boolean
+  user: User | null
   // Call state
   callId: string | null
   connectionStatus: ConnectionStatus
@@ -23,13 +17,7 @@ interface AppState {
   localVideoEnabled: boolean
   qualityWeWantFromRemote: VideoQuality
   qualityRemoteWantsFromUs: VideoQuality
-  setName: (name: string) => void
-  setLanguages: (languages: string[] | ((prev: string[]) => string[])) => void
-  setStatuses: (statuses: Status[]) => void
-  setHasImage: (hasImage: boolean) => void
-  setAbout: (about: string) => void
-  setContacts: (contacts: string) => void
-  setOnline: (online: boolean) => void
+  setUser: (user: User | null) => void
   // Call state setters
   setCallId: (callId: string | null) => void
   setConnectionStatus: (status: AppState['connectionStatus']) => void
@@ -53,13 +41,7 @@ const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       // Non-persisted state (initialized from server)
-      name: '',
-      languages: [],
-      statuses: [],
-      hasImage: false,
-      about: '',
-      contacts: '',
-      online: false,
+      user: null,
       // Call state (persisted)
       callId: null,
       connectionStatus: 'disconnected',
@@ -71,18 +53,8 @@ const useStore = create<AppState>()(
       localVideoEnabled: true,
       qualityWeWantFromRemote: '720p',
       qualityRemoteWantsFromUs: '720p',
-      setName: (name) => set({ name }),
-      setLanguages: (languages) => 
-        set({ languages: typeof languages === 'function' ? languages(get().languages) : languages }),
-      setStatuses: (statuses) => set({ statuses }),
-      setHasImage: (hasImage) => set({ hasImage }),
-      setAbout: (about) => set({ about }),
-      setContacts: (contacts) => set({ contacts }),
-      setOnline: (online) => set({ online }),
-      setCallId: (callId) => {
-        set({ callId })
-        console.log('setCallId', callId)
-      },
+      setUser: (user) => set({ user }),
+      setCallId: (callId) => { set({ callId }) },
       setConnectionStatus: (connectionStatus) => {
         set({ connectionStatus })
         // Update lastConnectedTime when status changes to connected
@@ -90,9 +62,7 @@ const useStore = create<AppState>()(
           set({ lastConnectedTime: Date.now() })
         }
       },
-      setTargetUser: (targetUser) => {
-        set({ targetUser })
-      },
+      setTargetUser: (targetUser) => { set({ targetUser }) },
       setRole: (role) => set({ role }),
       setLastConnectedTime: (time) => set({ lastConnectedTime: time }),
       clearCallState: () => set({ 

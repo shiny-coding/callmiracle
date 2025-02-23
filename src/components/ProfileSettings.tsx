@@ -1,4 +1,4 @@
-import { Dialog, DialogTitle, DialogContent, TextField, IconButton, DialogActions, Button } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, TextField, IconButton, DialogActions, Button, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Select, MenuItem } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { useTranslations } from 'next-intl'
 import { useCallback, useState, useEffect, useRef } from 'react'
@@ -19,18 +19,14 @@ interface ProfileSettingsProps {
 
 export default function ProfileSettings({ open, onClose }: ProfileSettingsProps) {
   const t = useTranslations('Profile')
-  const { 
-    name, setName, 
-    languages, setLanguages, 
-    hasImage, setHasImage, 
-    localVideoEnabled, 
-    about, setAbout,
-    contacts, setContacts 
-  } = useStore()
+  const { user, setUser } = useStore()
+  const { name = '', languages = [], hasImage = false, about = '', contacts = '', sex = null, birthYear = null } = user || {}
   const [tempName, setTempName] = useState(name)
   const [tempLanguages, setTempLanguages] = useState(languages)
   const [tempAbout, setTempAbout] = useState(about)
   const [tempContacts, setTempContacts] = useState(contacts)
+  const [tempSex, setTempSex] = useState<string | null>(sex)
+  const [tempBirthYear, setTempBirthYear] = useState<number | null>(birthYear)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [timestamp, setTimestamp] = useState(Date.now())
@@ -46,13 +42,15 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
       setTempLanguages(languages)
       setTempAbout(about)
       setTempContacts(contacts)
+      setTempSex(sex)
+      setTempBirthYear(birthYear)
       setSelectedFile(null)
       setTimestamp(Date.now())
     }
     return () => {
       setShowCameraPreview(false)
     }
-  }, [open, name, languages, about, contacts])
+  }, [open, name, languages, about, contacts, sex, birthYear])
 
   const onCameraDialogReady = () => {
     if (videoRef.current && localStream) {
@@ -67,6 +65,8 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
     setTempLanguages(languages)
     setTempAbout(about)
     setTempContacts(contacts)
+    setTempSex(sex)
+    setTempBirthYear(birthYear)
     setSelectedFile(null)
     onClose()
   }
@@ -83,13 +83,18 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
           method: 'POST',
           body: formData
         })
-        setHasImage(true)
+        setUser({ ...user!, hasImage: true })
       }
 
-      setName(tempName)
-      setLanguages(tempLanguages)
-      setAbout(tempAbout)
-      setContacts(tempContacts)
+      setUser({
+        ...user!,
+        name: tempName,
+        languages: tempLanguages,
+        about: tempAbout,
+        contacts: tempContacts,
+        sex: tempSex,
+        birthYear: tempBirthYear
+      })
       await updateUserData()
       onClose()
     } catch (error) {
@@ -132,6 +137,9 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
       }
     }, 'image/jpeg')
   }
+
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 80 }, (_, i) => currentYear - i - 10)
 
   return (
     <Dialog 
@@ -225,6 +233,39 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
           className="resize-none"
         />
         <LanguageSelector value={tempLanguages} onChange={setTempLanguages} />
+        <FormControl>
+          <FormLabel id="sex-radio-group">{t('sex')}</FormLabel>
+          <RadioGroup
+            row
+            value={tempSex || ''}
+            onChange={(e) => setTempSex(e.target.value)}
+          >
+            <FormControlLabel 
+              value="female" 
+              control={<Radio />} 
+              label={t('female')} 
+            />
+            <FormControlLabel 
+              value="male" 
+              control={<Radio />} 
+              label={t('male')} 
+            />
+          </RadioGroup>
+        </FormControl>
+
+        <FormControl fullWidth>
+          <FormLabel id="birth-year-select">{t('birthYear')}</FormLabel>
+          <Select
+            value={tempBirthYear || ''}
+            onChange={(e) => setTempBirthYear(Number(e.target.value) || null)}
+            displayEmpty
+          >
+            <MenuItem value="">{t('selectYear')}</MenuItem>
+            {years.map(year => (
+              <MenuItem key={year} value={year}>{year}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
         <Button onClick={handleCancel}>Cancel</Button>
@@ -236,6 +277,8 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
             JSON.stringify(tempLanguages) === JSON.stringify(languages) && 
             tempAbout === about &&
             tempContacts === contacts &&
+            tempSex === sex &&
+            tempBirthYear === birthYear &&
             !selectedFile
           }
         >

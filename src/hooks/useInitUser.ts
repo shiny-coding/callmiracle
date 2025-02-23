@@ -15,13 +15,17 @@ export const GET_OR_CREATE_USER = gql`
       locale
       online
       hasImage
+      about
+      contacts
+      sex
+      birthYear
     }
   }
 `
 
 export function useInitUser() {
   const userId = getUserId()
-  const { setName, setLanguages, setStatuses, setHasImage } = useStore()
+  const { setUser } = useStore()
   
   const { data, loading, error, refetch } = useQuery(GET_OR_CREATE_USER, {
     variables: { 
@@ -34,12 +38,9 @@ export function useInitUser() {
   useEffect(() => {
     if (data?.getOrCreateUser) {
       const user = data.getOrCreateUser
-      setName(user.name || '')
-      setLanguages(user.languages || [])
-      setStatuses(user.statuses || [])
-      setHasImage(user.hasImage || false)
+      setUser(user)
     }
-  }, [data, setName, setLanguages, setStatuses, setHasImage])
+  }, [data, setUser])
 
   return { loading, error, refetch }
 } 

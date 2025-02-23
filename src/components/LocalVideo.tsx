@@ -17,29 +17,24 @@ import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { getUserId } from '@/lib/userId'
 
 export default function LocalVideo() {
+  const t = useTranslations()
+  const tStatus = useTranslations('Status')
+  const { user, setUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
+  const { name = '', languages = [], statuses = [], online = false } = user || {}
+  const { 
+    localStream, 
+    setLocalStream, 
+  } = useWebRTCContext()
   const [profileOpen, setProfileOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
-  const t = useTranslations()
-  const tStatus = useTranslations('Status')
-  const { name, languages, statuses, online, setOnline } = useStore()
-  const { 
-    localStream, 
-    setLocalStream, 
-    connectionStatus
-  } = useWebRTCContext()
-  const { localVideoEnabled, localAudioEnabled } = useStore()
   const { updateUserData } = useUpdateUser()
 
-  const handleOnlineToggle = async () => {
-    setOnline(!online)
-    try {
-      await updateUserData()
-    } catch (error) {
-      console.error('Failed to update online status:', error)
-    }
+  const handleOnlineToggle = () => {
+    setUser({ ...user!, online: !online })
+    updateUserData()
   }
 
   // Stream management and video element updates
