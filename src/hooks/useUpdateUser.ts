@@ -21,6 +21,11 @@ const UPDATE_USER = gql`
       allowedFemales
       allowedMinAge
       allowedMaxAge
+      blocks {
+        userId
+        all
+        statuses
+      }
     }
   }
 `
@@ -35,6 +40,13 @@ export const useUpdateUser = () => {
       user
     } = useStore.getState()
   
+    // Clean blocks data by removing __typename
+    const cleanBlocks = user?.blocks?.map(({ userId, all, statuses }) => ({
+      userId,
+      all,
+      statuses
+    }))
+
     await updateUser({
       variables: {
         input: {
@@ -51,7 +63,8 @@ export const useUpdateUser = () => {
           allowedMales: user?.allowedMales,
           allowedFemales: user?.allowedFemales,
           allowedMinAge: user?.allowedMinAge,
-          allowedMaxAge: user?.allowedMaxAge
+          allowedMaxAge: user?.allowedMaxAge,
+          blocks: cleanBlocks
         }
       }
     })

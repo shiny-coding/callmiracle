@@ -79,10 +79,13 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent className="flex flex-col gap-4">
+        <DialogContent className="flex flex-col gap-4 overflow-y-auto">
           {user.hasImage && (
             <div 
-              className="relative w-full aspect-[4/3] cursor-pointer overflow-hidden rounded-lg"
+              className="relative w-full cursor-pointer overflow-hidden rounded-lg"
+              style={{
+                paddingTop: '75%' // 4:3 aspect ratio
+              }}
               onClick={handleImageClick}
             >
               <Image
@@ -90,7 +93,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
                 alt={user.name}
                 fill
                 unoptimized
-                className="object-cover hover:scale-105 transition-transform"
+                className="absolute top-0 left-0 w-full h-full object-cover hover:scale-105 transition-transform"
               />
             </div>
           )}
@@ -127,7 +130,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
                     key={status}
                     label={tStatus(status)}
                     size="small"
-                    className="text-xs text-white bg-gray-700"
+                    className="text-xs text-white bg-gray-700 whitespace-nowrap"
                   />
                 ))}
               </div>
@@ -194,7 +197,8 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
                         }
                         setIsEditing(true)
                       }}
-                      color={blockedStatuses.includes(status) ? "error" : "inherit"}
+                      color={blockedStatuses.includes(status) ? "error" : "success"}
+                      className="whitespace-nowrap"
                     >
                       {tStatus(status)}
                     </Button>
@@ -214,7 +218,8 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
                         }
                         setIsEditing(true)
                       }}
-                      color={blockedStatuses.includes(status) ? "error" : "inherit"}
+                      color={blockedStatuses.includes(status) ? "error" : "success"}
+                      className="whitespace-nowrap"
                     >
                       {tStatus(status)}
                     </Button>
