@@ -21,6 +21,10 @@ type User {
   contacts: String!
   sex: String
   birthYear: Int
+  allowedMales: Boolean!
+  allowedFemales: Boolean!
+  allowedMinAge: Int!
+  allowedMaxAge: Int!
 }
 
 type ConnectionParams {
@@ -67,6 +71,10 @@ input UpdateUserInput {
   contacts: String!
   sex: String
   birthYear: Int
+  allowedMales: Boolean
+  allowedFemales: Boolean
+  allowedMinAge: Int
+  allowedMaxAge: Int
 }
 
 input ConnectionParamsInput {

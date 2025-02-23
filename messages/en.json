@@ -5,6 +5,10 @@
   "offline": "Offline",
   "cancel": "Cancel",
   "apply": "Apply",
+  "preferences": "Partner Preferences",
+  "allowMales": "Allow Males",
+  "allowFemales": "Allow Females",
+  "ageRange": "Age Range",
   "Profile": {
     "title": "Profile Settings",
     "name": "Name",

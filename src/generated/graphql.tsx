@@ -136,6 +136,10 @@ export type SubscriptionOnConnectionRequestArgs = {
 
 export type UpdateUserInput = {
   about: Scalars['String']['input'];
+  allowedFemales?: InputMaybe<Scalars['Boolean']['input']>;
+  allowedMales?: InputMaybe<Scalars['Boolean']['input']>;
+  allowedMaxAge?: InputMaybe<Scalars['Int']['input']>;
+  allowedMinAge?: InputMaybe<Scalars['Int']['input']>;
   birthYear?: InputMaybe<Scalars['Int']['input']>;
   contacts: Scalars['String']['input'];
   languages: Array<Scalars['String']['input']>;
@@ -150,6 +154,10 @@ export type UpdateUserInput = {
 export type User = {
   __typename?: 'User';
   about: Scalars['String']['output'];
+  allowedFemales: Scalars['Boolean']['output'];
+  allowedMales: Scalars['Boolean']['output'];
+  allowedMaxAge: Scalars['Int']['output'];
+  allowedMinAge: Scalars['Int']['output'];
   birthYear?: Maybe<Scalars['Int']['output']>;
   contacts: Scalars['String']['output'];
   hasImage: Scalars['Boolean']['output'];

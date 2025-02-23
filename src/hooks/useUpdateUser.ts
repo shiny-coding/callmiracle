@@ -17,6 +17,10 @@ const UPDATE_USER = gql`
       contacts
       sex
       birthYear
+      allowedMales
+      allowedFemales
+      allowedMinAge
+      allowedMaxAge
     }
   }
 `
@@ -43,7 +47,11 @@ export const useUpdateUser = () => {
           about: user?.about,
           contacts: user?.contacts,
           sex: user?.sex,
-          birthYear: user?.birthYear
+          birthYear: user?.birthYear,
+          allowedMales: user?.allowedMales,
+          allowedFemales: user?.allowedFemales,
+          allowedMinAge: user?.allowedMinAge,
+          allowedMaxAge: user?.allowedMaxAge
         }
       }
     })
