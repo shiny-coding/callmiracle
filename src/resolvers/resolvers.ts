@@ -31,7 +31,8 @@ const transformUser = (user: any): User | null => {
     allowedMales: user.allowedMales ?? true,
     allowedFemales: user.allowedFemales ?? true,
     allowedMinAge: user.allowedMinAge || 10,
-    allowedMaxAge: user.allowedMaxAge || 100
+    allowedMaxAge: user.allowedMaxAge || 100,
+    blocks: user.blocks || []
   }
 }
 
@@ -89,7 +90,8 @@ export const resolvers = {
           allowedMales: true,
           allowedFemales: true,
           allowedMinAge: 10,
-          allowedMaxAge: 100
+          allowedMaxAge: 100,
+          blocks: []
         }
         
         await db.collection('users').insertOne(newUser)
@@ -173,7 +175,7 @@ export const resolvers = {
   },
   Mutation: {
     updateUser: async (_: any, { input }: { input: any }, { db }: Context) => {
-      const { userId, name, statuses, locale, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge } = input
+      const { userId, name, statuses, locale, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge, blocks } = input
       const timestamp = Date.now()
 
       const result = await db.collection('users').findOneAndUpdate(
@@ -193,7 +195,8 @@ export const resolvers = {
             allowedMales,
             allowedFemales,
             allowedMinAge,
-            allowedMaxAge
+            allowedMaxAge,
+            blocks
           } 
         },
         { 

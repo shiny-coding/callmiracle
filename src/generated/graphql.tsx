@@ -14,6 +14,19 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type Block = {
+  __typename?: 'Block';
+  all: Scalars['Boolean']['output'];
+  statuses: Array<Status>;
+  userId: Scalars['ID']['output'];
+};
+
+export type BlockInput = {
+  all: Scalars['Boolean']['input'];
+  statuses: Array<Status>;
+  userId: Scalars['ID']['input'];
+};
+
 export type Call = {
   __typename?: 'Call';
   _id: Scalars['ID']['output'];
@@ -141,6 +154,7 @@ export type UpdateUserInput = {
   allowedMaxAge?: InputMaybe<Scalars['Int']['input']>;
   allowedMinAge?: InputMaybe<Scalars['Int']['input']>;
   birthYear?: InputMaybe<Scalars['Int']['input']>;
+  blocks: Array<BlockInput>;
   contacts: Scalars['String']['input'];
   languages: Array<Scalars['String']['input']>;
   locale: Scalars['String']['input'];
@@ -159,6 +173,7 @@ export type User = {
   allowedMaxAge: Scalars['Int']['output'];
   allowedMinAge: Scalars['Int']['output'];
   birthYear?: Maybe<Scalars['Int']['output']>;
+  blocks: Array<Block>;
   contacts: Scalars['String']['output'];
   hasImage: Scalars['Boolean']['output'];
   languages: Array<Scalars['String']['output']>;

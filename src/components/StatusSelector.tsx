@@ -10,7 +10,7 @@ interface StatusSelectorProps {
 }
 
 // Define the status relationships map
-const statusRelationships = new Map<Status, Status>([
+export const statusRelationships = new Map<Status, Status>([
   [Status.Chat, Status.Chat],
   [Status.MeetNewPeople, Status.MeetNewPeople],
   [Status.SitTogetherInSilence, Status.SitTogetherInSilence],

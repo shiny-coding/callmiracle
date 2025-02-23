@@ -23,6 +23,11 @@ export const GET_OR_CREATE_USER = gql`
       allowedFemales
       allowedMinAge
       allowedMaxAge
+      blocks {
+        userId
+        all
+        statuses
+      }
     }
   }
 `

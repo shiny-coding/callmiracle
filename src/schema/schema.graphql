@@ -8,6 +8,18 @@ enum Status {
   SIT_TOGETHER_IN_SILENCE
 }
 
+type Block {
+  userId: ID!
+  all: Boolean!
+  statuses: [Status!]!
+}
+
+input BlockInput {
+  userId: ID!
+  all: Boolean!
+  statuses: [Status!]!
+}
+
 type User {
   userId: ID!
   name: String!
@@ -25,6 +37,7 @@ type User {
   allowedFemales: Boolean!
   allowedMinAge: Int!
   allowedMaxAge: Int!
+  blocks: [Block!]!
 }
 
 type ConnectionParams {
@@ -75,6 +88,7 @@ input UpdateUserInput {
   allowedFemales: Boolean
   allowedMinAge: Int
   allowedMaxAge: Int
+  blocks: [BlockInput!]!
 }
 
 input ConnectionParamsInput {
