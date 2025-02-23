@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { Button } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Status } from '@/generated/graphql'
@@ -37,33 +38,32 @@ export default function StatusSelector({ value, onChange }: StatusSelectorProps)
   return (
     <fieldset>
       <legend className="text-sm font-medium mb-4">{tRoot('selectStatus')}</legend>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <div className="space-y-3">
-          {leftColumnStatuses.map((status) => (
-            <Button
-              key={status}
-              fullWidth
-              variant={value.includes(status) ? "contained" : "outlined"}
-              onClick={() => toggleStatus(status)}
-              color={value.includes(status) ? "primary" : "inherit"}
-            >
-              {t(status)}
-            </Button>
-          ))}
-        </div>
-        <div className="space-y-3">
-          {rightColumnStatuses.map((status) => (
-            <Button
-              key={status}
-              fullWidth
-              variant={value.includes(status) ? "contained" : "outlined"}
-              onClick={() => toggleStatus(status)}
-              color={value.includes(status) ? "primary" : "inherit"}
-            >
-              {t(status)}
-            </Button>
-          ))}
-        </div>
+      <div className="grid grid-cols-2 gap-4">
+        {leftColumnStatuses.map((leftStatus, index) => {
+          const rightStatus = rightColumnStatuses[index]
+          return (
+            <React.Fragment key={leftStatus}>
+              <Button
+                fullWidth
+                variant={value.includes(leftStatus) ? "contained" : "outlined"}
+                onClick={() => toggleStatus(leftStatus)}
+                color={value.includes(leftStatus) ? "primary" : "inherit"}
+                className="h-full"
+              >
+                {t(leftStatus)}
+              </Button>
+              <Button
+                fullWidth
+                variant={value.includes(rightStatus) ? "contained" : "outlined"}
+                onClick={() => toggleStatus(rightStatus)}
+                color={value.includes(rightStatus) ? "primary" : "inherit"}
+                className="h-full"
+              >
+                {t(rightStatus)}
+              </Button>
+            </React.Fragment>
+          )
+        })}
       </div>
     </fieldset>
   )

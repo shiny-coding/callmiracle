@@ -83,7 +83,7 @@ export default function StatusSettings({ open, onClose }: Props) {
       <DialogTitle className="flex justify-between items-center">
         {t('selectStatus')}
         <IconButton onClick={handleCancel} size="small">
-          <CloseIcon />
+          <CloseIcon /> 
         </IconButton>
       </DialogTitle>
       <DialogContent className="flex flex-col gap-4">

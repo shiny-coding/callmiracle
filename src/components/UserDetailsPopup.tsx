@@ -1,3 +1,4 @@
+import React from 'react'
 import { Dialog, DialogTitle, DialogContent, IconButton, Typography, Chip, Divider, FormGroup, FormControlLabel, Checkbox, Button } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { User, Status } from '@/generated/graphql'
@@ -57,12 +58,14 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     })
     await updateUserData()
     setIsEditing(false)
+    onClose()
   }
 
   const handleCancel = () => {
     setBlockAll(existingBlock?.all || false)
     setBlockedStatuses(existingBlock?.statuses || [])
     setIsEditing(false)
+    onClose()
   }
 
   return (
@@ -130,7 +133,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
                     key={status}
                     label={tStatus(status)}
                     size="small"
-                    className="text-xs text-white bg-gray-700 whitespace-nowrap"
+                    className="text-xs text-white bg-gray-700"
                   />
                 ))}
               </div>
@@ -182,49 +185,46 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
               <Typography variant="subtitle1" className="mt-2">
                 {t('blockStatuses')}
               </Typography>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                <div className="space-y-3">
-                  {leftColumnStatuses.map((status) => (
-                    <Button
-                      key={status}
-                      fullWidth
-                      variant={blockedStatuses.includes(status) ? "contained" : "outlined"}
-                      onClick={() => {
-                        if (blockedStatuses.includes(status)) {
-                          setBlockedStatuses(blockedStatuses.filter(s => s !== status))
-                        } else {
-                          setBlockedStatuses([...blockedStatuses, status])
-                        }
-                        setIsEditing(true)
-                      }}
-                      color={blockedStatuses.includes(status) ? "error" : "success"}
-                      className="whitespace-nowrap"
-                    >
-                      {tStatus(status)}
-                    </Button>
-                  ))}
-                </div>
-                <div className="space-y-3">
-                  {rightColumnStatuses.map((status) => (
-                    <Button
-                      key={status}
-                      fullWidth
-                      variant={blockedStatuses.includes(status) ? "contained" : "outlined"}
-                      onClick={() => {
-                        if (blockedStatuses.includes(status)) {
-                          setBlockedStatuses(blockedStatuses.filter(s => s !== status))
-                        } else {
-                          setBlockedStatuses([...blockedStatuses, status])
-                        }
-                        setIsEditing(true)
-                      }}
-                      color={blockedStatuses.includes(status) ? "error" : "success"}
-                      className="whitespace-nowrap"
-                    >
-                      {tStatus(status)}
-                    </Button>
-                  ))}
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                {leftColumnStatuses.map((leftStatus, index) => {
+                  const rightStatus = rightColumnStatuses[index]
+                  return (
+                    <React.Fragment key={leftStatus}>
+                      <Button
+                        fullWidth
+                        variant={blockedStatuses.includes(leftStatus) ? "contained" : "outlined"}
+                        onClick={() => {
+                          if (blockedStatuses.includes(leftStatus)) {
+                            setBlockedStatuses(blockedStatuses.filter(s => s !== leftStatus))
+                          } else {
+                            setBlockedStatuses([...blockedStatuses, leftStatus])
+                          }
+                          setIsEditing(true)
+                        }}
+                        color={blockedStatuses.includes(leftStatus) ? "error" : "success"}
+                        className="h-full"
+                      >
+                        {tStatus(leftStatus)}
+                      </Button>
+                      <Button
+                        fullWidth
+                        variant={blockedStatuses.includes(rightStatus) ? "contained" : "outlined"}
+                        onClick={() => {
+                          if (blockedStatuses.includes(rightStatus)) {
+                            setBlockedStatuses(blockedStatuses.filter(s => s !== rightStatus))
+                          } else {
+                            setBlockedStatuses([...blockedStatuses, rightStatus])
+                          }
+                          setIsEditing(true)
+                        }}
+                        color={blockedStatuses.includes(rightStatus) ? "error" : "success"}
+                        className="h-full"
+                      >
+                        {tStatus(rightStatus)}
+                      </Button>
+                    </React.Fragment>
+                  )
+                })}
               </div>
             </>
           )}

@@ -1,14 +1,23 @@
 {
   "name": "Имя",
-  "selectStatus": "Выберите свой статус",
+  "selectStatus": "Выберите статус",
   "online": "В сети",
   "offline": "Не в сети",
   "Profile": {
     "title": "Настройки профиля",
     "name": "Имя",
-    "photo": "Фото",
+    "about": "О себе",
+    "contacts": "Контакты",
+    "sex": "Пол",
+    "male": "Мужской",
+    "female": "Женский",
+    "birthYear": "Год рождения (скрыт)",
+    "selectYear": "Выберите год",
     "uploadPhoto": "Загрузить фото",
-    "uploading": "Загрузка..."
+    "uploading": "Загрузка...",
+    "photo": "Фото профиля",
+    "takePhoto": "Сделать фото",
+    "cancel": "Отмена"
   },
   "Status": {
     "MEET_NEW_PEOPLE": "Познакомиться",
@@ -60,5 +69,12 @@
     "accept": "Принять",
     "reject": "Отклонить",
     "incomingCall": "Входящий вызов от"
-  }
+  },
+  "apply": "Применить",
+  "preferences": "Предпочтения партнера",
+  "allowMales": "Разрешить мужчин",
+  "allowFemales": "Разрешить женщин",
+  "ageRange": "Возрастной диапазон",
+  "blockUser": "Заблокировать пользователя",
+  "blockStatuses": "Заблокировать статусы"
 } 
