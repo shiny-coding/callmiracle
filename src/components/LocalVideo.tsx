@@ -155,7 +155,7 @@ export default function LocalVideo() {
         <div className="mt-4 flex justify-center">
           <Button
             variant={online ? "contained" : "outlined"}
-            color={online ? "primary" : "inherit"}
+            color={online ? "primary" : "secondary"}
             onClick={handleOnlineToggle}
             className="w-full max-w-[200px]"
           >

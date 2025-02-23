@@ -17,7 +17,7 @@
     "sex": "Sex",
     "male": "Male",
     "female": "Female",
-    "birthYear": "Birth Year",
+    "birthYear": "Birth Year (hidden)",
     "selectYear": "Select year",
     "uploadPhoto": "Upload Photo",
     "uploading": "Uploading...",
