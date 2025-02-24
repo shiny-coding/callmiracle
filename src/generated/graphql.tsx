@@ -84,6 +84,23 @@ export type ConnectionRequest = {
   videoEnabled?: Maybe<Scalars['Boolean']['output']>;
 };
 
+export type MeetingPlan = {
+  __typename?: 'MeetingPlan';
+  minDuration: Scalars['Int']['output'];
+  preferEarlier: Scalars['Boolean']['output'];
+  statuses: Array<Status>;
+  timeSlots: Array<Scalars['Float']['output']>;
+  userId: Scalars['ID']['output'];
+};
+
+export type MeetingPlanInput = {
+  minDuration: Scalars['Int']['input'];
+  preferEarlier: Scalars['Boolean']['input'];
+  statuses: Array<Status>;
+  timeSlots: Array<Scalars['Float']['input']>;
+  userId: Scalars['ID']['input'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   connectWithUser?: Maybe<ConnectionParams>;
@@ -106,6 +123,7 @@ export type Query = {
   calls: Array<Call>;
   detailedCallHistory: Array<Call>;
   getOrCreateUser: User;
+  meetings: Array<MeetingPlan>;
   users: Array<User>;
 };
 
@@ -123,6 +141,11 @@ export type QueryDetailedCallHistoryArgs = {
 
 export type QueryGetOrCreateUserArgs = {
   defaultLanguages: Array<Scalars['String']['input']>;
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryMeetingsArgs = {
   userId: Scalars['ID']['input'];
 };
 

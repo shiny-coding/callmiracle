@@ -8,6 +8,7 @@ import DetailedCallHistoryDialog from '@/components/DetailedCallHistoryDialog'
 import CallerDialog from '@/components/CallerDialog'
 import CalleeDialog from '@/components/CalleeDialog'
 import BottomControlsBar from '@/components/BottomControlsBar';
+import MeetingsList from '@/components/MeetingsList';
 
 function MainContent() {
   const { connectionStatus, callee } = useWebRTCContext()
@@ -29,6 +30,7 @@ function MainContent() {
       {connectionStatus !== 'connected' && (
         <div className="px-4 mt-4 overflow-y-auto pb-4 w-full max-w-[800px]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MeetingsList />
           </div>
         </div>
       )}

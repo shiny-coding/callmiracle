@@ -53,9 +53,6 @@ export default function CallHistory() {
 
   return (
     <Paper className="p-4 bg-gray-800">
-      <Typography variant="h6" className="mb-4 text-white">
-        {t('callHistory')}
-      </Typography>
       <List>
         {data?.callHistory.map((entry: CallHistoryEntry) => (
           <ListItem 

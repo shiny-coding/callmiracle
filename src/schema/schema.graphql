@@ -133,6 +133,7 @@ type Query {
   getOrCreateUser(userId: ID!, defaultLanguages: [String!]!): User!
   callHistory(userId: ID!): [CallHistoryEntry!]!
   detailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
+  meetings(userId: ID!): [MeetingPlan!]!
 }
 
 type Mutation {

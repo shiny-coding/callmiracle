@@ -80,5 +80,7 @@
   "blockStatuses": "Block Statuses",
   "searchUser": "Search for a user",
   "userBlocked": "User is blocked",
-  "someStatusesBlocked": "Some statuses are blocked"
+  "someStatusesBlocked": "Some statuses are blocked",
+  "noMeetings": "No meetings scheduled",
+  "preferEarlier": "Prefers earlier times"
 } 
