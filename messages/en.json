@@ -1,5 +1,6 @@
 {
   "name": "Name",
+  "searchByName": "Search by name",
   "selectStatus": "Select your status",
   "online": "Online",
   "offline": "Offline",
@@ -64,7 +65,6 @@
     "no-answer": "No answer"
   },
   "VideoChat": {
-    "selectUser": "Select a user",
     "profile": {
       "settings": "Profile Settings",
       "name": "Name"
@@ -77,5 +77,8 @@
     "incomingCall": "Incoming call from"
   },
   "blockUser": "Block User",
-  "blockStatuses": "Block Statuses"
+  "blockStatuses": "Block Statuses",
+  "searchUser": "Search for a user",
+  "userBlocked": "User is blocked",
+  "someStatusesBlocked": "Some statuses are blocked"
 } 

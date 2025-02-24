@@ -1,7 +1,7 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
-import UserInfoDisplay from './UserInfoDisplay'
+import UserCard from './UserCard'
 import { useStore } from '@/store/useStore'
 import { useWebRTCCallee } from '@/hooks/webrtc/useWebRTCCallee'
 
@@ -38,7 +38,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
         {tStatus(connectionStatus)}
       </DialogTitle>
       <DialogContent>
-        <UserInfoDisplay user={user} />
+        <UserCard user={user} />
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
         {!isReconnecting && (

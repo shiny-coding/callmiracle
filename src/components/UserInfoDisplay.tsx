@@ -86,6 +86,13 @@ export default function UserCard({
             </IconButton>
           )}
         </div>
+        {isBlocked && (
+            <LockIcon 
+              className="text-red-500 absolute bottom-0 right-0" 
+              fontSize="small"
+              titleAccess={existingBlock?.all ? t('userBlocked') : t('someStatusesBlocked')}
+            />
+        )}
       </div>
 
       {showDetails && user.languages.length > 0 && (
@@ -119,14 +126,6 @@ export default function UserCard({
             ))}
           </div>
         </div>
-      )}
-
-      {isBlocked && (
-        <LockIcon 
-          className="text-red-500 absolute bottom-7 right-7" 
-          fontSize="small"
-          titleAccess={existingBlock?.all ? t('userBlocked') : t('someStatusesBlocked')}
-        />
       )}
 
       <UserDetailsPopup

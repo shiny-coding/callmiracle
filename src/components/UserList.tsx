@@ -5,13 +5,22 @@ import { Paper, List, ListItem, Typography, IconButton } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { User } from '@/generated/graphql'
 import { useUsers } from '@/store/UsersProvider'
-import UserInfoDisplay from './UserInfoDisplay'
+import UserCard from './UserCard'
+import { normalizeText } from '@/utils/textNormalization'
 
 interface UserListProps {
   filterLanguages?: string[]
+  nameFilter?: string
+  showMales?: boolean
+  showFemales?: boolean
 }
 
-export default function UserList({ filterLanguages = [] }: UserListProps) {
+export default function UserList({ 
+  filterLanguages = [], 
+  nameFilter = '',
+  showMales = true,
+  showFemales = true 
+}: UserListProps) {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations()
 
@@ -20,10 +29,26 @@ export default function UserList({ filterLanguages = [] }: UserListProps) {
 
   let filteredUsers = users || []
 
+  // Apply sex filter
+  if (!showMales || !showFemales) {
+    filteredUsers = filteredUsers.filter(user => {
+      if (!user.sex) return showMales && showFemales // Include users without sex set only if both are selected
+      return (showMales && user.sex === 'male') || (showFemales && user.sex === 'female')
+    })
+  }
+
   // Apply language filter if any languages are selected
   if (filterLanguages.length > 0) {
     filteredUsers = filteredUsers.filter(user =>
       user.languages.some(lang => filterLanguages.includes(lang))
+    )
+  }
+
+  // Apply name filter if provided
+  if (nameFilter) {
+    const normalizedFilter = normalizeText(nameFilter)
+    filteredUsers = filteredUsers.filter(user => 
+      normalizeText(user.name).includes(normalizedFilter)
     )
   }
 
@@ -47,7 +72,7 @@ export default function UserList({ filterLanguages = [] }: UserListProps) {
             className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
           >
             <div className="w-full">
-              <UserInfoDisplay 
+              <UserCard 
                 user={user} 
                 showDetails={true} 
                 showCallButton={true}

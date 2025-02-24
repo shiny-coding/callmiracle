@@ -2,7 +2,7 @@ import { gql, useQuery } from '@apollo/client'
 import { Paper, List, ListItem, Typography, Chip } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
-import UserInfoDisplay from './UserInfoDisplay'
+import UserCard from './UserCard'
 import { getUserId } from '@/lib/userId'
 import { formatDuration } from '@/utils/formatDuration'
 
@@ -65,7 +65,7 @@ export default function CallHistory() {
             <div className="w-full">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex-grow">
-                  <UserInfoDisplay 
+                  <UserCard 
                     user={entry.user} 
                     showDetails={false} 
                     showCallButton={true}
