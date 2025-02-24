@@ -1,8 +1,8 @@
-import { usersQueries } from './queries/users'
-import { callsQueries } from './queries/calls'
-import { meetingsQueries } from './queries/meetings'
-import { usersMutations } from './mutations/users'
-import { connectionMutations } from './mutations/connections'
+import { usersQueries } from './usersQueries'
+import { callsQueries } from './callsQueries'
+import { meetingsQueries } from './meetingsQueries'
+import { updateUserMutation } from './updateUserMutation'
+import { connectWithUserMutation } from './connectWithUserMutation'
 import { subscriptions } from './subscriptions'
 
 export const resolvers = {
@@ -12,8 +12,8 @@ export const resolvers = {
     ...meetingsQueries
   },
   Mutation: {
-    ...usersMutations,
-    ...connectionMutations
+    updateUser: updateUserMutation,
+    connectWithUser: connectWithUserMutation
   },
   Subscription: {
     ...subscriptions

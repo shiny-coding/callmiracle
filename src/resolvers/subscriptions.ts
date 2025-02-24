@@ -1,6 +1,6 @@
-import { pubsub } from '../pubsub'
-import { transformUser } from '../utils'
-import { ConnectionRequestPayload, Context } from '../types'
+import { pubsub } from './pubsub'
+import { transformUser } from './utils'
+import { ConnectionRequestPayload, Context } from './types'
 import { User } from '@/generated/graphql'
 
 export const subscriptions = {

@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
-import { Context } from '../types'
-import { transformUser } from '../utils'
+import { Context } from './types'
+import { transformUser } from './utils'
 
 export const callsQueries = {
   calls: async (_: any, __: any, { db }: Context) => {

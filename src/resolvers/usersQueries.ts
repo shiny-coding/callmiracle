@@ -1,5 +1,5 @@
-import { Context } from '../types'
-import { transformUser } from '../utils'
+import { Context } from './types'
+import { transformUser } from './utils'
 import { User } from '@/generated/graphql'
 import { ObjectId } from 'mongodb'
 
