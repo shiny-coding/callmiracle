@@ -17,7 +17,8 @@
     "uploading": "Загрузка...",
     "photo": "Фото профиля",
     "takePhoto": "Сделать фото",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "iSpeak": "Я говорю на"
   },
   "Status": {
     "MEET_NEW_PEOPLE": "Познакомиться",
@@ -29,13 +30,12 @@
     "SIT_TOGETHER_IN_SILENCE": "Посидеть вместе в тишине"
   },
   "connect": "Найти собеседника",
-  "iSpeak": "Я говорю на",
+  "filterByLanguages": "Фильтр по языкам",
   "cameraDisabled": "Камера отключена",
   "languages": "Языки",
   "status": "Статус",
   "calling": "Вызов...",
   "connecting": "Подключение...",
-  "cancel": "Отмена",
   "callAgain": "Вызвать снова",
   "callHistory": "История звонков",
   "callHistoryWith": "История звонков с",

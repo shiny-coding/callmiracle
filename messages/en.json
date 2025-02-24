@@ -23,7 +23,8 @@
     "uploading": "Uploading...",
     "photo": "Profile photo",
     "takePhoto": "Take Photo",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "iSpeak": "I speak"
   },
   "Status": {
     "MEET_NEW_PEOPLE": "Meet New People",
@@ -35,7 +36,7 @@
     "SIT_TOGETHER_IN_SILENCE": "Sit together in Silence"
   },
   "connect": "Find Partner",
-  "iSpeak": "I speak",
+  "filterByLanguages": "Filter by languages",
   "cameraDisabled": "Camera disabled",
   "languages": "Languages",
   "status": "Status",

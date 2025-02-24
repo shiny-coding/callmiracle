@@ -12,10 +12,12 @@ import { LANGUAGES } from '@/config/languages';
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import { useTranslations } from 'next-intl';
+import { FormGroup, Typography } from '@mui/material';
 
 interface LanguageSelectorProps {
   value: string[];
   onChange: (languages: string[]) => void;
+  label?: string;
 }
 
 const ITEM_HEIGHT = 48;
@@ -38,9 +40,9 @@ function getStyles(name: string, selectedLangs: string[], theme: Theme) {
   };
 }
 
-export default function LanguageSelector({ value, onChange }: LanguageSelectorProps) {
+export default function LanguageSelector({ value, onChange, label }: LanguageSelectorProps) {
   const theme = useTheme();
-  const t = useTranslations();
+  const t = useTranslations('Profile');
 
   const handleChange = (event: SelectChangeEvent<typeof value>) => {
     const {
@@ -50,51 +52,58 @@ export default function LanguageSelector({ value, onChange }: LanguageSelectorPr
   };
 
   return (
-    <div className="relative mx-auto mb-8 text-center">
-      <FormControl sx={{ m: 1, width: 300 }}>
-        <InputLabel id="language-select-label">{t('iSpeak')}</InputLabel>
-        <Select
-          labelId="language-select-label"
-          id="language-select"
-          multiple
-          value={value}
-          onChange={handleChange}
-          input={<OutlinedInput label={t('iSpeak')} />}
-          renderValue={(selected) => (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {selected.map((langCode) => (
-                <Chip 
-                  key={langCode} 
-                  label={LANGUAGES.find(lang => lang.code === langCode)?.name}
-                  onDelete={() => {
-                    onChange(selected.filter(code => code !== langCode));
-                  }}
-                  onMouseDown={(event) => {
-                    event.stopPropagation();
-                  }}
-                />
-              ))}
-            </Box>
-          )}
-          MenuProps={{
-            ...MenuProps,
-            PaperProps: {
-              ...MenuProps.PaperProps,
-              style: {
-                ...MenuProps.PaperProps.style,
-                marginTop: 8
+    <FormGroup className="mb-4">
+      {label && (
+        <Typography variant="subtitle2" className="mb-2">
+          {label}
+        </Typography>
+      )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <FormControl sx={{ m: 1, width: 300 }}>
+          <InputLabel id="language-select-label">{label}</InputLabel>
+          <Select
+            labelId="language-select-label"
+            id="language-select"
+            multiple
+            value={value}
+            onChange={handleChange}
+            input={<OutlinedInput label={label} />}
+            renderValue={(selected) => (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {selected.map((langCode) => (
+                  <Chip 
+                    key={langCode} 
+                    label={LANGUAGES.find(lang => lang.code === langCode)?.name}
+                    onDelete={() => {
+                      onChange(selected.filter(code => code !== langCode));
+                    }}
+                    onMouseDown={(event) => {
+                      event.stopPropagation();
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
+            MenuProps={{
+              ...MenuProps,
+              PaperProps: {
+                ...MenuProps.PaperProps,
+                style: {
+                  ...MenuProps.PaperProps.style,
+                  marginTop: 8
+                }
               }
-            }
-          }}
-        >
-          {LANGUAGES.map((lang) => (
-            <MenuItem key={lang.code} value={lang.code}>
-              <Checkbox checked={value.indexOf(lang.code) > -1} />
-              <ListItemText primary={lang.name} />
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </div>
+            }}
+          >
+            {LANGUAGES.map((lang) => (
+              <MenuItem key={lang.code} value={lang.code}>
+                <Checkbox checked={value.indexOf(lang.code) > -1} />
+                <ListItemText primary={lang.name} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </div>
+    </FormGroup>
   );
 } 

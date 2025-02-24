@@ -7,12 +7,25 @@ import { User } from '@/generated/graphql'
 import { useUsers } from '@/store/UsersProvider'
 import UserInfoDisplay from './UserInfoDisplay'
 
-export default function UserList() {
+interface UserListProps {
+  filterLanguages?: string[]
+}
+
+export default function UserList({ filterLanguages = [] }: UserListProps) {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations()
 
   if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
+
+  let filteredUsers = users || []
+
+  // Apply language filter if any languages are selected
+  if (filterLanguages.length > 0) {
+    filteredUsers = filteredUsers.filter(user =>
+      user.languages.some(lang => filterLanguages.includes(lang))
+    )
+  }
 
   return (
     <Paper 
@@ -28,7 +41,7 @@ export default function UserList() {
         </IconButton>
       </div>
       <List>
-        {users?.map((user: User) => (
+        {filteredUsers?.map((user: User) => (
           <ListItem 
             key={user.userId} 
             className="flex flex-col items-start hover:bg-gray-700 rounded-lg"

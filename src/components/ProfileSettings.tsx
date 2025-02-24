@@ -232,7 +232,11 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
           onChange={(e) => setTempContacts(e.target.value)}
           className="resize-none"
         />
-        <LanguageSelector value={tempLanguages} onChange={setTempLanguages} />
+        <LanguageSelector
+          value={tempLanguages}
+          onChange={setTempLanguages}
+          label={t('iSpeak')}
+        />
         <FormControl>
           <FormLabel id="sex-radio-group">{t('sex')}</FormLabel>
           <RadioGroup
