@@ -14,10 +14,12 @@ type Block {
   statuses: [Status!]!
 }
 
-input BlockInput {
+type MeetingPlan {
   userId: ID!
-  all: Boolean!
   statuses: [Status!]!
+  timeSlots: [Float!]!
+  minDuration: Int!
+  preferEarlier: Boolean!
 }
 
 type User {
@@ -102,6 +104,20 @@ input ConnectionParamsInput {
   audioEnabled: Boolean
   quality: String
   callId: ID
+}
+
+input BlockInput {
+  userId: ID!
+  all: Boolean!
+  statuses: [Status!]!
+}
+
+input MeetingPlanInput {
+  userId: ID!
+  statuses: [Status!]!
+  timeSlots: [Float!]!
+  minDuration: Int!
+  preferEarlier: Boolean!
 }
 
 type CallHistoryEntry {
