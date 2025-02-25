@@ -40,6 +40,35 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([allowedMinAge, allowedMaxAge])
   const { updateMeeting, loading } = useUpdateMeeting()
 
+  // Reset form when dialog opens or meeting changes
+  useEffect(() => {
+    if (open) {
+      if (meeting) {
+        setMeetingId(meeting._id)
+        setTempStatuses(meeting.statuses || [])
+        setSelectedTimeSlots(meeting.timeSlots || [])
+        setMinDuration(meeting.minDuration || 30)
+        setPreferEarlier(meeting.preferEarlier || false)
+        setTempAllowedMales(meeting.allowedMales !== undefined ? meeting.allowedMales : true)
+        setTempAllowedFemales(meeting.allowedFemales !== undefined ? meeting.allowedFemales : true)
+        setTempAgeRange([
+          meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
+          meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
+        ])
+      } else {
+        // Creating a new meeting
+        setMeetingId(undefined)
+        setTempStatuses([])
+        setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
+        setMinDuration(30)
+        setPreferEarlier(false)
+        setTempAllowedMales(true)
+        setTempAllowedFemales(true)
+        setTempAgeRange([10, 100])
+      }
+    }
+  }, [open, meeting])
+
   // Generate available time slots
   useEffect(() => {
     const now = new Date()
@@ -143,43 +172,14 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
     setAvailableTimeSlots(processedSlots)
   }, [open])
 
-  // Initialize from provided meeting (for editing) or last meeting (for new)
-  useEffect(() => {
-    if (meeting) {
-      // Editing an existing meeting
-      setMeetingId(meeting._id)
-      setTempStatuses(meeting.statuses || [])
-      setMinDuration(meeting.minDuration || 30)
-      setPreferEarlier(meeting.preferEarlier || false)
-      
-      // Set selected time slots
-      setSelectedTimeSlots(meeting.timeSlots || [])
-      
-      setTempAllowedMales(meeting.allowedMales ?? true)
-      setTempAllowedFemales(meeting.allowedFemales ?? true)
-      setTempAgeRange([meeting.allowedMinAge ?? 18, meeting.allowedMaxAge ?? 100])
-    } else if (meetings && meetings.length > 0) {
-      // Creating a new meeting, initialize from last meeting
-      const lastMeeting = meetings[0]
-      setTempStatuses(lastMeeting.statuses || [])
-      setMinDuration(lastMeeting.minDuration || 30)
-      setPreferEarlier(lastMeeting.preferEarlier || false)
-      
-      // Set selected time slots
-      setSelectedTimeSlots(lastMeeting.timeSlots || [])
-      
-      setTempAllowedMales(lastMeeting.allowedMales ?? true)
-      setTempAllowedFemales(lastMeeting.allowedFemales ?? true)
-      setTempAgeRange([lastMeeting.allowedMinAge ?? 18, lastMeeting.allowedMaxAge ?? 100])
-    }
-  }, [meeting, meetings])
-
   const toggleTimeSlot = (timestamp: number) => {
-    if (selectedTimeSlots.includes(timestamp)) {
-      setSelectedTimeSlots(selectedTimeSlots.filter(ts => ts !== timestamp))
-    } else {
-      setSelectedTimeSlots([...selectedTimeSlots, timestamp])
-    }
+    setSelectedTimeSlots(prev => {
+      if (prev.includes(timestamp)) {
+        return prev.filter(t => t !== timestamp)
+      } else {
+        return [...prev, timestamp]
+      }
+    })
   }
 
   const handleMalesChange = (checked: boolean) => {

@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl'
 import UserCard from './UserCard'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay } from 'date-fns'
+import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast } from 'date-fns'
 
 interface MeetingProps {
   meeting: {
@@ -28,13 +28,13 @@ interface MeetingProps {
 export default function MeetingCard({ meeting }: MeetingProps) {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
+  const now = new Date()
 
   const formatTimeSlot = (startTimestamp: number, endTimestamp: number) => {
     const startDate = new Date(startTimestamp)
     const endDate = new Date(endTimestamp)
     
     // Check if this is a partial slot (close to current time)
-    const now = new Date()
     const isCurrentSlot = isWithinInterval(now, {
       start: startDate,
       end: endDate
@@ -55,7 +55,13 @@ export default function MeetingCard({ meeting }: MeetingProps) {
     
     sortedSlots.forEach(timestamp => {
       const date = new Date(timestamp)
-      const dayKey = format(date, 'EEE dd MMM') // e.g., "Mon 15 Jan"
+      
+      // Skip slots that are in the past (end time is before now)
+      const endTime = new Date(timestamp + 30 * 60 * 1000) // 30 minutes after start
+      if (endTime < now) return
+      
+      // Use "Today" for today's date
+      const dayKey = isToday(date) ? t('today') : format(date, 'EEE dd MMM')
       
       if (!groups[dayKey]) {
         groups[dayKey] = []
@@ -100,6 +106,9 @@ export default function MeetingCard({ meeting }: MeetingProps) {
   }
 
   const timeSlotsByDay = groupTimeSlotsByDay()
+  
+  // Check if there are any future time slots
+  const hasFutureSlots = Object.values(timeSlotsByDay).some(slots => slots.length > 0)
 
   return (
     <div className="space-y-2">
@@ -139,18 +148,24 @@ export default function MeetingCard({ meeting }: MeetingProps) {
           {t('ageRange')}: {meeting.allowedMinAge}-{meeting.allowedMaxAge}
         </Typography>
       </div>
+      {!hasFutureSlots && (
+        <Typography variant="body2" className="text-gray-400 italic">
+          {t('allSlotsInPast')}
+        </Typography>
+      )}
       <div className="space-y-2">
         {Object.entries(timeSlotsByDay).map(([day, slots]) => {
           const combinedSlots = combineAdjacentSlots(slots)
           
+          if (combinedSlots.length === 0) return null;
+          
           return (
-            <div key={day} className="space-y-1">
+            <div key={day} className="flex items-center gap-2">
               <Typography variant="body2" className="text-gray-400 font-medium">
                 {day}
               </Typography>
               <div className="flex flex-wrap gap-1 ml-2">
                 {combinedSlots.map(([startSlot, endSlot], index) => {
-                  const now = new Date()
                   const isActive = isWithinInterval(now, {
                     start: new Date(startSlot),
                     end: new Date(endSlot)

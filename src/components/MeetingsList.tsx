@@ -85,7 +85,7 @@ export default function MeetingsList() {
           <div className="flex items-center gap-2">
             <EventIcon className="text-blue-400" />
             <Typography variant="h6">
-              {t('meetings')}
+              {t('myMeetings')}
             </Typography>
           </div>
           <div className="flex gap-2">
