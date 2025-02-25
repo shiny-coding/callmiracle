@@ -12,7 +12,7 @@ import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { LANGUAGES } from '@/config/languages'
 import ProfileSettings from './ProfileSettings'
-import StatusSettings from './StatusSettings'
+import MeetingDialog from './MeetingDialog'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { getUserId } from '@/lib/userId'
 
@@ -168,7 +168,7 @@ export default function LocalVideo() {
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
       />
-      <StatusSettings
+      <MeetingDialog
         open={statusOpen}
         onClose={() => setStatusOpen(false)}
       />

@@ -2,6 +2,7 @@
   "name": "Имя",
   "searchByName": "Поиск по имени",
   "selectStatus": "Выберите статус",
+  "pleaseSelectStatus": "Пожалуйста, выберите хотя бы один статус",
   "online": "В сети",
   "offline": "Не в сети",
   "Profile": {
@@ -81,5 +82,23 @@
   "userBlocked": "Пользователь заблокирован",
   "someStatusesBlocked": "Некоторые статусы заблокированы",
   "noMeetings": "Нет запланированных встреч",
-  "preferEarlier": "Предпочитает более раннее время"
+  "meetings": "Встречи",
+  "confirmDeleteMeeting": "Вы уверены, что хотите удалить эту встречу?",
+  "deleteMeeting": "Удалить встречу",
+  "preferEarlier": "Предпочитает более раннее время",
+  "createMeeting": "Создать встречу",
+  "selectTimeSlots": "Выберите время",
+  "pleaseSelectTimeSlots": "Пожалуйста, выберите хотя бы одно время",
+  "now": "Сейчас",
+  "minDuration": "Минимальная продолжительность",
+  "minutes": "минут",
+  "hour": "час",
+  "addTimeSlot": "Добавить время",
+  "create": "Создать",
+  "update": "Обновить",
+  "editMeeting": "Редактировать встречу",
+  "anyGender": "Любой пол",
+  "malesOnly": "Только мужчины",
+  "femalesOnly": "Только женщины",
+  "noTimeSlotsAvailable": "Нет доступных временных слотов"
 } 

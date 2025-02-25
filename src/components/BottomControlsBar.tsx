@@ -13,7 +13,7 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import VideoDeviceSelector from './VideoDeviceSelector'
 import AudioDeviceSelector from './AudioDeviceSelector'
 import ProfileSettings from './ProfileSettings'
-import StatusSettings from './StatusSettings'
+import MeetingDialog from './MeetingDialog'
 import VideoQualitySelector from './VideoQualitySelector'
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
@@ -22,7 +22,6 @@ import UsersPopup from './UsersPopup'
 
 export default function BottomControlsBar() {
   const [profileOpen, setProfileOpen] = useState(false)
-  const [statusOpen, setStatusOpen] = useState(false)
   const [callHistoryOpen, setCallHistoryOpen] = useState(false)
   const [usersPopupOpen, setUsersPopupOpen] = useState(false)
   const {
@@ -57,12 +56,6 @@ export default function BottomControlsBar() {
             onClick={() => setProfileOpen(true)}
           >
             <AccountCircleIcon className="text-white" />
-          </IconButton>
-          <IconButton
-            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-            onClick={() => setStatusOpen(true)}
-          >
-            <MoodIcon className="text-white" />
           </IconButton>
         </div>
       )}
@@ -123,10 +116,6 @@ export default function BottomControlsBar() {
       <ProfileSettings 
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
-      />
-      <StatusSettings
-        open={statusOpen}
-        onClose={() => setStatusOpen(false)}
       />
       <CallHistoryPopup
         open={callHistoryOpen}

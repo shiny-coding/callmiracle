@@ -84,8 +84,18 @@ export type ConnectionRequest = {
   videoEnabled?: Maybe<Scalars['Boolean']['output']>;
 };
 
+export type DeleteMeetingResponse = {
+  __typename?: 'DeleteMeetingResponse';
+  _id: Scalars['ID']['output'];
+};
+
 export type MeetingPlan = {
   __typename?: 'MeetingPlan';
+  _id: Scalars['ID']['output'];
+  allowedFemales: Scalars['Boolean']['output'];
+  allowedMales: Scalars['Boolean']['output'];
+  allowedMaxAge: Scalars['Int']['output'];
+  allowedMinAge: Scalars['Int']['output'];
   minDuration: Scalars['Int']['output'];
   preferEarlier: Scalars['Boolean']['output'];
   statuses: Array<Status>;
@@ -94,6 +104,11 @@ export type MeetingPlan = {
 };
 
 export type MeetingPlanInput = {
+  _id?: InputMaybe<Scalars['ID']['input']>;
+  allowedFemales: Scalars['Boolean']['input'];
+  allowedMales: Scalars['Boolean']['input'];
+  allowedMaxAge: Scalars['Int']['input'];
+  allowedMinAge: Scalars['Int']['input'];
   minDuration: Scalars['Int']['input'];
   preferEarlier: Scalars['Boolean']['input'];
   statuses: Array<Status>;
@@ -104,12 +119,24 @@ export type MeetingPlanInput = {
 export type Mutation = {
   __typename?: 'Mutation';
   connectWithUser?: Maybe<ConnectionParams>;
+  createOrUpdateMeeting?: Maybe<MeetingPlan>;
+  deleteMeeting?: Maybe<DeleteMeetingResponse>;
   updateUser?: Maybe<User>;
 };
 
 
 export type MutationConnectWithUserArgs = {
   input: ConnectionParamsInput;
+};
+
+
+export type MutationCreateOrUpdateMeetingArgs = {
+  input: MeetingPlanInput;
+};
+
+
+export type MutationDeleteMeetingArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -172,10 +199,6 @@ export type SubscriptionOnConnectionRequestArgs = {
 
 export type UpdateUserInput = {
   about: Scalars['String']['input'];
-  allowedFemales?: InputMaybe<Scalars['Boolean']['input']>;
-  allowedMales?: InputMaybe<Scalars['Boolean']['input']>;
-  allowedMaxAge?: InputMaybe<Scalars['Int']['input']>;
-  allowedMinAge?: InputMaybe<Scalars['Int']['input']>;
   birthYear?: InputMaybe<Scalars['Int']['input']>;
   blocks: Array<BlockInput>;
   contacts: Scalars['String']['input'];
@@ -191,10 +214,6 @@ export type UpdateUserInput = {
 export type User = {
   __typename?: 'User';
   about: Scalars['String']['output'];
-  allowedFemales: Scalars['Boolean']['output'];
-  allowedMales: Scalars['Boolean']['output'];
-  allowedMaxAge: Scalars['Int']['output'];
-  allowedMinAge: Scalars['Int']['output'];
   birthYear?: Maybe<Scalars['Int']['output']>;
   blocks: Array<Block>;
   contacts: Scalars['String']['output'];

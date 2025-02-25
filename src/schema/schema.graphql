@@ -15,11 +15,16 @@ type Block {
 }
 
 type MeetingPlan {
+  _id: ID!
   userId: ID!
   statuses: [Status!]!
   timeSlots: [Float!]!
   minDuration: Int!
   preferEarlier: Boolean!
+  allowedMales: Boolean!
+  allowedFemales: Boolean!
+  allowedMinAge: Int!
+  allowedMaxAge: Int!
 }
 
 type User {
@@ -35,10 +40,6 @@ type User {
   contacts: String!
   sex: String
   birthYear: Int
-  allowedMales: Boolean!
-  allowedFemales: Boolean!
-  allowedMinAge: Int!
-  allowedMaxAge: Int!
   blocks: [Block!]!
 }
 
@@ -86,10 +87,6 @@ input UpdateUserInput {
   contacts: String!
   sex: String
   birthYear: Int
-  allowedMales: Boolean
-  allowedFemales: Boolean
-  allowedMinAge: Int
-  allowedMaxAge: Int
   blocks: [BlockInput!]!
 }
 
@@ -113,11 +110,16 @@ input BlockInput {
 }
 
 input MeetingPlanInput {
+  _id: ID
   userId: ID!
   statuses: [Status!]!
   timeSlots: [Float!]!
   minDuration: Int!
   preferEarlier: Boolean!
+  allowedMales: Boolean!
+  allowedFemales: Boolean!
+  allowedMinAge: Int!
+  allowedMaxAge: Int!
 }
 
 type CallHistoryEntry {
@@ -139,9 +141,15 @@ type Query {
 type Mutation {
   updateUser(input: UpdateUserInput!): User
   connectWithUser(input: ConnectionParamsInput!): ConnectionParams
+  createOrUpdateMeeting(input: MeetingPlanInput!): MeetingPlan
+  deleteMeeting(id: ID!): DeleteMeetingResponse
 }
 
 type Subscription {
   onConnectionRequest(userId: ID!): ConnectionRequest
   onUsersUpdated: [User!]!
+}
+
+type DeleteMeetingResponse {
+  _id: ID!
 } 

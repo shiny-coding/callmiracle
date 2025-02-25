@@ -1,0 +1,337 @@
+import { Dialog, DialogTitle, DialogContent, IconButton, DialogActions, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import { useTranslations } from 'next-intl'
+import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
+import { useStore } from '@/store/useStore'
+import { useState, useEffect, ChangeEvent } from 'react'
+import { Status, MeetingPlan } from '@/generated/graphql'
+import StatusSelector from './StatusSelector'
+import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes } from 'date-fns'
+import TimeSlotsGrid from './TimeSlotsGrid'
+
+interface Props {
+  open: boolean
+  onClose: () => void
+  meetings?: any[]
+  meeting?: any
+}
+
+export default function MeetingDialog({ open, onClose, meetings = [], meeting = null }: Props) {
+  const t = useTranslations()
+  const tStatus = useTranslations('Status')
+  const { user } = useStore()
+  const [meetingId, setMeetingId] = useState<string | undefined>(undefined)
+  const { 
+    statuses = [], 
+    allowedMales = true, 
+    allowedFemales = true, 
+    allowedMinAge = 10, 
+    allowedMaxAge = 100 
+  } =  {}
+  const [tempStatuses, setTempStatuses] = useState<Status[]>(statuses)
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<{timestamp: number, startTime: string, endTime: string, day: string, isPartial?: boolean, remainingMinutes?: number, isDummy?: boolean}[]>([])
+  const [minDuration, setMinDuration] = useState(30)
+  const [preferEarlier, setPreferEarlier] = useState(false)
+  const [tempAllowedMales, setTempAllowedMales] = useState(allowedMales)
+  const [tempAllowedFemales, setTempAllowedFemales] = useState(allowedFemales)
+  const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([allowedMinAge, allowedMaxAge])
+  const { updateMeeting, loading } = useUpdateMeeting()
+
+  // Generate available time slots
+  useEffect(() => {
+    const now = new Date()
+    
+    // Find the next half-hour boundary
+    const minutes = now.getMinutes()
+    const nextHalfHour = minutes < 30 ? 30 : 0
+    const nextHalfHourTime = setMilliseconds(setSeconds(setMinutes(new Date(now), nextHalfHour), 0), 0)
+    if (nextHalfHour === 0) {
+      nextHalfHourTime.setHours(nextHalfHourTime.getHours() + 1)
+    }
+    
+    // Calculate minutes until next half-hour
+    const minutesUntilNextSlot = differenceInMinutes(nextHalfHourTime, now)
+    
+    const slots = []
+    
+    // Add the current partial slot but align it to the previous half-hour boundary
+    if (minutesUntilNextSlot > 0) {
+      // Find the previous half-hour boundary
+      const prevHalfHourTime = new Date(now)
+      if (minutes < 30) {
+        // If we're before :30, go back to the hour
+        prevHalfHourTime.setMinutes(0, 0, 0)
+      } else {
+        // If we're after :30, go back to the half hour
+        prevHalfHourTime.setMinutes(30, 0, 0)
+      }
+      
+      slots.push({
+        timestamp: prevHalfHourTime.getTime(),
+        startTime: format(prevHalfHourTime, 'HH:mm'),
+        endTime: format(nextHalfHourTime, 'HH:mm'),
+        day: format(now, 'EEE'),
+        isPartial: true,
+        remainingMinutes: minutesUntilNextSlot
+      })
+    }
+    
+    // Generate slots for the next 48 hours in 30-minute increments
+    for (let i = 0; i < 48 * 2; i++) {
+      const slotTime = addMinutes(nextHalfHourTime, i * 30)
+      const endTime = addMinutes(slotTime, 30)
+      
+      // Skip slots that are in the past
+      if (slotTime.getTime() < now.getTime()) continue;
+      
+      const slot = {
+        timestamp: slotTime.getTime(),
+        startTime: format(slotTime, 'HH:mm'),
+        endTime: format(endTime, 'HH:mm'),
+        day: format(slotTime, 'EEE'),
+        isPartial: false,
+        remainingMinutes: undefined
+      }
+      
+      slots.push(slot)
+    }
+    
+    // Sort slots by timestamp to ensure they appear in chronological order
+    slots.sort((a, b) => a.timestamp - b.timestamp)
+    
+    // Group slots by day
+    const slotsByDay = slots.reduce((acc, slot) => {
+      const day = slot.day
+      if (!acc[day]) acc[day] = []
+      acc[day].push(slot)
+      return acc
+    }, {} as Record<string, typeof slots>)
+    
+    // For each day, ensure each hour starts with a slot
+    const processedSlots = []
+    
+    for (const day in slotsByDay) {
+      const daySlots = slotsByDay[day]
+      
+      // Process each slot
+      for (let i = 0; i < daySlots.length; i++) {
+        const slot = daySlots[i]
+        const slotMinutes = getMinutes(new Date(slot.timestamp))
+        
+        // If this is the first slot of the day or the previous slot was at a different hour
+        if (i === 0 || Math.floor(daySlots[i-1].timestamp / 3600000) !== Math.floor(slot.timestamp / 3600000)) {
+          // If the slot doesn't start at :00, add a dummy slot
+          if (slotMinutes === 30) {
+            const hourStart = startOfHour(new Date(slot.timestamp))
+            processedSlots.push({
+              timestamp: hourStart.getTime() - 1, // Use timestamp-1 for dummy slots
+              startTime: format(hourStart, 'HH:mm'),
+              endTime: slot.startTime,
+              day: slot.day,
+              isDummy: true
+            })
+          }
+        }
+        
+        processedSlots.push(slot)
+      }
+    }
+    
+    setAvailableTimeSlots(processedSlots)
+  }, [open])
+
+  // Initialize from provided meeting (for editing) or last meeting (for new)
+  useEffect(() => {
+    if (meeting) {
+      // Editing an existing meeting
+      setMeetingId(meeting._id)
+      setTempStatuses(meeting.statuses || [])
+      setMinDuration(meeting.minDuration || 30)
+      setPreferEarlier(meeting.preferEarlier || false)
+      
+      // Set selected time slots
+      setSelectedTimeSlots(meeting.timeSlots || [])
+      
+      setTempAllowedMales(meeting.allowedMales ?? true)
+      setTempAllowedFemales(meeting.allowedFemales ?? true)
+      setTempAgeRange([meeting.allowedMinAge ?? 18, meeting.allowedMaxAge ?? 100])
+    } else if (meetings && meetings.length > 0) {
+      // Creating a new meeting, initialize from last meeting
+      const lastMeeting = meetings[0]
+      setTempStatuses(lastMeeting.statuses || [])
+      setMinDuration(lastMeeting.minDuration || 30)
+      setPreferEarlier(lastMeeting.preferEarlier || false)
+      
+      // Set selected time slots
+      setSelectedTimeSlots(lastMeeting.timeSlots || [])
+      
+      setTempAllowedMales(lastMeeting.allowedMales ?? true)
+      setTempAllowedFemales(lastMeeting.allowedFemales ?? true)
+      setTempAgeRange([lastMeeting.allowedMinAge ?? 18, lastMeeting.allowedMaxAge ?? 100])
+    }
+  }, [meeting, meetings])
+
+  const toggleTimeSlot = (timestamp: number) => {
+    if (selectedTimeSlots.includes(timestamp)) {
+      setSelectedTimeSlots(selectedTimeSlots.filter(ts => ts !== timestamp))
+    } else {
+      setSelectedTimeSlots([...selectedTimeSlots, timestamp])
+    }
+  }
+
+  const handleMalesChange = (checked: boolean) => {
+    if (!checked && !tempAllowedFemales) {
+      setTempAllowedFemales(true)
+    }
+    setTempAllowedMales(checked)
+  }
+  
+  const handleFemalesChange = (checked: boolean) => {
+    if (!checked && !tempAllowedMales) {
+      setTempAllowedMales(true)
+    }
+    setTempAllowedFemales(checked)
+  }
+
+  const handleCancel = () => {
+    onClose()
+  }
+
+  const handleApply = async () => {
+    console.log('selectedTimeSlots', selectedTimeSlots)
+    await updateMeeting({
+      _id: meetingId,
+      statuses: tempStatuses,
+      timeSlots: selectedTimeSlots,
+      minDuration,
+      preferEarlier,
+      allowedMales: tempAllowedMales,
+      allowedFemales: tempAllowedFemales,
+      allowedMinAge: tempAgeRange[0],
+      allowedMaxAge: tempAgeRange[1]
+    })
+    onClose()
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleCancel}
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle className="flex justify-between items-center">
+        {meeting ? t('editMeeting') : t('createMeeting')}
+        <IconButton onClick={handleCancel} size="small">
+          <CloseIcon /> 
+        </IconButton>
+      </DialogTitle>
+      <DialogContent className="flex flex-col gap-4">
+        <StatusSelector value={tempStatuses} onChange={setTempStatuses} />
+        
+        {tempStatuses.length === 0 && (
+          <Typography color="error" className="text-sm">
+            {t('pleaseSelectStatus')}
+          </Typography>
+        )}
+        
+        <Typography variant="subtitle1" className="mt-4">
+          {t('selectTimeSlots')}
+        </Typography>
+        <TimeSlotsGrid
+          timeSlots={availableTimeSlots}
+          selectedTimeSlots={selectedTimeSlots}
+          onToggleTimeSlot={toggleTimeSlot}
+        />
+        {selectedTimeSlots.length === 0 && (
+          <Typography color="error" className="text-sm">
+            {t('pleaseSelectTimeSlots')}
+          </Typography>
+        )}
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={preferEarlier}
+              onChange={(e) => setPreferEarlier(e.target.checked)}
+            />
+          }
+          label={t('preferEarlier')}
+        />
+
+        <Typography variant="subtitle1" className="mt-4">
+          {t('minDuration')}
+        </Typography>
+        <div className="flex gap-4 justify-center">
+          <Button 
+            variant={minDuration === 30 ? "contained" : "outlined"}
+            onClick={() => setMinDuration(30)}
+            className="flex-1"
+          >
+            30 {t('minutes')}
+          </Button>
+          <Button 
+            variant={minDuration === 60 ? "contained" : "outlined"}
+            onClick={() => setMinDuration(60)}
+            className="flex-1"
+          >
+            1 {t('hour')}
+          </Button>
+        </div>
+
+        <Divider className="my-4" />
+        
+        <Typography variant="subtitle1" className="mt-4">
+          {t('preferences')}
+        </Typography>
+        
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={tempAllowedMales}
+                onChange={(e) => handleMalesChange(e.target.checked)}
+              />
+            }
+            label={t('allowMales')}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={tempAllowedFemales}
+                onChange={(e) => handleFemalesChange(e.target.checked)}
+              />
+            }
+            label={t('allowFemales')}
+          />
+        </FormGroup>
+        
+        <Typography>
+          {t('ageRange')}: {tempAgeRange[0]} - {tempAgeRange[1]}
+        </Typography>
+        <Slider
+          value={tempAgeRange}
+          onChange={(_, newValue) => setTempAgeRange(newValue as [number, number])}
+          min={10}
+          max={100}
+          valueLabelDisplay="auto"
+        />
+      </DialogContent>
+      <DialogActions className="border-t border-gray-800">
+        <Button onClick={handleCancel}>
+          {t('cancel')}
+        </Button>
+        <Button
+          onClick={handleApply}
+          variant="contained"
+          disabled={loading || selectedTimeSlots.length === 0 || tempStatuses.length === 0}
+        >
+          {meeting ? t('update') : t('create')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+} 

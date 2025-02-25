@@ -13,7 +13,7 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import VideoDeviceSelector from './VideoDeviceSelector'
 import AudioDeviceSelector from './AudioDeviceSelector'
 import ProfileSettings from './ProfileSettings'
-import StatusSettings from './StatusSettings'
+import MeetingDialog from './MeetingDialog'
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import CallHistoryPopup from './CallHistoryPopup'
@@ -123,7 +123,7 @@ export default function BottomControlsBar() {
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
       />
-      <StatusSettings
+      <MeetingDialog
         open={statusOpen}
         onClose={() => setStatusOpen(false)}
       />
