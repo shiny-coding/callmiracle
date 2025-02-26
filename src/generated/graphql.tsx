@@ -89,28 +89,34 @@ export type DeleteMeetingResponse = {
   _id: Scalars['ID']['output'];
 };
 
-export type MeetingPlan = {
-  __typename?: 'MeetingPlan';
+export type Meeting = {
+  __typename?: 'Meeting';
   _id: Scalars['ID']['output'];
   allowedFemales: Scalars['Boolean']['output'];
   allowedMales: Scalars['Boolean']['output'];
   allowedMaxAge: Scalars['Int']['output'];
   allowedMinAge: Scalars['Int']['output'];
+  languages: Array<Scalars['String']['output']>;
   minDuration: Scalars['Int']['output'];
+  peerMeetingId?: Maybe<Scalars['ID']['output']>;
   preferEarlier: Scalars['Boolean']['output'];
+  startTime?: Maybe<Scalars['Float']['output']>;
   statuses: Array<Status>;
   timeSlots: Array<Scalars['Float']['output']>;
   userId: Scalars['ID']['output'];
 };
 
-export type MeetingPlanInput = {
+export type MeetingInput = {
   _id?: InputMaybe<Scalars['ID']['input']>;
   allowedFemales: Scalars['Boolean']['input'];
   allowedMales: Scalars['Boolean']['input'];
   allowedMaxAge: Scalars['Int']['input'];
   allowedMinAge: Scalars['Int']['input'];
+  languages: Array<Scalars['String']['input']>;
   minDuration: Scalars['Int']['input'];
+  peerMeetingId?: InputMaybe<Scalars['ID']['input']>;
   preferEarlier: Scalars['Boolean']['input'];
+  startTime?: InputMaybe<Scalars['Float']['input']>;
   statuses: Array<Status>;
   timeSlots: Array<Scalars['Float']['input']>;
   userId: Scalars['ID']['input'];
@@ -119,7 +125,7 @@ export type MeetingPlanInput = {
 export type Mutation = {
   __typename?: 'Mutation';
   connectWithUser?: Maybe<ConnectionParams>;
-  createOrUpdateMeeting?: Maybe<MeetingPlan>;
+  createOrUpdateMeeting?: Maybe<Meeting>;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   updateUser?: Maybe<User>;
 };
@@ -131,7 +137,7 @@ export type MutationConnectWithUserArgs = {
 
 
 export type MutationCreateOrUpdateMeetingArgs = {
-  input: MeetingPlanInput;
+  input: MeetingInput;
 };
 
 
@@ -150,7 +156,7 @@ export type Query = {
   calls: Array<Call>;
   detailedCallHistory: Array<Call>;
   getOrCreateUser: User;
-  meetings: Array<MeetingPlan>;
+  meetings: Array<Meeting>;
   users: Array<User>;
 };
 
@@ -207,7 +213,6 @@ export type UpdateUserInput = {
   name: Scalars['String']['input'];
   online: Scalars['Boolean']['input'];
   sex?: InputMaybe<Scalars['String']['input']>;
-  statuses: Array<Status>;
   userId: Scalars['ID']['input'];
 };
 

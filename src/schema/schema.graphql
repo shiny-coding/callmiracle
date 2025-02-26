@@ -14,7 +14,7 @@ type Block {
   statuses: [Status!]!
 }
 
-type MeetingPlan {
+type Meeting {
   _id: ID!
   userId: ID!
   languages: [String!]!
@@ -26,6 +26,8 @@ type MeetingPlan {
   allowedFemales: Boolean!
   allowedMinAge: Int!
   allowedMaxAge: Int!
+  startTime: Float
+  peerMeetingId: ID
 }
 
 type User {
@@ -108,7 +110,7 @@ input BlockInput {
   statuses: [Status!]!
 }
 
-input MeetingPlanInput {
+input MeetingInput {
   _id: ID
   userId: ID!
   languages: [String!]!
@@ -120,6 +122,8 @@ input MeetingPlanInput {
   allowedFemales: Boolean!
   allowedMinAge: Int!
   allowedMaxAge: Int!
+  startTime: Float
+  peerMeetingId: ID
 }
 
 type CallHistoryEntry {
@@ -135,13 +139,13 @@ type Query {
   getOrCreateUser(userId: ID!, defaultLanguages: [String!]!): User!
   callHistory(userId: ID!): [CallHistoryEntry!]!
   detailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
-  meetings(userId: ID!): [MeetingPlan!]!
+  meetings(userId: ID!): [MeetingWithPeer!]!
 }
 
 type Mutation {
   updateUser(input: UpdateUserInput!): User
   connectWithUser(input: ConnectionParamsInput!): ConnectionParams
-  createOrUpdateMeeting(input: MeetingPlanInput!): MeetingPlan
+  createOrUpdateMeeting(input: MeetingInput!): Meeting
   deleteMeeting(id: ID!): DeleteMeetingResponse
 }
 
@@ -152,4 +156,10 @@ type Subscription {
 
 type DeleteMeetingResponse {
   _id: ID!
+}
+
+type MeetingWithPeer {
+  meeting: Meeting!
+  peerMeeting: Meeting
+  peerUser: User
 } 

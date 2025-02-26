@@ -13,24 +13,40 @@ import { useState } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { MeetingPlan } from '@/generated/graphql'
+import { Meeting } from '@/generated/graphql'
 import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
 import ConfirmDialog from './ConfirmDialog'
 
 export const GET_MEETINGS = gql`
   query GetMeetings($userId: ID!) {
     meetings(userId: $userId) {
-      _id
-      userId
-      languages
-      statuses
-      timeSlots
-      minDuration
-      preferEarlier
-      allowedMales
-      allowedFemales
-      allowedMinAge
-      allowedMaxAge
+      meeting {
+        _id
+        userId
+        languages
+        statuses
+        timeSlots
+        minDuration
+        preferEarlier
+        allowedMales
+        allowedFemales
+        allowedMinAge
+        allowedMaxAge
+        startTime
+        peerMeetingId
+      }
+      peerMeeting {
+        _id
+        userId
+        languages
+        statuses
+      }
+      peerUser {
+        userId
+        name
+        hasImage
+        online
+      }
     }
   }
 ` 
@@ -41,13 +57,13 @@ export default function MeetingsList() {
   })
   const t = useTranslations()
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false)
-  const [selectedMeeting, setSelectedMeeting] = useState<MeetingPlan | null>(null)
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const { deleteMeeting } = useDeleteMeeting()
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null)
 
-  const handleEditMeeting = (meeting: MeetingPlan) => {
-    setSelectedMeeting(meeting)
+  const handleEditMeeting = (meetingData: any) => {
+    setSelectedMeeting(meetingData.meeting)
     setMeetingDialogOpen(true)
   }
 
@@ -107,24 +123,21 @@ export default function MeetingsList() {
           </div>
         </div>
         <List>
-          {data?.meetings.map((meeting: any) => (
+          {data?.meetings.map((meetingData: any) => (
             <ListItem 
-              key={`${meeting._id}`}
-              className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
-              onClick={() => handleEditMeeting(meeting)}
-              sx={{ cursor: 'pointer' }}
+              key={meetingData.meeting._id}
+              className="flex flex-col p-4 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer"
+              onClick={() => handleEditMeeting(meetingData)}
             >
-              <div className="w-full">
-                <MeetingCard meeting={meeting} />
-                <div className="flex justify-end mt-2">
-                  <IconButton
-                    size="small"
-                    className="text-red-400 hover:bg-gray-600"
-                    onClick={(e) => handleDeleteMeeting(meeting._id, e)}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </div>
+              <div className="flex justify-between w-full">
+                <MeetingCard meetingWithPeer={meetingData} />
+                <IconButton 
+                  onClick={(e) => handleDeleteMeeting(meetingData.meeting._id, e)}
+                  size="small"
+                  className="text-red-400 hover:bg-gray-600"
+                >
+                  <DeleteIcon />
+                </IconButton>
               </div>
             </ListItem>
           ))}

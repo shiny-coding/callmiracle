@@ -90,6 +90,8 @@
   "today": "Today",
   "allSlotsInPast": "All time slots have passed",
   "preferEarlier": "Prefers earlier times",
+  "matchedMeeting": "Matched Meeting",
+  "call": "Call",
   "createMeeting": "Create Meeting",
   "selectTimeSlots": "Select Time Slots",
   "pleaseSelectTimeSlots": "Please select at least one time slot",

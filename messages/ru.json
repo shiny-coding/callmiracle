@@ -91,6 +91,8 @@
   "today": "Сегодня",
   "allSlotsInPast": "Все временные слоты прошли",
   "preferEarlier": "Предпочитает более раннее время",
+  "matchedMeeting": "Подобранная встреча",
+  "call": "Позвонить",
   "createMeeting": "Создать встречу",
   "selectTimeSlots": "Выберите время",
   "now": "Сейчас",
@@ -104,6 +106,5 @@
   "anyGender": "Любой пол",
   "malesOnly": "Только мужчины",
   "femalesOnly": "Только женщины",
-  "noTimeSlotsAvailable": "Нет доступных временных слотов",
-  "pleaseSelectLanguages": "Пожалуйста, выберите хотя бы один язык"
+  "noTimeSlotsAvailable": "Нет доступных временных слотов"
 } 

@@ -2,7 +2,7 @@ import { gql, useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
 
 const CREATE_OR_UPDATE_MEETING = gql`
-  mutation CreateOrUpdateMeeting($input: MeetingPlanInput!) {
+  mutation CreateOrUpdateMeeting($input: MeetingInput!) {
     createOrUpdateMeeting(input: $input) {
       _id
       userId
@@ -15,6 +15,8 @@ const CREATE_OR_UPDATE_MEETING = gql`
       allowedMinAge
       allowedMaxAge
       languages
+      startTime
+      peerMeetingId
     }
   }
 `
@@ -33,6 +35,8 @@ export const useUpdateMeeting = () => {
     allowedMinAge: number
     allowedMaxAge: number
     languages: string[]
+    startTime?: number
+    peerMeetingId?: string
   }) => {
     const userId = getUserId()
     if (!userId) return null

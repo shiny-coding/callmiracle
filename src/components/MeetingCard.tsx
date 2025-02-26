@@ -1,25 +1,36 @@
-import { Typography, Chip } from '@mui/material'
+import { Typography, Chip, Button } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import UserCard from './UserCard'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import LanguageIcon from '@mui/icons-material/Language'
-import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast } from 'date-fns'
+import VideocamIcon from '@mui/icons-material/Videocam'
+import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast, formatDistance } from 'date-fns'
 import { LANGUAGES } from '@/config/languages'
+import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 
 interface MeetingProps {
-  meeting: {
-    userId: string
-    languages: string[]
-    statuses: string[]
-    timeSlots: number[]
-    minDuration: number
-    preferEarlier: boolean
-    allowedMales: boolean
-    allowedFemales: boolean
-    allowedMinAge: number
-    allowedMaxAge: number
-    user: {
+  meetingWithPeer: {
+    meeting: {
+      userId: string
+      languages: string[]
+      statuses: string[]
+      timeSlots: number[]
+      minDuration: number
+      preferEarlier: boolean
+      allowedMales: boolean
+      allowedFemales: boolean
+      allowedMinAge: number
+      allowedMaxAge: number
+      startTime?: number
+      peerMeetingId?: string
+    }
+    peerMeeting?: {
+      userId: string
+      languages: string[]
+      statuses: string[]
+    }
+    peerUser?: {
       userId: string
       name: string
       hasImage: boolean
@@ -28,10 +39,12 @@ interface MeetingProps {
   }
 }
 
-export default function MeetingCard({ meeting }: MeetingProps) {
+export default function MeetingCard({ meetingWithPeer }: MeetingProps) {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
   const now = new Date()
+  const { doCall } = useWebRTCContext()
+  const meeting = meetingWithPeer.meeting
 
   const formatTimeSlot = (startTimestamp: number, endTimestamp: number) => {
     const startDate = new Date(startTimestamp)
@@ -111,16 +124,47 @@ export default function MeetingCard({ meeting }: MeetingProps) {
   const timeSlotsByDay = groupTimeSlotsByDay()
   
   // Check if there are any future time slots
-  const hasFutureSlots = Object.values(timeSlotsByDay).some(slots => slots.length > 0)
+  const hasFutureSlots = meeting.timeSlots.some(slot => {
+    const endTime = new Date(slot + 30 * 60 * 1000) // 30 minutes in milliseconds
+    return endTime > now
+  })
+
+  // Check if this is a matched meeting that's currently active
+  const isActiveNow = meeting.startTime && meeting.peerMeetingId && 
+    meeting.startTime <= now.getTime() && 
+    meeting.startTime + (meeting.minDuration * 60 * 1000) >= now.getTime()
+
+  // Format the start time
+  const formatStartTime = () => {
+    if (!meeting.startTime) return null
+    
+    const startDate = new Date(meeting.startTime)
+    
+    if (isActiveNow) {
+      return t('now')
+    }
+    
+    if (isToday(startDate)) {
+      return `${t('today')} ${format(startDate, 'HH:mm')}`
+    }
+    
+    if (startDate > now) {
+      return formatDistance(startDate, now, { addSuffix: true })
+    }
+    
+    return format(startDate, 'MMM d, HH:mm')
+  }
+
+  const handleCallPeer = () => {
+    if (meetingWithPeer.peerUser && meetingWithPeer.peerUser.userId) {
+      //doCall(meetingWithPeer.peerUser)
+    }
+  }
 
   return (
-    <div className="space-y-2">
-      {/* <UserCard 
-        user={meeting.user}
-        showDetails={false}
-        showCallButton={true}
-      /> */}
-      <div className="flex flex-wrap gap-2 mt-2">
+    <div className="flex flex-col gap-2 w-full">
+      {/* <UserCard user={meeting.user} showDetails={false} /> */}
+      <div className="flex flex-wrap gap-2">
         {meeting.statuses.map(status => (
           <Chip
             key={status}
@@ -148,6 +192,47 @@ export default function MeetingCard({ meeting }: MeetingProps) {
           </div>
         </div>
       )}
+      
+      {meeting.peerMeetingId && meeting.startTime && (
+        <div className="flex flex-col gap-1 mt-1 p-2 bg-gray-700 rounded-lg">
+          <div className="flex items-center justify-between">
+            <Typography variant="subtitle2" className="text-green-400">
+              {t('matchedMeeting')}
+            </Typography>
+            <Chip
+              label={formatStartTime()}
+              size="small"
+              className={`text-xs ${isActiveNow ? 'bg-green-700 text-white' : 'bg-gray-600 text-gray-200'}`}
+            />
+          </div>
+          
+          {meetingWithPeer.peerUser && (
+            <div className="flex items-center justify-between mt-1">
+              <div className="flex items-center gap-2">
+                <Typography variant="body2" className="text-gray-200">
+                  {meetingWithPeer.peerUser.name}
+                </Typography>
+                {meetingWithPeer.peerUser.online && (
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                )}
+              </div>
+              
+              {isActiveNow && meetingWithPeer.peerUser.online && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<VideocamIcon />}
+                  onClick={handleCallPeer}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {t('call')}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      
       <div className="flex items-center gap-2">
         <AccessTimeIcon className="text-gray-400" fontSize="small" />
         <Typography variant="body2" className="text-gray-300">

@@ -1,6 +1,7 @@
 import { Context } from '../types'
 import { ObjectId } from 'mongodb'
 import { getUserId } from '@/lib/userId'
+import { canConnectMeetings, determineBestStartTime } from './connectMeetings'
 
 export const meetingsMutations = {
   createOrUpdateMeeting: async (_: any, { input }: { input: any }, { db }: Context) => {
@@ -15,7 +16,9 @@ export const meetingsMutations = {
       allowedFemales,
       allowedMinAge,
       allowedMaxAge,
-      languages
+      languages,
+      startTime,
+      peerMeetingId
     } = input
 
     try {
@@ -37,6 +40,8 @@ export const meetingsMutations = {
             allowedMinAge,
             allowedMaxAge,
             languages,
+            startTime,
+            peerMeetingId
           },
         },
         { 
@@ -44,6 +49,83 @@ export const meetingsMutations = {
           returnDocument: 'after'
         }
       );
+      
+      // If this meeting already has a peer, update the peer meeting
+      if (peerMeetingId) {
+        await db.collection('meetings').updateOne(
+          { _id: new ObjectId(peerMeetingId) },
+          { 
+            $set: { 
+              peerMeetingId: meetingId.toString(),
+              startTime
+            } 
+          }
+        );
+        return result;
+      }
+      
+      // Try to find a matching meeting
+      const now = new Date().getTime();
+      const potentialPeers = await db.collection('meetings').find({
+        userId: { $ne: userId },
+        peerMeetingId: { $exists: false },
+        timeSlots: { $elemMatch: { $gte: now } }
+      }).toArray();
+      
+      if (potentialPeers.length === 0) return result;
+      
+      // Get all users for checking preferences
+      const userIds = [userId, ...potentialPeers.map(m => m.userId)];
+      const users = await db.collection('users').find({
+        userId: { $in: userIds }
+      }).toArray();
+      
+      // Find the best matching meeting
+      let bestMatch = null;
+      let bestOverlap = null;
+      let bestOverlapDuration = 0;
+      
+      for (const peer of potentialPeers) {
+        const overlap = canConnectMeetings(result, peer, users);
+        if (overlap) {
+          // Find the slot with the longest overlap
+          const longestOverlap = overlap.reduce((max: any, slot: any) => 
+            slot.duration > max.duration ? slot : max, overlap[0]);
+            
+          if (longestOverlap.duration > bestOverlapDuration) {
+            bestMatch = peer;
+            bestOverlap = overlap;
+            bestOverlapDuration = longestOverlap.duration;
+          }
+        }
+      }
+      
+      if (bestMatch && bestOverlap) {
+        // Determine the best start time
+        const bestStartTime = determineBestStartTime(bestOverlap, result, bestMatch);
+        
+        // Update both meetings
+        await db.collection('meetings').updateOne(
+          { _id: meetingId },
+          { $set: { 
+              peerMeetingId: bestMatch._id.toString(),
+              startTime: bestStartTime
+            } 
+          }
+        );
+        
+        await db.collection('meetings').updateOne(
+          { _id: bestMatch._id },
+          { $set: { 
+              peerMeetingId: meetingId.toString(),
+              startTime: bestStartTime
+            } 
+          }
+        );
+        
+        // Return the updated meeting
+        return await db.collection('meetings').findOne({ _id: meetingId });
+      }
       
       return result;
     } catch (error) {
