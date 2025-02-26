@@ -7,7 +7,6 @@ const UPDATE_USER = gql`
     updateUser(input: $input) {
       userId
       name
-      statuses
       languages
       timestamp
       locale
@@ -17,10 +16,6 @@ const UPDATE_USER = gql`
       contacts
       sex
       birthYear
-      allowedMales
-      allowedFemales
-      allowedMinAge
-      allowedMaxAge
       blocks {
         userId
         all
@@ -53,17 +48,12 @@ export const useUpdateUser = () => {
           userId,
           name: user?.name,
           languages: user?.languages,
-          statuses: user?.statuses,
           locale: 'en',
           online: user?.online,
           about: user?.about,
           contacts: user?.contacts,
           sex: user?.sex,
           birthYear: user?.birthYear,
-          allowedMales: user?.allowedMales,
-          allowedFemales: user?.allowedFemales,
-          allowedMinAge: user?.allowedMinAge,
-          allowedMaxAge: user?.allowedMaxAge,
           blocks: cleanBlocks
         }
       }

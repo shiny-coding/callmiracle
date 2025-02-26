@@ -3,11 +3,14 @@ import { useTranslations } from 'next-intl'
 import UserCard from './UserCard'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
+import LanguageIcon from '@mui/icons-material/Language'
 import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast } from 'date-fns'
+import { LANGUAGES } from '@/config/languages'
 
 interface MeetingProps {
   meeting: {
     userId: string
+    languages: string[]
     statuses: string[]
     timeSlots: number[]
     minDuration: number
@@ -127,6 +130,24 @@ export default function MeetingCard({ meeting }: MeetingProps) {
           />
         ))}
       </div>
+      {meeting.languages && meeting.languages.length > 0 && (
+        <div className="flex items-center gap-2">
+          <LanguageIcon className="text-gray-400" fontSize="small" />
+          <div className="flex flex-wrap gap-1">
+            {meeting.languages.map(langCode => {
+              const language = LANGUAGES.find(l => l.code === langCode)
+              return (
+                <Chip
+                  key={langCode}
+                  label={language?.name || langCode}
+                  size="small"
+                  className="text-xs text-white bg-gray-700"
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <AccessTimeIcon className="text-gray-400" fontSize="small" />
         <Typography variant="body2" className="text-gray-300">

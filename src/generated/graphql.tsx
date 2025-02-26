@@ -223,7 +223,6 @@ export type User = {
   name: Scalars['String']['output'];
   online: Scalars['Boolean']['output'];
   sex?: Maybe<Scalars['String']['output']>;
-  statuses: Array<Status>;
   timestamp: Scalars['Float']['output'];
   userId: Scalars['ID']['output'];
 };

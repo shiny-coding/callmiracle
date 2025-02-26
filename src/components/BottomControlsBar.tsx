@@ -12,7 +12,7 @@ import PeopleIcon from '@mui/icons-material/People'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import VideoDeviceSelector from './VideoDeviceSelector'
 import AudioDeviceSelector from './AudioDeviceSelector'
-import ProfileSettings from './ProfileSettings'
+import UserSettingsDialog from './UserSettingsDialog'
 import MeetingDialog from './MeetingDialog'
 import VideoQualitySelector from './VideoQualitySelector'
 import { useState } from 'react'
@@ -113,7 +113,7 @@ export default function BottomControlsBar() {
         </div>
       </div>
 
-      <ProfileSettings 
+      <UserSettingsDialog 
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
       />

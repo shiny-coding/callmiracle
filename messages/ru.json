@@ -3,6 +3,8 @@
   "searchByName": "Поиск по имени",
   "selectStatus": "Выберите статус",
   "pleaseSelectStatus": "Пожалуйста, выберите хотя бы один статус",
+  "pleaseSelectTimeSlots": "Пожалуйста, выберите хотя бы одно время",
+  "pleaseSelectLanguages": "Пожалуйста, выберите хотя бы один язык",
   "online": "В сети",
   "offline": "Не в сети",
   "Profile": {
@@ -91,7 +93,6 @@
   "preferEarlier": "Предпочитает более раннее время",
   "createMeeting": "Создать встречу",
   "selectTimeSlots": "Выберите время",
-  "pleaseSelectTimeSlots": "Пожалуйста, выберите хотя бы одно время",
   "now": "Сейчас",
   "minDuration": "Минимальная продолжительность",
   "minutes": "минут",
@@ -103,5 +104,6 @@
   "anyGender": "Любой пол",
   "malesOnly": "Только мужчины",
   "femalesOnly": "Только женщины",
-  "noTimeSlotsAvailable": "Нет доступных временных слотов"
+  "noTimeSlotsAvailable": "Нет доступных временных слотов",
+  "pleaseSelectLanguages": "Пожалуйста, выберите хотя бы один язык"
 } 

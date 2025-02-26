@@ -11,7 +11,7 @@ import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { LANGUAGES } from '@/config/languages'
-import ProfileSettings from './ProfileSettings'
+import UserSettingsDialog from './UserSettingsDialog'
 import MeetingDialog from './MeetingDialog'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { getUserId } from '@/lib/userId'
@@ -164,7 +164,7 @@ export default function LocalVideo() {
         </div>
       )}
 
-      <ProfileSettings 
+      <UserSettingsDialog 
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
       />

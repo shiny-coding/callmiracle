@@ -10,6 +10,7 @@ import { Status, MeetingPlan } from '@/generated/graphql'
 import StatusSelector from './StatusSelector'
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes } from 'date-fns'
 import TimeSlotsGrid from './TimeSlotsGrid'
+import LanguageSelector from './LanguageSelector'
 
 interface Props {
   open: boolean
@@ -38,6 +39,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
   const [tempAllowedMales, setTempAllowedMales] = useState(allowedMales)
   const [tempAllowedFemales, setTempAllowedFemales] = useState(allowedFemales)
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([allowedMinAge, allowedMaxAge])
+  const [tempLanguages, setTempLanguages] = useState<string[]>([])
   const { updateMeeting, loading } = useUpdateMeeting()
 
   // Reset form when dialog opens or meeting changes
@@ -55,6 +57,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
           meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
           meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
         ])
+        setTempLanguages(meeting.languages || (user?.languages || []))
       } else {
         // Creating a new meeting
         setMeetingId(undefined)
@@ -65,9 +68,10 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         setTempAllowedMales(true)
         setTempAllowedFemales(true)
         setTempAgeRange([10, 100])
+        setTempLanguages(user?.languages || [])
       }
     }
-  }, [open, meeting])
+  }, [open, meeting, user?.languages])
 
   // Generate available time slots
   useEffect(() => {
@@ -211,7 +215,8 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
       allowedMales: tempAllowedMales,
       allowedFemales: tempAllowedFemales,
       allowedMinAge: tempAgeRange[0],
-      allowedMaxAge: tempAgeRange[1]
+      allowedMaxAge: tempAgeRange[1],
+      languages: tempLanguages
     })
     onClose()
   }
@@ -235,6 +240,21 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         {tempStatuses.length === 0 && (
           <Typography color="error" className="text-sm">
             {t('pleaseSelectStatus')}
+          </Typography>
+        )}
+        
+        <Typography variant="subtitle1" className="mt-4">
+          {t('languages')}
+        </Typography>
+        <LanguageSelector
+          value={tempLanguages}
+          onChange={setTempLanguages}
+          label={t('Profile.iSpeak')}
+        />
+        
+        {tempLanguages.length === 0 && (
+          <Typography color="error" className="text-sm">
+            {t('pleaseSelectLanguages')}
           </Typography>
         )}
         
@@ -327,7 +347,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         <Button
           onClick={handleApply}
           variant="contained"
-          disabled={loading || selectedTimeSlots.length === 0 || tempStatuses.length === 0}
+          disabled={loading || selectedTimeSlots.length === 0 || tempStatuses.length === 0 || tempLanguages.length === 0}
         >
           {meeting ? t('update') : t('create')}
         </Button>

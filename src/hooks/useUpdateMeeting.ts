@@ -14,6 +14,7 @@ const CREATE_OR_UPDATE_MEETING = gql`
       allowedFemales
       allowedMinAge
       allowedMaxAge
+      languages
     }
   }
 `
@@ -31,6 +32,7 @@ export const useUpdateMeeting = () => {
     allowedFemales: boolean
     allowedMinAge: number
     allowedMaxAge: number
+    languages: string[]
   }) => {
     const userId = getUserId()
     if (!userId) return null

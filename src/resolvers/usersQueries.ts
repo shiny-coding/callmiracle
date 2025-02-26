@@ -19,15 +19,10 @@ export const usersQueries = {
         _id: new ObjectId(),
         userId,
         name: '',
-        statuses: [],
         languages: defaultLanguages,  // Use provided default languages
         timestamp: Date.now(),
         locale: 'en',
         online: false,
-        allowedMales: true,
-        allowedFemales: true,
-        allowedMinAge: 10,
-        allowedMaxAge: 100,
         blocks: []
       }
       

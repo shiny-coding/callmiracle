@@ -12,12 +12,12 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { Dialog as CameraDialog } from '@mui/material'
 
-interface ProfileSettingsProps {
+interface UserSettingsDialogProps {
   open: boolean
   onClose: () => void
 }
 
-export default function ProfileSettings({ open, onClose }: ProfileSettingsProps) {
+export default function UserSettingsDialog({ open, onClose }: UserSettingsDialogProps) {
   const t = useTranslations('Profile')
   const { user, setUser } = useStore()
   const { name = '', languages = [], hasImage = false, about = '', contacts = '', sex = null, birthYear = null } = user || {}

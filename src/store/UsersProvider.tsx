@@ -10,7 +10,6 @@ const GET_USERS = gql`
     users {
       userId
       name
-      statuses
       languages
       timestamp
       locale
@@ -27,7 +26,6 @@ const USERS_SUBSCRIPTION = gql`
     onUsersUpdated {
       userId
       name
-      statuses
       languages
       timestamp
       locale
@@ -35,6 +33,7 @@ const USERS_SUBSCRIPTION = gql`
       hasImage
       about
       contacts
+      sex
     }
   }
 `

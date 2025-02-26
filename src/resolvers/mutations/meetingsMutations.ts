@@ -14,7 +14,8 @@ export const meetingsMutations = {
       allowedMales,
       allowedFemales,
       allowedMinAge,
-      allowedMaxAge
+      allowedMaxAge,
+      languages
     } = input
 
     try {
@@ -35,6 +36,7 @@ export const meetingsMutations = {
             allowedFemales,
             allowedMinAge,
             allowedMaxAge,
+            languages,
           },
         },
         { 

@@ -14,7 +14,6 @@ export const transformUser = (user: any): User | null => {
   return {
     userId: user.userId,
     name: user.name || '',
-    statuses: user.statuses || [],
     languages: user.languages || [],
     timestamp: user.timestamp || Date.now(),
     locale: user.locale || 'en',
@@ -24,10 +23,6 @@ export const transformUser = (user: any): User | null => {
     contacts: user.contacts || '',
     sex: user.sex || null,
     birthYear: user.birthYear || null,
-    allowedMales: user.allowedMales ?? true,
-    allowedFemales: user.allowedFemales ?? true,
-    allowedMinAge: user.allowedMinAge || 10,
-    allowedMaxAge: user.allowedMaxAge || 100,
     blocks: user.blocks || []
   }
 }

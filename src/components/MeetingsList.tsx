@@ -22,6 +22,7 @@ export const GET_MEETINGS = gql`
     meetings(userId: $userId) {
       _id
       userId
+      languages
       statuses
       timeSlots
       minDuration

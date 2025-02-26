@@ -9,7 +9,6 @@ export const GET_OR_CREATE_USER = gql`
     getOrCreateUser(userId: $userId, defaultLanguages: $defaultLanguages) {
       userId
       name
-      statuses
       languages
       timestamp
       locale

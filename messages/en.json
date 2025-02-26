@@ -104,5 +104,6 @@
   "editMeeting": "Edit Meeting",
   "anyGender": "Any gender",
   "malesOnly": "Males only",
-  "femalesOnly": "Females only"
+  "femalesOnly": "Females only",
+  "pleaseSelectLanguages": "Please select at least one language"
 } 

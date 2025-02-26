@@ -17,6 +17,7 @@ type Block {
 type MeetingPlan {
   _id: ID!
   userId: ID!
+  languages: [String!]!
   statuses: [Status!]!
   timeSlots: [Float!]!
   minDuration: Int!
@@ -30,7 +31,6 @@ type MeetingPlan {
 type User {
   userId: ID!
   name: String!
-  statuses: [Status!]!
   languages: [String!]!
   timestamp: Float!
   locale: String!
@@ -79,7 +79,6 @@ type Call {
 input UpdateUserInput {
   userId: ID!
   name: String!
-  statuses: [Status!]!
   languages: [String!]!
   locale: String!
   online: Boolean!
@@ -112,6 +111,7 @@ input BlockInput {
 input MeetingPlanInput {
   _id: ID
   userId: ID!
+  languages: [String!]!
   statuses: [Status!]!
   timeSlots: [Float!]!
   minDuration: Int!

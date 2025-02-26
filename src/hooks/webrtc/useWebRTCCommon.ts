@@ -34,7 +34,6 @@ export const ON_CONNECTION_REQUEST = gql`
         userId
         name
         languages
-        statuses
       }
     }
   }

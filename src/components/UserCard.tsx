@@ -106,21 +106,6 @@ export default function UserCard({
         </div>
       )}
 
-      {showDetails && user.statuses.length > 0 && (
-        <div>
-          <div className="flex flex-wrap gap-1">
-            {user.statuses.map(status => (
-              <Chip
-                key={status}
-                label={tStatus(status)}
-                size="small"
-                className="text-xs text-white bg-gray-700"
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       {isBlocked && (
         <LockIcon 
           className="text-red-500 absolute bottom-7 right-7" 
