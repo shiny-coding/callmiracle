@@ -72,8 +72,7 @@ export default function MeetingsList() {
     setMeetingDialogOpen(true)
   }
 
-  const handleDeleteMeeting = async (meetingId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleDeleteMeeting = async (meetingId: string) => {
     setMeetingToDelete(meetingId)
     setConfirmDialogOpen(true)
   }
@@ -126,19 +125,19 @@ export default function MeetingsList() {
           {data?.meetings.map((meetingData: any) => (
             <ListItem 
               key={meetingData.meeting._id}
-              className="flex flex-col p-4 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer"
-              onClick={() => handleEditMeeting(meetingData)}
+              className="flex flex-col p-4 bg-gray-800 rounded-lg hover:bg-gray-700 relative"
             >
-              <div className="flex justify-between w-full">
-                <MeetingCard meetingWithPeer={meetingData} />
-                <IconButton 
-                  onClick={(e) => handleDeleteMeeting(meetingData.meeting._id, e)}
-                  size="small"
-                  className="text-red-400 hover:bg-gray-600"
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </div>
+              <MeetingCard 
+                meetingWithPeer={meetingData} 
+                onEdit={(e) => {
+                  e?.stopPropagation();
+                  handleEditMeeting(meetingData);
+                }}
+                onDelete={(e) => {
+                  e?.stopPropagation();
+                  handleDeleteMeeting(meetingData.meeting._id);
+                }}
+              />
             </ListItem>
           ))}
           {data?.meetings.length === 0 && (

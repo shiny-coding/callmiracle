@@ -33,14 +33,15 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
   } =  {}
   const [tempStatuses, setTempStatuses] = useState<Status[]>(statuses)
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<{timestamp: number, startTime: string, endTime: string, day: string, isPartial?: boolean, remainingMinutes?: number, isDummy?: boolean}[]>([])
-  const [minDuration, setMinDuration] = useState(30)
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<{timestamp: number, startTime: string, endTime: string, day: string, isPartial?: boolean, remainingMinutes?: number, isDummy?: boolean, isDisabled?: boolean}[]>([])
+  const [minDuration, setMinDuration] = useState(60)
   const [preferEarlier, setPreferEarlier] = useState(false)
   const [tempAllowedMales, setTempAllowedMales] = useState(allowedMales)
   const [tempAllowedFemales, setTempAllowedFemales] = useState(allowedFemales)
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([allowedMinAge, allowedMaxAge])
   const [tempLanguages, setTempLanguages] = useState<string[]>([])
   const { updateMeeting, loading } = useUpdateMeeting()
+  const [occupiedTimeSlots, setOccupiedTimeSlots] = useState<number[]>([])
 
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         setMeetingId(meeting._id)
         setTempStatuses(meeting.statuses || [])
         setSelectedTimeSlots(meeting.timeSlots || [])
-        setMinDuration(meeting.minDuration || 30)
+        setMinDuration(meeting.minDuration || 60)
         setPreferEarlier(meeting.preferEarlier || false)
         setTempAllowedMales(meeting.allowedMales !== undefined ? meeting.allowedMales : true)
         setTempAllowedFemales(meeting.allowedFemales !== undefined ? meeting.allowedFemales : true)
@@ -63,15 +64,26 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         setMeetingId(undefined)
         setTempStatuses([])
         setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
-        setMinDuration(30)
+        setMinDuration(60)
         setPreferEarlier(false)
         setTempAllowedMales(true)
         setTempAllowedFemales(true)
         setTempAgeRange([10, 100])
         setTempLanguages(user?.languages || [])
       }
+      
+      // Collect all time slots from other meetings
+      const otherMeetings = meetings.filter(m => 
+        !meeting || m.meeting._id !== meeting._id
+      )
+      
+      const occupied = otherMeetings.flatMap(m => 
+        m.meeting.timeSlots || []
+      )
+      
+      setOccupiedTimeSlots(occupied)
     }
-  }, [open, meeting, user?.languages])
+  }, [open, meeting, user?.languages, meetings])
 
   // Generate available time slots
   useEffect(() => {
@@ -108,7 +120,8 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         endTime: format(nextHalfHourTime, 'HH:mm'),
         day: format(now, 'EEE'),
         isPartial: true,
-        remainingMinutes: minutesUntilNextSlot
+        remainingMinutes: minutesUntilNextSlot,
+        isDisabled: occupiedTimeSlots.includes(prevHalfHourTime.getTime())
       })
     }
     
@@ -126,7 +139,8 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         endTime: format(endTime, 'HH:mm'),
         day: format(slotTime, 'EEE'),
         isPartial: false,
-        remainingMinutes: undefined
+        remainingMinutes: undefined,
+        isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
       }
       
       slots.push(slot)
@@ -174,9 +188,14 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
     }
     
     setAvailableTimeSlots(processedSlots)
-  }, [open])
+  }, [open, occupiedTimeSlots])
 
   const toggleTimeSlot = (timestamp: number) => {
+    // Don't allow toggling disabled slots
+    if (availableTimeSlots.find(slot => slot.timestamp === timestamp)?.isDisabled) {
+      return
+    }
+    
     setSelectedTimeSlots(prev => {
       if (prev.includes(timestamp)) {
         return prev.filter(t => t !== timestamp)

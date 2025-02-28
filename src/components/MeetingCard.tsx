@@ -5,6 +5,9 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import LanguageIcon from '@mui/icons-material/Language'
 import VideocamIcon from '@mui/icons-material/Videocam'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
+import IconButton from '@mui/material/IconButton'
 import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast, formatDistance } from 'date-fns'
 import { LANGUAGES } from '@/config/languages'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
@@ -37,9 +40,11 @@ interface MeetingProps {
       online: boolean
     }
   }
+  onEdit?: (e?: React.MouseEvent) => void
+  onDelete?: (e?: React.MouseEvent) => void
 }
 
-export default function MeetingCard({ meetingWithPeer }: MeetingProps) {
+export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: MeetingProps) {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
   const now = new Date()
@@ -162,8 +167,35 @@ export default function MeetingCard({ meetingWithPeer }: MeetingProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2 w-full">
-      {/* <UserCard user={meeting.user} showDetails={false} /> */}
+    <div className="flex flex-col gap-2 w-full relative">
+      {onEdit && (
+        <div className="absolute top-0 right-0">
+          <IconButton 
+            className="text-blue-400 hover:bg-gray-600 p-1"
+            onClick={(e) => {
+            e.stopPropagation();
+            onEdit(e);
+          }}
+          size="small"
+        >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </div>
+      )}
+      {onDelete && (
+        <div className="absolute bottom-0 right-0">
+          <IconButton 
+            className="text-red-400 hover:bg-gray-600 p-1"
+            onClick={(e) => {
+            e.stopPropagation();
+            onDelete(e);
+          }}
+          size="small"
+        >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {meeting.statuses.map(status => (
           <Chip
@@ -299,6 +331,7 @@ export default function MeetingCard({ meetingWithPeer }: MeetingProps) {
           )
         })}
       </div>
+      <div className="h-6"></div>
     </div>
   )
 } 

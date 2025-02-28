@@ -9,6 +9,7 @@ interface TimeSlot {
   isPartial?: boolean
   remainingMinutes?: number
   isDummy?: boolean
+  isDisabled?: boolean
 }
 
 interface TimeSlotsGridProps {
@@ -47,7 +48,10 @@ export default function TimeSlotsGrid({
                   variant={selectedTimeSlots.includes(slot.timestamp) ? "contained" : "outlined"}
                   size="small"
                   onClick={() => onToggleTimeSlot(slot.timestamp)}
-                  className={`text-xs ${slot.isPartial ? 'border-yellow-500' : ''}`}
+                  disabled={slot.isDisabled}
+                  className={`text-xs ${slot.isPartial ? 'border-yellow-500' : ''} ${
+                    slot.isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   {slot.isPartial ? t('now') : slot.startTime} - {slot.endTime}
                 </Button>
