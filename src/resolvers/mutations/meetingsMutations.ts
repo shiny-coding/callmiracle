@@ -3,12 +3,16 @@ import { ObjectId } from 'mongodb'
 import { getUserId } from '@/lib/userId'
 import { canConnectMeetings, determineBestStartTime } from './connectMeetings'
 
+// Define error symbols
+const MeetingAlreadyConnected = Symbol('MeetingAlreadyConnected');
+const PeerAlreadyConnected = Symbol('PeerAlreadyConnected');
+
 async function tryConnectMeetings(meeting: any, db: any, userId: string) {
   // Try to find a matching meeting
   const now = new Date().getTime();
   const potentialPeers = await db.collection('meetings').find({
     userId: { $ne: userId },
-    peerMeetingId: { $exists: false },
+    peerMeetingId: null,
     timeSlots: { $elemMatch: { $gte: now } }
   }).toArray();
 
@@ -22,8 +26,8 @@ async function tryConnectMeetings(meeting: any, db: any, userId: string) {
 
   // Find peers with at least one hour of overlap
   const oneHourInMs = 60 * 60 * 1000;
-  const peersWithHourOverlap = [];
-  const peersWithAnyOverlap = [];
+  let peersWithHourOverlap = [];
+  let peersWithAnyOverlap = [];
 
   // Check each potential peer for overlap
   for (const peer of potentialPeers) {
@@ -46,35 +50,90 @@ async function tryConnectMeetings(meeting: any, db: any, userId: string) {
     peersWithAnyOverlap.push(peerInfo);
   }
 
-  const peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
+  let peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
   if (peersToChooseFrom.length === 0) return meeting;
 
-  const randomIndex = Math.floor(Math.random() * peersToChooseFrom.length);
-  const bestMatch = peersToChooseFrom[randomIndex].peer;
-  const bestOverlap = peersToChooseFrom[randomIndex].overlap;
+  // Use session for transaction
+  const session = db.client.startSession();
+  let updatedMeeting = meeting;
+  const maxTries = 10;
 
-  // Determine the best start time
-  const bestStartTime = determineBestStartTime(bestOverlap, meeting, bestMatch);
-  
-  // Update this meeting with the peer meeting ID and start time
-  const updatedMeeting = await db.collection('meetings').updateOne(
-    { _id: meeting._id },
-    { $set: { 
-        peerMeetingId: bestMatch._id.toString(),
-        startTime: bestStartTime
-      } 
+  for (let i = 0; i < maxTries; i++) {
+    const randomIndex = Math.floor(Math.random() * (peersToChooseFrom.length - 1));
+    try {
+      await session.withTransaction(async () => {
+
+        const { peer, overlap } = peersToChooseFrom[randomIndex];
+        
+        // Determine the best start time
+        const bestStartTime = determineBestStartTime(overlap, meeting, peer);
+        
+        // Update this meeting with the peer meeting ID and start time
+        const result = await db.collection('meetings').updateOne(
+          { _id: meeting._id, peerMeetingId: null },
+          { $set: { 
+              peerMeetingId: peer._id.toString(),
+              startTime: bestStartTime
+            }
+          },
+          { session }
+        );
+        
+        if (result.modifiedCount === 0) {
+          // This meeting was connected by another process
+          throw MeetingAlreadyConnected;
+        }
+        
+        // Update the peer meeting with this meeting's ID and the same start time
+        const peerResult = await db.collection('meetings').updateOne(
+          { _id: peer._id, peerMeetingId: null },
+          { $set: { 
+              peerMeetingId: meeting._id.toString(),
+              startTime: bestStartTime
+            }
+          },
+          { session }
+        );
+        
+        if (peerResult.modifiedCount === 0) {
+          // Peer was connected by another process
+          throw PeerAlreadyConnected;
+        }
+        
+        // Successfully connected
+        updatedMeeting = await db.collection('meetings').findOne(
+          { _id: meeting._id },
+          { session }
+        );
+      });
+      // If we get here, transaction was successful
+      console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
+      break;
+    } catch (err) {
+      
+      if (err === MeetingAlreadyConnected) {
+        // Our meeting was already connected, get the new data
+        updatedMeeting = await db.collection('meetings').findOne({ _id: meeting._id });
+        break;
+      } else if (err === PeerAlreadyConnected) {
+        const peerToRemove = peersToChooseFrom[randomIndex].peer._id.toString();
+        peersWithHourOverlap = peersWithHourOverlap.filter(p => p.peer._id.toString() !== peerToRemove);
+        peersWithAnyOverlap = peersWithAnyOverlap.filter(p => p.peer._id.toString() !== peerToRemove);
+        
+        // Update the list we're choosing from
+        peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
+        
+        // If all peers are exhausted, break the loop
+        if (peersToChooseFrom.length === 0) {
+          break;
+        }
+      } else {
+        throw err;
+      }
+    } finally {
+      await session.endSession();
     }
-  );
-  
-  // Update the peer meeting with this meeting's ID and the same start time
-  await db.collection('meetings').updateOne(
-    { _id: bestMatch._id },
-    { $set: { 
-        peerMeetingId: meeting._id.toString(),
-        startTime: bestStartTime
-      } 
-    }
-  );
+  }
 
   return updatedMeeting;
 }
