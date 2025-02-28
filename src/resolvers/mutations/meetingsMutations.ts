@@ -3,6 +3,82 @@ import { ObjectId } from 'mongodb'
 import { getUserId } from '@/lib/userId'
 import { canConnectMeetings, determineBestStartTime } from './connectMeetings'
 
+async function tryConnectMeetings(meeting: any, db: any, userId: string) {
+  // Try to find a matching meeting
+  const now = new Date().getTime();
+  const potentialPeers = await db.collection('meetings').find({
+    userId: { $ne: userId },
+    peerMeetingId: { $exists: false },
+    timeSlots: { $elemMatch: { $gte: now } }
+  }).toArray();
+
+  if (potentialPeers.length === 0) return meeting;
+
+  // Get all users for checking preferences
+  const userIds = [userId, ...potentialPeers.map((m: any) => m.userId)];
+  const users = await db.collection('users').find({
+    userId: { $in: userIds }
+  }).toArray();
+
+  // Find peers with at least one hour of overlap
+  const oneHourInMs = 60 * 60 * 1000;
+  const peersWithHourOverlap = [];
+  const peersWithAnyOverlap = [];
+
+  // Check each potential peer for overlap
+  for (const peer of potentialPeers) {
+    const overlap = canConnectMeetings(meeting, peer, users);
+    if (!overlap) continue;
+    
+    // Find the slot with the longest overlap
+    const longestOverlap = overlap.reduce((max: any, slot: any) => 
+      slot.duration > max.duration ? slot : max, overlap[0]);
+    
+    // Store the peer and overlap information
+    const peerInfo = { peer, overlap };
+    
+    // If this peer has at least one hour overlap, add to the hour overlap list
+    if (longestOverlap.duration >= oneHourInMs) {
+      peersWithHourOverlap.push(peerInfo);
+    }
+    
+    // Add to the list of all peers with any overlap
+    peersWithAnyOverlap.push(peerInfo);
+  }
+
+  const peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
+  if (peersToChooseFrom.length === 0) return meeting;
+
+  const randomIndex = Math.floor(Math.random() * peersToChooseFrom.length);
+  const bestMatch = peersToChooseFrom[randomIndex].peer;
+  const bestOverlap = peersToChooseFrom[randomIndex].overlap;
+
+  // Determine the best start time
+  const bestStartTime = determineBestStartTime(bestOverlap, meeting, bestMatch);
+  
+  // Update this meeting with the peer meeting ID and start time
+  const updatedMeeting = await db.collection('meetings').updateOne(
+    { _id: meeting._id },
+    { $set: { 
+        peerMeetingId: bestMatch._id.toString(),
+        startTime: bestStartTime
+      } 
+    }
+  );
+  
+  // Update the peer meeting with this meeting's ID and the same start time
+  await db.collection('meetings').updateOne(
+    { _id: bestMatch._id },
+    { $set: { 
+        peerMeetingId: meeting._id.toString(),
+        startTime: bestStartTime
+      } 
+    }
+  );
+
+  return updatedMeeting;
+}
+
 export const meetingsMutations = {
   createOrUpdateMeeting: async (_: any, { input }: { input: any }, { db }: Context) => {
     const { 
@@ -26,7 +102,7 @@ export const meetingsMutations = {
       const meetingId = _id ? new ObjectId(_id) : new ObjectId();
       
       // Use upsert to either update existing or create new
-      const result = await db.collection('meetings').findOneAndUpdate(
+      let result = await db.collection('meetings').findOneAndUpdate(
         { _id: meetingId },
         {
           $set: {
@@ -42,89 +118,17 @@ export const meetingsMutations = {
             languages,
             startTime,
             peerMeetingId
-          },
+          }
         },
-        { 
+        {
           upsert: true,
           returnDocument: 'after'
         }
       );
       
-      // If this meeting already has a peer, update the peer meeting
-      if (peerMeetingId) {
-        await db.collection('meetings').updateOne(
-          { _id: new ObjectId(peerMeetingId) },
-          { 
-            $set: { 
-              peerMeetingId: meetingId.toString(),
-              startTime
-            } 
-          }
-        );
-        return result;
-      }
-      
-      // Try to find a matching meeting
-      const now = new Date().getTime();
-      const potentialPeers = await db.collection('meetings').find({
-        userId: { $ne: userId },
-        peerMeetingId: { $exists: false },
-        timeSlots: { $elemMatch: { $gte: now } }
-      }).toArray();
-      
-      if (potentialPeers.length === 0) return result;
-      
-      // Get all users for checking preferences
-      const userIds = [userId, ...potentialPeers.map(m => m.userId)];
-      const users = await db.collection('users').find({
-        userId: { $in: userIds }
-      }).toArray();
-      
-      // Find the best matching meeting
-      let bestMatch = null;
-      let bestOverlap = null;
-      let bestOverlapDuration = 0;
-      
-      for (const peer of potentialPeers) {
-        const overlap = canConnectMeetings(result, peer, users);
-        if (overlap) {
-          // Find the slot with the longest overlap
-          const longestOverlap = overlap.reduce((max: any, slot: any) => 
-            slot.duration > max.duration ? slot : max, overlap[0]);
-            
-          if (longestOverlap.duration > bestOverlapDuration) {
-            bestMatch = peer;
-            bestOverlap = overlap;
-            bestOverlapDuration = longestOverlap.duration;
-          }
-        }
-      }
-      
-      if (bestMatch && bestOverlap) {
-        // Determine the best start time
-        const bestStartTime = determineBestStartTime(bestOverlap, result, bestMatch);
-        
-        // Update both meetings
-        await db.collection('meetings').updateOne(
-          { _id: meetingId },
-          { $set: { 
-              peerMeetingId: bestMatch._id.toString(),
-              startTime: bestStartTime
-            } 
-          }
-        );
-        
-        await db.collection('meetings').updateOne(
-          { _id: bestMatch._id },
-          { $set: { 
-              peerMeetingId: meetingId.toString(),
-              startTime: bestStartTime
-            } 
-          }
-        );
-        
-        // Return the updated meeting
-        return await db.collection('meetings').findOne({ _id: meetingId });
+      // If this meeting doesn't have a peer yet, try to find a match
+      if (!peerMeetingId) {
+        result = await tryConnectMeetings(result, db, userId);
       }
       
       return result;
