@@ -114,9 +114,11 @@ async function tryConnectMeetings(meeting: any, db: any, userId: string) {
       if (err === MeetingAlreadyConnected) {
         // Our meeting was already connected, get the new data
         updatedMeeting = await db.collection('meetings').findOne({ _id: meeting._id });
+        console.log('Meeting was connected by another process: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
         break;
       } else if (err === PeerAlreadyConnected) {
         const peerToRemove = peersToChooseFrom[randomIndex].peer._id.toString();
+        console.log('Peer was connected by another process, removing it from consideration: ', peerToRemove._id);
         peersWithHourOverlap = peersWithHourOverlap.filter(p => p.peer._id.toString() !== peerToRemove);
         peersWithAnyOverlap = peersWithAnyOverlap.filter(p => p.peer._id.toString() !== peerToRemove);
         
