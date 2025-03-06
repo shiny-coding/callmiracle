@@ -1,6 +1,7 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { transformUser } from './utils'
+import { isMeetingPassed } from '@/utils/meetingUtils'
 
 export const meetingsQueries = {
   meetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
@@ -57,23 +58,9 @@ export const meetingsQueries = {
       // 7. Sort meetings by earliest time slot or start time
       const now = new Date().getTime()
 
-      // Helper function to check if a meeting has ended
-      const hasMeetingEnded = (meeting: any) => {
-        // Check if meeting has startTime and it was more than 3 hours ago
-        if (meeting.startTime) {
-          const threeHoursAfterStart = meeting.startTime + (3 * 60 * 60 * 1000);
-          if (now > threeHoursAfterStart) {
-            return true;
-          }
-        }
-        
-        // Check if all time slots are in the past
-        return meeting.timeSlots.every((slot: number) => slot + (30 * 60 * 1000) < now);
-      };
-
       result.sort((a, b) => {
-        const aEnded = hasMeetingEnded(a.meeting);
-        const bEnded = hasMeetingEnded(b.meeting);
+        const aEnded = isMeetingPassed(a.meeting as any);
+        const bEnded = isMeetingPassed(b.meeting as any);
         
         // Ended meetings go to the bottom
         if (aEnded && !bEnded) return 1;

@@ -50,7 +50,7 @@ type User {
   hasImage: Boolean!
   about: String!
   contacts: String!
-  sex: String
+  sex: String!
   birthYear: Int
   blocks: [Block!]!
 }
@@ -96,7 +96,7 @@ input UpdateUserInput {
   online: Boolean!
   about: String!
   contacts: String!
-  sex: String
+  sex: String!
   birthYear: Int
   blocks: [BlockInput!]!
 }

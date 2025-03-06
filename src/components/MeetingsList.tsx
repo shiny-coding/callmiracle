@@ -46,6 +46,7 @@ export const GET_MEETINGS = gql`
         name
         hasImage
         online
+        sex
       }
     }
   }

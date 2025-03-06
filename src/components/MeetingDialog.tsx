@@ -11,6 +11,7 @@ import StatusSelector from './StatusSelector'
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes } from 'date-fns'
 import TimeSlotsGrid from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
+import { isMeetingPassed } from '@/utils/meetingUtils'
 
 interface Props {
   open: boolean
@@ -35,7 +36,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
   const [availableTimeSlots, setAvailableTimeSlots] = useState<{timestamp: number, startTime: string, endTime: string, day: string, isPartial?: boolean, remainingMinutes?: number, isDummy?: boolean, isDisabled?: boolean}[]>([])
   const [minDuration, setMinDuration] = useState(60)
-  const [preferEarlier, setPreferEarlier] = useState(false)
+  const [preferEarlier, setPreferEarlier] = useState(true)
   const [tempAllowedMales, setTempAllowedMales] = useState(allowedMales)
   const [tempAllowedFemales, setTempAllowedFemales] = useState(allowedFemales)
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([allowedMinAge, allowedMaxAge])
@@ -51,7 +52,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         setTempStatuses(meeting.statuses || [])
         setSelectedTimeSlots(meeting.timeSlots || [])
         setMinDuration(meeting.minDuration || 60)
-        setPreferEarlier(meeting.preferEarlier || false)
+        setPreferEarlier(meeting.preferEarlier)
         setTempAllowedMales(meeting.allowedMales !== undefined ? meeting.allowedMales : true)
         setTempAllowedFemales(meeting.allowedFemales !== undefined ? meeting.allowedFemales : true)
         setTempAgeRange([
@@ -65,21 +66,22 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         setTempStatuses([])
         setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
         setMinDuration(60)
-        setPreferEarlier(false)
+        setPreferEarlier(true)
         setTempAllowedMales(true)
         setTempAllowedFemales(true)
         setTempAgeRange([10, 100])
         setTempLanguages(user?.languages || [])
       }
       
-      // Collect all time slots from other meetings
+      // Collect all time slots from other meetings that haven't passed
       const otherMeetings = meetings.filter(m => 
         !meeting || m.meeting._id !== meeting._id
       )
       
-      const occupied = otherMeetings.flatMap(m => 
-        m.meeting.timeSlots || []
-      )
+      const now = new Date()
+      const occupied = otherMeetings
+        .filter(m => !isMeetingPassed(m.meeting, now)) // Only consider active meetings
+        .flatMap(m => m.meeting.timeSlots || [])
       
       setOccupiedTimeSlots(occupied)
     }

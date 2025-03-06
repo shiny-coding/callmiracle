@@ -97,13 +97,16 @@ export type Meeting = {
   allowedMaxAge: Scalars['Int']['output'];
   allowedMinAge: Scalars['Int']['output'];
   languages: Array<Scalars['String']['output']>;
+  lastCallTime?: Maybe<Scalars['Float']['output']>;
   minDuration: Scalars['Int']['output'];
-  peerMeetingId?: Maybe<Scalars['ID']['output']>;
+  peerMeetingId?: Maybe<Scalars['String']['output']>;
   preferEarlier: Scalars['Boolean']['output'];
   startTime?: Maybe<Scalars['Float']['output']>;
-  statuses: Array<Status>;
+  status: MeetingStatus;
+  statuses: Array<Scalars['String']['output']>;
   timeSlots: Array<Scalars['Float']['output']>;
-  userId: Scalars['ID']['output'];
+  totalDuration?: Maybe<Scalars['Int']['output']>;
+  userId: Scalars['String']['output'];
 };
 
 export type MeetingInput = {
@@ -122,11 +125,26 @@ export type MeetingInput = {
   userId: Scalars['ID']['input'];
 };
 
+export enum MeetingStatus {
+  Called = 'CALLED',
+  Finished = 'FINISHED',
+  Found = 'FOUND',
+  Seeking = 'SEEKING'
+}
+
+export type MeetingWithPeer = {
+  __typename?: 'MeetingWithPeer';
+  meeting: Meeting;
+  peerMeeting?: Maybe<Meeting>;
+  peerUser?: Maybe<User>;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   connectWithUser?: Maybe<ConnectionParams>;
   createOrUpdateMeeting?: Maybe<Meeting>;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
+  updateMeetingStatus: Meeting;
   updateUser?: Maybe<User>;
 };
 
@@ -146,6 +164,11 @@ export type MutationDeleteMeetingArgs = {
 };
 
 
+export type MutationUpdateMeetingStatusArgs = {
+  input: UpdateMeetingStatusInput;
+};
+
+
 export type MutationUpdateUserArgs = {
   input: UpdateUserInput;
 };
@@ -156,7 +179,7 @@ export type Query = {
   calls: Array<Call>;
   detailedCallHistory: Array<Call>;
   getOrCreateUser: User;
-  meetings: Array<Meeting>;
+  meetings: Array<MeetingWithPeer>;
   users: Array<User>;
 };
 
@@ -201,6 +224,13 @@ export type Subscription = {
 
 export type SubscriptionOnConnectionRequestArgs = {
   userId: Scalars['ID']['input'];
+};
+
+export type UpdateMeetingStatusInput = {
+  _id: Scalars['ID']['input'];
+  lastCallTime?: InputMaybe<Scalars['Float']['input']>;
+  status?: InputMaybe<MeetingStatus>;
+  totalDuration?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UpdateUserInput = {

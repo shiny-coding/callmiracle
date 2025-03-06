@@ -23,6 +23,6 @@ export const transformUser = (user: any): User | null => {
     contacts: user.contacts || '',
     sex: user.sex || null,
     birthYear: user.birthYear || null,
-    blocks: user.blocks || []
+    blocks: user.blocks || [],
   }
 }

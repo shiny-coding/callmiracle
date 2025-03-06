@@ -15,7 +15,9 @@ import { LANGUAGES } from '@/config/languages'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
+import { isMeetingPassed, getSharedStatuses, getSharedLanguages } from '@/utils/meetingUtils'
 import React from 'react'
+import { useStore } from '@/store/useStore'
 
 interface MeetingProps {
   meetingWithPeer: {
@@ -47,6 +49,7 @@ interface MeetingProps {
       name: string
       hasImage: boolean
       online: boolean
+      sex: string
     }
   }
   onEdit?: (e?: React.MouseEvent) => void
@@ -58,58 +61,66 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
   const tStatus = useTranslations('Status')
   const now = new Date()
   const { doCall } = useWebRTCContext()
+  const { user } = useStore()
   const meeting = meetingWithPeer.meeting
 
-  // Get intersection of statuses for matched meetings
-  const sharedStatuses = meeting.peerMeetingId && meetingWithPeer.peerMeeting 
-    ? meeting.statuses.filter(status => 
-        meetingWithPeer.peerMeeting?.statuses.includes(status)
-      )
-    : []
-
-  // Check if all time slots have passed
-  const allSlotsPassed = meeting.timeSlots.every(slot => {
-    const endTime = new Date(slot + 30 * 60 * 1000); // 30 minutes after start
-    return endTime < now;
-  });
-
-  // Check if meeting has passed (either all slots passed or meeting ended)
-  const isMeetingPassed = allSlotsPassed || (meeting.startTime && 
-    (new Date(meeting.startTime + meeting.minDuration * 60 * 1000) < now));
+  // Check if meeting has passed using the utility function
+  const meetingPassed = isMeetingPassed(meeting, now);
     
   // Text color class based on meeting status
-  const textColorClass = isMeetingPassed ? "text-gray-400" : "text-gray-300";
+  const textColorClass = meetingPassed ? "text-gray-400" : "text-gray-300";
 
-  // Determine icon color based on meeting status
-  const getIconColor = () => {
-    if (allSlotsPassed) return "text-gray-400";
+  // Determine meeting color based on its state
+  const getMeetingColor = () => {
+    if (meetingPassed) return "#9ca3af"; // gray-400
+    
     if (meeting.peerMeetingId) {
-      // Check if meeting is active now
+      // Meeting has a partner
       if (meeting.startTime) {
         const meetingEndTime = new Date(meeting.startTime + meeting.minDuration * 60 * 1000);
-        if (now < meetingEndTime) return "text-green-400";
+        
+        // Meeting is currently active
+        if (now < meetingEndTime && now >= new Date(meeting.startTime)) {
+          return "#4ADE80"; // green-600
+        }
+        
+        // Meeting is scheduled but not yet started
+        if (now < new Date(meeting.startTime)) {
+          return "#FBBF24"; // yellow-400
+        }
       }
+      
+      // Partner found but not scheduled yet
+      return "#FBBF24"; // yellow-400
     }
-    return "text-blue-400"; // Finding partner
+    
+    // Finding partner
+    return "#3B82F6"; // blue-500
   };
+  
+  const meetingColor = getMeetingColor();
+  const iconColor = meetingPassed ? "text-gray-400" : 
+                    meetingColor === "#4ADE80" ? "text-green-400" :
+                    meetingColor === "#FBBF24" ? "text-yellow-400" : 
+                    "text-blue-500";
 
-  const iconColorClass = getIconColor();
+  const iconColorClass = iconColor;
 
   // Reusable chip styling for passed vs active meetings
-  const getChipSx = (isActive = false) => ({
+  const getChipSx = (isActive = isActiveNow) => ({
     backgroundColor: isActive 
-      ? '#22C55E !important' 
-      : isMeetingPassed 
+      ? 'transparent !important' 
+      : meetingPassed 
         ? 'transparent !important' 
         : '#4B5563 !important',
-    color: isMeetingPassed 
+    color: meetingPassed 
       ? '#9ca3af !important' 
       : 'white !important',
     border: isActive 
       ? '2px solid #4ADE80 !important' 
-      : isMeetingPassed 
+      : meetingPassed 
         ? '2px solid #9ca3af !important' 
-        : '2px solid #3B82F6 !important',
+        : `2px solid ${meetingColor} !important`,
   });
 
   const formatTimeSlot = (startTimestamp: number, endTimestamp: number) => {
@@ -212,12 +223,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
 
   const timeSlotsByDay = groupTimeSlotsByDay()
   
-  // Check if there are any future time slots
-  const hasFutureSlots = meeting.timeSlots.some(slot => {
-    const endTime = new Date(slot + 30 * 60 * 1000) // 30 minutes in milliseconds
-    return endTime > now
-  })
-
   // Check meeting status more precisely
   const getMeetingStatus = () => {
     if (!meeting.startTime) return { status: 'not-scheduled', timeText: '' };
@@ -284,8 +289,19 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
     }
   }
 
-  const statusesToShow = meeting.peerMeetingId ? meetingWithPeer.peerMeeting?.statuses : meeting.statuses
-  const languagesToShow = meeting.peerMeetingId ? meetingWithPeer.peerMeeting?.languages : meeting.languages
+  const statusesToShow = getSharedStatuses(meeting, meetingWithPeer.peerMeeting)
+  const languagesToShow = getSharedLanguages(meeting, meetingWithPeer.peerMeeting)
+
+  const getPartnerIcon = () => {
+    if (meeting.peerMeetingId) {
+      if (user?.sex === meetingWithPeer.peerUser?.sex) {
+        return user?.sex === 'male' ? '👬' : '👭'
+      } else {
+        return '👫'
+      }
+    }
+    return null
+  }
 
   return (
     <div className="flex flex-col gap-2 w-full relative">
@@ -320,15 +336,13 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
 
       <div className="flex items-center justify-center">
         <Typography variant="subtitle2" 
-          className={`
-            ${!isMeetingPassed ? 'text-blue-400' : 'text-gray-400'} 
-            ${isMeetingPassed ? 'opacity-70' : 'opacity-100'}
-          `}
+          className="font-bold"
+          sx={{ color: meetingColor, fontWeight: 'bold' }}
         >
-          {isMeetingPassed 
+          {meetingPassed 
               ? t('meetingPassed')
             : meeting.peerMeetingId 
-              ? t('partnerFound')
+              ? ( t('partnerFound') + getPartnerIcon() )
               : t('findingPartner')
           }
         </Typography>
@@ -338,18 +352,18 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
         <div className="flex flex-col gap-1">
           
           {meetingWithPeer.peerUser && (
-            <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center justify-center gap-2 mt-2">
+
+            {meeting.lastCallTime && (
               <div className="flex items-center gap-1">
-                <CallIcon fontSize="small" className={iconColorClass} />
-                <Typography variant="body2" className={isMeetingPassed ? "text-gray-400" : "text-gray-200"}>
-                  {meeting.lastCallTime 
-                    ? meetingWithPeer.peerUser.name 
-                    : t('anonymousPartner')}
+                <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
+                  {meetingWithPeer.peerUser.name}
                 </Typography>
                 {meetingWithPeer.peerUser.online && (
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                 )}
               </div>
+            )}
               
               {meetingStatus.status === 'now' && (
                 <Button
@@ -357,7 +371,13 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
                   size="small"
                   startIcon={<VideocamIcon />}
                   onClick={handleCallPeer}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="text-white"
+                  sx={{
+                    backgroundColor: '#4ADE80 !important', // light green
+                    '&:hover': {
+                      backgroundColor: '#22C55E !important', // slightly darker green on hover
+                    }
+                  }}
                 >
                   {t('call')}
                 </Button>
@@ -377,7 +397,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
               label={meetingStatus.timeText || formatDateForDisplay(new Date(meeting.startTime))}
               size="small"
               className={`text-xs`}
-              sx={getChipSx(isActiveNow)}
+              sx={getChipSx()}
             />
           ) : (
             <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 w-full">
@@ -396,7 +416,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
                         const isActive = isWithinInterval(now, {
                           start: new Date(startSlot),
                           end: new Date(endSlot)
-                        }) && meeting.peerMeetingId
+                        }) && !!meeting.peerMeetingId
                         
                         return (
                           <Chip
@@ -414,27 +434,24 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
               })}
             </div>
           )}
-          {!isMeetingPassed && (
+          {!meetingPassed && (
             <Typography variant="body2" className={textColorClass}>
               {meeting.minDuration} {t('min')}
             </Typography>
           )}
-          {isMeetingPassed && meeting.totalDuration && meeting.totalDuration > 0 && (
+          {meetingPassed && meeting.totalDuration && meeting.totalDuration > 0 && (
             <Chip
               label={`${t('callDuration')}: ${formatDuration(meeting.totalDuration)}`}
               size="small"
               className={`text-xs text-white bg-gray-500`}
             />
           )}
-          {isMeetingPassed && (
+          {meetingPassed && !meeting.peerMeetingId && (
             <Typography variant="body2" className={`${textColorClass} pl-2`}>
               {getFirstSlotDay()}
             </Typography>
           )}
         </div>
-        {meeting.preferEarlier && (
-          <TrendingUpIcon className={iconColorClass} fontSize="small" titleAccess={t('preferEarlier')} />
-        )}
       </div>
       <div className="flex items-center gap-2">
         <MoodIcon className={iconColorClass} fontSize="small" />
