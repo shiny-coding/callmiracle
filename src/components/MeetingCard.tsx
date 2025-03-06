@@ -15,6 +15,7 @@ import { LANGUAGES } from '@/config/languages'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
+import React from 'react'
 
 interface MeetingProps {
   meetingWithPeer: {
@@ -379,37 +380,39 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
               sx={getChipSx(isActiveNow)}
             />
           ) : (
-            Object.entries(timeSlotsByDay).map(([day, slots]) => {
-              const combinedSlots = combineAdjacentSlots(slots)
-              
-              if (combinedSlots.length === 0) return null;
-              
-              return (
-                <>
-                  <Typography variant="body2" className={textColorClass}>
-                    {day}
-                  </Typography>
-                  <div className="flex flex-wrap gap-1 ml-2">
-                    {combinedSlots.map(([startSlot, endSlot], index) => {
-                      const isActive = isWithinInterval(now, {
-                        start: new Date(startSlot),
-                        end: new Date(endSlot)
-                      }) && meeting.peerMeetingId
-                      
-                      return (
-                        <Chip
-                          key={`${startSlot}-${endSlot}`}
-                          label={formatTimeSlot(startSlot, endSlot)}
-                          size="small"
-                          className="text-xs"
-                          sx={getChipSx(isActive)}
-                        />
-                      )
-                    })}
-                  </div>
-                </>
-              )
-            })
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 w-full">
+              {Object.entries(timeSlotsByDay).map(([day, slots]) => {
+                const combinedSlots = combineAdjacentSlots(slots)
+                
+                if (combinedSlots.length === 0) return null;
+                
+                return (
+                  <React.Fragment key={day}>
+                    <Typography variant="body2" className={`${textColorClass} whitespace-nowrap`}>
+                      {day}
+                    </Typography>
+                    <div className="flex flex-wrap gap-1">
+                      {combinedSlots.map(([startSlot, endSlot], index) => {
+                        const isActive = isWithinInterval(now, {
+                          start: new Date(startSlot),
+                          end: new Date(endSlot)
+                        }) && meeting.peerMeetingId
+                        
+                        return (
+                          <Chip
+                            key={`${startSlot}-${endSlot}`}
+                            label={formatTimeSlot(startSlot, endSlot)}
+                            size="small"
+                            className="text-xs"
+                            sx={getChipSx(isActive)}
+                          />
+                        )
+                      })}
+                    </div>
+                  </React.Fragment>
+                )
+              })}
+            </div>
           )}
           {!isMeetingPassed && (
             <Typography variant="body2" className={textColorClass}>
