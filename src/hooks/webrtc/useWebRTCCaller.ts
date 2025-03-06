@@ -5,6 +5,7 @@ import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
+import { gql } from '@apollo/client'
 
 interface UseWebRTCCallerProps {
   localStream?: MediaStream
@@ -12,6 +13,16 @@ interface UseWebRTCCallerProps {
   connectWithUser: any
   attemptReconnect: () => Promise<void>
 }
+
+const UPDATE_MEETING_STATUS = gql`
+  mutation UpdateMeetingStatus($input: UpdateMeetingStatusInput!) {
+    updateMeetingStatus(input: $input) {
+      _id
+      status
+      lastCallTime
+    }
+  }
+`
 
 export function useWebRTCCaller({
   localStream,
@@ -43,11 +54,15 @@ export function useWebRTCCaller({
     localVideoEnabled,
     localAudioEnabled,
     setRole,
-    connectionStatus
+    connectionStatus,
+    setActiveMeetingId,
+    activeMeetingId
   } = useStore()
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
+
+  const [updateMeetingStatus] = useMutation(UPDATE_MEETING_STATUS)
 
   const handleAnswer = async (pc: RTCPeerConnection, quality: VideoQuality, answer: RTCSessionDescriptionInit) => {
     try {
@@ -59,6 +74,22 @@ export function useWebRTCCaller({
         applyLocalQuality(pc, quality)
         await pc.setRemoteDescription(new RTCSessionDescription(answer))
         await dispatchPendingIceCandidates(pc)
+        
+        if (activeMeetingId) {
+          try {
+            await updateMeetingStatus({
+              variables: {
+                input: {
+                  _id: activeMeetingId,
+                  status: "CALLED",
+                  lastCallTime: Date.now()
+                }
+              }
+            })
+          } catch (err) {
+            console.error('Failed to update meeting status:', err)
+          }
+        }
       } else {
         console.warn('WebRTC: Received answer in invalid state:', pc.signalingState)
       }
@@ -68,12 +99,16 @@ export function useWebRTCCaller({
     }
   }
 
-  const doCall = async (user: User, isReconnect: boolean = false) => {
-    if (!user || !localStream ) {
+  const doCall = async (user: User, meetingId: string | null, isReconnect = false) => {
+    if (!user || !localStream) {
       console.log('WebRTC: Cannot initialize call - missing requirements', { 
         hasUserId: !!user, hasLocalStream: !!localStream 
       })
       return
+    }
+
+    if (meetingId) {
+      setActiveMeetingId(meetingId)
     }
 
     console.log('WebRTC: Initializing connection with:', user.userId, isReconnect ? '(reconnecting)' : '')
@@ -153,6 +188,7 @@ export function useWebRTCCaller({
     remoteStreamRef.current = null
     setActive(false)
     setCallId(null)
+    setActiveMeetingId(null)
   }
 
   const hangup = createHangup(cleanup)

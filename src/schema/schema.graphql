@@ -16,9 +16,9 @@ type Block {
 
 type Meeting {
   _id: ID!
-  userId: ID!
+  userId: String!
   languages: [String!]!
-  statuses: [Status!]!
+  statuses: [String!]!
   timeSlots: [Float!]!
   minDuration: Int!
   preferEarlier: Boolean!
@@ -27,7 +27,17 @@ type Meeting {
   allowedMinAge: Int!
   allowedMaxAge: Int!
   startTime: Float
-  peerMeetingId: ID
+  peerMeetingId: String
+  lastCallTime: Float
+  totalDuration: Int
+  status: MeetingStatus!
+}
+
+enum MeetingStatus {
+  SEEKING
+  FOUND
+  CALLED
+  FINISHED
 }
 
 type User {
@@ -146,6 +156,7 @@ type Mutation {
   updateUser(input: UpdateUserInput!): User
   connectWithUser(input: ConnectionParamsInput!): ConnectionParams
   createOrUpdateMeeting(input: MeetingInput!): Meeting
+  updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse
 }
 
@@ -162,4 +173,11 @@ type MeetingWithPeer {
   meeting: Meeting!
   peerMeeting: Meeting
   peerUser: User
+}
+
+input UpdateMeetingStatusInput {
+  _id: ID!
+  status: MeetingStatus
+  lastCallTime: Float
+  totalDuration: Int
 } 

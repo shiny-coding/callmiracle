@@ -92,6 +92,14 @@
   "allSlotsInPast": "Все временные слоты прошли",
   "preferEarlier": "Предпочитает более раннее время",
   "matchedMeeting": "Подобранная встреча",
+  "partnerFound": "Партнер найден",
+  "findingPartner": "Поиск партнера...",
+  "meetingPassed": "Встреча прошла",
+  "anonymousPartner": "Анонимный партнер",
+  "sharedInterests": "Общие интересы",
+  "startTime": "Время начала",
+  "notScheduled": "Еще не запланировано",
+  "min": "мин",
   "call": "Позвонить",
   "createMeeting": "Создать встречу",
   "selectTimeSlots": "Выберите время",
@@ -106,5 +114,10 @@
   "anyGender": "Любой пол",
   "malesOnly": "Только мужчины",
   "femalesOnly": "Только женщины",
-  "noTimeSlotsAvailable": "Нет доступных временных слотов"
+  "noTimeSlotsAvailable": "Нет доступных временных слотов",
+  "recentlyEnded": "Недавно завершилась",
+  "startsInMinutes": "Начнется через {minutes} мин",
+  "startsInHoursMinutes": "Начнется через {hours}ч {minutes}м",
+  "startsInHours": "Начнется через {hours} ч",
+  "callDuration": "Длительность звонка"
 } 

@@ -95,8 +95,8 @@ export default function MeetingsList() {
   if (error) return <Typography color="error">Error loading meetings</Typography>
 
   return (
-    <div className="flex flex-col gap-4">
-      <Paper className="bg-gray-800 text-white p-4 rounded-lg">
+    <div className="w-full">
+      <Paper className="p-4 bg-gray-800">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
             <EventIcon className="text-blue-400" />
@@ -121,11 +121,12 @@ export default function MeetingsList() {
             </IconButton>
           </div>
         </div>
-        <List>
+        <List className="space-y-4">
           {data?.meetings.map((meetingData: any) => (
             <ListItem 
               key={meetingData.meeting._id}
-              className="flex flex-col p-4 bg-gray-800 rounded-lg hover:bg-gray-700 relative"
+              className="flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative mb-4"
+              disablePadding
             >
               <MeetingCard 
                 meetingWithPeer={meetingData} 

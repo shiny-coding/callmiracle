@@ -54,6 +54,76 @@ export const meetingsQueries = {
         })
       }
       
+      // 7. Sort meetings by earliest time slot or start time
+      const now = new Date().getTime()
+
+      // Helper function to check if a meeting has ended
+      const hasMeetingEnded = (meeting: any) => {
+        // Check if meeting has startTime and it was more than 3 hours ago
+        if (meeting.startTime) {
+          const threeHoursAfterStart = meeting.startTime + (3 * 60 * 60 * 1000);
+          if (now > threeHoursAfterStart) {
+            return true;
+          }
+        }
+        
+        // Check if all time slots are in the past
+        return meeting.timeSlots.every((slot: number) => slot + (30 * 60 * 1000) < now);
+      };
+
+      result.sort((a, b) => {
+        const aEnded = hasMeetingEnded(a.meeting);
+        const bEnded = hasMeetingEnded(b.meeting);
+        
+        // Ended meetings go to the bottom
+        if (aEnded && !bEnded) return 1;
+        if (!aEnded && bEnded) return -1;
+        if (aEnded && bEnded) {
+          // Both ended, sort by most recent end time (startTime or latest slot)
+          if (a.meeting.startTime && b.meeting.startTime) {
+            return b.meeting.startTime - a.meeting.startTime; // Most recent first
+          } else if (a.meeting.startTime) {
+            return -1; // Meeting with startTime comes first
+          } else if (b.meeting.startTime) {
+            return 1; // Meeting with startTime comes first
+          }
+        }
+        
+        // If meeting has a start time, use that for sorting
+        if (!aEnded && !bEnded && a.meeting.startTime && b.meeting.startTime) {
+          return a.meeting.startTime - b.meeting.startTime
+        } else if (!aEnded && a.meeting.startTime) {
+          return -1 // a has start time, b doesn't, so a comes first
+        } else if (!aEnded && b.meeting.startTime) {
+          return 1 // b has start time, a doesn't, so b comes first
+        }
+        
+        // Otherwise, find the earliest future time slot for each meeting
+        const aFutureSlots = a.meeting.timeSlots.filter((slot: number) => slot >= now)
+        const bFutureSlots = b.meeting.timeSlots.filter((slot: number) => slot >= now)
+        
+        // If both have future slots, compare the earliest ones
+        if (aFutureSlots.length > 0 && bFutureSlots.length > 0) {
+          return Math.min(...aFutureSlots) - Math.min(...bFutureSlots)
+        } else if (aFutureSlots.length > 0) {
+          return -1 // a has future slots, b doesn't, so a comes first
+        } else if (bFutureSlots.length > 0) {
+          return 1 // b has future slots, a doesn't, so b comes first
+        }
+        
+        // If neither has future slots, compare the latest past slots
+        if (a.meeting.timeSlots.length > 0 && b.meeting.timeSlots.length > 0) {
+          return Math.max(...a.meeting.timeSlots) - Math.max(...b.meeting.timeSlots)
+        } else if (a.meeting.timeSlots.length > 0) {
+          return -1
+        } else if (b.meeting.timeSlots.length > 0) {
+          return 1
+        }
+        
+        // If all else fails, sort by _id to ensure consistent ordering
+        return a.meeting._id.toString().localeCompare(b.meeting._id.toString())
+      })
+
       return result
     } catch (error) {
       console.error('Error fetching meetings:', error)

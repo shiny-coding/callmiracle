@@ -122,24 +122,6 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
             </div>
           )}
 
-          {user.statuses.length > 0 && (
-            <div>
-              <Typography variant="subtitle2" className="text-gray-400 mb-2">
-                {t('status')}
-              </Typography>
-              <div className="flex flex-wrap gap-1">
-                {user.statuses.map(status => (
-                  <Chip
-                    key={status}
-                    label={tStatus(status)}
-                    size="small"
-                    className="text-xs text-white bg-gray-700"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
           {user.about && (
             <div>
               <Typography variant="subtitle2" className="text-gray-400 mb-2">

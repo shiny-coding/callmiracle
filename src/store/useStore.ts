@@ -8,6 +8,7 @@ interface AppState {
   user: User | null
   // Call state
   callId: string | null
+  activeMeetingId: string | null
   connectionStatus: ConnectionStatus
   targetUser: User | null
   role: 'caller' | 'callee' | null
@@ -30,6 +31,7 @@ interface AppState {
   setLocalVideoEnabled: (enabled: boolean) => void
   setQualityWeWantFromRemote: (quality: VideoQuality) => void
   setQualityRemoteWantsFromUs: (quality: VideoQuality) => void
+  setActiveMeetingId: (id: string | null) => void
 }
 
 const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
@@ -48,6 +50,7 @@ const useStore = create<AppState>()(
       targetUser: null,
       role: null,
       lastConnectedTime: null,
+      activeMeetingId: null,
       // Media settings (persisted)
       localAudioEnabled: true,
       localVideoEnabled: true,
@@ -69,6 +72,7 @@ const useStore = create<AppState>()(
         callId: null, 
         role: null,
         lastConnectedTime: null,
+        activeMeetingId: null
       }),
       // Media settings setters
       setLocalAudioEnabled: (enabled) => {
@@ -83,6 +87,7 @@ const useStore = create<AppState>()(
       setQualityRemoteWantsFromUs: (quality) => {
         set({ qualityRemoteWantsFromUs: quality })
       },
+      setActiveMeetingId: (id) => set({ activeMeetingId: id }),
     }),
     {
       name: 'app-storage',
@@ -97,6 +102,7 @@ const useStore = create<AppState>()(
         localVideoEnabled: state.localVideoEnabled,
         qualityWeWantFromRemote: state.qualityWeWantFromRemote,
         qualityRemoteWantsFromUs: state.qualityRemoteWantsFromUs,
+        activeMeetingId: state.activeMeetingId,
       }),
       onRehydrateStorage: () => (state) => {
         if (state && !rehydrated) {

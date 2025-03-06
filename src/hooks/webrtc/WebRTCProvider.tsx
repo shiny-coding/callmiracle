@@ -11,7 +11,7 @@ import { useWebRTCCommon } from './useWebRTCCommon'
 import CalleeDialog from '@/components/CalleeDialog'
 import { User } from '@/generated/graphql'
 interface WebRTCContextType {
-  doCall: (user: User) => Promise<void>
+  doCall: (user: User, meetingId: string | null) => Promise<void>
   connectionStatus: ConnectionStatus
   incomingRequest: IncomingRequest | null
   handleAcceptCall: () => void
@@ -61,7 +61,9 @@ export function WebRTCProvider({
     setTargetUser,
     setRole,
     clearCallState,
-    setCallId
+    setCallId,
+    activeMeetingId,
+    setActiveMeetingId
   } = useStore()
 
   const attemptReconnect = async () => {
@@ -71,7 +73,7 @@ export function WebRTCProvider({
     console.log('Attempting to reconnect to previous call:', { targetUser, callId, role })
     try {
       if (role === 'caller') {
-        await caller.doCall(targetUser, true)
+        await caller.doCall(targetUser, activeMeetingId, true)
       } else {
         await connectWithUser({
           variables: {
@@ -146,7 +148,7 @@ export function WebRTCProvider({
       } else if (request.type === 'need-reconnect') {
         console.log('WebRTC: Received need-reconnect request, reconnecting')
         setConnectionStatus('reconnecting')
-        await caller.doCall( request.from, true )
+        await caller.doCall( request.from, activeMeetingId, true )
       } else if (request.type === 'finished') {
         console.log('WebRTC: Received finished request, cleaning up')
         // Handle finished status

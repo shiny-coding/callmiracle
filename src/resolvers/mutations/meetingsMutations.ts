@@ -140,7 +140,39 @@ async function tryConnectMeetings(meeting: any, db: any, userId: string) {
   return updatedMeeting;
 }
 
-export const meetingsMutations = {
+interface UpdateMeetingStatusInput {
+  _id: string
+  status?: 'SEEKING' | 'FOUND' | 'CALLED' | 'FINISHED'
+  lastCallTime?: number
+  totalDuration?: number
+}
+
+const meetingsMutations = {
+  updateMeetingStatus: async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {
+    try {
+      const { _id, status, lastCallTime, totalDuration } = input
+      
+      const updateData: any = {}
+      if (status) updateData.status = status
+      if (lastCallTime) updateData.lastCallTime = lastCallTime
+      if (totalDuration !== undefined) updateData.totalDuration = totalDuration
+      
+      const result = await db.collection('meetings').findOneAndUpdate(
+        { _id: new ObjectId(_id) },
+        { $set: updateData },
+        { returnDocument: 'after' }
+      )
+      
+      if (!result) {
+        throw new Error(`Meeting with ID ${_id} not found`)
+      }
+      
+      return result
+    } catch (error) {
+      console.error('Error updating meeting status:', error)
+      throw new Error('Failed to update meeting status')
+    }
+  },
   createOrUpdateMeeting: async (_: any, { input }: { input: any }, { db }: Context) => {
     const { 
       _id,
@@ -222,4 +254,6 @@ export const meetingsMutations = {
       throw error
     }
   }
-} 
+}
+
+export default meetingsMutations 

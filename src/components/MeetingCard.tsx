@@ -7,14 +7,19 @@ import LanguageIcon from '@mui/icons-material/Language'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
+import MoodIcon from '@mui/icons-material/Mood'
+import CallIcon from '@mui/icons-material/Call'
 import IconButton from '@mui/material/IconButton'
-import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast, formatDistance } from 'date-fns'
+import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast, formatDistance, differenceInHours, differenceInSeconds } from 'date-fns'
 import { LANGUAGES } from '@/config/languages'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { User } from '@/generated/graphql'
+import { formatDuration } from '@/utils/formatDuration'
 
 interface MeetingProps {
   meetingWithPeer: {
     meeting: {
+      _id: string
       userId: string
       languages: string[]
       statuses: string[]
@@ -27,6 +32,9 @@ interface MeetingProps {
       allowedMaxAge: number
       startTime?: number
       peerMeetingId?: string
+      lastCallTime?: number
+      status: string
+      totalDuration: number
     }
     peerMeeting?: {
       userId: string
@@ -51,6 +59,58 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
   const { doCall } = useWebRTCContext()
   const meeting = meetingWithPeer.meeting
 
+  // Get intersection of statuses for matched meetings
+  const sharedStatuses = meeting.peerMeetingId && meetingWithPeer.peerMeeting 
+    ? meeting.statuses.filter(status => 
+        meetingWithPeer.peerMeeting?.statuses.includes(status)
+      )
+    : []
+
+  // Check if all time slots have passed
+  const allSlotsPassed = meeting.timeSlots.every(slot => {
+    const endTime = new Date(slot + 30 * 60 * 1000); // 30 minutes after start
+    return endTime < now;
+  });
+
+  // Check if meeting has passed (either all slots passed or meeting ended)
+  const isMeetingPassed = allSlotsPassed || (meeting.startTime && 
+    (new Date(meeting.startTime + meeting.minDuration * 60 * 1000) < now));
+    
+  // Text color class based on meeting status
+  const textColorClass = isMeetingPassed ? "text-gray-400" : "text-gray-300";
+
+  // Determine icon color based on meeting status
+  const getIconColor = () => {
+    if (allSlotsPassed) return "text-gray-400";
+    if (meeting.peerMeetingId) {
+      // Check if meeting is active now
+      if (meeting.startTime) {
+        const meetingEndTime = new Date(meeting.startTime + meeting.minDuration * 60 * 1000);
+        if (now < meetingEndTime) return "text-green-400";
+      }
+    }
+    return "text-blue-400"; // Finding partner
+  };
+
+  const iconColorClass = getIconColor();
+
+  // Reusable chip styling for passed vs active meetings
+  const getChipSx = (isActive = false) => ({
+    backgroundColor: isActive 
+      ? '#22C55E !important' 
+      : isMeetingPassed 
+        ? 'transparent !important' 
+        : '#4B5563 !important',
+    color: isMeetingPassed 
+      ? '#9ca3af !important' 
+      : 'white !important',
+    border: isActive 
+      ? '2px solid #4ADE80 !important' 
+      : isMeetingPassed 
+        ? '2px solid #9ca3af !important' 
+        : '2px solid #3B82F6 !important',
+  });
+
   const formatTimeSlot = (startTimestamp: number, endTimestamp: number) => {
     const startDate = new Date(startTimestamp)
     const endDate = new Date(endTimestamp)
@@ -65,6 +125,29 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
     const startTime = isCurrentSlot ? t('now') : format(startDate, 'HH:mm')
     
     return `${startTime}-${format(endDate, 'HH:mm')}`
+  }
+
+  // Format date for display, showing "Today" if it's today
+  const formatDateForDisplay = (date: Date) => {
+    if (isToday(date)) {
+      return `${t('today')} ${format(date, 'HH:mm')}`
+    }
+    return format(date, 'MMM d, HH:mm')
+  }
+
+  // Get the day of the first time slot for passed meetings without a peer
+  const getFirstSlotDay = () => {
+    if (meeting.timeSlots.length === 0) return '';
+    
+    // Sort time slots chronologically
+    const sortedSlots = [...meeting.timeSlots].sort((a, b) => a - b);
+    const firstSlotDate = new Date(sortedSlots[0]);
+    
+    // Format the date to show the day
+    if (isToday(firstSlotDate)) {
+      return t('today');
+    }
+    return format(firstSlotDate, 'MMM d');
   }
 
   // Group time slots by day
@@ -134,37 +217,74 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
     return endTime > now
   })
 
-  // Check if this is a matched meeting that's currently active
-  const isActiveNow = meeting.startTime && meeting.peerMeetingId && 
-    meeting.startTime <= now.getTime() && 
-    meeting.startTime + (meeting.minDuration * 60 * 1000) >= now.getTime()
-
-  // Format the start time
-  const formatStartTime = () => {
-    if (!meeting.startTime) return null
+  // Check meeting status more precisely
+  const getMeetingStatus = () => {
+    if (!meeting.startTime) return { status: 'not-scheduled', timeText: '' };
     
-    const startDate = new Date(meeting.startTime)
+    const startDate = new Date(meeting.startTime);
+    const endDate = new Date(meeting.startTime + meeting.minDuration * 60 * 1000);
+    const threeHoursAfterStart = new Date(meeting.startTime + 3 * 60 * 60 * 1000);
     
-    if (isActiveNow) {
-      return t('now')
+    // Meeting is happening now
+    if (now >= startDate && now <= endDate) {
+      return { status: 'now', timeText: t('now') };
     }
     
-    if (isToday(startDate)) {
-      return `${t('today')} ${format(startDate, 'HH:mm')}`
+    // Meeting is in the past but still within 3 hours window
+    if (now > endDate && now <= threeHoursAfterStart) {
+      return { status: 'recent', timeText: t('recentlyEnded') };
     }
     
-    if (startDate > now) {
-      return formatDistance(startDate, now, { addSuffix: true })
+    // Meeting is in the future
+    if (now < startDate) {
+      const diffSeconds = differenceInSeconds(startDate, now);
+      const diffHours = differenceInHours(startDate, now);
+      
+      if (diffHours < 8) {
+        if (diffHours < 1) {
+          // Less than 1 hour
+          const mins = Math.floor(diffSeconds / 60);
+          return { 
+            status: 'soon', 
+            timeText: t('startsInMinutes', { minutes: mins }) 
+          };
+        } else if (diffHours < 3) {
+          // Less than 3 hours
+          const hours = Math.floor(diffHours);
+          const mins = Math.floor((diffSeconds % (60 * 60)) / 60);
+          return { 
+            status: 'upcoming', 
+            timeText: t('startsInHoursMinutes', { hours, minutes: mins }) 
+          };
+        } else {
+          // Between 3 and 8 hours
+          const hours = Math.floor(diffHours);
+          return {
+            status: 'today',
+            timeText: t('startsInHours', { hours })
+          };
+        }
+      }
     }
     
-    return format(startDate, 'MMM d, HH:mm')
-  }
+    // Default: just show the date
+    return { 
+      status: 'scheduled', 
+      timeText: formatDateForDisplay(startDate) 
+    };
+  };
+  
+  const meetingStatus = getMeetingStatus();
+  const isActiveNow = meetingStatus.status === 'now';
 
   const handleCallPeer = () => {
     if (meetingWithPeer.peerUser && meetingWithPeer.peerUser.userId) {
-      //doCall(meetingWithPeer.peerUser)
+      doCall(meetingWithPeer.peerUser as User, meetingWithPeer.meeting._id)
     }
   }
+
+  const statusesToShow = meeting.peerMeetingId ? meetingWithPeer.peerMeeting?.statuses : meeting.statuses
+  const languagesToShow = meeting.peerMeetingId ? meetingWithPeer.peerMeeting?.languages : meeting.languages
 
   return (
     <div className="flex flex-col gap-2 w-full relative">
@@ -196,60 +316,41 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
           </IconButton>
         </div>
       )}
-      <div className="flex flex-wrap gap-2">
-        {meeting.statuses.map(status => (
-          <Chip
-            key={status}
-            label={tStatus(status)}
-            size="small"
-            className="text-xs text-white bg-gray-700"
-          />
-        ))}
+
+      <div className="flex items-center justify-center">
+        <Typography variant="subtitle2" 
+          className={`
+            ${!isMeetingPassed ? 'text-blue-400' : 'text-gray-400'} 
+            ${isMeetingPassed ? 'opacity-70' : 'opacity-100'}
+          `}
+        >
+          {isMeetingPassed 
+              ? t('meetingPassed')
+            : meeting.peerMeetingId 
+              ? t('partnerFound')
+              : t('findingPartner')
+          }
+        </Typography>
       </div>
-      {meeting.languages && meeting.languages.length > 0 && (
-        <div className="flex items-center gap-2">
-          <LanguageIcon className="text-gray-400" fontSize="small" />
-          <div className="flex flex-wrap gap-1">
-            {meeting.languages.map(langCode => {
-              const language = LANGUAGES.find(l => l.code === langCode)
-              return (
-                <Chip
-                  key={langCode}
-                  label={language?.name || langCode}
-                  size="small"
-                  className="text-xs text-white bg-gray-700"
-                />
-              )
-            })}
-          </div>
-        </div>
-      )}
-      
+
       {meeting.peerMeetingId && meeting.startTime && (
-        <div className="flex flex-col gap-1 mt-1 p-2 bg-gray-700 rounded-lg">
-          <div className="flex items-center justify-between">
-            <Typography variant="subtitle2" className="text-green-400">
-              {t('matchedMeeting')}
-            </Typography>
-            <Chip
-              label={formatStartTime()}
-              size="small"
-              className={`text-xs ${isActiveNow ? 'bg-green-700 text-white' : 'bg-gray-600 text-gray-200'}`}
-            />
-          </div>
+        <div className="flex flex-col gap-1">
           
           {meetingWithPeer.peerUser && (
-            <div className="flex items-center justify-between mt-1">
-              <div className="flex items-center gap-2">
-                <Typography variant="body2" className="text-gray-200">
-                  {meetingWithPeer.peerUser.name}
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-1">
+                <CallIcon fontSize="small" className={iconColorClass} />
+                <Typography variant="body2" className={isMeetingPassed ? "text-gray-400" : "text-gray-200"}>
+                  {meeting.lastCallTime 
+                    ? meetingWithPeer.peerUser.name 
+                    : t('anonymousPartner')}
                 </Typography>
                 {meetingWithPeer.peerUser.online && (
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                 )}
               </div>
               
-              {isActiveNow && meetingWithPeer.peerUser.online && (
+              {meetingStatus.status === 'now' && (
                 <Button
                   variant="contained"
                   size="small"
@@ -262,76 +363,126 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
               )}
             </div>
           )}
+
+          {/* Show shared statuses if there are any */}
+          
         </div>
       )}
-      
       <div className="flex items-center gap-2">
-        <AccessTimeIcon className="text-gray-400" fontSize="small" />
-        <Typography variant="body2" className="text-gray-300">
-          {meeting.minDuration} min
-        </Typography>
+        <AccessTimeIcon className={iconColorClass} fontSize="small" />
+        <div className="flex flex-wrap items-center gap-2">
+          {meeting.startTime ? (
+            <Chip
+              label={meetingStatus.timeText || formatDateForDisplay(new Date(meeting.startTime))}
+              size="small"
+              className={`text-xs`}
+              sx={getChipSx(isActiveNow)}
+            />
+          ) : (
+            Object.entries(timeSlotsByDay).map(([day, slots]) => {
+              const combinedSlots = combineAdjacentSlots(slots)
+              
+              if (combinedSlots.length === 0) return null;
+              
+              return (
+                <>
+                  <Typography variant="body2" className={textColorClass}>
+                    {day}
+                  </Typography>
+                  <div className="flex flex-wrap gap-1 ml-2">
+                    {combinedSlots.map(([startSlot, endSlot], index) => {
+                      const isActive = isWithinInterval(now, {
+                        start: new Date(startSlot),
+                        end: new Date(endSlot)
+                      }) && meeting.peerMeetingId
+                      
+                      return (
+                        <Chip
+                          key={`${startSlot}-${endSlot}`}
+                          label={formatTimeSlot(startSlot, endSlot)}
+                          size="small"
+                          className="text-xs"
+                          sx={getChipSx(isActive)}
+                        />
+                      )
+                    })}
+                  </div>
+                </>
+              )
+            })
+          )}
+          {!isMeetingPassed && (
+            <Typography variant="body2" className={textColorClass}>
+              {meeting.minDuration} {t('min')}
+            </Typography>
+          )}
+          {isMeetingPassed && meeting.totalDuration && meeting.totalDuration > 0 && (
+            <Chip
+              label={`${t('callDuration')}: ${formatDuration(meeting.totalDuration)}`}
+              size="small"
+              className={`text-xs text-white bg-gray-500`}
+            />
+          )}
+          {isMeetingPassed && (
+            <Typography variant="body2" className={`${textColorClass} pl-2`}>
+              {getFirstSlotDay()}
+            </Typography>
+          )}
+        </div>
         {meeting.preferEarlier && (
-          <TrendingUpIcon className="text-gray-400" fontSize="small" titleAccess={t('preferEarlier')} />
+          <TrendingUpIcon className={iconColorClass} fontSize="small" titleAccess={t('preferEarlier')} />
         )}
       </div>
       <div className="flex items-center gap-2">
-        <Typography variant="body2" className="text-gray-300">
-          {meeting.allowedMales && meeting.allowedFemales 
-            ? t('anyGender') 
-            : meeting.allowedMales 
-              ? t('malesOnly') 
-              : t('femalesOnly')}
-        </Typography>
-        <Typography variant="body2" className="text-gray-300">
-          {t('ageRange')}: {meeting.allowedMinAge}-{meeting.allowedMaxAge}
-        </Typography>
+        <MoodIcon className={iconColorClass} fontSize="small" />
+        <div className="flex flex-wrap gap-2">
+        {statusesToShow && statusesToShow.map(status => (
+          <Chip
+            key={status}
+            label={tStatus(status)}
+            size="small"
+            className="text-xs"
+            sx={getChipSx()}
+          />
+        ))}
+        </div>
       </div>
-      {!hasFutureSlots && (
-        <Typography variant="body2" className="text-gray-400 italic">
-          {t('allSlotsInPast')}
-        </Typography>
+      {languagesToShow && languagesToShow.length > 0 && (
+        <div className="flex items-center gap-2">
+          <LanguageIcon className={iconColorClass} fontSize="small" />
+          <div className="flex flex-wrap gap-1">
+            {languagesToShow.map(langCode => {
+              const language = LANGUAGES.find(l => l.code === langCode)
+              return (
+                <Chip
+                  key={langCode}
+                  label={language?.name || langCode}
+                  size="small"
+                  className="text-xs"
+                  sx={getChipSx()}
+                />
+              )
+            })}
+          </div>
+        </div>
       )}
-      <div className="space-y-2">
-        {Object.entries(timeSlotsByDay).map(([day, slots]) => {
-          const combinedSlots = combineAdjacentSlots(slots)
           
-          if (combinedSlots.length === 0) return null;
-          
-          return (
-            <div key={day} className="flex items-center gap-2">
-              <Typography variant="body2" className="text-gray-400 font-medium">
-                {day}
-              </Typography>
-              <div className="flex flex-wrap gap-1 ml-2">
-                {combinedSlots.map(([startSlot, endSlot], index) => {
-                  const isActive = isWithinInterval(now, {
-                    start: new Date(startSlot),
-                    end: new Date(endSlot)
-                  })
-                  
-                  return (
-                    <Chip
-                      key={`${startSlot}-${endSlot}`}
-                      label={formatTimeSlot(startSlot, endSlot)}
-                      size="small"
-                      className="text-xs"
-                      sx={{
-                        backgroundColor: isActive ? '#B45309' : '#374151',
-                        color: 'white',
-                        border: isActive ? '2px solid #FBBF24' : 'none',
-                        '&.MuiChip-root': {
-                          backgroundColor: isActive ? '#B45309 !important' : '#374151 !important',
-                        }
-                      }}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-      <div className="h-6"></div>
+
+      {!meeting.peerMeetingId && (
+        <div className="flex items-center gap-2">
+          <Typography variant="body2" className={textColorClass}>
+            {meeting.allowedMales && meeting.allowedFemales 
+              ? t('anyGender') 
+              : meeting.allowedMales 
+                ? t('malesOnly') 
+                : t('femalesOnly')}
+          </Typography>
+          <Typography variant="body2" className={textColorClass}>
+            {t('ageRange')}: {meeting.allowedMinAge}-{meeting.allowedMaxAge}
+          </Typography>
+        </div>
+      )}
+
     </div>
   )
 } 
