@@ -16,6 +16,9 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { Meeting } from '@/generated/graphql'
 import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
 import ConfirmDialog from './ConfirmDialog'
+import { useStore } from '@/store/useStore'
+import { isProfileComplete } from '@/utils/userUtils'
+import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 
 export const GET_MEETINGS = gql`
   query GetMeetings($userId: ID!) {
@@ -62,6 +65,8 @@ export default function MeetingsList() {
   const { deleteMeeting } = useDeleteMeeting()
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null)
+  const { user } = useStore()
+  const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
 
   const handleEditMeeting = (meetingData: any) => {
     setSelectedMeeting(meetingData.meeting)
@@ -69,6 +74,10 @@ export default function MeetingsList() {
   }
 
   const handleCreateMeeting = () => {
+    if (!isProfileComplete(user)) {
+      setProfileIncompleteDialogOpen(true)
+      return
+    }
     setSelectedMeeting(null)
     setMeetingDialogOpen(true)
   }
@@ -107,7 +116,7 @@ export default function MeetingsList() {
           </div>
           <div className="flex gap-2">
             <IconButton 
-              onClick={() => setMeetingDialogOpen(true)} 
+              onClick={handleCreateMeeting} 
               size="small"
               className="hover:bg-gray-700 text-white"
             >
@@ -164,6 +173,10 @@ export default function MeetingsList() {
         message={t('confirmDeleteMeeting')}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
+      />
+      <ProfileIncompleteDialog
+        open={profileIncompleteDialogOpen}
+        onClose={() => setProfileIncompleteDialogOpen(false)}
       />
     </div>
   )

@@ -65,7 +65,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
   const meeting = meetingWithPeer.meeting
 
   // Check if meeting has passed using the utility function
-  const meetingPassed = isMeetingPassed(meeting, now);
+  const meetingPassed = isMeetingPassed(meeting);
     
   // Text color class based on meeting status
   const textColorClass = meetingPassed ? "text-gray-400" : "text-gray-300";

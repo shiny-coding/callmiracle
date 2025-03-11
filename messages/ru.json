@@ -119,5 +119,9 @@
   "startsInMinutes": "Начнется через {minutes} мин",
   "startsInHoursMinutes": "Начнется через {hours}ч {minutes}м",
   "startsInHours": "Начнется через {hours} ч",
-  "callDuration": "Длительность звонка"
+  "callDuration": "Длительность звонка",
+  "incompleteProfile": "Неполный профиль",
+  "pleaseCompleteProfileFirst": "Пожалуйста, укажите ваше имя, пол и возраст перед созданием встречи.",
+  "completeProfile": "Заполнить профиль",
+  "missing": "Отсутствуют поля"
 } 

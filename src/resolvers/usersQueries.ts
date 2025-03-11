@@ -23,6 +23,7 @@ export const usersQueries = {
         timestamp: Date.now(),
         locale: 'en',
         online: false,
+        sex: '',  // Provide a default empty string instead of null
         blocks: []
       }
       

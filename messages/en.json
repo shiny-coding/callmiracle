@@ -120,5 +120,9 @@
   "malesOnly": "Males only",
   "femalesOnly": "Females only",
   "pleaseSelectLanguages": "Please select at least one language",
-  "callDuration": "Call duration"
+  "callDuration": "Call duration",
+  "incompleteProfile": "Incomplete Profile",
+  "pleaseCompleteProfileFirst": "Please set up your name, gender, and age before creating a meeting.",
+  "completeProfile": "Complete Profile",
+  "missing": "Missing fields"
 } 

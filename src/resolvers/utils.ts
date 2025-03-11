@@ -21,7 +21,7 @@ export const transformUser = (user: any): User | null => {
     hasImage: checkUserImage(user.userId),
     about: user.about || '',
     contacts: user.contacts || '',
-    sex: user.sex || null,
+    sex: user.sex || '',
     birthYear: user.birthYear || null,
     blocks: user.blocks || [],
   }

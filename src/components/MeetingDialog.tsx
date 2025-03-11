@@ -80,7 +80,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
       
       const now = new Date()
       const occupied = otherMeetings
-        .filter(m => !isMeetingPassed(m.meeting, now)) // Only consider active meetings
+        .filter(m => !isMeetingPassed(m.meeting)) // Only consider active meetings
         .flatMap(m => m.meeting.timeSlots || [])
       
       setOccupiedTimeSlots(occupied)
