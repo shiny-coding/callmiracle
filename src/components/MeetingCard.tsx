@@ -50,6 +50,7 @@ interface MeetingProps {
       hasImage: boolean
       online: boolean
       sex: string
+      languages: string[]
     }
   }
   onEdit?: (e?: React.MouseEvent) => void
@@ -285,7 +286,9 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
 
   const handleCallPeer = () => {
     if (meetingWithPeer.peerUser && meetingWithPeer.peerUser.userId) {
-      doCall(meetingWithPeer.peerUser as User, meetingWithPeer.meeting._id)
+      console.log('calling peer', meetingWithPeer.peerUser, meetingWithPeer.meeting._id)
+      // If this is a first call (no lastCallTime), don't show user info
+      doCall(meetingWithPeer.peerUser as User, false, meetingWithPeer.meeting._id, meetingWithPeer.meeting.lastCallTime ?? null)
     }
   }
 
@@ -342,7 +345,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
           {meetingPassed 
               ? t('meetingPassed')
             : meeting.peerMeetingId 
-              ? ( t('partnerFound') + getPartnerIcon() )
+              ? ( t('partnerFound') + ' ' + getPartnerIcon() )
               : t('findingPartner')
           }
         </Typography>

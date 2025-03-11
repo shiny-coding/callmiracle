@@ -3,7 +3,7 @@ import { pubsub } from './pubsub'
 import { ObjectId } from 'mongodb'
 
 export const connectWithUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
-  const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality } = input
+  const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality, meetingId } = input
   const initiatorUserId = input.initiatorUserId || ''
   let callId = input.callId
 
@@ -30,7 +30,8 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
       initiatorUserId,
       targetUserId,
       type: 'initiated',
-      duration: 0
+      duration: 0,
+      meetingId
     })
     callId = connection.insertedId.toString()
   } else if (!callId) {
@@ -38,6 +39,9 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
   }
 
   const objectId = ObjectId.createFromHexString(callId)
+  // Get current call state
+  const currentCall = await db.collection('calls').findOne({ _id: objectId })
+
   if (type === 'answer') {
     // Update call status to connected
     connection = await db.collection('calls').findOneAndUpdate(
@@ -46,9 +50,6 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
       { returnDocument: 'after' }
     )
   } else if (type === 'finished' || type == 'expired') {
-    // Get current call state
-    const currentCall = await db.collection('calls').findOne({ _id: objectId })
-    
     // Only set duration if the call was connected and is now finished
     const updateFields = type === 'finished' || (type === 'expired' && currentCall?.type === 'connected')
       ? { 
@@ -70,7 +71,8 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
     onConnectionRequest: {
       type,
       from: initiator,
-      callId
+      callId,
+      meetingId: currentCall?.meetingId
     },
     userId: targetUserId
   }
@@ -82,6 +84,14 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
     'ice-candidate': { iceCandidate },
     finished: { },
     updateMediaState: { videoEnabled, audioEnabled, quality }
+  }
+
+  console.log(input)
+  if ( type === 'offer' && meetingId ) {
+    const meeting = await db.collection('meetings').findOne({ _id: ObjectId.createFromHexString(meetingId) })
+    if ( meeting ) {
+      additionalFields.offer.meetingLastCallTime = meeting.lastCallTime
+    }
   }
 
   // Create a unique topic for this user's connection requests
@@ -106,6 +116,7 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
     iceCandidate: connection?.iceCandidate || null,
     targetUserId,
     initiatorUserId,
-    callId
+    callId,
+    meetingId
   }
 }

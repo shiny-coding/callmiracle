@@ -8,7 +8,7 @@ import HistoryIcon from '@mui/icons-material/History'
 import LockIcon from '@mui/icons-material/Lock'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useDetailedCallHistory } from '@/store/DetailedCallHistoryProvider'
-import { useState } from 'react'
+import { act, useState } from 'react'
 import UserDetailsPopup from './UserDetailsPopup'
 import { useStore } from '@/store/useStore'
 
@@ -26,16 +26,15 @@ export default function UserCard({
   showHistoryButton = false 
 }: UserCardProps) {
   const t = useTranslations()
-  const tStatus = useTranslations('Status')
   const { doCall } = useWebRTCContext()
   const { setSelectedUser } = useDetailedCallHistory()
   const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
-  const { user: currentUser } = useStore()
+  const { user: currentUser, } = useStore()
   const existingBlock = currentUser?.blocks.find(b => b.userId === user.userId)
   const isBlocked = existingBlock?.all || (existingBlock?.statuses.length ?? 0) > 0
 
   const handleCall = async () => {
-    await doCall(user)
+    await doCall(user, false, null, null)
   }
 
   return (

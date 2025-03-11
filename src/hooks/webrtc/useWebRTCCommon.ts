@@ -15,6 +15,8 @@ export const CONNECT_WITH_USER = gql`
       initiatorUserId
       quality
       callId
+      meetingId
+      meetingLastCallTime
     }
   }
 `
@@ -30,6 +32,8 @@ export const ON_CONNECTION_REQUEST = gql`
       audioEnabled
       quality
       callId
+      meetingId
+      meetingLastCallTime
       from {
         userId
         name

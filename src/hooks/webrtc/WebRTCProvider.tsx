@@ -1,4 +1,4 @@
-  'use client'
+'use client'
 import { useState, createContext, useContext, ReactNode, useRef, useEffect } from 'react'
 import { useSubscription, useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
@@ -10,8 +10,9 @@ import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySel
 import { useWebRTCCommon } from './useWebRTCCommon'
 import CalleeDialog from '@/components/CalleeDialog'
 import { User } from '@/generated/graphql'
+
 interface WebRTCContextType {
-  doCall: (user: User, meetingId: string | null) => Promise<void>
+  doCall: (user: User, isReconnect: boolean, meetingId: string | null, meetingLastCallTime: number | null) => Promise<void>
   connectionStatus: ConnectionStatus
   incomingRequest: IncomingRequest | null
   handleAcceptCall: () => void
@@ -62,8 +63,8 @@ export function WebRTCProvider({
     setRole,
     clearCallState,
     setCallId,
-    activeMeetingId,
-    setActiveMeetingId
+    meetingId,
+    meetingLastCallTime,
   } = useStore()
 
   const attemptReconnect = async () => {
@@ -73,7 +74,7 @@ export function WebRTCProvider({
     console.log('Attempting to reconnect to previous call:', { targetUser, callId, role })
     try {
       if (role === 'caller') {
-        await caller.doCall(targetUser, activeMeetingId, true)
+        await caller.doCall(targetUser, true, meetingId, meetingLastCallTime)
       } else {
         await connectWithUser({
           variables: {
@@ -148,7 +149,7 @@ export function WebRTCProvider({
       } else if (request.type === 'need-reconnect') {
         console.log('WebRTC: Received need-reconnect request, reconnecting')
         setConnectionStatus('reconnecting')
-        await caller.doCall( request.from, activeMeetingId, true )
+        await caller.doCall( request.from, true, meetingId, meetingLastCallTime )
       } else if (request.type === 'finished') {
         console.log('WebRTC: Received finished request, cleaning up')
         // Handle finished status

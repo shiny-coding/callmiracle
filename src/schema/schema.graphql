@@ -66,6 +66,8 @@ type ConnectionParams {
   audioEnabled: Boolean
   quality: String
   callId: ID
+  meetingId: ID
+  meetingLastCallTime: Float
 }
 
 type ConnectionRequest {
@@ -78,6 +80,8 @@ type ConnectionRequest {
   audioEnabled: Boolean
   quality: String
   callId: ID
+  meetingId: ID
+  meetingLastCallTime: Float
 }
 
 type Call {
@@ -112,6 +116,8 @@ input ConnectionParamsInput {
   audioEnabled: Boolean
   quality: String
   callId: ID
+  meetingId: ID
+  meetingLastCallTime: Float
 }
 
 input BlockInput {

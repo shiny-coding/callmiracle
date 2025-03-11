@@ -50,6 +50,7 @@ export const GET_MEETINGS = gql`
         hasImage
         online
         sex
+        languages
       }
     }
   }

@@ -9,10 +9,6 @@ import CallerDialog from '@/components/CallerDialog'
 import CalleeDialog from '@/components/CalleeDialog'
 import BottomControlsBar from '@/components/BottomControlsBar';
 import MeetingsList from '@/components/MeetingsList';
-import MeetingDialog from '@/components/MeetingDialog';
-import { IconButton } from '@mui/material';
-import MoodIcon from '@mui/icons-material/Mood';
-import { useState } from 'react';
 
 function MainContent() {
   const { connectionStatus, callee } = useWebRTCContext()

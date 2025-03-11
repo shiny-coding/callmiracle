@@ -8,11 +8,12 @@ interface AppState {
   user: User | null
   // Call state
   callId: string | null
-  activeMeetingId: string | null
+  meetingId: string | null
   connectionStatus: ConnectionStatus
   targetUser: User | null
   role: 'caller' | 'callee' | null
   lastConnectedTime: number | null
+  meetingLastCallTime: number | null
   // Media settings
   localAudioEnabled: boolean
   localVideoEnabled: boolean
@@ -31,7 +32,8 @@ interface AppState {
   setLocalVideoEnabled: (enabled: boolean) => void
   setQualityWeWantFromRemote: (quality: VideoQuality) => void
   setQualityRemoteWantsFromUs: (quality: VideoQuality) => void
-  setActiveMeetingId: (id: string | null) => void
+  setMeetingId: (id: string | null) => void
+  setMeetingLastCallTime: (time: number | null) => void
 }
 
 const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
@@ -50,7 +52,8 @@ const useStore = create<AppState>()(
       targetUser: null,
       role: null,
       lastConnectedTime: null,
-      activeMeetingId: null,
+      meetingId: null,
+      meetingLastCallTime: null,
       // Media settings (persisted)
       localAudioEnabled: true,
       localVideoEnabled: true,
@@ -72,7 +75,8 @@ const useStore = create<AppState>()(
         callId: null, 
         role: null,
         lastConnectedTime: null,
-        activeMeetingId: null
+        meetingId: null,
+        meetingLastCallTime: null
       }),
       // Media settings setters
       setLocalAudioEnabled: (enabled) => {
@@ -87,7 +91,8 @@ const useStore = create<AppState>()(
       setQualityRemoteWantsFromUs: (quality) => {
         set({ qualityRemoteWantsFromUs: quality })
       },
-      setActiveMeetingId: (id) => set({ activeMeetingId: id }),
+      setMeetingId: (id) => set({ meetingId: id }),
+      setMeetingLastCallTime: (time) => set({ meetingLastCallTime: time }),
     }),
     {
       name: 'app-storage',
@@ -102,7 +107,8 @@ const useStore = create<AppState>()(
         localVideoEnabled: state.localVideoEnabled,
         qualityWeWantFromRemote: state.qualityWeWantFromRemote,
         qualityRemoteWantsFromUs: state.qualityRemoteWantsFromUs,
-        activeMeetingId: state.activeMeetingId,
+        meetingId: state.meetingId,
+        meetingLastCallTime: state.meetingLastCallTime,
       }),
       onRehydrateStorage: () => (state) => {
         if (state && !rehydrated) {

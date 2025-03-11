@@ -1,12 +1,13 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import UserCard from './UserCard'
 import { useStore } from '@/store/useStore'
 import { useWebRTCCallee } from '@/hooks/webrtc/useWebRTCCallee'
+import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 
 interface CalleeDialogProps {
-  callee: ReturnType<typeof useWebRTCCallee>
+  callee: any
 }
 
 export default function CalleeDialog({ callee }: CalleeDialogProps) {
@@ -23,6 +24,10 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
 
   if (!user) return null
 
+  const meetingId = callee.incomingRequest?.meetingId
+  const meetingLastCallTime = callee.incomingRequest?.meetingLastCallTime
+  const showUserInfo = !meetingId || meetingLastCallTime
+
   const isConnecting = connectionStatus === 'connecting'
   const onCancelReconnect = callee.hangup
 
@@ -38,7 +43,12 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
         {tStatus(connectionStatus)}
       </DialogTitle>
       <DialogContent>
-        <UserCard user={user} />
+        {meetingId && (
+          <Typography variant="subtitle1" className="mb-4 text-blue-400">
+            {t('meetingCall')}
+          </Typography>
+        )}
+        {showUserInfo && <UserCard user={user} />}
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
         {!isReconnecting && (

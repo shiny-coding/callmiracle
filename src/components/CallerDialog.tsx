@@ -11,7 +11,7 @@ const MAX_CALLING_TIME_MS = 10000
 
 export default function CallerDialog() {
   const t = useTranslations()
-  const { connectionStatus, setConnectionStatus, targetUser } = useStore()
+  const { connectionStatus, setConnectionStatus, targetUser, meetingId, meetingLastCallTime } = useStore()
   const tStatus = useTranslations('ConnectionStatus')
   const { doCall, connectWithUser, caller } = useWebRTCContext()
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
@@ -32,7 +32,7 @@ export default function CallerDialog() {
   if (!targetUser) return null
 
   const handleCallAgain = async () => {
-    await doCall(targetUser)
+    await doCall(targetUser, false, meetingId, meetingLastCallTime)
   }
 
   const sendExpired = async () => {
@@ -60,6 +60,8 @@ export default function CallerDialog() {
     }
   }
 
+  const showUserInfo = !meetingId || meetingLastCallTime
+
   return ( open &&
     <Dialog 
       open={open}
@@ -68,9 +70,11 @@ export default function CallerDialog() {
         className: 'bg-gray-900 text-white'
       }}
     >
-      <DialogTitle>{tStatus(connectionStatus)}</DialogTitle>
+      <DialogTitle className="flex justify-between items-center">
+        {t('calling')}
+      </DialogTitle>
       <DialogContent>
-        <UserCard user={targetUser} />
+        {showUserInfo && <UserCard user={targetUser} />}
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
         {(connectionStatus === 'no-answer' || connectionStatus === 'busy') &&

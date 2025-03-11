@@ -56,6 +56,8 @@ export type ConnectionParams = {
   targetUserId: Scalars['ID']['output'];
   type: Scalars['String']['output'];
   videoEnabled?: Maybe<Scalars['Boolean']['output']>;
+  meetingId?: Maybe<Scalars['ID']['output']>;
+  meetingLastCallTime?: Maybe<Scalars['Float']['output']>;
 };
 
 export type ConnectionParamsInput = {
@@ -69,6 +71,8 @@ export type ConnectionParamsInput = {
   targetUserId: Scalars['ID']['input'];
   type: Scalars['String']['input'];
   videoEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  meetingId?: InputMaybe<Scalars['ID']['input']>;
+  meetingLastCallTime?: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type ConnectionRequest = {
@@ -82,6 +86,8 @@ export type ConnectionRequest = {
   quality?: Maybe<Scalars['String']['output']>;
   type: Scalars['String']['output'];
   videoEnabled?: Maybe<Scalars['Boolean']['output']>;
+  meetingId?: Maybe<Scalars['ID']['output']>;
+  meetingLastCallTime?: Maybe<Scalars['Float']['output']>;
 };
 
 export type DeleteMeetingResponse = {
@@ -242,7 +248,7 @@ export type UpdateUserInput = {
   locale: Scalars['String']['input'];
   name: Scalars['String']['input'];
   online: Scalars['Boolean']['input'];
-  sex?: InputMaybe<Scalars['String']['input']>;
+  sex: Scalars['String']['input'];
   userId: Scalars['ID']['input'];
 };
 
@@ -257,7 +263,7 @@ export type User = {
   locale: Scalars['String']['output'];
   name: Scalars['String']['output'];
   online: Scalars['Boolean']['output'];
-  sex?: Maybe<Scalars['String']['output']>;
+  sex: Scalars['String']['output'];
   timestamp: Scalars['Float']['output'];
   userId: Scalars['ID']['output'];
 };

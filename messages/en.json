@@ -75,7 +75,8 @@
     },
     "accept": "Accept",
     "reject": "Reject",
-    "incomingCall": "Incoming call from"
+    "incomingCall": "Incoming call from",
+    "meetingCall": "Meeting Call"
   },
   "blockUser": "Block User",
   "blockStatuses": "Block Statuses",
