@@ -363,8 +363,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                 )}
               </div>
-            )}
-              
+            )}              
               {meetingStatus.status === 'now' && (
                 <Button
                   variant="contained"
@@ -400,44 +399,46 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
               sx={getChipSx()}
             />
           ) : (
-            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 w-full">
-              {Object.entries(timeSlotsByDay).map(([day, slots]) => {
-                const combinedSlots = combineAdjacentSlots(slots)
-                
-                if (combinedSlots.length === 0) return null;
-                
-                return (
-                  <React.Fragment key={day}>
-                    <Typography variant="body2" className={`${textColorClass} whitespace-nowrap`}>
-                      {day}
-                    </Typography>
-                    <div className="flex flex-wrap gap-1">
-                      {combinedSlots.map(([startSlot, endSlot], index) => {
-                        const isActive = isWithinInterval(now, {
-                          start: new Date(startSlot),
-                          end: new Date(endSlot)
-                        }) && !!meeting.peerMeetingId
-                        
-                        return (
-                          <Chip
-                            key={`${startSlot}-${endSlot}`}
-                            label={formatTimeSlot(startSlot, endSlot)}
-                            size="small"
-                            className="text-xs"
-                            sx={getChipSx(isActive)}
-                          />
-                        )
-                      })}
-                    </div>
-                  </React.Fragment>
-                )
-              })}
-            </div>
-          )}
-          {!meetingPassed && (
-            <Typography variant="body2" className={textColorClass}>
-              {meeting.minDuration} {t('min')}
-            </Typography>
+            !meetingPassed ? (
+              <>
+                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 w-full">
+                  {Object.entries(timeSlotsByDay).map(([day, slots]) => {
+                    const combinedSlots = combineAdjacentSlots(slots)
+                    
+                    if (combinedSlots.length === 0) return null;
+                    
+                    return (
+                      <React.Fragment key={day}>
+                        <Typography variant="body2" className={`${textColorClass} whitespace-nowrap`}>
+                          {day}
+                        </Typography>
+                        <div className="flex flex-wrap gap-1">
+                          {combinedSlots.map(([startSlot, endSlot], index) => {
+                            const isActive = isWithinInterval(now, {
+                              start: new Date(startSlot),
+                              end: new Date(endSlot)
+                            }) && !!meeting.peerMeetingId
+                            
+                            return (
+                              <Chip
+                                key={`${startSlot}-${endSlot}`}
+                                label={formatTimeSlot(startSlot, endSlot)}
+                                size="small"
+                                className="text-xs"
+                                sx={getChipSx(isActive)}
+                              />
+                            )
+                          })}
+                        </div>
+                      </React.Fragment>
+                    )
+                  })}
+                </div>
+                <Typography variant="body2" className={textColorClass}>
+                  {meeting.minDuration} {t('min')}
+                </Typography>
+              </>
+            ) : null
           )}
           {meetingPassed && meeting.totalDuration && meeting.totalDuration > 0 && (
             <Chip
@@ -447,12 +448,15 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
             />
           )}
           {meetingPassed && !meeting.peerMeetingId && (
-            <Typography variant="body2" className={`${textColorClass} pl-2`}>
-              {getFirstSlotDay()}
-            </Typography>
+            <Chip
+              label={getFirstSlotDay()}
+              size="small"
+              className={`text-xs text-white bg-gray-500`}
+              sx={getChipSx(false)}
+            />
           )}
-        </div>
-      </div>
+        </div>        
+    </div>
       <div className="flex items-center gap-2">
         <MoodIcon className={iconColorClass} fontSize="small" />
         <div className="flex flex-wrap gap-2">
