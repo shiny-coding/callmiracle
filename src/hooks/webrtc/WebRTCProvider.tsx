@@ -6,9 +6,8 @@ import { useStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
 import { ON_CONNECTION_REQUEST, CONNECT_WITH_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
-import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
+import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
-import CalleeDialog from '@/components/CalleeDialog'
 import { User } from '@/generated/graphql'
 
 interface WebRTCContextType {
@@ -113,15 +112,15 @@ export function WebRTCProvider({
   useSubscription(ON_CONNECTION_REQUEST, {
     variables: { userId: getUserId() },
     onSubscriptionData: async ({ subscriptionData }) => {
-      const request = subscriptionData.data?.onConnectionRequest
-      if (!request) return
+      const callEvent = subscriptionData.data?.onConnectionRequest?.callEvent
+      if (!callEvent) return
 
-      if (request.type !== 'initiate' && request.callId !== callId) {
-        console.log('WebRTC: Ignoring connection request - mismatched IDs: ', { request, callId })
+      if (callEvent.type !== 'initiate' && callEvent.callId !== callId) {
+        console.log('WebRTC: Ignoring connection request - mismatched IDs: ', { callEvent, callId })
         return
       }
 
-      if (request.type === 'initiate') {
+      if (callEvent.type === 'initiate') {
         if (callId) {
           // Already in a call, send busy response
           console.log('WebRTC: Already in call, sending busy signal')
@@ -130,9 +129,9 @@ export function WebRTCProvider({
               variables: {
                 input: {
                 type: 'busy',
-                targetUserId: request.from.userId,
+                targetUserId: callEvent.from.userId,
                 initiatorUserId: getUserId(),
-                callId: request.callId
+                callId: callEvent.callId
               }
               }
             })
@@ -140,17 +139,17 @@ export function WebRTCProvider({
         } else {
           // Set up for receiving call
           console.log('WebRTC: Received initiate request')
-          setCallId(request.callId)
-          setTargetUser(request.from)
+          setCallId(callEvent.callId)
+          setTargetUser(callEvent.from)
           setRole('callee')
           setConnectionStatus('receiving-call')
           callee.active = true
         }
-      } else if (request.type === 'need-reconnect') {
+      } else if (callEvent.type === 'need-reconnect') {
         console.log('WebRTC: Received need-reconnect request, reconnecting')
         setConnectionStatus('reconnecting')
-        await caller.doCall( request.from, true, meetingId, meetingLastCallTime )
-      } else if (request.type === 'finished') {
+        await caller.doCall( callEvent.from, true, meetingId, meetingLastCallTime )
+      } else if (callEvent.type === 'finished') {
         console.log('WebRTC: Received finished request, cleaning up')
         // Handle finished status
         if (caller.active) {
@@ -164,14 +163,14 @@ export function WebRTCProvider({
         clearCallState()
       }
       // Handle answer for initiator
-      else if (request.type === 'answer') {
+      else if (callEvent.type === 'answer') {
         if (!caller.peerConnection.current) {
           console.log('WebRTC: Connection closed before answer')
           await connectWithUser({
             variables: {
               input: {
                 type: 'expired',
-                targetUserId: request.from.userId,
+                targetUserId: callEvent.from.userId,
                 initiatorUserId: getUserId(),
                 callId
               }
@@ -179,25 +178,25 @@ export function WebRTCProvider({
           })
         } else {
           console.log('WebRTC: Processing answer')
-          const answer = JSON.parse(request.answer)
-          setRemoteVideoEnabled(request.videoEnabled)
-          setRemoteAudioEnabled(request.audioEnabled)
-          await caller.handleAnswer(caller.peerConnection.current, request.quality, answer)
+          const answer = JSON.parse(callEvent.answer)
+          setRemoteVideoEnabled(callEvent.videoEnabled)
+          setRemoteAudioEnabled(callEvent.audioEnabled)
+          await caller.handleAnswer(caller.peerConnection.current, callEvent.quality, answer)
         }
       }
       // Handle offer
-      else if (request.type === 'offer') {
-        setRemoteVideoEnabled(request.videoEnabled)
-        setRemoteAudioEnabled(request.audioEnabled)
-        callee.setIncomingRequest(request)
+      else if (callEvent.type === 'offer') {
+        setRemoteVideoEnabled(callEvent.videoEnabled)
+        setRemoteAudioEnabled(callEvent.audioEnabled)
+        callee.setIncomingRequest(callEvent)
         if ( connectionStatus === 'reconnecting' || connectionStatus === 'connected' ) {
           console.log('WebRTC: Reconnecting, automatically accepting call')
-          callee.handleAcceptCall(request)
+          callee.handleAcceptCall(callEvent)
         }
       }
       // Handle ICE candidates
-      else if (request.type === 'ice-candidate') {
-        const candidate = JSON.parse(request.iceCandidate)
+      else if (callEvent.type === 'ice-candidate') {
+        const candidate = JSON.parse(callEvent.iceCandidate)
         if (caller.active) {
           await caller.handleIceCandidate(caller.peerConnection.current!, candidate)
         } else { // we're not checking calee.active because we can receive candidates before callee becomes active after accepting the call
@@ -205,11 +204,11 @@ export function WebRTCProvider({
         }
       }
       // Handle track changes
-      else if (request.type === 'updateMediaState') {
+      else if (callEvent.type === 'updateMediaState') {
         console.log('WebRTC: updateMediaState')
-        setRemoteVideoEnabled(request.videoEnabled ?? remoteVideoEnabled)
-        setRemoteAudioEnabled(request.audioEnabled ?? remoteAudioEnabled)
-        const quality = request.quality as VideoQuality
+        setRemoteVideoEnabled(callEvent.videoEnabled ?? remoteVideoEnabled)
+        setRemoteAudioEnabled(callEvent.audioEnabled ?? remoteAudioEnabled)
+        const quality = callEvent.quality as VideoQuality
         const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
         if (activePeerConnection) {
           applyLocalQuality(activePeerConnection, quality).catch(err => 
@@ -217,7 +216,7 @@ export function WebRTCProvider({
           )
         }
       }
-      else if (request.type === 'expired') { // Handle expired connection
+      else if (callEvent.type === 'expired') { // Handle expired connection
         console.log('WebRTC: Received expired signal, cleaning up')
         callee.cleanup()
         setConnectionStatus('timeout')
@@ -225,7 +224,7 @@ export function WebRTCProvider({
         setRemoteAudioEnabled(false)
         clearCallState()
       } 
-      else if (request.type === 'busy') { // Handle busy signal
+      else if (callEvent.type === 'busy') { // Handle busy signal
         console.log('WebRTC: Received busy signal')
         if (caller.active) {
           await caller.cleanup()
@@ -238,7 +237,7 @@ export function WebRTCProvider({
       }
       // Handle unknown request type
       else {
-        throw new Error(`WebRTC: Unknown request type: ${request.type}`)
+        throw new Error(`WebRTC: Unknown call event type: ${callEvent.type}`)
       }
     }
   })

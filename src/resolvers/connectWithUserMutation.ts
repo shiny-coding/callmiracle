@@ -86,7 +86,6 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
     updateMediaState: { videoEnabled, audioEnabled, quality }
   }
 
-  console.log(input)
   if ( type === 'offer' && meetingId ) {
     const meeting = await db.collection('meetings').findOne({ _id: ObjectId.createFromHexString(meetingId) })
     if ( meeting ) {
@@ -97,17 +96,14 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
   // Create a unique topic for this user's connection requests
   const topic = `CONNECTION_REQUEST:${targetUserId}`
 
-  const publishData = {
+  const callEvent = {
     ...basePayload,
-    onConnectionRequest: {
-      ...basePayload.onConnectionRequest,
-      ...additionalFields[type]
-    }
+    ...additionalFields[type]
   }
 
-  console.log('Publishing connection request:', publishData)
+  console.log('Publishing connection request:', { callEvent })
   
-  pubsub.publish(topic, publishData)
+  pubsub.publish(topic, { callEvent })
 
   return {
     type,

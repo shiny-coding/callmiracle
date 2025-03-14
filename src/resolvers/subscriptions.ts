@@ -12,13 +12,22 @@ export const subscriptions = {
       return pubsub.subscribe(topic)
     },
     resolve: (payload: ConnectionRequestPayload) => {
-      console.log('Resolving connection request:', {
-        type: payload.onConnectionRequest.type,
-        fromUser: payload.onConnectionRequest.from?.name,
-        toUser: payload.userId,
-        callId: payload.onConnectionRequest.callId
-      })
-      return payload.onConnectionRequest
+      if ( payload.notificationEvent ) {
+        console.log('Resolving meeting changed:', {
+          type: payload.notificationEvent.type,
+          meetingId: payload.notificationEvent.meeting?._id,
+          userName: payload.notificationEvent.user?.name,
+          userId: payload.notificationEvent.user?.userId
+        })
+      } else {
+        console.log('Resolving connection request:', {
+          type: payload.callEvent?.type,
+          fromUser: payload.callEvent?.from?.name,
+          toUser: payload.userId,
+          callId: payload.callEvent?.callId
+        })
+      }
+      return payload
     }
   },
   onUsersUpdated: {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@apollo/client'
+import { useQuery, useSubscription } from '@apollo/client'
 import { Paper, List, ListItem, Typography, IconButton } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useTranslations } from 'next-intl'
@@ -19,6 +19,7 @@ import ConfirmDialog from './ConfirmDialog'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
+import { ON_CONNECTION_REQUEST } from '@/hooks/webrtc/useWebRTCCommon'
 
 export const GET_MEETINGS = gql`
   query GetMeetings($userId: ID!) {
@@ -69,6 +70,16 @@ export default function MeetingsList() {
   const { user } = useStore()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
 
+  useSubscription(ON_CONNECTION_REQUEST, {
+    variables: { userId: getUserId() },
+    onSubscriptionData: async ({ subscriptionData }) => {
+      const notificationEvent = subscriptionData.data?.onConnectionRequest?.notificationEvent
+      if (notificationEvent) {
+        refetch();
+      }
+    }
+  })
+
   const handleEditMeeting = (meetingData: any) => {
     setSelectedMeeting(meetingData.meeting)
     setMeetingDialogOpen(true)
@@ -104,6 +115,7 @@ export default function MeetingsList() {
 
   if (loading) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading meetings</Typography>
+
 
   return (
     <div className="w-full">

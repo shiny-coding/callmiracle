@@ -1,10 +1,11 @@
-import { IconButton } from '@mui/material'
+import { IconButton, Badge } from '@mui/material'
 import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
+import NotificationsIcon from '@mui/icons-material/Notifications'
 import MoodIcon from '@mui/icons-material/Mood'
 import SettingsIcon from '@mui/icons-material/Settings'
 import HistoryIcon from '@mui/icons-material/History'
@@ -19,11 +20,14 @@ import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import CallHistoryPopup from './CallHistoryPopup'
 import UsersPopup from './UsersPopup'
+import NotificationsPopup from './NotificationsPopup'
+import { useNotifications } from '@/hooks/useNotifications'
 
 export default function BottomControlsBar() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [callHistoryOpen, setCallHistoryOpen] = useState(false)
   const [usersPopupOpen, setUsersPopupOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const {
     localAudioEnabled,
     localVideoEnabled,
@@ -35,6 +39,7 @@ export default function BottomControlsBar() {
     hangup,
     sendWantedMediaState
   } = useWebRTCContext()
+  const { hasUnseenNotifications } = useNotifications()
 
   const handleAudioToggle = () => {
     setLocalAudioEnabled(!localAudioEnabled)
@@ -56,6 +61,14 @@ export default function BottomControlsBar() {
             onClick={() => setProfileOpen(true)}
           >
             <AccountCircleIcon className="text-white" />
+          </IconButton>
+          <IconButton
+            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+            onClick={() => setNotificationsOpen(true)}
+          >
+            <Badge color="error" variant="dot" invisible={!hasUnseenNotifications}>
+              <NotificationsIcon className="text-white" />
+            </Badge>
           </IconButton>
         </div>
       )}
@@ -124,6 +137,10 @@ export default function BottomControlsBar() {
       <UsersPopup
         open={usersPopupOpen}
         onClose={() => setUsersPopupOpen(false)}
+      />
+      <NotificationsPopup
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
       />
     </div>
   )

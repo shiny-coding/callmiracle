@@ -124,5 +124,14 @@
   "incompleteProfile": "Неполный профиль",
   "pleaseCompleteProfileFirst": "Пожалуйста, укажите ваше имя, пол и возраст перед созданием встречи.",
   "completeProfile": "Заполнить профиль",
-  "missing": "Отсутствуют поля"
+  "missing": "Отсутствуют поля",
+  "notifications": "Уведомления",
+  "noNotifications": "Нет уведомлений",
+  "markAsSeen": "Отметить как прочитанное",
+  "goToMeeting": "Перейти к встрече",
+  "notificationMessages": {
+    "meetingConnected": "Вам подобран партнер для встречи!",
+    "meetingDisconnected": "Ваш партнер отменил встречу.",
+    "newNotification": "Новое уведомление"
+  }
 } 

@@ -8,22 +8,11 @@
       "command": "yarn debug-dev"
     },
     {
-      "name": "Next.js: debug client-side",
-      "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}"
+      "name": "Next.js: attach server-side",
+      "type": "node",
+      "request": "attach",
+      "port": 9230,
+      "address": "localhost",
     },
-    {
-      "name": "Next.js: debug full stack",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "yarn dev",
-      "serverReadyAction": {
-        "pattern": "- Local:.+(https?://.+)",
-        "uriFormat": "%s",
-        "action": "debugWithChrome"
-      }
-    }
   ]
 } 

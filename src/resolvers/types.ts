@@ -1,12 +1,12 @@
 import { Db } from 'mongodb'
-import { User } from '@/generated/graphql'
+import { Meeting, User } from '@/generated/graphql'
 
 export interface Context {
   db: Db
 }
 
 export type ConnectionRequestPayload = {
-  onConnectionRequest: {
+  callEvent: {
     type: 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'updateMediaState'
     offer: string
     answer?: string
@@ -16,6 +16,11 @@ export type ConnectionRequestPayload = {
     quality?: string
     from?: User
     callId: string
+  }
+  notificationEvent: {
+    type: 'meeting-connected' | 'meeting-disconnected'
+    meeting?: Meeting
+    user?: User
   }
   userId: string
 }

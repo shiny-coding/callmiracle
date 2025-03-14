@@ -36,6 +36,21 @@ export type Call = {
   type: Scalars['String']['output'];
 };
 
+export type CallEvent = {
+  __typename?: 'CallEvent';
+  answer?: Maybe<Scalars['String']['output']>;
+  audioEnabled?: Maybe<Scalars['Boolean']['output']>;
+  callId?: Maybe<Scalars['ID']['output']>;
+  from: User;
+  iceCandidate?: Maybe<Scalars['String']['output']>;
+  meetingId?: Maybe<Scalars['ID']['output']>;
+  meetingLastCallTime?: Maybe<Scalars['Float']['output']>;
+  offer?: Maybe<Scalars['String']['output']>;
+  quality?: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
+  videoEnabled?: Maybe<Scalars['Boolean']['output']>;
+};
+
 export type CallHistoryEntry = {
   __typename?: 'CallHistoryEntry';
   duration: Scalars['Int']['output'];
@@ -51,13 +66,13 @@ export type ConnectionParams = {
   callId?: Maybe<Scalars['ID']['output']>;
   iceCandidate?: Maybe<Scalars['String']['output']>;
   initiatorUserId: Scalars['ID']['output'];
+  meetingId?: Maybe<Scalars['ID']['output']>;
+  meetingLastCallTime?: Maybe<Scalars['Float']['output']>;
   offer?: Maybe<Scalars['String']['output']>;
   quality?: Maybe<Scalars['String']['output']>;
   targetUserId: Scalars['ID']['output'];
   type: Scalars['String']['output'];
   videoEnabled?: Maybe<Scalars['Boolean']['output']>;
-  meetingId?: Maybe<Scalars['ID']['output']>;
-  meetingLastCallTime?: Maybe<Scalars['Float']['output']>;
 };
 
 export type ConnectionParamsInput = {
@@ -66,28 +81,19 @@ export type ConnectionParamsInput = {
   callId?: InputMaybe<Scalars['ID']['input']>;
   iceCandidate?: InputMaybe<Scalars['String']['input']>;
   initiatorUserId: Scalars['ID']['input'];
+  meetingId?: InputMaybe<Scalars['ID']['input']>;
+  meetingLastCallTime?: InputMaybe<Scalars['Float']['input']>;
   offer?: InputMaybe<Scalars['String']['input']>;
   quality?: InputMaybe<Scalars['String']['input']>;
   targetUserId: Scalars['ID']['input'];
   type: Scalars['String']['input'];
   videoEnabled?: InputMaybe<Scalars['Boolean']['input']>;
-  meetingId?: InputMaybe<Scalars['ID']['input']>;
-  meetingLastCallTime?: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type ConnectionRequest = {
   __typename?: 'ConnectionRequest';
-  answer?: Maybe<Scalars['String']['output']>;
-  audioEnabled?: Maybe<Scalars['Boolean']['output']>;
-  callId?: Maybe<Scalars['ID']['output']>;
-  from: User;
-  iceCandidate?: Maybe<Scalars['String']['output']>;
-  offer?: Maybe<Scalars['String']['output']>;
-  quality?: Maybe<Scalars['String']['output']>;
-  type: Scalars['String']['output'];
-  videoEnabled?: Maybe<Scalars['Boolean']['output']>;
-  meetingId?: Maybe<Scalars['ID']['output']>;
-  meetingLastCallTime?: Maybe<Scalars['Float']['output']>;
+  callEvent?: Maybe<CallEvent>;
+  notificationEvent?: Maybe<NotificationEvent>;
 };
 
 export type DeleteMeetingResponse = {
@@ -113,6 +119,13 @@ export type Meeting = {
   timeSlots: Array<Scalars['Float']['output']>;
   totalDuration?: Maybe<Scalars['Int']['output']>;
   userId: Scalars['String']['output'];
+};
+
+export type NotificationEvent = {
+  __typename?: 'NotificationEvent';
+  meeting?: Maybe<Meeting>;
+  type: Scalars['String']['output'];
+  user?: Maybe<User>;
 };
 
 export type MeetingInput = {
@@ -145,35 +158,45 @@ export type MeetingWithPeer = {
   peerUser?: Maybe<User>;
 };
 
+export type Notification = {
+  __typename?: 'Notification';
+  _id: Scalars['ID']['output'];
+  createdAt: Scalars['Float']['output'];
+  meetingId?: Maybe<Scalars['ID']['output']>;
+  seen: Scalars['Boolean']['output'];
+  type: Scalars['String']['output'];
+  userId: Scalars['ID']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   connectWithUser?: Maybe<ConnectionParams>;
   createOrUpdateMeeting?: Maybe<Meeting>;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
+  setNotificationSeen: Notification;
   updateMeetingStatus: Meeting;
   updateUser?: Maybe<User>;
 };
-
 
 export type MutationConnectWithUserArgs = {
   input: ConnectionParamsInput;
 };
 
-
 export type MutationCreateOrUpdateMeetingArgs = {
   input: MeetingInput;
 };
-
 
 export type MutationDeleteMeetingArgs = {
   id: Scalars['ID']['input'];
 };
 
+export type MutationSetNotificationSeenArgs = {
+  id: Scalars['ID']['input'];
+};
 
 export type MutationUpdateMeetingStatusArgs = {
   input: UpdateMeetingStatusInput;
 };
-
 
 export type MutationUpdateUserArgs = {
   input: UpdateUserInput;
@@ -186,28 +209,29 @@ export type Query = {
   detailedCallHistory: Array<Call>;
   getOrCreateUser: User;
   meetings: Array<MeetingWithPeer>;
+  notifications: Array<Notification>;
   users: Array<User>;
 };
-
 
 export type QueryCallHistoryArgs = {
   userId: Scalars['ID']['input'];
 };
-
 
 export type QueryDetailedCallHistoryArgs = {
   targetUserId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
-
 export type QueryGetOrCreateUserArgs = {
   defaultLanguages: Array<Scalars['String']['input']>;
   userId: Scalars['ID']['input'];
 };
 
-
 export type QueryMeetingsArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+export type QueryNotificationsArgs = {
   userId: Scalars['ID']['input'];
 };
 
@@ -226,7 +250,6 @@ export type Subscription = {
   onConnectionRequest?: Maybe<ConnectionRequest>;
   onUsersUpdated: Array<User>;
 };
-
 
 export type SubscriptionOnConnectionRequestArgs = {
   userId: Scalars['ID']['input'];

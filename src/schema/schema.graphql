@@ -70,7 +70,7 @@ type ConnectionParams {
   meetingLastCallTime: Float
 }
 
-type ConnectionRequest {
+type CallEvent {
   type: String!
   offer: String
   answer: String
@@ -82,6 +82,27 @@ type ConnectionRequest {
   callId: ID
   meetingId: ID
   meetingLastCallTime: Float
+}
+
+type NotificationEvent {
+  type: String!
+  meeting: Meeting
+  user: User
+}
+
+type Notification {
+  _id: ID!
+  userId: ID!
+  type: String!
+  seen: Boolean!
+  meetingId: ID
+  createdAt: Float!
+  meeting: Meeting
+}
+
+type ConnectionRequest {
+  callEvent: CallEvent
+  notificationEvent: NotificationEvent
 }
 
 type Call {
@@ -156,6 +177,7 @@ type Query {
   callHistory(userId: ID!): [CallHistoryEntry!]!
   detailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
   meetings(userId: ID!): [MeetingWithPeer!]!
+  notifications(userId: ID!): [Notification!]!
 }
 
 type Mutation {
@@ -164,6 +186,7 @@ type Mutation {
   createOrUpdateMeeting(input: MeetingInput!): Meeting
   updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse
+  setNotificationSeen(id: ID!): Notification
 }
 
 type Subscription {

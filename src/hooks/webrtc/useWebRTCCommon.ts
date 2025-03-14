@@ -24,20 +24,33 @@ export const CONNECT_WITH_USER = gql`
 export const ON_CONNECTION_REQUEST = gql`
   subscription OnConnectionRequest($userId: ID!) {
     onConnectionRequest(userId: $userId) {
-      type
-      offer
-      answer
-      iceCandidate
-      videoEnabled
-      audioEnabled
-      quality
-      callId
-      meetingId
-      meetingLastCallTime
-      from {
-        userId
-        name
-        languages
+      callEvent {
+        type
+        offer
+        answer
+        iceCandidate
+        videoEnabled
+        audioEnabled
+        quality
+        callId
+        meetingId
+        meetingLastCallTime
+        from {
+          userId
+          name
+          languages
+        }
+      }
+      notificationEvent {
+        type
+        meeting {
+          _id
+          userId
+        }
+        user {
+          userId
+          name
+        }
       }
     }
   }

@@ -125,5 +125,14 @@
   "incompleteProfile": "Incomplete Profile",
   "pleaseCompleteProfileFirst": "Please set up your name, gender, and age before creating a meeting.",
   "completeProfile": "Complete Profile",
-  "missing": "Missing fields"
+  "missing": "Missing fields",
+  "notifications": "Notifications",
+  "noNotifications": "No notifications",
+  "markAsSeen": "Mark as seen",
+  "goToMeeting": "Go to meeting",
+  "notificationMessages": {
+    "meetingConnected": "You've been matched with a meeting partner!",
+    "meetingDisconnected": "Your meeting partner has canceled the meeting.",
+    "newNotification": "New notification"
+  }
 } 
