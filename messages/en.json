@@ -135,5 +135,8 @@
     "meetingDisconnected": "Your meeting partner has canceled the meeting.",
     "newNotification": "New notification"
   },
-  "meetingCall": "Meeting Call"
+  "meetingCall": "Meeting Call",
+  "totalDuration": "Total call duration",
+  "finishMeeting": "Finish Meeting",
+  "cancelMeeting": "Cancel Meeting"
 } 

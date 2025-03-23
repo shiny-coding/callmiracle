@@ -38,6 +38,9 @@ export const GET_MEETINGS = gql`
         allowedMaxAge
         startTime
         peerMeetingId
+        lastCallTime
+        status
+        totalDuration
       }
       peerMeeting {
         _id

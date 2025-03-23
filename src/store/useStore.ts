@@ -62,7 +62,6 @@ const useStore = create<AppState>()(
       setUser: (user) => set({ user }),
       setCallId: (callId) => { 
         set({ callId })
-        console.log('setCallId', callId)
       },
       setConnectionStatus: (connectionStatus) => {
         set({ connectionStatus })

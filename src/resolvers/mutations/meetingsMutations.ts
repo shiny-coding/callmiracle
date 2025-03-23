@@ -163,11 +163,10 @@ async function tryConnectMeetings(meeting: any, db: any, userId: string) {
   return updatedMeeting;
 }
 
-interface UpdateMeetingStatusInput {
+interface UpdateMeetingLastCallInput {
   _id: string
   status?: MeetingStatus
   lastCallTime?: number
-  totalDuration?: number
 }
 
 const meetingsMutations = {
@@ -294,29 +293,43 @@ const meetingsMutations = {
       throw error
     }
   },
-  updateMeetingStatus: async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {
+  updateMeetingLastCall: async (_: any, { input }: { input: UpdateMeetingLastCallInput }, { db }: Context) => {
     try {
-      const { _id, status, lastCallTime, totalDuration } = input
+      const { _id, status, lastCallTime } = input
+      const objectId = new ObjectId(_id)
       
-      const updateData: any = {}
-      if (status) updateData.status = status
-      if (lastCallTime) updateData.lastCallTime = lastCallTime
-      if (totalDuration !== undefined) updateData.totalDuration = totalDuration
+      // Create update object with only provided fields
+      const updateFields: any = {}
+      if (status !== undefined) updateFields.status = status
+      if (lastCallTime !== undefined) updateFields.lastCallTime = lastCallTime
       
+      // Update the meeting
       const result = await db.collection('meetings').findOneAndUpdate(
-        { _id: new ObjectId(_id) },
-        { $set: updateData },
+        { _id: objectId },
+        { $set: updateFields },
         { returnDocument: 'after' }
       )
-      
-      if (!result) {
-        throw new Error(`Meeting with ID ${_id} not found`)
+      if (!result?.value) {
+        throw new Error('Meeting not found')
+      }      
+
+      // If this meeting has a peer, update the peer meeting as well
+      if (result.value.peerMeetingId && (status !== undefined || lastCallTime !== undefined)) {
+        const peerMeetingId = new ObjectId(result.value.peerMeetingId)
+        
+        // Update the peer meeting
+        await db.collection('meetings').updateOne(
+          { _id: peerMeetingId },
+          { $set: updateFields }
+        )
+        
+        console.log(`Updated peer meeting ${peerMeetingId} with status: ${status}, lastCallTime: ${lastCallTime}`)
       }
       
-      return result
+      return result.value
     } catch (error) {
       console.error('Error updating meeting status:', error)
-      throw new Error('Failed to update meeting status')
+      throw error
     }
   },
 }

@@ -51,10 +51,11 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     )
   } else if (type === 'finished' || type == 'expired') {
     // Only set duration if the call was connected and is now finished
+    let callDuration = 0;
     const updateFields = type === 'finished' || (type === 'expired' && currentCall?.type === 'connected')
       ? { 
           type: 'finished',
-          duration: Math.floor((Date.now() - objectId.getTimestamp().getTime()) / 1000)
+          duration: callDuration = Math.floor((Date.now() - objectId.getTimestamp().getTime()) / 1000)
         }
       : { type: 'expired', duration: 0 }
 
@@ -64,6 +65,26 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       { $set: updateFields },
       { returnDocument: 'after' }
     )
+    
+    // If this call was for a meeting and has a duration, update the meeting's total duration
+    if (meetingId && callDuration > 0) {
+      try {
+        const meetingObjectId = ObjectId.createFromHexString(meetingId);
+        const meeting = await db.collection('meetings').findOne({ _id: meetingObjectId });
+        
+        // Add this call's duration to the meeting's total duration
+        const totalDuration = (meeting?.totalDuration || 0) + callDuration;
+        
+        await db.collection('meetings').updateOne(
+          { _id: meetingObjectId },
+          { $set: { totalDuration } }
+        );
+        
+        console.log(`Updated meeting ${meetingId} duration to ${totalDuration}s`);
+      } catch (err) {
+        console.error('Failed to update meeting duration:', err);
+      }
+    }
   }
 
   // Prepare common payload data

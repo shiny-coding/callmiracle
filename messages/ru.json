@@ -133,5 +133,8 @@
     "meetingConnected": "Вам подобран партнер для встречи!",
     "meetingDisconnected": "Ваш партнер отменил встречу.",
     "newNotification": "Новое уведомление"
-  }
+  },
+  "totalDuration": "Общая продолжительность звонков",
+  "finishMeeting": "Завершить встречу",
+  "cancelMeeting": "Отменить встречу"
 } 

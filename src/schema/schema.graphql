@@ -184,7 +184,7 @@ type Mutation {
   updateUser(input: UpdateUserInput!): User
   callUser(input: ConnectionParamsInput!): ConnectionParams
   createOrUpdateMeeting(input: MeetingInput!): Meeting
-  updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
+  updateMeetingLastCall(input: UpdateMeetingLastCallInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse
   setNotificationSeen(id: ID!): Notification
 }
@@ -203,7 +203,7 @@ type MeetingWithPeer {
   peerUser: User
 }
 
-input UpdateMeetingStatusInput {
+input UpdateMeetingLastCallInput {
   _id: ID!
   status: MeetingStatus
   lastCallTime: Float

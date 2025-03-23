@@ -132,10 +132,11 @@ export type MeetingInput = {
 };
 
 export enum MeetingStatus {
+  Seeking = 'SEEKING',
+  Found = 'FOUND',
+  Cancelled = 'CANCELLED',
   Called = 'CALLED',
   Finished = 'FINISHED',
-  Found = 'FOUND',
-  Seeking = 'SEEKING'
 }
 
 export type MeetingWithPeer = {
@@ -151,7 +152,7 @@ export type Mutation = {
   createOrUpdateMeeting?: Maybe<Meeting>;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   setNotificationSeen?: Maybe<Notification>;
-  updateMeetingStatus: Meeting;
+  updateMeetingLastCall: Meeting;
   updateUser?: Maybe<User>;
 };
 
@@ -176,8 +177,8 @@ export type MutationSetNotificationSeenArgs = {
 };
 
 
-export type MutationUpdateMeetingStatusArgs = {
-  input: UpdateMeetingStatusInput;
+export type MutationUpdateMeetingLastCallArgs = {
+  input: UpdateMeetingLastCallInput;
 };
 
 
@@ -267,7 +268,7 @@ export type SubscriptionEvent = {
   notificationEvent?: Maybe<NotificationEvent>;
 };
 
-export type UpdateMeetingStatusInput = {
+export type UpdateMeetingLastCallInput = {
   _id: Scalars['ID']['input'];
   lastCallTime?: InputMaybe<Scalars['Float']['input']>;
   status?: InputMaybe<MeetingStatus>;

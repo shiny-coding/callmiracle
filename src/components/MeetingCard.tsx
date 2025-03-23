@@ -2,6 +2,7 @@ import { Typography, Chip, Button } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import UserCard from './UserCard'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
+import TimerIcon from '@mui/icons-material/Timer'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import LanguageIcon from '@mui/icons-material/Language'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -18,6 +19,19 @@ import { formatDuration } from '@/utils/formatDuration'
 import { isMeetingPassed, getSharedStatuses, getSharedLanguages } from '@/utils/meetingUtils'
 import React from 'react'
 import { useStore } from '@/store/useStore'
+import DoneIcon from '@mui/icons-material/Done'
+import CancelIcon from '@mui/icons-material/Cancel'
+import { gql, useMutation } from '@apollo/client'
+import { MeetingStatus } from '@/generated/graphql'
+
+const UPDATE_MEETING_LAST_CALL = gql`
+  mutation UpdateMeetingLastCall($input: UpdateMeetingLastCallInput!) {
+    updateMeetingLastCall(input: $input) {
+      _id
+      status
+    }
+  }
+`
 
 interface MeetingProps {
   meetingWithPeer: {
@@ -55,15 +69,17 @@ interface MeetingProps {
   }
   onEdit?: (e?: React.MouseEvent) => void
   onDelete?: (e?: React.MouseEvent) => void
+  refetch: () => void
 }
 
-export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: MeetingProps) {
+export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch }: MeetingProps) {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
   const now = new Date()
-  const { doCall } = useWebRTCContext()
+  const { doCall, connectionStatus } = useWebRTCContext()
   const { user } = useStore()
   const meeting = meetingWithPeer.meeting
+  const [updateMeetingLastCall] = useMutation(UPDATE_MEETING_LAST_CALL)
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
@@ -306,36 +322,89 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
     return null
   }
 
+  const handleFinishMeeting = async () => {
+    try {
+      await updateMeetingLastCall({
+        variables: {
+          input: {
+            _id: meeting._id,
+            status: MeetingStatus.Finished
+          }
+        }
+      })
+      refetch()
+    } catch (error) {
+      console.error('Error finishing meeting:', error)
+    }
+  }
+  
+  const handleCancelMeeting = async () => {
+    try {
+      await updateMeetingLastCall({
+        variables: {
+          input: {
+            _id: meeting._id,
+            status: MeetingStatus.Seeking
+          }
+        }
+      })
+      refetch()
+    } catch (error) {
+      console.error('Error canceling meeting:', error)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2 w-full relative">
-      {onEdit && (
-        <div className="absolute top-0 right-0">
+      <div className="absolute top-0 right-0">
+        {meeting.status !== MeetingStatus.Called && meeting.status !== MeetingStatus.Finished && (
           <IconButton 
             className="text-blue-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
             e.stopPropagation();
-            onEdit(e);
+            onEdit?.(e);
           }}
           size="small"
         >
             <EditIcon fontSize="small" />
           </IconButton>
-        </div>
-      )}
-      {onDelete && (
+        )}
+      </div>
         <div className="absolute bottom-0 right-0">
+        {!meetingPassed && meeting.status === MeetingStatus.Called ? (
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={<DoneIcon />}
+            onClick={handleFinishMeeting}
+            size="small"
+          >
+            {t('finishMeeting')}
+          </Button>
+        ) : meetingStatus.status === 'now' || (meeting.startTime && meeting.startTime > now.getTime()) ? (
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={<CancelIcon />}
+            onClick={handleCancelMeeting}
+            size="small"
+          >
+            {t('cancelMeeting')}
+          </Button>
+        ) : (
           <IconButton 
             className="text-red-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
-            e.stopPropagation();
-            onDelete(e);
-          }}
-          size="small"
-        >
+              e.stopPropagation();
+              onDelete?.(e);
+            }}
+            size="small"
+          >
             <DeleteIcon fontSize="small" />
           </IconButton>
-        </div>
-      )}
+        )}
+      </div>
+      <div className="absolute top-4 left-0">{meeting._id}</div>
 
       <div className="flex items-center justify-center">
         <Typography variant="subtitle2" 
@@ -386,8 +455,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
               )}
             </div>
           )}
-
-          {/* Show shared statuses if there are any */}
           
         </div>
       )}
@@ -506,6 +573,15 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete }: Meeti
           </Typography>
           <Typography variant="body2" className={textColorClass}>
             {t('ageRange')}: {meeting.allowedMinAge}-{meeting.allowedMaxAge}
+          </Typography>
+        </div>
+      )}
+
+      {meeting.totalDuration > 0 && (
+        <div className="flex items-center gap-2">
+          <TimerIcon className="text-blue-400" />
+          <Typography variant="body2">
+            {t('totalDuration')}: {formatDuration(meeting.totalDuration)}
           </Typography>
         </div>
       )}
