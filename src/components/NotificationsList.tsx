@@ -2,29 +2,15 @@ import React from 'react'
 import { Paper, List, ListItem, Typography, IconButton, Button, Badge, Chip } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useTranslations } from 'next-intl'
-import { useNotifications } from '@/hooks/useNotifications'
+import { useNotifications } from '@/contexts/NotificationsContext'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
 import CheckIcon from '@mui/icons-material/Check'
 import { formatRelativeTime } from '@/utils/formatRelativeTime'
-import { useSubscription } from '@apollo/client'
-import { ON_CONNECTION_REQUEST } from '@/hooks/webrtc/useWebRTCCommon'
-import { getUserId } from '@/lib/userId'
 
 export default function NotificationsList() {
   const { notifications, loading, error, refetch, setNotificationSeen } = useNotifications()
   const t = useTranslations()
   
-  useSubscription(ON_CONNECTION_REQUEST, {
-    variables: { userId: getUserId() },
-    onSubscriptionData: async ({ subscriptionData }) => {
-      const notificationEvent = subscriptionData.data?.onConnectionRequest?.notificationEvent
-      if (notificationEvent) {
-        refetch();
-      }
-    }
-  })
-
-
   if (loading && notifications.length === 0) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading notifications</Typography>
 
@@ -83,7 +69,7 @@ export default function NotificationsList() {
                   )}
                   
                   {(notification.type === 'meeting-connected' || notification.type === 'meeting-disconnected') && 
-                   notification.meeting && (
+                    notification.meeting && (
                     <Button 
                       size="small" 
                       variant="outlined" 

@@ -134,5 +134,6 @@
     "meetingConnected": "You've been matched with a meeting partner!",
     "meetingDisconnected": "Your meeting partner has canceled the meeting.",
     "newNotification": "New notification"
-  }
+  },
+  "meetingCall": "Meeting Call"
 } 

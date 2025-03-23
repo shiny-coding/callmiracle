@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery, useSubscription } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { Paper, List, ListItem, Typography, IconButton } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useTranslations } from 'next-intl'
@@ -9,7 +9,7 @@ import { getUserId } from '@/lib/userId'
 
 import { gql } from '@apollo/client'
 import MeetingDialog from './MeetingDialog'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -19,7 +19,7 @@ import ConfirmDialog from './ConfirmDialog'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
-import { ON_CONNECTION_REQUEST } from '@/hooks/webrtc/useWebRTCCommon'
+import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 
 export const GET_MEETINGS = gql`
   query GetMeetings($userId: ID!) {
@@ -69,16 +69,17 @@ export default function MeetingsList() {
   const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null)
   const { user } = useStore()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
+  const { subscribeToMeetings } = useSubscriptions()
 
-  useSubscription(ON_CONNECTION_REQUEST, {
-    variables: { userId: getUserId() },
-    onSubscriptionData: async ({ subscriptionData }) => {
-      const notificationEvent = subscriptionData.data?.onConnectionRequest?.notificationEvent
-      if (notificationEvent) {
+  useEffect(() => {
+    const unsubscribe = subscribeToMeetings((event) => {
+      if (event) {
         refetch();
       }
-    }
-  })
+    })
+    
+    return unsubscribe
+  }, [subscribeToMeetings, refetch])
 
   const handleEditMeeting = (meetingData: any) => {
     setSelectedMeeting(meetingData.meeting)

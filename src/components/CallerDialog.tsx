@@ -13,7 +13,7 @@ export default function CallerDialog() {
   const t = useTranslations()
   const { connectionStatus, setConnectionStatus, targetUser, meetingId, meetingLastCallTime } = useStore()
   const tStatus = useTranslations('ConnectionStatus')
-  const { doCall, connectWithUser, caller } = useWebRTCContext()
+  const { doCall, callUser, caller } = useWebRTCContext()
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function CallerDialog() {
     const { targetUser, callId } = useStore.getState()
     if (callId && targetUser) {
       console.log('Sending expired', callId)
-      await connectWithUser({
+      await callUser({
         variables: {
           input: {
             type: 'expired',
@@ -67,11 +67,11 @@ export default function CallerDialog() {
       open={open}
       onClose={handleCancel}
       PaperProps={{
-        className: 'bg-gray-900 text-white'
+        className: 'bg-gray-900 text-white min-w-[300px]'
       }}
     >
       <DialogTitle className="flex justify-between items-center">
-        {t('calling')}
+        {tStatus(connectionStatus)}
       </DialogTitle>
       <DialogContent>
         {showUserInfo && <UserCard user={targetUser} />}

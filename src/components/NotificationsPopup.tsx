@@ -3,7 +3,7 @@ import { Dialog, DialogTitle, DialogContent, IconButton, Badge } from '@mui/mate
 import CloseIcon from '@mui/icons-material/Close'
 import { useTranslations } from 'next-intl'
 import NotificationsList from './NotificationsList'
-import { useNotifications } from '@/hooks/useNotifications'
+import { useNotifications } from '@/contexts/NotificationsContext'
 
 interface NotificationsPopupProps {
   open: boolean

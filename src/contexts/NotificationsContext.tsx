@@ -1,6 +1,8 @@
-import { gql, useQuery, useMutation, useSubscription } from '@apollo/client'
+'use client'
+import React, { createContext, useContext, ReactNode, useEffect } from 'react'
+import { gql, useQuery, useMutation } from '@apollo/client'
 import { getUserId } from '@/lib/userId'
-import { ON_CONNECTION_REQUEST } from './webrtc/useWebRTCCommon'
+import { useSubscriptions } from './SubscriptionsContext'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications($userId: ID!) {
@@ -34,8 +36,29 @@ const SET_NOTIFICATION_SEEN = gql`
   }
 `
 
-export function useNotifications() {
+type NotificationType = {
+  _id: string
+  type: string
+  seen: boolean
+  meetingId?: string
+  createdAt: number
+  meeting?: any
+}
+
+interface NotificationsContextType {
+  notifications: NotificationType[]
+  loading: boolean
+  error: any
+  refetch: () => void
+  setNotificationSeen: (id: string) => Promise<void>
+  hasUnseenNotifications: boolean
+}
+
+const NotificationsContext = createContext<NotificationsContextType | null>(null)
+
+export function NotificationsProvider({ children }: { children: ReactNode }) {
   const userId = getUserId()
+  const { subscribeToNotifications } = useSubscriptions()
   
   const { data, loading, error, refetch } = useQuery(GET_NOTIFICATIONS, {
     variables: { userId },
@@ -45,16 +68,16 @@ export function useNotifications() {
   
   const [markAsSeen] = useMutation(SET_NOTIFICATION_SEEN)
   
-  // Subscribe to new notifications
-  useSubscription(ON_CONNECTION_REQUEST, {
-    variables: { userId: getUserId() },
-    onSubscriptionData: ({ subscriptionData }) => {
-      const notificationEvent = subscriptionData.data?.onConnectionRequest?.notificationEvent
-      if (notificationEvent && notificationEvent.type === 'new-notification') {
+  // Subscribe to notifications through the SubscriptionsProvider
+  useEffect(() => {
+    const unsubscribe = subscribeToNotifications((notificationEvent) => {
+      if (notificationEvent) {
         refetch()
       }
-    }
-  })
+    })
+    
+    return unsubscribe
+  }, [subscribeToNotifications, refetch])
   
   const setNotificationSeen = async (id: string) => {
     try {
@@ -77,7 +100,7 @@ export function useNotifications() {
     }
   }
   
-  return {
+  const value = {
     notifications: data?.notifications || [],
     loading,
     error,
@@ -85,4 +108,18 @@ export function useNotifications() {
     setNotificationSeen,
     hasUnseenNotifications: data?.notifications?.some((n: any) => !n.seen) || false
   }
+  
+  return (
+    <NotificationsContext.Provider value={value}>
+      {children}
+    </NotificationsContext.Provider>
+  )
+}
+
+export function useNotifications() {
+  const context = useContext(NotificationsContext)
+  if (!context) {
+    throw new Error('useNotifications must be used within a NotificationsProvider')
+  }
+  return context
 } 

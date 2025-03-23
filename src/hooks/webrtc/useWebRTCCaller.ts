@@ -10,7 +10,7 @@ import { gql } from '@apollo/client'
 interface UseWebRTCCallerProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
-  connectWithUser: any
+  callUser: any
   attemptReconnect: () => Promise<void>
 }
 
@@ -27,7 +27,7 @@ const UPDATE_MEETING_STATUS = gql`
 export function useWebRTCCaller({
   localStream,
   remoteVideoRef,
-  connectWithUser,
+  callUser,
   attemptReconnect
 }: UseWebRTCCallerProps) {
   const {
@@ -40,7 +40,7 @@ export function useWebRTCCaller({
     dispatchPendingIceCandidates,
     applyLocalQuality,
     handleConnectionStateChange
-  } = useWebRTCCommon(connectWithUser)
+  } = useWebRTCCommon(callUser)
 
   const [active, setActive] = useState(false)
   const {
@@ -124,7 +124,7 @@ export function useWebRTCCaller({
     try {
       // Initialize call and get callId if not reconnecting
       if (!isReconnect) {
-        const initResult = await connectWithUser({
+        const initResult = await callUser({
           variables: {
             input: {
               type: 'initiate',
@@ -135,7 +135,7 @@ export function useWebRTCCaller({
             }
           }
         })
-        const newCallId = initResult.data?.connectWithUser?.callId
+        const newCallId = initResult.data?.callUser?.callId
         if (!newCallId) {
           throw new Error('Failed to get callId from initiate')
         }
@@ -160,7 +160,7 @@ export function useWebRTCCaller({
 
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
-      await connectWithUser({
+      await callUser({
         variables: {
           input: {
             type: 'offer',

@@ -2,7 +2,7 @@ import { Context } from './types'
 import { pubsub } from './pubsub'
 import { ObjectId } from 'mongodb'
 
-export const connectWithUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
+export const callUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
   const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality, meetingId } = input
   const initiatorUserId = input.initiatorUserId || ''
   let callId = input.callId
@@ -21,7 +21,7 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
     console.error('no user found for target', { targetUserId })
     return connection
   }      
-  console.log('connectWithUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
+  console.log('callUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
 
   // Only handle calls table for specific types
   if (type === 'initiate') {
@@ -68,12 +68,10 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
 
   // Prepare common payload data
   const basePayload = {
-    onConnectionRequest: {
-      type,
-      from: initiator,
-      callId,
-      meetingId: currentCall?.meetingId
-    },
+    type,
+    from: initiator,
+    callId,
+    meetingId: currentCall?.meetingId,
     userId: targetUserId
   }
 
@@ -94,7 +92,7 @@ export const connectWithUserMutation = async (_: any, { input }: { input: any },
   }
 
   // Create a unique topic for this user's connection requests
-  const topic = `CONNECTION_REQUEST:${targetUserId}`
+  const topic = `SUBSCRIPTION_EVENT:${targetUserId}`
 
   const callEvent = {
     ...basePayload,

@@ -90,12 +90,6 @@ export type ConnectionParamsInput = {
   videoEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-export type ConnectionRequest = {
-  __typename?: 'ConnectionRequest';
-  callEvent?: Maybe<CallEvent>;
-  notificationEvent?: Maybe<NotificationEvent>;
-};
-
 export type DeleteMeetingResponse = {
   __typename?: 'DeleteMeetingResponse';
   _id: Scalars['ID']['output'];
@@ -119,13 +113,6 @@ export type Meeting = {
   timeSlots: Array<Scalars['Float']['output']>;
   totalDuration?: Maybe<Scalars['Int']['output']>;
   userId: Scalars['String']['output'];
-};
-
-export type NotificationEvent = {
-  __typename?: 'NotificationEvent';
-  meeting?: Maybe<Meeting>;
-  type: Scalars['String']['output'];
-  user?: Maybe<User>;
 };
 
 export type MeetingInput = {
@@ -158,48 +145,62 @@ export type MeetingWithPeer = {
   peerUser?: Maybe<User>;
 };
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  callUser?: Maybe<ConnectionParams>;
+  createOrUpdateMeeting?: Maybe<Meeting>;
+  deleteMeeting?: Maybe<DeleteMeetingResponse>;
+  setNotificationSeen?: Maybe<Notification>;
+  updateMeetingStatus: Meeting;
+  updateUser?: Maybe<User>;
+};
+
+
+export type MutationCallUserArgs = {
+  input: ConnectionParamsInput;
+};
+
+
+export type MutationCreateOrUpdateMeetingArgs = {
+  input: MeetingInput;
+};
+
+
+export type MutationDeleteMeetingArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSetNotificationSeenArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationUpdateMeetingStatusArgs = {
+  input: UpdateMeetingStatusInput;
+};
+
+
+export type MutationUpdateUserArgs = {
+  input: UpdateUserInput;
+};
+
 export type Notification = {
   __typename?: 'Notification';
   _id: Scalars['ID']['output'];
   createdAt: Scalars['Float']['output'];
+  meeting?: Maybe<Meeting>;
   meetingId?: Maybe<Scalars['ID']['output']>;
   seen: Scalars['Boolean']['output'];
   type: Scalars['String']['output'];
   userId: Scalars['ID']['output'];
 };
 
-export type Mutation = {
-  __typename?: 'Mutation';
-  connectWithUser?: Maybe<ConnectionParams>;
-  createOrUpdateMeeting?: Maybe<Meeting>;
-  deleteMeeting?: Maybe<DeleteMeetingResponse>;
-  setNotificationSeen: Notification;
-  updateMeetingStatus: Meeting;
-  updateUser?: Maybe<User>;
-};
-
-export type MutationConnectWithUserArgs = {
-  input: ConnectionParamsInput;
-};
-
-export type MutationCreateOrUpdateMeetingArgs = {
-  input: MeetingInput;
-};
-
-export type MutationDeleteMeetingArgs = {
-  id: Scalars['ID']['input'];
-};
-
-export type MutationSetNotificationSeenArgs = {
-  id: Scalars['ID']['input'];
-};
-
-export type MutationUpdateMeetingStatusArgs = {
-  input: UpdateMeetingStatusInput;
-};
-
-export type MutationUpdateUserArgs = {
-  input: UpdateUserInput;
+export type NotificationEvent = {
+  __typename?: 'NotificationEvent';
+  meeting?: Maybe<Meeting>;
+  type: Scalars['String']['output'];
+  user?: Maybe<User>;
 };
 
 export type Query = {
@@ -213,23 +214,28 @@ export type Query = {
   users: Array<User>;
 };
 
+
 export type QueryCallHistoryArgs = {
   userId: Scalars['ID']['input'];
 };
+
 
 export type QueryDetailedCallHistoryArgs = {
   targetUserId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
+
 export type QueryGetOrCreateUserArgs = {
   defaultLanguages: Array<Scalars['String']['input']>;
   userId: Scalars['ID']['input'];
 };
 
+
 export type QueryMeetingsArgs = {
   userId: Scalars['ID']['input'];
 };
+
 
 export type QueryNotificationsArgs = {
   userId: Scalars['ID']['input'];
@@ -247,12 +253,18 @@ export enum Status {
 
 export type Subscription = {
   __typename?: 'Subscription';
-  onConnectionRequest?: Maybe<ConnectionRequest>;
-  onUsersUpdated: Array<User>;
+  onSubscriptionEvent?: Maybe<SubscriptionEvent>;
 };
 
-export type SubscriptionOnConnectionRequestArgs = {
+
+export type SubscriptionOnSubscriptionEventArgs = {
   userId: Scalars['ID']['input'];
+};
+
+export type SubscriptionEvent = {
+  __typename?: 'SubscriptionEvent';
+  callEvent?: Maybe<CallEvent>;
+  notificationEvent?: Maybe<NotificationEvent>;
 };
 
 export type UpdateMeetingStatusInput = {

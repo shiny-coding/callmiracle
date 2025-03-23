@@ -100,7 +100,7 @@ type Notification {
   meeting: Meeting
 }
 
-type ConnectionRequest {
+type SubscriptionEvent {
   callEvent: CallEvent
   notificationEvent: NotificationEvent
 }
@@ -182,7 +182,7 @@ type Query {
 
 type Mutation {
   updateUser(input: UpdateUserInput!): User
-  connectWithUser(input: ConnectionParamsInput!): ConnectionParams
+  callUser(input: ConnectionParamsInput!): ConnectionParams
   createOrUpdateMeeting(input: MeetingInput!): Meeting
   updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse
@@ -190,8 +190,7 @@ type Mutation {
 }
 
 type Subscription {
-  onConnectionRequest(userId: ID!): ConnectionRequest
-  onUsersUpdated: [User!]!
+  onSubscriptionEvent(userId: ID!): SubscriptionEvent
 }
 
 type DeleteMeetingResponse {

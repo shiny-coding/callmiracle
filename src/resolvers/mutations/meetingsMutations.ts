@@ -128,7 +128,7 @@ async function tryConnectMeetings(meeting: any, db: any, userId: string) {
         });
         
         console.log('Publishing meeting-connected notification for peer: ', { name: peerUser.name, userId: peer.userId })
-        const topic = `CONNECTION_REQUEST:${peer.userId}`
+        const topic = `SUBSCRIPTION_EVENT:${peer.userId}`
         pubsub.publish(topic, { notificationEvent: { type: 'new-notification', } })
       });
       break;
@@ -235,21 +235,21 @@ const meetingsMutations = {
       const { db, userId } = context
 
       // Find the meeting to ensure it belongs to the current user
-      const meeting = await db.collection('meetings').findOne({ 
-        _id: new ObjectId(id), 
+      const meeting = await db.collection('meetings').findOne({
+        _id: new ObjectId(id),
       })
-      
+
       if (!meeting) {
         throw new Error('Meeting not found or you do not have permission to delete it')
       }
-      
+
       // If this meeting has a peer, notify the peer user
       if (meeting.peerMeetingId) {
         // Get the peer meeting
         const peerMeeting = await db.collection('meetings').findOne({
           _id: new ObjectId(meeting.peerMeetingId)
         })
-        
+
         if (peerMeeting) {
           // Update the peer meeting to remove the connection
           await db.collection('meetings').updateOne(
@@ -278,7 +278,7 @@ const meetingsMutations = {
           });
           
           // Create a topic for the peer user
-          const topic = `CONNECTION_REQUEST:${peerMeeting.userId}`
+          const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId}`
           pubsub.publish(topic, { notificationEvent: { type: 'new-notification', } })
         }
       }

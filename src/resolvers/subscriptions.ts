@@ -1,17 +1,41 @@
-import { pubsub } from './pubsub'
-import { transformUser } from './utils'
-import { ConnectionRequestPayload, Context } from './types'
+import { Meeting } from '@/generated/graphql'
 import { User } from '@/generated/graphql'
+import { pubsub } from './pubsub'
+
+type SubscriptionEventPayload = {
+  callEvent: {
+    type: 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'updateMediaState'
+    offer: string
+    answer?: string
+    iceCandidate?: string
+    videoEnabled?: boolean
+    audioEnabled?: boolean
+    quality?: string
+    from?: User
+    callId: string
+  }
+  notificationEvent: {
+    type: 'meeting-connected' | 'meeting-disconnected'
+    meeting?: Meeting
+    user?: User
+  }
+  userId: string
+}
+
+export type PubSubEvents = {
+  [key: string]: [any]
+  SUBSCRIPTION_EVENT: [SubscriptionEventPayload]
+} 
 
 export const subscriptions = {
-  onConnectionRequest: {
+  onSubscriptionEvent: {
     subscribe: (_: any, { userId }: { userId: string }) => {
       // Subscribe to user-specific topic
-      const topic = `CONNECTION_REQUEST:${userId}`
+      const topic = `SUBSCRIPTION_EVENT:${userId}`
       console.log('Subscribing to topic:', topic)
       return pubsub.subscribe(topic)
     },
-    resolve: (payload: ConnectionRequestPayload) => {
+    resolve: (payload: SubscriptionEventPayload) => {
       if ( payload.notificationEvent ) {
         console.log('Resolving meeting changed:', {
           type: payload.notificationEvent.type,
@@ -30,16 +54,4 @@ export const subscriptions = {
       return payload
     }
   },
-  onUsersUpdated: {
-    subscribe: () => {
-      console.log('Subscribing to USERS_UPDATED')
-      return pubsub.subscribe('USERS_UPDATED')
-    },
-    resolve: (payload: User[]) => {
-      console.log('Resolving users updated:', {
-        length: payload.length
-      })
-      return payload
-    }
-  }
 } 

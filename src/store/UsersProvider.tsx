@@ -1,29 +1,12 @@
 'use client'
 
-import { createContext, useContext, ReactNode } from 'react'
-import { gql, useQuery, useSubscription } from '@apollo/client'
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
+import { gql, useQuery } from '@apollo/client'
 import { User } from '@/generated/graphql'
-import { getUserId } from '@/lib/userId'
 
 const GET_USERS = gql`
   query GetUsers {
     users {
-      userId
-      name
-      languages
-      timestamp
-      locale
-      online
-      hasImage
-      about
-      contacts
-    }
-  }
-`
-
-const USERS_SUBSCRIPTION = gql`
-  subscription OnUsersUpdated {
-    onUsersUpdated {
       userId
       name
       languages
@@ -61,12 +44,7 @@ interface UsersProviderProps {
 
 export function UsersProvider({ children }: UsersProviderProps) {
   const { data, loading, error, refetch } = useQuery(GET_USERS)
-  const { data: subData } = useSubscription(USERS_SUBSCRIPTION)
-  
-  // Use subscription data if available, otherwise use query data
-  const users = (subData?.onUsersUpdated || data?.users)?.filter(
-    (user: User) => user.userId !== getUserId()
-  )
+  const users = data?.users || []
 
   return (
     <UsersContext.Provider value={{ users, loading, error, refetch }}>

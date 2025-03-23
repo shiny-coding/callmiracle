@@ -9,14 +9,14 @@ import { useStore } from '@/store/useStore'
 interface UseWebRTCCalleeProps {
   localStream?: MediaStream
   remoteVideoRef: React.RefObject<HTMLVideoElement>
-  connectWithUser: any
+  callUser: any
   attemptReconnect: () => Promise<void>
 }
 
 export function useWebRTCCallee({
   localStream,
   remoteVideoRef,
-  connectWithUser,
+  callUser,
   attemptReconnect
 }: UseWebRTCCalleeProps) {
   const {
@@ -29,7 +29,7 @@ export function useWebRTCCallee({
     clearPendingCandidates,
     handleConnectionStateChange,
     createHangup
-  } = useWebRTCCommon(connectWithUser)
+  } = useWebRTCCommon(callUser)
 
   const [active, setActive] = useState(false)
   const {
@@ -88,7 +88,7 @@ export function useWebRTCCallee({
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
 
-      await connectWithUser({
+      await callUser({
         variables: {
           input: {
             type: 'answer',
@@ -124,7 +124,7 @@ export function useWebRTCCallee({
 
     if (callId && targetUser) {
       try {
-        await connectWithUser({
+        await callUser({
           variables: {
             input: {
               type: 'busy',

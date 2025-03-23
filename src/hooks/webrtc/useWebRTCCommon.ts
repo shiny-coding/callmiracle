@@ -6,8 +6,8 @@ import { useStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 
 export const CONNECT_WITH_USER = gql`
-  mutation ConnectWithUser($input: ConnectionParamsInput!) {
-    connectWithUser(input: $input) {
+  mutation CallUser($input: ConnectionParamsInput!) {
+    callUser(input: $input) {
       type
       offer
       answer
@@ -17,41 +17,6 @@ export const CONNECT_WITH_USER = gql`
       callId
       meetingId
       meetingLastCallTime
-    }
-  }
-`
-
-export const ON_CONNECTION_REQUEST = gql`
-  subscription OnConnectionRequest($userId: ID!) {
-    onConnectionRequest(userId: $userId) {
-      callEvent {
-        type
-        offer
-        answer
-        iceCandidate
-        videoEnabled
-        audioEnabled
-        quality
-        callId
-        meetingId
-        meetingLastCallTime
-        from {
-          userId
-          name
-          languages
-        }
-      }
-      notificationEvent {
-        type
-        meeting {
-          _id
-          userId
-        }
-        user {
-          userId
-          name
-        }
-      }
     }
   }
 `
@@ -80,7 +45,7 @@ export interface IncomingRequest {
   from: User
 }
 
-export function useWebRTCCommon(connectWithUser: any) {
+export function useWebRTCCommon(callUser: any) {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
   const { setConnectionStatus } = useStore()
 
@@ -256,7 +221,7 @@ export function useWebRTCCommon(connectWithUser: any) {
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
         try {
-          await connectWithUser({
+          await callUser({
             variables: {
               input: {
                 type: 'ice-candidate',
@@ -330,7 +295,7 @@ export function useWebRTCCommon(connectWithUser: any) {
       quality: qualityWeWantFromRemote,
       callId
     })
-    connectWithUser({
+    callUser({
       variables: {
         input: {
           type: 'updateMediaState',
@@ -359,7 +324,7 @@ export function useWebRTCCommon(connectWithUser: any) {
       // Send finished signal if we have a target
       if (targetUser) {
         try {
-          await connectWithUser({
+          await callUser({
             variables: {
               input: {
                 type: 'finished',

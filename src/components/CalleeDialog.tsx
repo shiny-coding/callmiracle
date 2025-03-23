@@ -36,10 +36,10 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
       open={open}
       onClose={onReject}
       PaperProps={{
-        className: 'bg-gray-900 text-white'
+        className: 'bg-gray-900 text-white min-w-[300px]'
       }}
     >
-      <DialogTitle>
+      <DialogTitle className="flex justify-between items-center">
         {tStatus(connectionStatus)}
       </DialogTitle>
       <DialogContent>

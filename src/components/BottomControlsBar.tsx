@@ -21,7 +21,7 @@ import { useStore } from '@/store/useStore'
 import CallHistoryPopup from './CallHistoryPopup'
 import UsersPopup from './UsersPopup'
 import NotificationsPopup from './NotificationsPopup'
-import { useNotifications } from '@/hooks/useNotifications'
+import { useNotifications } from '@/contexts/NotificationsContext'
 
 export default function BottomControlsBar() {
   const [profileOpen, setProfileOpen] = useState(false)

@@ -5,10 +5,11 @@ import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
-import { ON_CONNECTION_REQUEST, CONNECT_WITH_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
+import { CONNECT_WITH_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
 import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
 import { User } from '@/generated/graphql'
+import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 
 interface WebRTCContextType {
   doCall: (user: User, isReconnect: boolean, meetingId: string | null, meetingLastCallTime: number | null) => Promise<void>
@@ -23,7 +24,7 @@ interface WebRTCContextType {
   setLocalStream: (stream: MediaStream | undefined) => void
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   sendWantedMediaState: () => void
-  connectWithUser: any
+  callUser: any
   callee: ReturnType<typeof useWebRTCCallee>
   caller: ReturnType<typeof useWebRTCCaller>
 }
@@ -49,8 +50,9 @@ export function WebRTCProvider({
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [localStream, setLocalStream] = useState<MediaStream>()
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
-  const [connectWithUser] = useMutation(CONNECT_WITH_USER)
-  const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon(connectWithUser)
+  const [callUser] = useMutation(CONNECT_WITH_USER)
+  const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon(callUser)
+  const { subscribeToCallEvents } = useSubscriptions()
 
   const { 
     callId, 
@@ -75,7 +77,7 @@ export function WebRTCProvider({
       if (role === 'caller') {
         await caller.doCall(targetUser, true, meetingId, meetingLastCallTime)
       } else {
-        await connectWithUser({
+        await callUser({
           variables: {
             input: {
               type: 'need-reconnect',
@@ -94,7 +96,7 @@ export function WebRTCProvider({
   const childProps = {
     localStream,
     remoteVideoRef,
-    connectWithUser,
+    callUser,
     attemptReconnect
   }
   
@@ -108,13 +110,8 @@ export function WebRTCProvider({
     attemptReconnect()
   }, [connectionStatus, localStream])
 
-  // Subscribe to incoming connection requests
-  useSubscription(ON_CONNECTION_REQUEST, {
-    variables: { userId: getUserId() },
-    onSubscriptionData: async ({ subscriptionData }) => {
-      const callEvent = subscriptionData.data?.onConnectionRequest?.callEvent
-      if (!callEvent) return
-
+  useEffect(() => {
+    const unsubscribe = subscribeToCallEvents(async (callEvent) => {
       if (callEvent.type !== 'initiate' && callEvent.callId !== callId) {
         console.log('WebRTC: Ignoring connection request - mismatched IDs: ', { callEvent, callId })
         return
@@ -125,7 +122,7 @@ export function WebRTCProvider({
           // Already in a call, send busy response
           console.log('WebRTC: Already in call, sending busy signal')
           setTimeout(async () => {
-            await connectWithUser({
+            await callUser({
               variables: {
                 input: {
                 type: 'busy',
@@ -166,7 +163,7 @@ export function WebRTCProvider({
       else if (callEvent.type === 'answer') {
         if (!caller.peerConnection.current) {
           console.log('WebRTC: Connection closed before answer')
-          await connectWithUser({
+          await callUser({
             variables: {
               input: {
                 type: 'expired',
@@ -239,8 +236,10 @@ export function WebRTCProvider({
       else {
         throw new Error(`WebRTC: Unknown call event type: ${callEvent.type}`)
       }
-    }
-  })
+    })
+
+    return unsubscribe
+  }, [subscribeToCallEvents])
 
   // Watch for stream changes and update peer connections
   useEffect(() => {
@@ -315,7 +314,7 @@ export function WebRTCProvider({
     setLocalStream,
     remoteVideoRef,
     sendWantedMediaState,
-    connectWithUser,
+    callUser,
     callee,
     caller
   }
