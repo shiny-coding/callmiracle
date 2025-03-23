@@ -47,6 +47,7 @@ export function useWebRTCCaller({
     setCallId,
     setConnectionStatus,
     targetUser,
+    meetingId,
     setTargetUser,
     qualityWeWantFromRemote,
     setQualityRemoteWantsFromUs,
@@ -76,21 +77,22 @@ export function useWebRTCCaller({
         await dispatchPendingIceCandidates(pc)
         
         // keep this a bit
-        // if (meetingId) {
-        //   try {
-        //     await updateMeetingStatus({
-        //       variables: {
-        //         input: {
-        //           _id: meetingId,
-        //           status: "CALLED",
-        //           lastCallTime: Date.now()
-        //         }
-        //       }
-        //     })
-        //   } catch (err) {
-        //     console.error('Failed to update meeting status:', err)
-        //   }
-        // }
+        if (meetingId) {
+          try {
+            await updateMeetingStatus({
+              variables: {
+                input: {
+                  _id: meetingId,
+                  status: "CALLED",
+                  lastCallTime: Date.now()
+                }
+              }
+            })
+            console.log('Updated meeting status to CALLED and lastCallTime to now')
+          } catch (err) {
+            console.error('Failed to update meeting status:', err)
+          }
+        }
       } else {
         console.warn('WebRTC: Received answer in invalid state:', pc.signalingState)
       }

@@ -60,7 +60,10 @@ const useStore = create<AppState>()(
       qualityWeWantFromRemote: '720p',
       qualityRemoteWantsFromUs: '720p',
       setUser: (user) => set({ user }),
-      setCallId: (callId) => { set({ callId }) },
+      setCallId: (callId) => { 
+        set({ callId })
+        console.log('setCallId', callId)
+      },
       setConnectionStatus: (connectionStatus) => {
         set({ connectionStatus })
         // Update lastConnectedTime when status changes to connected

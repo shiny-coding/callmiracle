@@ -13,6 +13,7 @@ type SubscriptionEventPayload = {
     quality?: string
     from?: User
     callId: string
+    userId: string
   }
   notificationEvent: {
     type: 'meeting-connected' | 'meeting-disconnected'
@@ -43,13 +44,15 @@ export const subscriptions = {
           userName: payload.notificationEvent.user?.name,
           userId: payload.notificationEvent.user?.userId
         })
-      } else {
-        console.log('Resolving connection request:', {
-          type: payload.callEvent?.type,
-          fromUser: payload.callEvent?.from?.name,
-          toUser: payload.userId,
-          callId: payload.callEvent?.callId
+      } else if ( payload.callEvent ) {
+        console.log('Resolving call request:', {
+          type: payload.callEvent.type,
+          fromUser: payload.callEvent.from?.name,
+          toUser: payload.callEvent.userId,
+          callId: payload.callEvent.callId
         })
+      } else {
+        console.log('Resolving unknown event:', payload)
       }
       return payload
     }

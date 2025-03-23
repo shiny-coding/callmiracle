@@ -62,7 +62,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   
   const { data, loading, error, refetch } = useQuery(GET_NOTIFICATIONS, {
     variables: { userId },
-    pollInterval: 30000, // Poll every 30 seconds
     skip: !userId
   })
   

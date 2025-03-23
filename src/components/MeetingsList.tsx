@@ -73,9 +73,7 @@ export default function MeetingsList() {
 
   useEffect(() => {
     const unsubscribe = subscribeToMeetings((event) => {
-      if (event) {
-        refetch();
-      }
+      refetch();
     })
     
     return unsubscribe

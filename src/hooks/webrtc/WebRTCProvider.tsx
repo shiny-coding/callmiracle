@@ -125,11 +125,11 @@ export function WebRTCProvider({
             await callUser({
               variables: {
                 input: {
-                type: 'busy',
-                targetUserId: callEvent.from.userId,
-                initiatorUserId: getUserId(),
-                callId: callEvent.callId
-              }
+                  type: 'busy',
+                  targetUserId: callEvent.from.userId,
+                  initiatorUserId: getUserId(),
+                  callId: callEvent.callId
+                }
               }
             })
           }, 1000) // we're not immediately sending the busy, so that the callee has time to receive the callId (sic!)
@@ -239,7 +239,7 @@ export function WebRTCProvider({
     })
 
     return unsubscribe
-  }, [subscribeToCallEvents])
+  }, [subscribeToCallEvents, callId])
 
   // Watch for stream changes and update peer connections
   useEffect(() => {

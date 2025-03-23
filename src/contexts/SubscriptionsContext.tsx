@@ -84,6 +84,7 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
       
       // Handle notification events
       if (data.notificationEvent) {
+        console.log('Notification event:', data.notificationEvent)
         notificationCallbacks.current.forEach(callback => {
           callback(data.notificationEvent)
         })
@@ -92,6 +93,8 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
       // Handle meeting events (connection/disconnection)
       if (data.notificationEvent?.type === 'meeting-connected' || 
           data.notificationEvent?.type === 'meeting-disconnected') {
+            
+        console.log('Meeting event:', data.notificationEvent)
         meetingCallbacks.current.forEach(callback => {
           callback(data.notificationEvent)
         })

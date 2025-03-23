@@ -14,7 +14,7 @@ const yoga = createYoga({
   // Enable GraphiQL with SSE support
   graphiql: {
     subscriptionsProtocol: 'SSE'
-  }
+  },
 })
 
 // Export request handlers
@@ -54,6 +54,20 @@ export const GET = async (request: Request) => {
 }
 
 export const POST = async (request: Request) => {
+  // Optional: Enhanced logging for POST requests
+  if (request.headers.get('content-type')?.includes('application/json')) {
+    try {
+      const clone = request.clone()
+      const body = await clone.json()
+      const query = body.query?.substring(0, 100) // Truncate long queries
+      const operationName = body.operationName || 'unnamed'
+      
+      console.log(`[${new Date().toLocaleTimeString()}] GraphQL Request: ${operationName}`)
+    } catch (e) {
+      // Silently continue if we can't parse the body
+    }
+  }
+  
   // Clone request early for error logging if needed
   const clonedRequest = request.clone()
   let requestBody: string | undefined
