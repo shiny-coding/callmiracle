@@ -1,3 +1,5 @@
+scalar Date
+
 enum Status {
   CHAT
   MEET_NEW_PEOPLE
@@ -17,6 +19,7 @@ type Block {
 type Meeting {
   _id: ID!
   userId: String!
+  userName: String
   languages: [String!]!
   statuses: [String!]!
   timeSlots: [Float!]!
@@ -28,9 +31,10 @@ type Meeting {
   allowedMaxAge: Int!
   startTime: Float
   peerMeetingId: String
-  lastCallTime: Float
+  lastCallTime: Date
   totalDuration: Int
   status: MeetingStatus!
+  createdAt: Date
 }
 
 enum MeetingStatus {
@@ -150,6 +154,7 @@ input BlockInput {
 input MeetingInput {
   _id: ID
   userId: ID!
+  userName: String
   languages: [String!]!
   statuses: [Status!]!
   timeSlots: [Float!]!
@@ -184,7 +189,7 @@ type Mutation {
   updateUser(input: UpdateUserInput!): User
   callUser(input: ConnectionParamsInput!): ConnectionParams
   createOrUpdateMeeting(input: MeetingInput!): Meeting
-  updateMeetingLastCall(input: UpdateMeetingLastCallInput!): Meeting!
+  updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse
   setNotificationSeen(id: ID!): Notification
 }
@@ -203,9 +208,9 @@ type MeetingWithPeer {
   peerUser: User
 }
 
-input UpdateMeetingLastCallInput {
+input UpdateMeetingStatusInput {
   _id: ID!
   status: MeetingStatus
-  lastCallTime: Float
+  lastCallTime: Date
   totalDuration: Int
 } 

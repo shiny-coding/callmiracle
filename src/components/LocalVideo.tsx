@@ -20,7 +20,7 @@ export default function LocalVideo() {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
   const { user, setUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
-  const { name = '', languages = [], statuses = [], online = false } = user || {}
+  const { name = '', languages = [], online = false } = user || {}
   const { 
     localStream, 
     setLocalStream, 
@@ -129,22 +129,6 @@ export default function LocalVideo() {
                   const parts = langName?.split(' - ')
                   return parts?.[1] || parts?.[0]
                 })()}
-              </div>
-            ))}
-          </div>
-        )}
-        {/* Status overlay */}
-        {connectionStatus !== 'connected' && statuses.length > 0 && (
-          <div 
-            className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1 cursor-pointer"
-            onClick={() => setStatusOpen(true)}
-          >
-            {statuses.map(status => (
-              <div 
-                key={status} 
-                className="bg-black/50 px-2 py-1 rounded text-white text-sm hover:bg-black/60"
-              >
-                {tStatus(status)}
               </div>
             ))}
           </div>

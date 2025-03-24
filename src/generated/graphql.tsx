@@ -152,7 +152,7 @@ export type Mutation = {
   createOrUpdateMeeting?: Maybe<Meeting>;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   setNotificationSeen?: Maybe<Notification>;
-  updateMeetingLastCall: Meeting;
+  updateMeetingStatus: Meeting;
   updateUser?: Maybe<User>;
 };
 
@@ -177,8 +177,8 @@ export type MutationSetNotificationSeenArgs = {
 };
 
 
-export type MutationUpdateMeetingLastCallArgs = {
-  input: UpdateMeetingLastCallInput;
+export type MutationUpdateMeetingStatusArgs = {
+  input: UpdateMeetingStatusInput;
 };
 
 
@@ -268,7 +268,7 @@ export type SubscriptionEvent = {
   notificationEvent?: Maybe<NotificationEvent>;
 };
 
-export type UpdateMeetingLastCallInput = {
+export type UpdateMeetingStatusInput = {
   _id: Scalars['ID']['input'];
   lastCallTime?: InputMaybe<Scalars['Float']['input']>;
   status?: InputMaybe<MeetingStatus>;

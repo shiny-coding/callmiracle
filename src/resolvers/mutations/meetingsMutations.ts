@@ -1,179 +1,55 @@
 import { Context } from '../types'
 import { ObjectId } from 'mongodb'
-import { getUserId } from '@/lib/userId'
-import { canConnectMeetings, determineBestStartTime } from './connectMeetings'
+import { tryConnectMeetings } from './connectMeetings'
 import { pubsub } from '../pubsub';
 import { MeetingStatus } from '@/generated/graphql';
 
-// Define error symbols
-const MeetingAlreadyConnected = Symbol('MeetingAlreadyConnected');
-const PeerAlreadyConnected = Symbol('PeerAlreadyConnected');
 
-async function tryConnectMeetings(meeting: any, db: any, userId: string) {
-  // Try to find a matching meeting
-  const now = new Date().getTime();
-  const potentialPeers = await db.collection('meetings').find({
-    userId: { $ne: userId },
-    peerMeetingId: null,
-    timeSlots: { $elemMatch: { $gte: now } }
-  }).toArray();
-
-  if (potentialPeers.length === 0) return meeting;
-
-  // Get all users for checking preferences
-  const userIds = [userId, ...potentialPeers.map((m: any) => m.userId)];
-  const users = await db.collection('users').find({
-    userId: { $in: userIds }
-  }).toArray();
-
-  // Find peers with at least one hour of overlap
-  const oneHourInMs = 60 * 60 * 1000;
-  let peersWithHourOverlap = [];
-  let peersWithAnyOverlap = [];
-
-  // Check each potential peer for overlap
-  for (const peer of potentialPeers) {
-    const overlap = canConnectMeetings(meeting, peer, users);
-    if (!overlap) continue;
-    
-    // Find the slot with the longest overlap
-    const longestOverlap = overlap.reduce((max: any, slot: any) => 
-      slot.duration > max.duration ? slot : max, overlap[0]);
-    
-    // Store the peer and overlap information
-    const peerUser = users.find((u: any) => u.userId === peer.userId);
-    const peerInfo = { peer, overlap, user: peerUser };
-    
-    // If this peer has at least one hour overlap, add to the hour overlap list
-    if (longestOverlap.duration >= oneHourInMs) {
-      peersWithHourOverlap.push(peerInfo);
-    }
-    
-    // Add to the list of all peers with any overlap
-    peersWithAnyOverlap.push(peerInfo);
-  }
-
-  let peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
-  if (peersToChooseFrom.length === 0) {
-    console.log('No peers to choose from')
-    return meeting;
-  }
-
-  // Use session for transaction
-  const session = db.client.startSession();
-  let updatedMeeting = meeting;
-  const maxTries = 10;
-
-  for (let i = 0; i < maxTries; i++) {
-    const randomIndex = Math.floor(Math.random() * (peersToChooseFrom.length - 1));
-    try {
-      await session.withTransaction(async () => {
-
-        const { peer, overlap, user: peerUser } = peersToChooseFrom[randomIndex];
-
-        // Determine the best start time
-        const bestStartTime = determineBestStartTime(overlap, meeting, peer);
-        
-        // Update this meeting with the peer meeting ID and start time
-        const result = await db.collection('meetings').updateOne(
-          { _id: meeting._id, peerMeetingId: null },
-          { $set: { 
-              peerMeetingId: peer._id.toString(),
-              startTime: bestStartTime,
-              status: MeetingStatus.Found
-            }
-          },
-          { session }
-        );
-        
-        if (result.modifiedCount === 0) {
-          // This meeting was connected by another process
-          throw MeetingAlreadyConnected;
-        }
-        
-        // Update the peer meeting with this meeting's ID and the same start time
-        const peerResult = await db.collection('meetings').updateOne(
-          { _id: peer._id, peerMeetingId: null },
-          { $set: { 
-              peerMeetingId: meeting._id.toString(),
-              startTime: bestStartTime,
-              status: MeetingStatus.Found
-            }
-          },
-          { session }
-        );
-        
-        if (peerResult.modifiedCount === 0) {
-          // Peer was connected by another process
-          throw PeerAlreadyConnected;
-        }
-        
-
-        // Successfully connected
-        updatedMeeting = await db.collection('meetings').findOne(
-          { _id: meeting._id },
-          { session }
-        );
-
-        // If we get here, transaction was successful
-        console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
-
-        // Create a notification in the database
-        await db.collection('notifications').insertOne({
-          userId: peerUser.userId,
-          type: 'meeting-connected',
-          seen: false,
-          meetingId: peer._id.toString(),
-          createdAt: Date.now()
-        });
-        
-        console.log('Publishing meeting-connected notification for peer: ', { name: peerUser.name, userId: peer.userId })
-        const topic = `SUBSCRIPTION_EVENT:${peer.userId}`
-        pubsub.publish(topic, { notificationEvent: { type: 'new-notification', } })
-      });
-      break;
-    } catch (err) {
-      
-      if (err === MeetingAlreadyConnected) {
-        // Our meeting was already connected, get the new data
-        updatedMeeting = await db.collection('meetings').findOne({ _id: meeting._id });
-        console.log('Meeting was connected by another process: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
-        break;
-      } else if (err === PeerAlreadyConnected) {
-        const peerToRemove = peersToChooseFrom[randomIndex].peer._id.toString();
-        console.log('Peer was connected by another process, removing it from consideration: ', peerToRemove._id);
-        peersWithHourOverlap = peersWithHourOverlap.filter(p => p.peer._id.toString() !== peerToRemove);
-        peersWithAnyOverlap = peersWithAnyOverlap.filter(p => p.peer._id.toString() !== peerToRemove);
-        
-        // Update the list we're choosing from
-        peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
-        
-        // If all peers are exhausted, break the loop
-        if (peersToChooseFrom.length === 0) {
-          break;
-        }
-      } else {
-        throw err;
-      }
-    } finally {
-      await session.endSession();
-    }
-  }
-
-  return updatedMeeting;
-}
-
-interface UpdateMeetingLastCallInput {
+interface UpdateMeetingStatusInput {
   _id: string
   status?: MeetingStatus
-  lastCallTime?: number
+  lastCallTime?: Date
+  totalDuration?: number
+}
+
+// Helper function to publish meeting disconnection notification
+async function publishMeetingDisconnected(db: any, peerMeeting: any) {
+  if (!peerMeeting) return
+  
+  // Get the peer user for notification
+  const peerUser = await db.collection('users').findOne({ userId: peerMeeting.userId })
+  
+  if (peerUser) {
+    // Create a notification in the database
+    await db.collection('notifications').insertOne({
+      userId: peerUser.userId,
+      type: 'meeting-disconnected',
+      seen: false,
+      meetingId: peerMeeting._id.toString(),
+      createdAt: new Date()
+    })
+    
+    // Publish notification event
+    const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId}`
+    pubsub.publish(topic, { 
+      notificationEvent: { 
+        type: 'new-notification',
+      } 
+    })
+    
+    console.log('Published meeting-disconnected event for peer:', { 
+      name: peerUser.name, 
+      userId: peerMeeting.userId 
+    })
+  }
 }
 
 const meetingsMutations = {
   createOrUpdateMeeting: async (_: any, { input }: { input: any }, { db }: Context) => {
     const { 
       _id,
-      userId, 
+      userId,
+      userName,
       statuses, 
       timeSlots, 
       minDuration, 
@@ -197,6 +73,7 @@ const meetingsMutations = {
         {
           $set: {
             userId,
+            userName,
             statuses,
             timeSlots,
             minDuration,
@@ -209,6 +86,9 @@ const meetingsMutations = {
             startTime,
             peerMeetingId,
             status: MeetingStatus.Seeking
+          },
+          $setOnInsert: {
+            createdAt: new Date()
           }
         },
         {
@@ -231,7 +111,7 @@ const meetingsMutations = {
   },
   deleteMeeting: async (_: any, { id }: { id: string }, context: any) => {
     try {
-      const { db, userId } = context
+      const { db } = context
 
       // Find the meeting to ensure it belongs to the current user
       const meeting = await db.collection('meetings').findOne({
@@ -262,23 +142,8 @@ const meetingsMutations = {
             }
           )
 
-          const peerUser = await db.collection('users').findOne({ userId: peerMeeting.userId })
-
-          // Publish the event
-          console.log('Publishing meeting-disconnected event for peer:', { name: peerUser.name, userId: peerMeeting.userId })
-          
-          // Create a notification in the database
-          await db.collection('notifications').insertOne({
-            userId: peerUser.userId,
-            type: 'meeting-disconnected',
-            seen: false,
-            meetingId: peerMeeting._id.toString(),
-            createdAt: Date.now()
-          });
-          
-          // Create a topic for the peer user
-          const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId}`
-          pubsub.publish(topic, { notificationEvent: { type: 'new-notification', } })
+          // Use the helper function to publish notification
+          await publishMeetingDisconnected(db, peerMeeting)
         }
       }
       
@@ -293,7 +158,7 @@ const meetingsMutations = {
       throw error
     }
   },
-  updateMeetingLastCall: async (_: any, { input }: { input: UpdateMeetingLastCallInput }, { db }: Context) => {
+  updateMeetingStatus: async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {
     try {
       const { _id, status, lastCallTime } = input
       const objectId = new ObjectId(_id)
@@ -304,29 +169,54 @@ const meetingsMutations = {
       if (lastCallTime !== undefined) updateFields.lastCallTime = lastCallTime
       
       // Update the meeting
-      const result = await db.collection('meetings').findOneAndUpdate(
+      const updatedMeeting = await db.collection('meetings').findOneAndUpdate(
         { _id: objectId },
         { $set: updateFields },
         { returnDocument: 'after' }
       )
-      if (!result?.value) {
+      
+      if (!updatedMeeting) {
+        console.error('Meeting not found', {
+          meetingId: _id
+        })
         throw new Error('Meeting not found')
-      }      
+      }
 
-      // If this meeting has a peer, update the peer meeting as well
-      if (result.value.peerMeetingId && (status !== undefined || lastCallTime !== undefined)) {
-        const peerMeetingId = new ObjectId(result.value.peerMeetingId)
+      console.log('Updating meeting:', updatedMeeting._id, status, lastCallTime)
+
+      const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Seeking
+      
+      // If status is CANCELLED or SEEKING and this meeting has a peer, handle peer notification
+      if (updatedMeeting.peerMeetingId) {
+        const peerMeetingId = new ObjectId(updatedMeeting.peerMeetingId)
         
-        // Update the peer meeting
-        await db.collection('meetings').updateOne(
-          { _id: peerMeetingId },
-          { $set: updateFields }
-        )
-        
-        console.log(`Updated peer meeting ${peerMeetingId} with status: ${status}, lastCallTime: ${lastCallTime}`)
+        // Get the peer meeting
+        const peerMeeting = await db.collection('meetings').findOne({
+          _id: peerMeetingId
+        })
+
+        if (disconnectPeer) {
+          updateFields.status = MeetingStatus.Seeking
+          updateFields.peerMeetingId = null
+          console.log('Disconnecting peer:', peerMeetingId)
+        }
+
+        if (peerMeeting) {
+          // Update the peer meeting to SEEKING status
+          await db.collection('meetings').updateOne(
+            { _id: peerMeetingId },
+            { $set: updateFields }
+          )
+          console.log('Updated peer meeting:', peerMeetingId, updateFields)
+          
+          if (disconnectPeer) {
+            // Use the helper function to publish notification
+            await publishMeetingDisconnected(db, peerMeeting)
+          }
+        }
       }
       
-      return result.value
+      return updatedMeeting
     } catch (error) {
       console.error('Error updating meeting status:', error)
       throw error

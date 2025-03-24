@@ -15,8 +15,8 @@ interface UseWebRTCCallerProps {
 }
 
 const UPDATE_MEETING_STATUS = gql`
-  mutation UpdateMeetingLastCall($input: UpdateMeetingLastCallInput!) {
-    updateMeetingLastCall(input: $input) {
+  mutation UpdateMeetingStatus($input: UpdateMeetingStatusInput!) {
+    updateMeetingStatus(input: $input) {
       _id
       status
       lastCallTime
@@ -63,7 +63,7 @@ export function useWebRTCCaller({
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
 
-  const [updateMeetingLastCall] = useMutation(UPDATE_MEETING_STATUS)
+  const [updateMeetingStatus] = useMutation(UPDATE_MEETING_STATUS)
 
   const handleAnswer = async (pc: RTCPeerConnection, quality: VideoQuality, answer: RTCSessionDescriptionInit) => {
     try {
@@ -79,7 +79,7 @@ export function useWebRTCCaller({
         // keep this a bit
         if (meetingId) {
           try {
-            await updateMeetingLastCall({
+            await updateMeetingStatus({
               variables: {
                 input: {
                   _id: meetingId,

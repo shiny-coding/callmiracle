@@ -137,6 +137,6 @@
   },
   "meetingCall": "Meeting Call",
   "totalDuration": "Total call duration",
-  "finishMeeting": "Finish Meeting",
-  "cancelMeeting": "Cancel Meeting"
+  "finishMeeting": "Finish",
+  "cancelMeeting": "Cancel"
 } 

@@ -25,8 +25,8 @@ import { gql, useMutation } from '@apollo/client'
 import { MeetingStatus } from '@/generated/graphql'
 
 const UPDATE_MEETING_LAST_CALL = gql`
-  mutation UpdateMeetingLastCall($input: UpdateMeetingLastCallInput!) {
-    updateMeetingLastCall(input: $input) {
+  mutation UpdateMeetingStatus($input: UpdateMeetingStatusInput!) {
+    updateMeetingStatus(input: $input) {
       _id
       status
     }
@@ -79,7 +79,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   const { doCall, connectionStatus } = useWebRTCContext()
   const { user } = useStore()
   const meeting = meetingWithPeer.meeting
-  const [updateMeetingLastCall] = useMutation(UPDATE_MEETING_LAST_CALL)
+  const [updateMeetingStatus] = useMutation(UPDATE_MEETING_LAST_CALL)
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
@@ -324,7 +324,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
 
   const handleFinishMeeting = async () => {
     try {
-      await updateMeetingLastCall({
+      await updateMeetingStatus({
         variables: {
           input: {
             _id: meeting._id,
@@ -340,11 +340,11 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   
   const handleCancelMeeting = async () => {
     try {
-      await updateMeetingLastCall({
+      await updateMeetingStatus({
         variables: {
           input: {
             _id: meeting._id,
-            status: MeetingStatus.Seeking
+            status: MeetingStatus.Cancelled
           }
         }
       })
@@ -503,10 +503,10 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                       </React.Fragment>
                     )
                   })}
+                  <Typography variant="body2" className={textColorClass}>
+                    {meeting.minDuration} {t('min')}
+                  </Typography>
                 </div>
-                <Typography variant="body2" className={textColorClass}>
-                  {meeting.minDuration} {t('min')}
-                </Typography>
               </>
             ) : null
           )}
