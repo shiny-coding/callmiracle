@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
-import { getUserId } from '@/lib/userId'
 import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
@@ -44,6 +43,7 @@ export function useWebRTCCaller({
 
   const [active, setActive] = useState(false)
   const {
+    currentUser,
     setCallId,
     setConnectionStatus,
     targetUser,
@@ -57,7 +57,7 @@ export function useWebRTCCaller({
     setRole,
     connectionStatus,
     setMeetingId,
-    setMeetingLastCallTime
+    setMeetingLastCallTime,
   } = useStore()
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)
@@ -115,7 +115,7 @@ export function useWebRTCCaller({
       setMeetingLastCallTime(meetingLastCallTime)
     }
 
-    console.log('WebRTC: Initializing connection with:', user.userId, isReconnect ? '(reconnecting)' : '')
+    console.log('WebRTC: Initializing connection with:', user._id, isReconnect ? '(reconnecting)' : '')
     if ( !isReconnect ) {
       setConnectionStatus('calling')
     }
@@ -130,8 +130,8 @@ export function useWebRTCCaller({
           variables: {
             input: {
               type: 'initiate',
-              targetUserId: user.userId,
-              initiatorUserId: getUserId(),
+              targetUserId: user._id,
+              initiatorUserId: currentUser?._id,
               meetingId,
               meetingLastCallTime
             }
@@ -158,7 +158,7 @@ export function useWebRTCCaller({
       pc.onconnectionstatechange = () => handleConnectionStateChange(pc, peerConnection, active, attemptReconnect)
 
       addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
-      setupIceCandidateHandler(pc, user.userId)
+      setupIceCandidateHandler(pc, user._id)
 
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
@@ -166,8 +166,8 @@ export function useWebRTCCaller({
         variables: {
           input: {
             type: 'offer',
-            targetUserId: user.userId,
-            initiatorUserId: getUserId(),
+            targetUserId: user._id,
+            initiatorUserId: currentUser?._id,
             offer: JSON.stringify(offer),
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,

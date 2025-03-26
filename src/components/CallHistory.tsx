@@ -3,14 +3,14 @@ import { Paper, List, ListItem, Typography, Chip } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import UserCard from './UserCard'
-import { getUserId } from '@/lib/userId'
 import { formatDuration } from '@/utils/formatDuration'
+import { useStore } from '@/store/useStore'
 
 const CALL_HISTORY = gql`
   query CallHistory($userId: ID!) {
     callHistory(userId: $userId) {
       user {
-        userId
+        _id
         name
         statuses
         languages
@@ -34,8 +34,10 @@ interface CallHistoryEntry {
 }
 
 export default function CallHistory() {
+  const { currentUser } = useStore()
+
   const { data, loading, error } = useQuery(CALL_HISTORY, {
-    variables: { userId: getUserId() }
+    variables: { userId: currentUser?._id }
   })
   const t = useTranslations()
 
@@ -56,7 +58,7 @@ export default function CallHistory() {
       <List>
         {data?.callHistory.map((entry: CallHistoryEntry) => (
           <ListItem 
-            key={entry.user.userId}
+            key={entry.user._id}
             className="flex flex-col items-start hover:bg-gray-700 rounded-lg mb-2"
           >
             <div className="w-full">

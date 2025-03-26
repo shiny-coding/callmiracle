@@ -11,13 +11,12 @@ export const usersQueries = {
   },
 
   getOrCreateUser: async (_: any, { userId, defaultLanguages }: { userId: string, defaultLanguages: string[] }, { db }: Context) => {
-    let user = await db.collection('users').findOne({ userId })
+    let user = userId ? await db.collection('users').findOne({ _id: new ObjectId(userId) }) : null
     
     if (!user) {
       // Create new user with default values
       const newUser = {
         _id: new ObjectId(),
-        userId,
         name: '',
         languages: defaultLanguages,  // Use provided default languages
         timestamp: Date.now(),

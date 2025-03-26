@@ -1,18 +1,53 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { useInitUser } from '@/hooks/useInitUser'
 import { Dialog, DialogContent, Typography } from '@mui/material'
-import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
+import { useStore } from '@/store/useStore'
+import { UsersProvider } from '@/store/UsersProvider'
+import { SubscriptionsProvider } from '@/contexts/SubscriptionsContext'
+import { NotificationsProvider } from '@/contexts/NotificationsContext'
+
 interface AppContentProps {
   children: ReactNode
 }
 
-export default function AppContent({ children }: AppContentProps) {
-  const t = useTranslations()
+export function AppContent({ children }: AppContentProps) {
   const { loading, error } = useInitUser()
+  if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
-  if (loading || error ) {
+  return (
+        <UsersProvider>
+          <SubscriptionsProvider>
+            <NotificationsProvider>
+              {children}
+            </NotificationsProvider>
+          </SubscriptionsProvider>
+        </UsersProvider>
+      )
+} 
+
+export function StoreInitializer({ children }: AppContentProps) {
+  
+  const [isHydrated, setIsHydrated] = useState(useStore.persist.hasHydrated);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      const unsub = useStore.persist.onFinishHydration(() => {
+        setIsHydrated(true)
+      })
+      
+      return unsub
+    }
+  }, [])
+
+  if (!isHydrated) return <LoadingDialog loading={true} error={null} />
+
+  return children
+}
+
+function LoadingDialog({ loading, error }: { loading: boolean, error: any }) {
     return (
       <Dialog
         open={true}
@@ -29,7 +64,4 @@ export default function AppContent({ children }: AppContentProps) {
         </DialogContent>
       </Dialog>
     )
-  }
-
-  return children
-} 
+}

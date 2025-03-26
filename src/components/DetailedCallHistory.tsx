@@ -2,8 +2,8 @@ import { gql, useQuery } from '@apollo/client'
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, List, ListItem, Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
-import { getUserId } from '@/lib/userId'
 import { formatDuration } from '@/utils/formatDuration'
+import { useStore } from '@/store/useStore'
 
 const DETAILED_CALL_HISTORY = gql`
   query DetailedCallHistory($userId: ID!, $targetUserId: ID!) {
@@ -25,10 +25,11 @@ interface DetailedCallHistoryProps {
 
 export default function DetailedCallHistory({ user, open, onClose }: DetailedCallHistoryProps) {
   const t = useTranslations()
+  const { currentUser } = useStore()
   const { data, loading, error } = useQuery(DETAILED_CALL_HISTORY, {
     variables: { 
-      userId: getUserId(),
-      targetUserId: user.userId
+      userId: currentUser?._id,
+      targetUserId: user._id
     },
     skip: !open
   })

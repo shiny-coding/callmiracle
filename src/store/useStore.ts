@@ -5,7 +5,8 @@ import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 
 interface AppState {
-  user: User | null
+  currentUser: User | null // non-persisted
+  currentUserId: string | null // persisted
   // Call state
   callId: string | null
   meetingId: string | null
@@ -19,7 +20,8 @@ interface AppState {
   localVideoEnabled: boolean
   qualityWeWantFromRemote: VideoQuality
   qualityRemoteWantsFromUs: VideoQuality
-  setUser: (user: User | null) => void
+  setCurrentUser: (currentUser: User | null) => void
+  setCurrentUserId: (currentUserId: string | null) => void
   // Call state setters
   setCallId: (callId: string | null) => void
   setConnectionStatus: (status: AppState['connectionStatus']) => void
@@ -45,8 +47,9 @@ const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       // Non-persisted state (initialized from server)
-      user: null,
-      // Call state (persisted)
+      currentUser: null,
+      // Persisted state  
+      currentUserId: null,
       callId: null,
       connectionStatus: 'disconnected',
       targetUser: null,
@@ -59,7 +62,8 @@ const useStore = create<AppState>()(
       localVideoEnabled: true,
       qualityWeWantFromRemote: '720p',
       qualityRemoteWantsFromUs: '720p',
-      setUser: (user) => set({ user }),
+      setCurrentUser: (currentUser) => set({ currentUser }),
+      setCurrentUserId: (currentUserId: string | null) => set({ currentUserId }),
       setCallId: (callId) => { 
         set({ callId })
       },
@@ -100,6 +104,7 @@ const useStore = create<AppState>()(
       name: 'app-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
+        currentUserId: state.currentUserId,
         callId: state.callId,
         connectionStatus: state.connectionStatus,
         targetUser: state.targetUser,

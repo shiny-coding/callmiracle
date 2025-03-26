@@ -14,13 +14,12 @@ import { LANGUAGES } from '@/config/languages'
 import UserSettingsDialog from './UserSettingsDialog'
 import MeetingDialog from './MeetingDialog'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
-import { getUserId } from '@/lib/userId'
 
 export default function LocalVideo() {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
-  const { user, setUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
-  const { name = '', languages = [], online = false } = user || {}
+  const { currentUser, setCurrentUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
+  const { name = '', languages = [], online = false } = currentUser || {}
   const { 
     localStream, 
     setLocalStream, 
@@ -33,12 +32,13 @@ export default function LocalVideo() {
   const { updateUserData } = useUpdateUser()
 
   const handleOnlineToggle = () => {
-    setUser({ ...user!, online: !online })
+    setCurrentUser({ ...currentUser!, online: !online })
     updateUserData()
   }
 
   // Stream management and video element updates
   useEffect(() => {
+    let mounted = true
     async function setupStream() {
       try {
         if (!videoRef.current) return
@@ -54,7 +54,7 @@ export default function LocalVideo() {
           video: true,
           audio: true
         })
-          
+        if (!mounted) return
         // Set initial track states based on preferences
         stream.getVideoTracks().forEach(track => {
           track.enabled = localVideoEnabled
@@ -83,11 +83,13 @@ export default function LocalVideo() {
         }
       }
     }
-
     setupStream()
+    return () => {
+      mounted = false
+    }
   }, [localVideoEnabled, localAudioEnabled])
 
-   return (
+  return (
     <div className="relative w-full max-w-[400px] mx-auto">
       {error && (
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>

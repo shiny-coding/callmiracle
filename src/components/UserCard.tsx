@@ -29,8 +29,8 @@ export default function UserCard({
   const { doCall } = useWebRTCContext()
   const { setSelectedUser } = useDetailedCallHistory()
   const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
-  const { user: currentUser, } = useStore()
-  const existingBlock = currentUser?.blocks.find(b => b.userId === user.userId)
+  const { currentUser } = useStore()
+  const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
   const isBlocked = existingBlock?.all || (existingBlock?.statuses.length ?? 0) > 0
 
   const handleCall = async () => {
@@ -45,7 +45,7 @@ export default function UserCard({
       >
         <div className="relative">
           <Avatar
-            src={user.hasImage ? `/profiles/${user.userId}.jpg` : undefined}
+            src={user.hasImage ? `/profiles/${user._id}.jpg` : undefined}
             className={`
               w-12 h-12
             `}

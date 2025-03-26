@@ -1,6 +1,4 @@
 import { useRef, useState, useEffect } from 'react'
-import { useMutation } from '@apollo/client'
-import { getUserId } from '@/lib/userId'
 import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
 import type { ConnectionStatus, IncomingRequest } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
@@ -33,6 +31,7 @@ export function useWebRTCCallee({
 
   const [active, setActive] = useState(false)
   const {
+    currentUser,
     callId,
     setCallId,
     targetUser,
@@ -42,7 +41,7 @@ export function useWebRTCCallee({
     qualityWeWantFromRemote,
     localVideoEnabled,
     localAudioEnabled,
-    connectionStatus
+    connectionStatus,
   } = useStore()
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)
@@ -92,8 +91,8 @@ export function useWebRTCCallee({
         variables: {
           input: {
             type: 'answer',
-            targetUserId: requestToAccept.from.userId,
-            initiatorUserId: getUserId(),
+            targetUserId: requestToAccept.from._id,
+            initiatorUserId: currentUser?._id,
             answer: JSON.stringify(answer),
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,
@@ -103,7 +102,7 @@ export function useWebRTCCallee({
         }
       })
 
-      setupIceCandidateHandler(pc, requestToAccept.from.userId)
+      setupIceCandidateHandler(pc, requestToAccept.from._id)
       await dispatchPendingIceCandidates(pc)
 
       setIncomingRequest(null)
@@ -128,8 +127,8 @@ export function useWebRTCCallee({
           variables: {
             input: {
               type: 'busy',
-              targetUserId: targetUser.userId,
-              initiatorUserId: getUserId(),
+              targetUserId: targetUser._id,
+              initiatorUserId: currentUser?._id,
               callId
             }
           }

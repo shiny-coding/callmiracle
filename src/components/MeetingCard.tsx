@@ -59,7 +59,7 @@ interface MeetingProps {
       statuses: string[]
     }
     peerUser?: {
-      userId: string
+      _id: string
       name: string
       hasImage: boolean
       online: boolean
@@ -76,8 +76,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   const t = useTranslations()
   const tStatus = useTranslations('Status')
   const now = new Date()
-  const { doCall, connectionStatus } = useWebRTCContext()
-  const { user } = useStore()
+  const { doCall } = useWebRTCContext()
+  const { currentUser } = useStore()
   const meeting = meetingWithPeer.meeting
   const [updateMeetingStatus] = useMutation(UPDATE_MEETING_LAST_CALL)
 
@@ -301,7 +301,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   const isActiveNow = meetingStatus.status === 'now';
 
   const handleCallPeer = () => {
-    if (meetingWithPeer.peerUser && meetingWithPeer.peerUser.userId) {
+    if (meetingWithPeer.peerUser && meetingWithPeer.peerUser._id) {
       console.log('calling peer', meetingWithPeer.peerUser, meetingWithPeer.meeting._id)
       // If this is a first call (no lastCallTime), don't show user info
       doCall(meetingWithPeer.peerUser as User, false, meetingWithPeer.meeting._id, meetingWithPeer.meeting.lastCallTime ?? null)
@@ -313,8 +313,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
 
   const getPartnerIcon = () => {
     if (meeting.peerMeetingId) {
-      if (user?.sex === meetingWithPeer.peerUser?.sex) {
-        return user?.sex === 'male' ? '👬' : '👭'
+      if (currentUser?.sex === meetingWithPeer.peerUser?.sex) {
+        return currentUser?.sex === 'male' ? '👬' : '👭'
       } else {
         return '👫'
       }

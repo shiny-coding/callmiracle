@@ -1,5 +1,4 @@
 import { gql, useMutation } from '@apollo/client'
-import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
 
 const CREATE_OR_UPDATE_MEETING = gql`
@@ -26,8 +25,7 @@ const CREATE_OR_UPDATE_MEETING = gql`
 export const useUpdateMeeting = () => {
   const [createOrUpdateMeeting, { loading }] = useMutation(CREATE_OR_UPDATE_MEETING)
 
-
-  const { user: currentUser } = useStore()
+  const { currentUser } = useStore()
 
   const updateMeeting = async (meetingData: {
     _id?: string
@@ -43,14 +41,14 @@ export const useUpdateMeeting = () => {
     startTime?: number
     peerMeetingId?: string
   }) => {
-    const userId = getUserId()
-    if (!userId) return null
+    const currentUserId = currentUser?._id
+    if (!currentUserId) return null
 
     const { data } = await createOrUpdateMeeting({
       variables: {
         input: {
           _id: meetingData._id,
-          userId,
+          userId: currentUserId,
           userName: currentUser?.name,
           ...meetingData
         }

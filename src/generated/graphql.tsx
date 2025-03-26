@@ -276,6 +276,7 @@ export type UpdateMeetingStatusInput = {
 };
 
 export type UpdateUserInput = {
+  _id: Scalars['ID']['input'];
   about: Scalars['String']['input'];
   birthYear?: InputMaybe<Scalars['Int']['input']>;
   blocks: Array<BlockInput>;
@@ -285,11 +286,11 @@ export type UpdateUserInput = {
   name: Scalars['String']['input'];
   online: Scalars['Boolean']['input'];
   sex: Scalars['String']['input'];
-  userId: Scalars['ID']['input'];
 };
 
 export type User = {
   __typename?: 'User';
+  _id: Scalars['ID']['output'];
   about: Scalars['String']['output'];
   birthYear?: Maybe<Scalars['Int']['output']>;
   blocks: Array<Block>;
@@ -301,5 +302,4 @@ export type User = {
   online: Scalars['Boolean']['output'];
   sex: Scalars['String']['output'];
   timestamp: Scalars['Float']['output'];
-  userId: Scalars['ID']['output'];
 };

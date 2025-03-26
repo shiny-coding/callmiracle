@@ -5,7 +5,6 @@ import { Paper, List, ListItem, Typography, IconButton } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useTranslations } from 'next-intl'
 import MeetingCard from './MeetingCard'
-import { getUserId } from '@/lib/userId'
 
 import { gql } from '@apollo/client'
 import MeetingDialog from './MeetingDialog'
@@ -49,7 +48,7 @@ export const GET_MEETINGS = gql`
         statuses
       }
       peerUser {
-        userId
+        _id
         name
         hasImage
         online
@@ -61,8 +60,9 @@ export const GET_MEETINGS = gql`
 ` 
 
 export default function MeetingsList() {
+  const { currentUser } = useStore()
   const { data, loading, error, refetch } = useQuery(GET_MEETINGS, {
-    variables: { userId: getUserId() }
+    variables: { userId: currentUser?._id }
   })
   const t = useTranslations()
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false)
@@ -70,7 +70,6 @@ export default function MeetingsList() {
   const { deleteMeeting } = useDeleteMeeting()
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null)
-  const { user } = useStore()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
   const { subscribeToMeetings } = useSubscriptions()
 
@@ -88,7 +87,7 @@ export default function MeetingsList() {
   }
 
   const handleCreateMeeting = () => {
-    if (!isProfileComplete(user)) {
+    if (!isProfileComplete(currentUser)) {
       setProfileIncompleteDialogOpen(true)
       return
     }
@@ -163,6 +162,7 @@ export default function MeetingsList() {
                   e?.stopPropagation();
                   handleDeleteMeeting(meetingData.meeting._id);
                 }}
+                refetch={refetch}
               />
             </ListItem>
           ))}

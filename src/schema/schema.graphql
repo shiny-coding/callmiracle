@@ -18,7 +18,7 @@ type Block {
 
 type Meeting {
   _id: ID!
-  userId: String!
+  userId: ID!
   userName: String
   languages: [String!]!
   statuses: [String!]!
@@ -45,7 +45,7 @@ enum MeetingStatus {
 }
 
 type User {
-  userId: ID!
+  _id: ID!
   name: String!
   languages: [String!]!
   timestamp: Float!
@@ -118,7 +118,7 @@ type Call {
 }
 
 input UpdateUserInput {
-  userId: ID!
+  _id: ID!
   name: String!
   languages: [String!]!
   locale: String!

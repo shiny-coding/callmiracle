@@ -20,11 +20,11 @@ interface UserDetailsPopupProps {
 export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPopupProps) {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
-  const { user: currentUser, setUser } = useStore()
+  const { currentUser, setCurrentUser } = useStore()
   const { updateUserData } = useUpdateUser()
   const [showFullImage, setShowFullImage] = useState(false)
 
-  const existingBlock = currentUser?.blocks.find(b => b.userId === user.userId)
+  const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
   const [blockAll, setBlockAll] = useState(existingBlock?.all || false)
   const [blockedStatuses, setBlockedStatuses] = useState<Status[]>(existingBlock?.statuses || [])
   const [isEditing, setIsEditing] = useState(false)
@@ -43,16 +43,16 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
   const handleApply = async () => {
     if (!currentUser) return
 
-    const updatedBlocks = currentUser.blocks.filter(b => b.userId !== user.userId)
+    const updatedBlocks = currentUser.blocks.filter(b => b.userId !== user._id)
     if (blockAll || blockedStatuses.length > 0) {
       updatedBlocks.push({
-        userId: user.userId,
+        userId: user._id,
         all: blockAll,
         statuses: blockedStatuses
       })
     }
 
-    setUser({
+    setCurrentUser({
       ...currentUser,
       blocks: updatedBlocks
     })
@@ -92,7 +92,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
               onClick={handleImageClick}
             >
               <Image
-                src={`/profiles/${user.userId}.jpg`}
+                src={`/profiles/${user._id}.jpg`}
                 alt={user.name}
                 fill
                 unoptimized
@@ -240,7 +240,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
           style={{ maxHeight: 'calc(100vh - 64px)' }}
         >
           <Image
-            src={`/profiles/${user.userId}.jpg`}
+            src={`/profiles/${user._id}.jpg`}
             alt={user.name}
             fill
             unoptimized

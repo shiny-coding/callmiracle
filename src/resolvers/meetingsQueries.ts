@@ -44,7 +44,7 @@ export const meetingsQueries = {
           peerMeeting = peerMeetings.find( pm => pm._id.toString() === meeting.peerMeetingId )
 
           if (peerMeeting) {
-            peerUser = peerUsers.find(user => user.userId === peerMeeting.userId)
+            peerUser = peerUsers.find(user => user._id === peerMeeting.userId)
           }
         }
         

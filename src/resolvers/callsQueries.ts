@@ -41,7 +41,7 @@ export const callsQueries = {
     // Get user details and format response
     const result = []
     for (const [otherUserId, callData] of callsByUser.entries()) {
-      const user = await db.collection('users').findOne({ userId: otherUserId })
+      const user = await db.collection('users').findOne({ _id: new ObjectId(otherUserId) })
       if (!user) continue
 
       const transformedUser = transformUser(user)

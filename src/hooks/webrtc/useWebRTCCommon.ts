@@ -1,6 +1,5 @@
 import { useRef } from 'react'
 import { gql } from '@apollo/client'
-import { getUserId } from '@/lib/userId'
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
@@ -47,7 +46,7 @@ export interface IncomingRequest {
 
 export function useWebRTCCommon(callUser: any) {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
-  const { setConnectionStatus } = useStore()
+  const { setConnectionStatus, currentUser } = useStore()
 
   const handleConnectionStateChange = (pc: RTCPeerConnection, peerConnection: React.MutableRefObject<RTCPeerConnection | null>, active: boolean, attemptReconnect: () => Promise<void>) => {
     if (pc.connectionState === 'connected') {
@@ -181,7 +180,7 @@ export function useWebRTCCommon(callUser: any) {
     }
     
     console.log('WebRTC: OnTrack', event)
-    if (!event.streams[0]?.id.includes(getUserId())) {
+    if (!event.streams[0]?.id.includes(currentUser?._id || '')) {
       const [remoteStream] = event.streams
       if (remoteStream && remoteVideoRef?.current) {
         if (!remoteStreamRef.current) {
@@ -226,7 +225,7 @@ export function useWebRTCCommon(callUser: any) {
               input: {
                 type: 'ice-candidate',
                 targetUserId,
-                initiatorUserId: getUserId(),
+                initiatorUserId: currentUser?._id,
                 iceCandidate: JSON.stringify(event.candidate),
                 callId: callId || undefined // Only send if we have a callId
               }
@@ -300,7 +299,7 @@ export function useWebRTCCommon(callUser: any) {
         input: {
           type: 'updateMediaState',
           targetUserId,
-          initiatorUserId: getUserId(),
+          initiatorUserId: currentUser?._id,
           videoEnabled: localVideoEnabled,
           audioEnabled: localAudioEnabled,
           quality: qualityWeWantFromRemote,
@@ -328,8 +327,8 @@ export function useWebRTCCommon(callUser: any) {
             variables: {
               input: {
                 type: 'finished',
-                targetUserId: targetUser.userId,
-                initiatorUserId: getUserId(),
+                targetUserId: targetUser._id,
+                initiatorUserId: currentUser?._id,
                 callId
               }
             }

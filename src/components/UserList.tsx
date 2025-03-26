@@ -68,7 +68,7 @@ export default function UserList({
       <List>
         {filteredUsers?.map((user: User) => (
           <ListItem 
-            key={user.userId} 
+            key={user._id} 
             className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
           >
             <div className="w-full">

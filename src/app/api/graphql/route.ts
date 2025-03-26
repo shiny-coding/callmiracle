@@ -1,6 +1,7 @@
 import { createYoga } from 'graphql-yoga'
 import { schema } from '@/schema/schema'
 import clientPromise from '@/lib/mongodb'
+import { ObjectId } from 'mongodb'
 
 const yoga = createYoga({
   schema,
@@ -29,7 +30,7 @@ export const GET = async (request: Request) => {
     if (userId) {
       const client = await clientPromise
       const db = client.db('commiracle')
-      const user = await db.collection('users').findOne({ userId })
+      const user = await db.collection('users').findOne({ _id: new ObjectId(userId) })
       username = user?.name || 'unknown'
     }
 

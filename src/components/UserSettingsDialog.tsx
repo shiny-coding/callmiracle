@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useDropzone } from 'react-dropzone'
-import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
 import LanguageSelector from './LanguageSelector'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
@@ -19,8 +18,8 @@ interface UserSettingsDialogProps {
 
 export default function UserSettingsDialog({ open, onClose }: UserSettingsDialogProps) {
   const t = useTranslations('Profile')
-  const { user, setUser } = useStore()
-  const { name = '', languages = [], hasImage = false, about = '', contacts = '', sex = null, birthYear = null } = user || {}
+  const { currentUser, setCurrentUser } = useStore()
+  const { name = '', languages = [], hasImage = false, about = '', contacts = '', sex = null, birthYear = null } = currentUser || {}
   const [tempName, setTempName] = useState(name)
   const [tempLanguages, setTempLanguages] = useState(languages)
   const [tempAbout, setTempAbout] = useState(about)
@@ -30,11 +29,11 @@ export default function UserSettingsDialog({ open, onClose }: UserSettingsDialog
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [timestamp, setTimestamp] = useState(Date.now())
-  const userId = getUserId()
   const { updateUserData } = useUpdateUser()
   const { localStream } = useWebRTCContext()
   const [showCameraPreview, setShowCameraPreview] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const currentUserId = currentUser?._id || ''  
 
   useEffect(() => {
     if (open) {
@@ -77,22 +76,22 @@ export default function UserSettingsDialog({ open, onClose }: UserSettingsDialog
       if (selectedFile) {
         const formData = new FormData()
         formData.append('photo', selectedFile)
-        formData.append('userId', userId)
+        formData.append('userId', currentUserId)
         
         await fetch('/api/upload-photo', {
           method: 'POST',
           body: formData
         })
-        setUser({ ...user!, hasImage: true })
+        setCurrentUser({ ...currentUser!, hasImage: true })
       }
 
-      setUser({
-        ...user!,
+      setCurrentUser({
+        ...currentUser!,
         name: tempName,
         languages: tempLanguages,
         about: tempAbout,
         contacts: tempContacts,
-        sex: tempSex,
+        sex: tempSex || '',
         birthYear: tempBirthYear
       })
       await updateUserData()
@@ -166,14 +165,14 @@ export default function UserSettingsDialog({ open, onClose }: UserSettingsDialog
             `}
           >
             <input {...getInputProps()} />
-            {userId ? (
+            {currentUserId ? (
               <div className="relative w-full h-full">
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">
                   {uploading ? t('uploading') : selectedFile ? selectedFile.name : t('uploadPhoto')}
                 </div>
                 {(hasImage || selectedFile) && (
                     <Image
-                      src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${userId}.jpg?t=${timestamp}`}
+                      src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${currentUserId}.jpg?t=${timestamp}`}
                       alt={t('photo')}
                       fill
                       unoptimized

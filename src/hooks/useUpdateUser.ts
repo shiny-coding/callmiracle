@@ -1,11 +1,10 @@
 import { gql, useMutation } from '@apollo/client'
 import { useStore } from '@/store/useStore'
-import { getUserId } from '@/lib/userId'
 
 const UPDATE_USER = gql`
   mutation UpdateUser($input: UpdateUserInput!) {
     updateUser(input: $input) {
-      userId
+      _id
       name
       languages
       timestamp
@@ -27,16 +26,12 @@ const UPDATE_USER = gql`
 
 export const useUpdateUser = () => {
   const [updateUser] = useMutation(UPDATE_USER)
-
+  const { currentUser } = useStore()
   const updateUserData = async () => {
-    const userId = getUserId()
-    if (!userId) return
-    const { 
-      user
-    } = useStore.getState()
-  
+    if (!currentUser?._id) return
+    
     // Clean blocks data by removing __typename
-    const cleanBlocks = user?.blocks?.map(({ userId, all, statuses }) => ({
+    const cleanBlocks = currentUser?.blocks?.map(({ userId, all, statuses }) => ({
       userId,
       all,
       statuses
@@ -45,15 +40,15 @@ export const useUpdateUser = () => {
     await updateUser({
       variables: {
         input: {
-          userId,
-          name: user?.name,
-          languages: user?.languages,
+          _id: currentUser?._id,
+          name: currentUser?.name,
+          languages: currentUser?.languages,
           locale: 'en',
-          online: user?.online,
-          about: user?.about,
-          contacts: user?.contacts,
-          sex: user?.sex,
-          birthYear: user?.birthYear,
+          online: currentUser?.online,
+          about: currentUser?.about,
+          contacts: currentUser?.contacts,
+          sex: currentUser?.sex,
+          birthYear: currentUser?.birthYear,
           blocks: cleanBlocks
         }
       }

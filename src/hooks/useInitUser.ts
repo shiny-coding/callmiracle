@@ -1,5 +1,4 @@
 import { gql, useQuery } from '@apollo/client'
-import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
 import { useEffect } from 'react'
 import { getBrowserLanguage } from '@/utils/language'
@@ -7,7 +6,7 @@ import { getBrowserLanguage } from '@/utils/language'
 export const GET_OR_CREATE_USER = gql`
   query GetOrCreateUser($userId: ID!, $defaultLanguages: [String!]!) {
     getOrCreateUser(userId: $userId, defaultLanguages: $defaultLanguages) {
-      userId
+      _id
       name
       languages
       timestamp
@@ -28,12 +27,11 @@ export const GET_OR_CREATE_USER = gql`
 `
 
 export function useInitUser() {
-  const userId = getUserId()
-  const { setUser } = useStore()
+  const { currentUser, setCurrentUser, setCurrentUserId, currentUserId } = useStore()
   
   const { data, loading, error, refetch } = useQuery(GET_OR_CREATE_USER, {
     variables: { 
-      userId,
+      userId: currentUserId || '',
       defaultLanguages: getBrowserLanguage()
     },
     fetchPolicy: 'network-only'
@@ -42,9 +40,10 @@ export function useInitUser() {
   useEffect(() => {
     if (data?.getOrCreateUser) {
       const user = data.getOrCreateUser
-      setUser(user)
+      setCurrentUser(user)
+      setCurrentUserId(user._id)
     }
-  }, [data, setUser])
+  }, [data]) // it's important to not include currentUser/setCurrentUser/setCurrentUserId in the dependency array, not to trigger unnecessary re-renders
 
-  return { loading, error, refetch }
+  return { loading: loading || !currentUser, error, refetch }
 } 

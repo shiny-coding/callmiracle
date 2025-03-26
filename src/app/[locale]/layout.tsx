@@ -2,14 +2,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { ApolloWrapper } from '@/lib/apollo-provider';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
-import LocaleSelector from '@/components/LocaleSelector';
-import { StoreInitializer } from '@/components/StoreInitializer';
-import { WebRTCProvider } from '@/hooks/webrtc/WebRTCProvider';
-import { UsersProvider } from '@/store/UsersProvider';
-import { NotificationsProvider } from '@/contexts/NotificationsContext';
-import { SubscriptionsProvider } from '@/contexts/SubscriptionsContext';
 import ThemeRegistry from '@/components/ThemeRegistry';
-import AppContent from '@/components/AppContent';
+import { AppContent, StoreInitializer } from '@/components/AppContent';
 
 export default async function LocaleLayout({
   children,
@@ -35,17 +29,12 @@ export default async function LocaleLayout({
       <NextIntlClientProvider locale={locale} messages={messages}>
         <ApolloWrapper>
           <ThemeRegistry>
-            <UsersProvider>
-              <SubscriptionsProvider>
-                <NotificationsProvider>
-                  <StoreInitializer />
-                  <AppContent>
-                    {/* <LocaleSelector /> */}
-                    {children}
-                  </AppContent>
-                </NotificationsProvider>
-              </SubscriptionsProvider>
-            </UsersProvider>
+            <StoreInitializer>
+              <AppContent>
+                {/* <LocaleSelector /> */}
+                {children}
+              </AppContent>
+            </StoreInitializer>
           </ThemeRegistry>
         </ApolloWrapper>
       </NextIntlClientProvider>

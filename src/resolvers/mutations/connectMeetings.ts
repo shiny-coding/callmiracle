@@ -75,8 +75,8 @@ export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]) =
   if (meeting1.userId === meeting2.userId) return false;
   
   // Find the users
-  const user1 = users.find(u => u.userId === meeting1.userId);
-  const user2 = users.find(u => u.userId === meeting2.userId);
+  const user1 = users.find(u => u._id === meeting1.userId);
+  const user2 = users.find(u => u._id === meeting2.userId);
   if (!user1 || !user2) return false;
   
   // Check gender preferences
@@ -195,7 +195,7 @@ export async function tryConnectMeetings(meeting: any, db: any, userId: string) 
       slot.duration > max.duration ? slot : max, overlap[0]);
     
     // Store the peer and overlap information
-    const peerUser = users.find((u: any) => u.userId === peer.userId);
+    const peerUser = users.find((u: any) => u._id === peer.userId);
     const peerInfo = { peer, overlap, user: peerUser };
     
     // If this peer has at least one hour overlap, add to the hour overlap list
@@ -274,15 +274,15 @@ export async function tryConnectMeetings(meeting: any, db: any, userId: string) 
 
         // Create a notification in the database
         await db.collection('notifications').insertOne({
-          userId: peerUser.userId,
+          userId: peerUser._id,
           type: 'meeting-connected',
           seen: false,
           meetingId: peer._id.toString(),
           createdAt: Date.now()
         });
         
-        console.log('Publishing meeting-connected notification for peer: ', { name: peerUser.name, userId: peer.userId })
-        const topic = `SUBSCRIPTION_EVENT:${peer.userId}`
+        console.log('Publishing meeting-connected notification for peer: ', { name: peerUser.name, userId: peerUser._id })
+        const topic = `SUBSCRIPTION_EVENT:${peerUser._id}`
         pubsub.publish(topic, { notificationEvent: { type: 'new-notification', } })
       });
       break;

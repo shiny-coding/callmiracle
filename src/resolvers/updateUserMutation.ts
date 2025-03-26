@@ -1,12 +1,13 @@
 import { Context } from './types'
 import { transformUser } from './utils'
+import { ObjectId } from 'mongodb'
 
 export const updateUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
-  const { userId, name, statuses, locale, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge, blocks } = input
+  const { _id, name, statuses, locale, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge, blocks } = input
   const timestamp = Date.now()
 
   const result = await db.collection('users').findOneAndUpdate(
-    { userId },
+    { _id: new ObjectId(_id) },
     { 
       $set: { 
         name, 

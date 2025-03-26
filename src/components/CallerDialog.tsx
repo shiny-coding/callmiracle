@@ -5,7 +5,6 @@ import { User } from '@/generated/graphql'
 import UserCard from './UserCard'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
-import { getUserId } from '@/lib/userId'
 
 const MAX_CALLING_TIME_MS = 10000
 
@@ -15,7 +14,7 @@ export default function CallerDialog() {
   const tStatus = useTranslations('ConnectionStatus')
   const { doCall, callUser, caller } = useWebRTCContext()
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
-
+  const { currentUser } = useStore()
   useEffect(() => {
     if (!open) return
     
@@ -43,8 +42,8 @@ export default function CallerDialog() {
         variables: {
           input: {
             type: 'expired',
-            targetUserId: targetUser.userId,
-            initiatorUserId: getUserId(),
+            targetUserId: targetUser._id,
+            initiatorUserId: currentUser?._id,
             callId
           }
         }
@@ -54,7 +53,7 @@ export default function CallerDialog() {
 
   const handleCancel = async () => {
     setConnectionStatus('disconnected')
-    if (targetUser.userId) {
+    if (targetUser._id) {
       await sendExpired()
       await caller.cleanup()
     }

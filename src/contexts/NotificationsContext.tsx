@@ -1,8 +1,8 @@
 'use client'
 import React, { createContext, useContext, ReactNode, useEffect } from 'react'
 import { gql, useQuery, useMutation } from '@apollo/client'
-import { getUserId } from '@/lib/userId'
 import { useSubscriptions } from './SubscriptionsContext'
+import { useStore } from '@/store/useStore'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications($userId: ID!) {
@@ -57,12 +57,12 @@ interface NotificationsContextType {
 const NotificationsContext = createContext<NotificationsContextType | null>(null)
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const userId = getUserId()
+  const { currentUser } = useStore()
   const { subscribeToNotifications } = useSubscriptions()
   
   const { data, loading, error, refetch } = useQuery(GET_NOTIFICATIONS, {
-    variables: { userId },
-    skip: !userId
+    variables: { userId: currentUser?._id },
+    skip: !currentUser?._id
   })
   
   const [markAsSeen] = useMutation(SET_NOTIFICATION_SEEN)

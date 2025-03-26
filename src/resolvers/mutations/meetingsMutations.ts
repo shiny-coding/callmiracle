@@ -17,12 +17,12 @@ async function publishMeetingDisconnected(db: any, peerMeeting: any) {
   if (!peerMeeting) return
   
   // Get the peer user for notification
-  const peerUser = await db.collection('users').findOne({ userId: peerMeeting.userId })
+  const peerUser = await db.collection('users').findOne({ _id: new ObjectId(peerMeeting.userId) })
   
   if (peerUser) {
     // Create a notification in the database
     await db.collection('notifications').insertOne({
-      userId: peerUser.userId,
+      userId: peerUser._id,
       type: 'meeting-disconnected',
       seen: false,
       meetingId: peerMeeting._id.toString(),

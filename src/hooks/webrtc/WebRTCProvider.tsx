@@ -1,7 +1,6 @@
 'use client'
 import { useState, createContext, useContext, ReactNode, useRef, useEffect } from 'react'
 import { useSubscription, useMutation } from '@apollo/client'
-import { getUserId } from '@/lib/userId'
 import { useStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
@@ -55,6 +54,7 @@ export function WebRTCProvider({
   const { subscribeToCallEvents } = useSubscriptions()
 
   const { 
+    currentUser,
     callId, 
     connectionStatus, 
     targetUser, 
@@ -81,8 +81,8 @@ export function WebRTCProvider({
           variables: {
             input: {
               type: 'need-reconnect',
-              targetUserId: targetUser.userId,
-              initiatorUserId: getUserId(),
+              targetUserId: targetUser._id,
+              initiatorUserId: currentUser?._id,
               callId
             }
           }
@@ -126,8 +126,8 @@ export function WebRTCProvider({
               variables: {
                 input: {
                   type: 'busy',
-                  targetUserId: callEvent.from.userId,
-                  initiatorUserId: getUserId(),
+                  targetUserId: callEvent.from._id,
+                  initiatorUserId: currentUser?._id,
                   callId: callEvent.callId
                 }
               }
@@ -167,8 +167,8 @@ export function WebRTCProvider({
             variables: {
               input: {
                 type: 'expired',
-                targetUserId: callEvent.from.userId,
-                initiatorUserId: getUserId(),
+                targetUserId: callEvent.from._id,
+                initiatorUserId: currentUser?._id,
                 callId
               }
             }
@@ -270,7 +270,7 @@ export function WebRTCProvider({
       activePeerConnection,
       localVideoEnabled,
       localAudioEnabled,
-      targetUser.userId,
+      targetUser._id,
       qualityWeWantFromRemote,
       callId
     )

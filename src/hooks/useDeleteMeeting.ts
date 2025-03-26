@@ -1,4 +1,3 @@
-import { getUserId } from '@/lib/userId'
 import { useMutation, gql } from '@apollo/client'
 
 const DELETE_MEETING = gql`

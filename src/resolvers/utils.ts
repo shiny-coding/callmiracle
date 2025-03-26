@@ -12,13 +12,13 @@ export const checkUserImage = (userId: string): boolean => {
 export const transformUser = (user: any): User | null => {
   if (!user) return null
   return {
-    userId: user.userId,
+    _id: user._id,
     name: user.name || '',
     languages: user.languages || [],
     timestamp: user.timestamp || Date.now(),
     locale: user.locale || 'en',
     online: user.online || false,
-    hasImage: checkUserImage(user.userId),
+    hasImage: checkUserImage(user._id),
     about: user.about || '',
     contacts: user.contacts || '',
     sex: user.sex || '',

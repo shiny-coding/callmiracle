@@ -1,7 +1,7 @@
 'use client'
 import React, { createContext, useContext, ReactNode, useCallback } from 'react'
 import { gql, useSubscription } from '@apollo/client'
-import { getUserId } from '@/lib/userId'
+import { useStore } from '@/store/useStore'
 
 const ON_SUBSCRIPTION_EVENT = gql`
   subscription OnSubscriptionEvent($userId: ID!) {
@@ -18,7 +18,7 @@ const ON_SUBSCRIPTION_EVENT = gql`
         meetingId
         meetingLastCallTime
         from {
-          userId
+          _id
           name
           languages
         }
@@ -30,7 +30,7 @@ const ON_SUBSCRIPTION_EVENT = gql`
           userId
         }
         user {
-          userId
+          _id
           name
         }
       }
@@ -47,6 +47,8 @@ interface SubscriptionsContextType {
 const SubscriptionsContext = createContext<SubscriptionsContextType | null>(null)
 
 export function SubscriptionsProvider({ children }: { children: ReactNode }) {
+  const { currentUser } = useStore()
+
   // Store callbacks in refs to avoid unnecessary re-renders
   const notificationCallbacks = React.useRef<((event: any) => void)[]>([])
   const meetingCallbacks = React.useRef<((event: any) => void)[]>([])
@@ -76,8 +78,9 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
 
   // Central subscription that distributes events to all registered callbacks
   useSubscription(ON_SUBSCRIPTION_EVENT, {
-    variables: { userId: getUserId() },
-    onSubscriptionData: ({ subscriptionData }) => {
+    variables: { userId: currentUser?._id || '' },
+    skip: !currentUser?._id,
+    onData: ({ data: subscriptionData }) => {
       const data = subscriptionData.data?.onSubscriptionEvent
       
       if (!data) return

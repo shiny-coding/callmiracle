@@ -1,8 +1,12 @@
 import { ApolloClient, InMemoryCache, split, HttpLink, ApolloLink } from '@apollo/client'
 import { getMainDefinition } from '@apollo/client/utilities'
 import { Observable } from '@apollo/client/utilities'
-import { getUserId } from './userId'
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev"
+import { useStore } from '@/store/useStore'
+
+function getUserId() {
+  return useStore.getState().currentUser?._id || ''
+}
 
 // Load Apollo error messages in development
 if (process.env.NODE_ENV !== 'production') {

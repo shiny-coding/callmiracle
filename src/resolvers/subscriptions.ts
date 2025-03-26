@@ -42,7 +42,7 @@ export const subscriptions = {
           type: payload.notificationEvent.type,
           meetingId: payload.notificationEvent.meeting?._id,
           userName: payload.notificationEvent.user?.name,
-          userId: payload.notificationEvent.user?.userId
+          userId: payload.notificationEvent.user?._id
         })
       } else if ( payload.callEvent ) {
         console.log('Resolving call request:', {
