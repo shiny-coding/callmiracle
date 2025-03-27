@@ -42,6 +42,7 @@ enum MeetingStatus {
   FOUND
   CALLED
   FINISHED
+  CANCELLED
 }
 
 type User {
@@ -176,13 +177,13 @@ type CallHistoryEntry {
 }
 
 type Query {
-  users: [User!]!
-  calls: [Call!]!
+  getUsers: [User!]!
+  getCalls: [Call!]!
   getOrCreateUser(userId: ID!, defaultLanguages: [String!]!): User!
-  callHistory(userId: ID!): [CallHistoryEntry!]!
-  detailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
-  meetings(userId: ID!): [MeetingWithPeer!]!
-  notifications(userId: ID!): [Notification!]!
+  getCallHistory(userId: ID!): [CallHistoryEntry!]!
+  getDetailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
+  getMeetings(userId: ID!): [MeetingWithPeer!]!
+  getNotifications(userId: ID!): [Notification!]!
 }
 
 type Mutation {

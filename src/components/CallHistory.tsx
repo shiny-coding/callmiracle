@@ -8,11 +8,11 @@ import { useStore } from '@/store/useStore'
 
 const CALL_HISTORY = gql`
   query CallHistory($userId: ID!) {
-    callHistory(userId: $userId) {
+    getCallHistory(userId: $userId) {
       user {
         _id
         name
-        statuses
+        sex
         languages
         timestamp
         locale
@@ -56,7 +56,7 @@ export default function CallHistory() {
   return (
     <Paper className="p-4 bg-gray-800">
       <List>
-        {data?.callHistory.map((entry: CallHistoryEntry) => (
+        {data?.getCallHistory.map((entry: CallHistoryEntry) => (
           <ListItem 
             key={entry.user._id}
             className="flex flex-col items-start hover:bg-gray-700 rounded-lg mb-2"
@@ -92,7 +92,7 @@ export default function CallHistory() {
             </div>
           </ListItem>
         ))}
-        {data?.callHistory.length === 0 && (
+        {data?.getCallHistory.length === 0 && (
           <Typography className="text-gray-400 text-center py-4">
             {t('noCallHistory')}
           </Typography>

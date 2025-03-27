@@ -3,11 +3,11 @@ import { Context } from './types'
 import { transformUser } from './utils'
 
 export const callsQueries = {
-  calls: async (_: any, __: any, { db }: Context) => {
+  getCalls: async (_: any, __: any, { db }: Context) => {
     return await db.collection('calls').find().toArray()
   },
 
-  callHistory: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+  getCallHistory: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     const calls = await db.collection('calls').find({
       $or: [
         { initiatorUserId: userId },
@@ -58,7 +58,7 @@ export const callsQueries = {
     // Sort by most recent call
     return result.sort((a, b) => b.lastCallAt - a.lastCallAt)
   },
-  detailedCallHistory: async (_: any, { userId, targetUserId }: { userId: string, targetUserId: string }, { db }: Context) => {
+  getDetailedCallHistory: async (_: any, { userId, targetUserId }: { userId: string, targetUserId: string }, { db }: Context) => {
     // Find all finished calls between these two users
     const calls = await db.collection('calls')
       .find({

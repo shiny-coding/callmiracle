@@ -404,7 +404,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
           </IconButton>
         )}
       </div>
-      <div className="absolute top-4 left-0">{meeting._id}</div>
+      {/* <div className="absolute top-4 left-0">{meeting._id}</div> */}
 
       <div className="flex items-center justify-center">
         <Typography variant="subtitle2" 
@@ -460,7 +460,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
       )}
       <div className="flex items-center gap-2">
         <AccessTimeIcon className={iconColorClass} fontSize="small" />
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full">
           {meeting.startTime ? (
             <Chip
               label={meetingStatus.timeText || formatDateForDisplay(new Date(meeting.startTime))}
@@ -472,17 +472,17 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
             !meetingPassed ? (
               <>
                 <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 w-full">
-                  {Object.entries(timeSlotsByDay).map(([day, slots]) => {
+                  {Object.entries(timeSlotsByDay).map(([day, slots], index) => {
                     const combinedSlots = combineAdjacentSlots(slots)
                     
                     if (combinedSlots.length === 0) return null;
-                    
+                    const isLastEntry = index === Object.entries(timeSlotsByDay).length - 1
                     return (
                       <React.Fragment key={day}>
-                        <Typography variant="body2" className={`${textColorClass} whitespace-nowrap`}>
+                        <Typography variant="body2" className={`${textColorClass} whitespace-nowrap flex items-center h-6`}>
                           {day}
                         </Typography>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="grid grid-cols-[repeat(auto-fill,90px)] gap-1">
                           {combinedSlots.map(([startSlot, endSlot], index) => {
                             const isActive = isWithinInterval(now, {
                               start: new Date(startSlot),
@@ -499,13 +499,18 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                               />
                             )
                           })}
+                          {isLastEntry && (
+                            <Typography 
+                              variant="body2" 
+                              className={`${textColorClass} flex items-center pl-1`}
+                          >
+                            {meeting.minDuration} {t('min')}
+                          </Typography>
+                          )}
                         </div>
                       </React.Fragment>
                     )
                   })}
-                  <Typography variant="body2" className={textColorClass}>
-                    {meeting.minDuration} {t('min')}
-                  </Typography>
                 </div>
               </>
             ) : null

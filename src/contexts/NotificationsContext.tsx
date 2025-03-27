@@ -6,7 +6,7 @@ import { useStore } from '@/store/useStore'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications($userId: ID!) {
-    notifications(userId: $userId) {
+    getNotifications(userId: $userId) {
       _id
       type
       seen

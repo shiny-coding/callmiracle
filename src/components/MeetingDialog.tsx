@@ -23,7 +23,7 @@ interface Props {
 export default function MeetingDialog({ open, onClose, meetings = [], meeting = null }: Props) {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
-  const { user } = useStore()
+  const { currentUser } = useStore()
   const [meetingId, setMeetingId] = useState<string | undefined>(undefined)
   const { 
     statuses = [], 
@@ -59,7 +59,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
           meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
           meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
         ])
-        setTempLanguages(meeting.languages || (user?.languages || []))
+        setTempLanguages(meeting.languages || (currentUser?.languages || []))
       } else {
         // Creating a new meeting
         setMeetingId(undefined)
@@ -70,7 +70,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         setTempAllowedMales(true)
         setTempAllowedFemales(true)
         setTempAgeRange([10, 100])
-        setTempLanguages(user?.languages || [])
+        setTempLanguages(currentUser?.languages || [])
       }
       
       // Collect all time slots from other meetings that haven't passed
@@ -78,14 +78,13 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         !meeting || m.meeting._id !== meeting._id
       )
       
-      const now = new Date()
       const occupied = otherMeetings
         .filter(m => !isMeetingPassed(m.meeting)) // Only consider active meetings
         .flatMap(m => m.meeting.timeSlots || [])
       
       setOccupiedTimeSlots(occupied)
     }
-  }, [open, meeting, user?.languages, meetings])
+  }, [open, meeting, currentUser?.languages, meetings])
 
   // Generate available time slots
   useEffect(() => {

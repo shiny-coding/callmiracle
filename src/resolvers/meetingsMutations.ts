@@ -1,7 +1,7 @@
-import { Context } from '../types'
+import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { tryConnectMeetings } from './connectMeetings'
-import { pubsub } from '../pubsub';
+import { pubsub } from './pubsub';
 import { MeetingStatus } from '@/generated/graphql';
 
 

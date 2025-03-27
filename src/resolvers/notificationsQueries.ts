@@ -2,7 +2,7 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 
 export const notificationsQueries = {
-  notifications: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+  getNotifications: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
       // Fetch the last 20 notifications for this user
       const notifications = await db.collection('notifications')

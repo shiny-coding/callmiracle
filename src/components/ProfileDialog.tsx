@@ -11,13 +11,14 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { Dialog as CameraDialog } from '@mui/material'
 
-interface UserSettingsDialogProps {
+interface ProfileDialogProps {
   open: boolean
   onClose: () => void
 }
 
-export default function UserSettingsDialog({ open, onClose }: UserSettingsDialogProps) {
+export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
   const t = useTranslations('Profile')
+  const tRoot = useTranslations()
   const { currentUser, setCurrentUser } = useStore()
   const { name = '', languages = [], hasImage = false, about = '', contacts = '', sex = null, birthYear = null } = currentUser || {}
   const [tempName, setTempName] = useState(name)
@@ -154,7 +155,7 @@ export default function UserSettingsDialog({ open, onClose }: UserSettingsDialog
         </IconButton>
       </DialogTitle>
       <DialogContent className="flex flex-col gap-4">
-        <div className="relative">
+        <div className="relative flex justify-center items-center">
           <div 
             {...getRootProps()} 
             className={`
@@ -191,7 +192,7 @@ export default function UserSettingsDialog({ open, onClose }: UserSettingsDialog
             )}
           </div>
 
-          <div className="absolute bottom-2 right-2 flex gap-2">
+          <div className="">
             <IconButton 
               onClick={(e) => {
                 e.stopPropagation()
@@ -271,7 +272,7 @@ export default function UserSettingsDialog({ open, onClose }: UserSettingsDialog
         </FormControl>
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
-        <Button onClick={handleCancel}>Cancel</Button>
+        <Button onClick={handleCancel}>{t('cancel')}</Button>
         <Button 
           onClick={handleApply}
           variant="contained" 
@@ -285,7 +286,7 @@ export default function UserSettingsDialog({ open, onClose }: UserSettingsDialog
             !selectedFile
           }
         >
-          Apply
+          {tRoot('apply')}
         </Button>
       </DialogActions>
 
@@ -317,7 +318,7 @@ export default function UserSettingsDialog({ open, onClose }: UserSettingsDialog
         </DialogContent>
         <DialogActions className="border-t border-gray-800">
           <Button onClick={() => setShowCameraPreview(false)}>
-            {t('cancel')}
+            {tRoot('cancel')}
           </Button>
           <Button 
             onClick={handleCameraCapture}

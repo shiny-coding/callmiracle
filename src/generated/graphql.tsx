@@ -12,6 +12,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  Date: { input: any; output: any; }
 };
 
 export type Block = {
@@ -102,8 +103,9 @@ export type Meeting = {
   allowedMales: Scalars['Boolean']['output'];
   allowedMaxAge: Scalars['Int']['output'];
   allowedMinAge: Scalars['Int']['output'];
+  createdAt?: Maybe<Scalars['Date']['output']>;
   languages: Array<Scalars['String']['output']>;
-  lastCallTime?: Maybe<Scalars['Float']['output']>;
+  lastCallTime?: Maybe<Scalars['Date']['output']>;
   minDuration: Scalars['Int']['output'];
   peerMeetingId?: Maybe<Scalars['String']['output']>;
   preferEarlier: Scalars['Boolean']['output'];
@@ -112,7 +114,8 @@ export type Meeting = {
   statuses: Array<Scalars['String']['output']>;
   timeSlots: Array<Scalars['Float']['output']>;
   totalDuration?: Maybe<Scalars['Int']['output']>;
-  userId: Scalars['String']['output'];
+  userId: Scalars['ID']['output'];
+  userName?: Maybe<Scalars['String']['output']>;
 };
 
 export type MeetingInput = {
@@ -129,14 +132,15 @@ export type MeetingInput = {
   statuses: Array<Status>;
   timeSlots: Array<Scalars['Float']['input']>;
   userId: Scalars['ID']['input'];
+  userName?: InputMaybe<Scalars['String']['input']>;
 };
 
 export enum MeetingStatus {
-  Seeking = 'SEEKING',
-  Found = 'FOUND',
-  Cancelled = 'CANCELLED',
   Called = 'CALLED',
+  Cancelled = 'CANCELLED',
   Finished = 'FINISHED',
+  Found = 'FOUND',
+  Seeking = 'SEEKING'
 }
 
 export type MeetingWithPeer = {
@@ -206,39 +210,39 @@ export type NotificationEvent = {
 
 export type Query = {
   __typename?: 'Query';
-  callHistory: Array<CallHistoryEntry>;
-  calls: Array<Call>;
-  detailedCallHistory: Array<Call>;
+  getCallHistory: Array<CallHistoryEntry>;
+  getCalls: Array<Call>;
+  getDetailedCallHistory: Array<Call>;
+  getMeetings: Array<MeetingWithPeer>;
+  getNotifications: Array<Notification>;
   getOrCreateUser: User;
-  meetings: Array<MeetingWithPeer>;
-  notifications: Array<Notification>;
-  users: Array<User>;
+  getUsers: Array<User>;
 };
 
 
-export type QueryCallHistoryArgs = {
+export type QueryGetCallHistoryArgs = {
   userId: Scalars['ID']['input'];
 };
 
 
-export type QueryDetailedCallHistoryArgs = {
+export type QueryGetDetailedCallHistoryArgs = {
   targetUserId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetMeetingsArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetNotificationsArgs = {
   userId: Scalars['ID']['input'];
 };
 
 
 export type QueryGetOrCreateUserArgs = {
   defaultLanguages: Array<Scalars['String']['input']>;
-  userId: Scalars['ID']['input'];
-};
-
-
-export type QueryMeetingsArgs = {
-  userId: Scalars['ID']['input'];
-};
-
-
-export type QueryNotificationsArgs = {
   userId: Scalars['ID']['input'];
 };
 
@@ -270,7 +274,7 @@ export type SubscriptionEvent = {
 
 export type UpdateMeetingStatusInput = {
   _id: Scalars['ID']['input'];
-  lastCallTime?: InputMaybe<Scalars['Float']['input']>;
+  lastCallTime?: InputMaybe<Scalars['Date']['input']>;
   status?: InputMaybe<MeetingStatus>;
   totalDuration?: InputMaybe<Scalars['Int']['input']>;
 };

@@ -1,5 +1,5 @@
 import { MeetingStatus } from "@/generated/graphql";
-import { pubsub } from "../pubsub";
+import { pubsub } from "./pubsub";
 
 const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 

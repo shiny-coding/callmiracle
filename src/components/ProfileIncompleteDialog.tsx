@@ -1,7 +1,7 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import UserSettingsDialog from './UserSettingsDialog'
+import ProfileDialog from './ProfileDialog'
 import { useStore } from '@/store/useStore'
 
 interface ProfileIncompleteDialogProps {
@@ -70,7 +70,7 @@ export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncomp
         </DialogActions>
       </Dialog>
       
-      <UserSettingsDialog
+      <ProfileDialog
         open={profileSettingsOpen}
         onClose={() => setProfileSettingsOpen(false)}
       />

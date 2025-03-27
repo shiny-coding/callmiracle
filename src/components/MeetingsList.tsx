@@ -22,7 +22,7 @@ import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 
 export const GET_MEETINGS = gql`
   query GetMeetings($userId: ID!) {
-    meetings(userId: $userId) {
+    getMeetings(userId: $userId) {
       meeting {
         _id
         userId
@@ -146,7 +146,7 @@ export default function MeetingsList() {
           </div>
         </div>
         <List className="space-y-4">
-          {data?.meetings.map((meetingData: any) => (
+          {data?.getMeetings.map((meetingData: any) => (
             <ListItem 
               key={meetingData.meeting._id}
               className="flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative mb-4"
@@ -166,7 +166,7 @@ export default function MeetingsList() {
               />
             </ListItem>
           ))}
-          {data?.meetings.length === 0 && (
+          {data?.getMeetings.length === 0 && (
             <Typography className="text-gray-400 text-center py-4">
               {t('noMeetings')}
             </Typography>
@@ -174,7 +174,7 @@ export default function MeetingsList() {
         </List>
       </Paper>
       <MeetingDialog
-        meetings={data?.meetings}
+        meetings={data?.getMeetings}
         meeting={selectedMeeting}
         open={meetingDialogOpen}
         onClose={() => {

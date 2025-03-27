@@ -26,9 +26,8 @@ const UPDATE_USER = gql`
 
 export const useUpdateUser = () => {
   const [updateUser] = useMutation(UPDATE_USER)
-  const { currentUser } = useStore()
   const updateUserData = async () => {
-    if (!currentUser?._id) return
+    const { currentUser } = useStore.getState()
     
     // Clean blocks data by removing __typename
     const cleanBlocks = currentUser?.blocks?.map(({ userId, all, statuses }) => ({

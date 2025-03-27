@@ -6,7 +6,7 @@ import { User } from '@/generated/graphql'
 
 const GET_USERS = gql`
   query GetUsers {
-    users {
+    getUsers {
       _id
       name
       languages

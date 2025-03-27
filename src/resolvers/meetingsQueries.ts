@@ -4,7 +4,7 @@ import { transformUser } from './utils'
 import { isMeetingPassed } from '@/utils/meetingUtils'
 
 export const meetingsQueries = {
-  meetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+  getMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
       // 1. Fetch all meetings for the user
       const userMeetings = await db.collection('meetings').find({ userId }).toArray()
