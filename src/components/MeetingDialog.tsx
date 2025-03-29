@@ -279,52 +279,6 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         )}
         
         <Typography variant="subtitle1" className="mt-4">
-          {t('selectTimeSlots')}
-        </Typography>
-        <TimeSlotsGrid
-          timeSlots={availableTimeSlots}
-          selectedTimeSlots={selectedTimeSlots}
-          onToggleTimeSlot={toggleTimeSlot}
-        />
-        {selectedTimeSlots.length === 0 && (
-          <Typography color="error" className="text-sm">
-            {t('pleaseSelectTimeSlots')}
-          </Typography>
-        )}
-
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={preferEarlier}
-              onChange={(e) => setPreferEarlier(e.target.checked)}
-            />
-          }
-          label={t('preferEarlier')}
-        />
-
-        <Typography variant="subtitle1" className="mt-4">
-          {t('minDuration')}
-        </Typography>
-        <div className="flex gap-4 justify-center">
-          <Button 
-            variant={minDuration === 30 ? "contained" : "outlined"}
-            onClick={() => setMinDuration(30)}
-            className="flex-1"
-          >
-            30 {t('minutes')}
-          </Button>
-          <Button 
-            variant={minDuration === 60 ? "contained" : "outlined"}
-            onClick={() => setMinDuration(60)}
-            className="flex-1"
-          >
-            1 {t('hour')}
-          </Button>
-        </div>
-
-        <Divider className="my-4" />
-        
-        <Typography variant="subtitle1" className="mt-4">
           {t('preferences')}
         </Typography>
         
@@ -359,6 +313,53 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
           max={100}
           valueLabelDisplay="auto"
         />
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={preferEarlier}
+              onChange={(e) => setPreferEarlier(e.target.checked)}
+            />
+          }
+          label={t('preferEarlier')}
+        />
+
+        <Typography variant="subtitle1" className="mt-4">
+          {t('minDuration')}
+        </Typography>
+        <div className="flex gap-4 justify-center">
+          <Button 
+            variant={minDuration === 30 ? "contained" : "outlined"}
+            onClick={() => setMinDuration(30)}
+            className="flex-1"
+          >
+            30 {t('minutes')}
+          </Button>
+          <Button 
+            variant={minDuration === 60 ? "contained" : "outlined"}
+            onClick={() => setMinDuration(60)}
+            className="flex-1"
+          >
+            1 {t('hour')}
+          </Button>
+        </div>
+        
+        <Divider className="my-4" />
+
+        <Typography variant="subtitle1" className="mt-4">
+          {t('selectTimeSlots')}
+        </Typography>
+        <TimeSlotsGrid
+          timeSlots={availableTimeSlots}
+          selectedTimeSlots={selectedTimeSlots}
+          onToggleTimeSlot={toggleTimeSlot}
+        />
+        {selectedTimeSlots.length === 0 && (
+          <Typography color="error" className="text-sm">
+            {t('pleaseSelectTimeSlots')}
+          </Typography>
+        )}
+
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
         <Button onClick={handleCancel}>

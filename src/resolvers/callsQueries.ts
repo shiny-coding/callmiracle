@@ -8,10 +8,13 @@ export const callsQueries = {
   },
 
   getCallHistory: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+
+    const _userId = new ObjectId(userId)
+
     const calls = await db.collection('calls').find({
       $or: [
-        { initiatorUserId: userId },
-        { targetUserId: userId }
+        { initiatorUserId: _userId },
+        { targetUserId: _userId }
       ],
       type: 'finished'
     }).toArray()
@@ -20,28 +23,27 @@ export const callsQueries = {
     const callsByUser = new Map()
     
     for (const call of calls) {
-      const otherUserId = call.initiatorUserId === userId ? 
+      const _otherUserId = call.initiatorUserId.equals(_userId) ? 
         call.targetUserId : call.initiatorUserId
 
-      if (!callsByUser.has(otherUserId)) {
-        callsByUser.set(otherUserId, {
+      if (!callsByUser.has(_otherUserId)) {
+        callsByUser.set(_otherUserId, {
           calls: [],
           totalDuration: 0,
           lastCallAt: 0
         })
       }
       
-      const userCalls = callsByUser.get(otherUserId)
+      const userCalls = callsByUser.get(_otherUserId)
       userCalls.calls.push(call)
       userCalls.totalDuration += call.duration
-      userCalls.lastCallAt = Math.max(userCalls.lastCallAt, 
-        new ObjectId(call._id).getTimestamp().getTime())
+      userCalls.lastCallAt = Math.max(userCalls.lastCallAt, call._id.getTimestamp().getTime())
     }
 
     // Get user details and format response
     const result = []
     for (const [otherUserId, callData] of callsByUser.entries()) {
-      const user = await db.collection('users').findOne({ _id: new ObjectId(otherUserId) })
+      const user = await db.collection('users').findOne({ _id: otherUserId })
       if (!user) continue
 
       const transformedUser = transformUser(user)
@@ -59,14 +61,18 @@ export const callsQueries = {
     return result.sort((a, b) => b.lastCallAt - a.lastCallAt)
   },
   getDetailedCallHistory: async (_: any, { userId, targetUserId }: { userId: string, targetUserId: string }, { db }: Context) => {
+    
+    const _userId = new ObjectId(userId)
+    const _targetUserId = new ObjectId(targetUserId)
+    
     // Find all finished calls between these two users
     const calls = await db.collection('calls')
       .find({
         $and: [
           { 
             $or: [
-              { initiatorUserId: userId, targetUserId: targetUserId },
-              { initiatorUserId: targetUserId, targetUserId: userId }
+              { initiatorUserId: _userId, targetUserId: _targetUserId },
+              { initiatorUserId: _targetUserId, targetUserId: _userId }
             ]
           },
           { type: 'finished' }

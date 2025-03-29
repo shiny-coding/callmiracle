@@ -12,7 +12,7 @@ export const checkUserImage = (userId: string): boolean => {
 export const transformUser = (user: any): User | null => {
   if (!user) return null
   return {
-    _id: user._id,
+    _id: user._id.toString(),
     name: user.name || '',
     languages: user.languages || [],
     timestamp: user.timestamp || Date.now(),

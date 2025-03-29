@@ -4,14 +4,15 @@ import { ObjectId } from 'mongodb'
 export const notificationsMutations = {
   setNotificationSeen: async (_: any, { id }: { id: string }, { db }: Context) => {
     try {
+      const _id = new ObjectId(id)
       const result = await db.collection('notifications').findOneAndUpdate(
-        { _id: new ObjectId(id) },
+        { _id },
         { $set: { seen: true } },
         { returnDocument: 'after' }
       )
       
       if (!result) {
-        throw new Error(`Notification with ID ${id} not found`)
+        throw new Error(`Notification with ID ${_id.toString()} not found`)
       }
       
       return {

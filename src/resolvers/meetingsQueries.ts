@@ -6,31 +6,33 @@ import { isMeetingPassed } from '@/utils/meetingUtils'
 export const meetingsQueries = {
   getMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
+      const _userId = new ObjectId(userId)
+
       // 1. Fetch all meetings for the user
-      const userMeetings = await db.collection('meetings').find({ userId }).toArray()
+      const userMeetings = await db.collection('meetings').find({ userId: _userId }).toArray()
       
       // 2. Extract peerMeetingIds from user's meetings
-      const peerMeetingIds = userMeetings
+      const _peerMeetingIds = userMeetings
         .filter(meeting => meeting.peerMeetingId)
-        .map(meeting => new ObjectId(meeting.peerMeetingId))
+        .map(meeting => meeting.peerMeetingId)
       
       // 3. Fetch all peer meetings in one query
-      const peerMeetings = peerMeetingIds.length > 0 
+      const peerMeetings = _peerMeetingIds.length > 0 
         ? await db.collection('meetings').find({ 
-            _id: { $in: peerMeetingIds } 
+            _id: { $in: _peerMeetingIds } 
           }).toArray()
         : []
       
       // 4. Get user IDs from peer meetings
-      const peerUserIds = []
+      const _peerUserIds = []
       for (const meeting of peerMeetings) {
-        peerUserIds.push(meeting.userId)
+        _peerUserIds.push(meeting.userId)
       }
       
       // 5. Fetch all peer users in one query
-      const peerUsers = peerUserIds.length > 0
+      const _peerUsers = _peerUserIds.length > 0
         ? await db.collection('users').find({ 
-            userId: { $in: peerUserIds } 
+            userId: { $in: _peerUserIds } 
           }).toArray()
         : []
       
@@ -41,10 +43,10 @@ export const meetingsQueries = {
         let peerUser: any = null
         
         if (meeting.peerMeetingId) {
-          peerMeeting = peerMeetings.find( pm => pm._id.toString() === meeting.peerMeetingId )
+          peerMeeting = peerMeetings.find( pm => pm._id.equals(meeting.peerMeetingId) )
 
           if (peerMeeting) {
-            peerUser = peerUsers.find(user => user._id === peerMeeting.userId)
+            peerUser = _peerUsers.find((user: any) => user._id.equals(peerMeeting.userId))
           }
         }
         

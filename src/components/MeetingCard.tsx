@@ -357,7 +357,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   return (
     <div className="flex flex-col gap-2 w-full relative">
       <div className="absolute top-0 right-0">
-        {meeting.status !== MeetingStatus.Called && meeting.status !== MeetingStatus.Finished && (
+        {meeting.status !== MeetingStatus.Called && meeting.status !== MeetingStatus.Finished && !meetingPassed && (
           <IconButton 
             className="text-blue-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
@@ -501,7 +501,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                           })}
                           {isLastEntry && (
                             <Typography 
-                              variant="body2" 
+                              variant="body2"
                               className={`${textColorClass} flex items-center pl-1`}
                           >
                             {meeting.minDuration} {t('min')}

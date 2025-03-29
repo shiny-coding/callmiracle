@@ -3,22 +3,24 @@ import { pubsub } from './pubsub'
 import { ObjectId } from 'mongodb'
 
 export const callUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
-  const { targetUserId, type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality, meetingId } = input
-  const initiatorUserId = input.initiatorUserId || ''
-  let callId = input.callId
+  const { type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality } = input
+  const _initiatorUserId = new ObjectId(input.initiatorUserId)
+  let _callId = input.callId ? new ObjectId(input.callId) : null
+  const _targetUserId = new ObjectId(input.targetUserId)
+  const _meetingId = input.meetingId ? new ObjectId(input.meetingId) : null
 
   let connection: any
 
   // Get user info for publishing
-  const initiator = await db.collection('users').findOne({ userId: initiatorUserId })
+  const initiator = await db.collection('users').findOne({ _id: _initiatorUserId })
   if (!initiator) {
-    console.error('no user found for initiator', { initiatorUserId })
+    console.error('no user found for initiator', { _initiatorUserId })
     return connection
   }
 
-  const targetUser = await db.collection('users').findOne({ userId: targetUserId })
+  const targetUser = await db.collection('users').findOne({ _id: _targetUserId })
   if (!targetUser) {
-    console.error('no user found for target', { targetUserId })
+    console.error('no user found for target', { _targetUserId })
     return connection
   }      
   console.log('callUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
@@ -27,25 +29,25 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
   if (type === 'initiate') {
     // Create new call record
     connection = await db.collection('calls').insertOne({
-      initiatorUserId,
-      targetUserId,
+      initiatorUserId: _initiatorUserId,
+      targetUserId: _targetUserId,
       type: 'initiated',
       duration: 0,
-      meetingId
+      meetingId: _meetingId
     })
-    callId = connection.insertedId.toString()
-  } else if (!callId) {
+    _callId = connection.insertedId
+  } 
+  if (!_callId) {
     throw new Error('CallId is required')
   }
 
-  const objectId = ObjectId.createFromHexString(callId)
   // Get current call state
-  const currentCall = await db.collection('calls').findOne({ _id: objectId })
+  const currentCall = await db.collection('calls').findOne({ _id: _callId })
 
   if (type === 'answer') {
     // Update call status to connected
     connection = await db.collection('calls').findOneAndUpdate(
-      { _id: objectId },
+      { _id: _callId },
       { $set: { type: 'connected' } },
       { returnDocument: 'after' }
     )
@@ -55,32 +57,31 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     const updateFields = type === 'finished' || (type === 'expired' && currentCall?.type === 'connected')
       ? { 
           type: 'finished',
-          duration: callDuration = Math.floor((Date.now() - objectId.getTimestamp().getTime()) / 1000)
+          duration: callDuration = Math.floor((Date.now() - _callId.getTimestamp().getTime()) / 1000)
         }
       : { type: 'expired', duration: 0 }
 
     // Update call status
     connection = await db.collection('calls').findOneAndUpdate(
-      { _id: objectId },
+      { _id: _callId },
       { $set: updateFields },
       { returnDocument: 'after' }
     )
     
     // If this call was for a meeting and has a duration, update the meeting's total duration
-    if (meetingId && callDuration > 0) {
+    if (_meetingId && callDuration > 0) {
       try {
-        const meetingObjectId = ObjectId.createFromHexString(meetingId);
-        const meeting = await db.collection('meetings').findOne({ _id: meetingObjectId });
+        const meeting = await db.collection('meetings').findOne({ _id: _meetingId });
         
         // Add this call's duration to the meeting's total duration
         const totalDuration = (meeting?.totalDuration || 0) + callDuration;
         
         await db.collection('meetings').updateOne(
-          { _id: meetingObjectId },
+          { _id: _meetingId },
           { $set: { totalDuration } }
         );
         
-        console.log(`Updated meeting ${meetingId} duration to ${totalDuration}s`);
+        console.log(`Updated meeting ${_meetingId.toString()} duration to ${totalDuration}s`);
       } catch (err) {
         console.error('Failed to update meeting duration:', err);
       }
@@ -91,9 +92,9 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
   const basePayload = {
     type,
     from: initiator,
-    callId,
+    callId: _callId,
     meetingId: currentCall?.meetingId,
-    userId: targetUserId
+    userId: _targetUserId
   }
 
   // Additional fields based on type
@@ -105,15 +106,15 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     updateMediaState: { videoEnabled, audioEnabled, quality }
   }
 
-  if ( type === 'offer' && meetingId ) {
-    const meeting = await db.collection('meetings').findOne({ _id: ObjectId.createFromHexString(meetingId) })
+  if ( type === 'offer' && _meetingId ) {
+    const meeting = await db.collection('meetings').findOne({ _id: _meetingId })
     if ( meeting ) {
       additionalFields.offer.meetingLastCallTime = meeting.lastCallTime
     }
   }
 
   // Create a unique topic for this user's connection requests
-  const topic = `SUBSCRIPTION_EVENT:${targetUserId}`
+  const topic = `SUBSCRIPTION_EVENT:${_targetUserId.toString()}`
 
   const callEvent = {
     ...basePayload,
@@ -129,9 +130,9 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     offer: connection?.offer || null,
     answer: connection?.answer || null,
     iceCandidate: connection?.iceCandidate || null,
-    targetUserId,
-    initiatorUserId,
-    callId,
-    meetingId
+    targetUserId: _targetUserId,
+    initiatorUserId: _initiatorUserId,
+    callId: _callId,
+    meetingId: _meetingId
   }
 }

@@ -15,7 +15,6 @@ export const usersQueries = {
     if (!user) {
       // Create new user with default values
       const newUser = {
-        _id: new ObjectId(),
         name: '',
         languages: defaultLanguages,  // Use provided default languages
         timestamp: Date.now(),
@@ -25,8 +24,11 @@ export const usersQueries = {
         blocks: []
       }
       
-      await db.collection('users').insertOne(newUser)
-      user = newUser
+      // Insert the new user and get the result
+      const result = await db.collection('users').insertOne(newUser)
+      
+      // Fetch the newly created user to ensure we have the correct document with the inserted ID
+      user = await db.collection('users').findOne({ _id: result.insertedId })
     }
 
     const transformedUser = transformUser(user)
