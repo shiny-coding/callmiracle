@@ -4,6 +4,7 @@ import { ApolloWrapper } from '@/lib/apollo-provider';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import ThemeRegistry from '@/components/ThemeRegistry';
 import { AppContent, StoreInitializer } from '@/components/AppContent';
+import { ClientWrapper } from '@/components/ClientWrapper';
 
 export default async function LocaleLayout({
   children,

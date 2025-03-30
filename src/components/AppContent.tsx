@@ -30,9 +30,11 @@ export function AppContent({ children }: AppContentProps) {
 
 export function StoreInitializer({ children }: AppContentProps) {
   
-  const [isHydrated, setIsHydrated] = useState(useStore.persist.hasHydrated);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
+    const isHydrated = useStore.persist.hasHydrated()
+    setIsHydrated(isHydrated)
     if (!isHydrated) {
       const unsub = useStore.persist.onFinishHydration(() => {
         setIsHydrated(true)

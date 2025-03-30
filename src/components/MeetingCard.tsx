@@ -89,7 +89,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
 
   // Determine meeting color based on its state
   const getMeetingColor = () => {
-    if (meetingPassed) return "#9ca3af"; // gray-400
+    if (meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished) return "#9ca3af"; // gray-400
     
     if (meeting.peerMeetingId) {
       // Meeting has a partner
@@ -116,7 +116,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   };
   
   const meetingColor = getMeetingColor();
-  const iconColor = meetingPassed ? "text-gray-400" : 
+  const iconColor = meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished ? "text-gray-400" : 
                     meetingColor === "#4ADE80" ? "text-green-400" :
                     meetingColor === "#FBBF24" ? "text-yellow-400" : 
                     "text-blue-500";
@@ -127,15 +127,15 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   const getChipSx = (isActive = isActiveNow) => ({
     backgroundColor: isActive 
       ? 'transparent !important' 
-      : meetingPassed 
+      : meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished
         ? 'transparent !important' 
         : '#4B5563 !important',
-    color: meetingPassed 
+    color: meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished
       ? '#9ca3af !important' 
       : 'white !important',
     border: isActive 
       ? '2px solid #4ADE80 !important' 
-      : meetingPassed 
+      : meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished
         ? '2px solid #9ca3af !important' 
         : `2px solid ${meetingColor} !important`,
   });
@@ -241,20 +241,23 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   const timeSlotsByDay = groupTimeSlotsByDay()
   
   // Check meeting status more precisely
-  const getMeetingStatus = () => {
+  const getMeetingStatusLabels = () => {
     if (!meeting.startTime) return { status: 'not-scheduled', timeText: '' };
+
+    if (meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished) {
+      return { status: 'finished', timeText: t('meetingFinished') };
+    }
     
     const startDate = new Date(meeting.startTime);
-    const endDate = new Date(meeting.startTime + meeting.minDuration * 60 * 1000);
     const threeHoursAfterStart = new Date(meeting.startTime + 3 * 60 * 60 * 1000);
     
     // Meeting is happening now
-    if (now >= startDate && now <= endDate) {
+    if (now >= startDate && !meetingPassed) {
       return { status: 'now', timeText: t('now') };
     }
     
     // Meeting is in the past but still within 3 hours window
-    if (now > endDate && now <= threeHoursAfterStart) {
+    if (meetingPassed && now <= threeHoursAfterStart) {
       return { status: 'recent', timeText: t('recentlyEnded') };
     }
     
@@ -266,7 +269,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
       if (diffHours < 8) {
         if (diffHours < 1) {
           // Less than 1 hour
-          const mins = Math.floor(diffSeconds / 60);
+          const mins = Math.max(1, Math.ceil(diffSeconds / 60))
           return { 
             status: 'soon', 
             timeText: t('startsInMinutes', { minutes: mins }) 
@@ -297,8 +300,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
     };
   };
   
-  const meetingStatus = getMeetingStatus();
-  const isActiveNow = meetingStatus.status === 'now';
+  const meetingStatusLabels = getMeetingStatusLabels();
+  const isActiveNow = meetingStatusLabels.status === 'now';
 
   const handleCallPeer = () => {
     if (meetingWithPeer.peerUser && meetingWithPeer.peerUser._id) {
@@ -381,7 +384,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
           >
             {t('finishMeeting')}
           </Button>
-        ) : meetingStatus.status === 'now' || (meeting.startTime && meeting.startTime > now.getTime()) ? (
+        ) : (meeting.status === MeetingStatus.Seeking || meeting.status === MeetingStatus.Found) && !meetingPassed ? (
           <Button
             variant="contained"
             color="warning"
@@ -413,9 +416,13 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
         >
           {meetingPassed 
               ? t('meetingPassed')
-            : meeting.peerMeetingId 
-              ? ( t('partnerFound') + ' ' + getPartnerIcon() )
-              : t('findingPartner')
+            : meeting.status === MeetingStatus.Seeking 
+              ? t('findingPartner')
+              : meeting.status === MeetingStatus.Cancelled
+                ? t('meetingCancelled')
+                : meeting.status === MeetingStatus.Finished
+                  ? t('meetingFinished')
+                  : ( t('partnerFound') + ' ' + getPartnerIcon() )
           }
         </Typography>
       </div>
@@ -436,7 +443,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                 )}
               </div>
             )}              
-              {meetingStatus.status === 'now' && (
+              {isActiveNow && (
                 <Button
                   variant="contained"
                   size="small"
@@ -461,17 +468,24 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
       <div className="flex items-center gap-2">
         <AccessTimeIcon className={iconColorClass} fontSize="small" />
         <div className="flex flex-wrap items-center gap-2 w-full">
-          {meeting.startTime ? (
-            <Chip
-              label={meetingStatus.timeText || formatDateForDisplay(new Date(meeting.startTime))}
-              size="small"
-              className={`text-xs`}
-              sx={getChipSx()}
-            />
-          ) : (
-            !meetingPassed ? (
-              <>
-                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 w-full">
+          {meeting.startTime && !meetingPassed &&
+            <>
+              <Chip
+                label={meetingStatusLabels.timeText || formatDateForDisplay(new Date(meeting.startTime))}
+                size="small"
+                className={`text-xs`}
+                sx={getChipSx()}
+              />
+              {!meetingPassed &&
+                <Typography variant="body2" className={`${textColorClass} flex items-center pl-1`}>
+                  {meeting.minDuration} {t('min')}
+                </Typography>
+              }
+            </>
+          }
+          {!meeting.startTime && !meetingPassed ? (
+            <>
+              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 w-full">
                   {Object.entries(timeSlotsByDay).map(([day, slots], index) => {
                     const combinedSlots = combineAdjacentSlots(slots)
                     
@@ -500,12 +514,9 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                             )
                           })}
                           {isLastEntry && (
-                            <Typography 
-                              variant="body2"
-                              className={`${textColorClass} flex items-center pl-1`}
-                          >
-                            {meeting.minDuration} {t('min')}
-                          </Typography>
+                            <Typography variant="body2" className={`${textColorClass} flex items-center pl-1`}>
+                              {meeting.minDuration} {t('min')}
+                            </Typography>
                           )}
                         </div>
                       </React.Fragment>
@@ -514,7 +525,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                 </div>
               </>
             ) : null
-          )}
+          }
           {meetingPassed && meeting.totalDuration && meeting.totalDuration > 0 && (
             <Chip
               label={`${t('callDuration')}: ${formatDuration(meeting.totalDuration)}`}

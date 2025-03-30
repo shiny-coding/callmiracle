@@ -117,9 +117,7 @@ const meetingsMutations = {
       // If this meeting has a peer, notify the peer user
       if (meeting.peerMeetingId) {
         // Get the peer meeting
-        const peerMeeting = await db.collection('meetings').findOne({
-          _id: meeting.peerMeetingId
-        })
+        const peerMeeting = await db.collection('meetings').findOne({ _id: meeting.peerMeetingId })
 
         if (peerMeeting) {
           // Update the peer meeting to remove the connection
@@ -152,10 +150,19 @@ const meetingsMutations = {
     try {
       const { status, lastCallTime } = input
       const _id = new ObjectId(input._id)
-      
+
+      const meeting = await db.collection('meetings').findOne({ _id })
+      const _peerMeetingId = meeting?.peerMeetingId
+
       // Create update object with only provided fields
       const updateFields: any = {}
-      if (status !== undefined) updateFields.status = status
+      if (status !== undefined) {
+        updateFields.status = status
+        if (status === MeetingStatus.Cancelled) {
+          updateFields.peerMeetingId = null
+          updateFields.startTime = null
+        }
+      }
       if (lastCallTime !== undefined) updateFields.lastCallTime = lastCallTime
       
       // Update the meeting
@@ -175,8 +182,7 @@ const meetingsMutations = {
       const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Seeking
       
       // If status is CANCELLED or SEEKING and this meeting has a peer, handle peer notification
-      if (updatedMeeting.peerMeetingId) {
-        const _peerMeetingId = updatedMeeting.peerMeetingId
+      if (_peerMeetingId) {
         
         // Get the peer meeting
         const peerMeeting = await db.collection('meetings').findOne({ _id: _peerMeetingId })

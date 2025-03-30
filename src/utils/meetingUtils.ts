@@ -34,10 +34,13 @@ export function isMeetingPassed(meeting: {
   }
   
   // If meeting doesn't have startTime, check if all time slots are in the past
-  return meeting.timeSlots.every(slot => {
-    const endTime = new Date(slot + 30 * 60 * 1000) // 30 minutes after start
-    return endTime < now
-  })
+  
+  const lastSlot = Math.max(...meeting.timeSlots)
+
+  const bufferMinutes = meeting.minDuration === 30 ? 10 : 20
+  const cutoffTime = new Date(lastSlot + bufferMinutes * 60 * 1000)
+
+  return now > cutoffTime
 }
 
 /**

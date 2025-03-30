@@ -138,5 +138,7 @@
   "meetingCall": "Meeting Call",
   "totalDuration": "Total call duration",
   "finishMeeting": "Finish",
-  "cancelMeeting": "Cancel"
+  "cancelMeeting": "Cancel",
+  "meetingCancelled": "Meeting cancelled",
+  "meetingFinished": "Meeting finished"
 } 
