@@ -20,7 +20,6 @@ type SubscriptionEventPayload = {
     meeting?: Meeting
     user?: User
   }
-  userId: string
 }
 
 export type PubSubEvents = {

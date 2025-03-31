@@ -133,6 +133,7 @@ export const determineBestStartTime = (overlappingRanges: TimeRange[], meeting1:
     duration: range.end - range.start
   }));
   
+  const timeToPrepare = 5 * 60 * 1000; // 10 minutes in milliseconds
   let rangesToChooseFrom;
   // Find slots with at least one hour duration
   const longRanges = rangesWithDurations.filter(range => range.duration >= oneHourInMs);
@@ -148,16 +149,16 @@ export const determineBestStartTime = (overlappingRanges: TimeRange[], meeting1:
 
   // If both prefer earlier, choose the earliest long slot
   if (meeting1.preferEarlier && meeting2.preferEarlier) {
-    return rangesToChooseFrom[0].start;
+    return rangesToChooseFrom[0].start + timeToPrepare;
   }
     
   // If both prefer later, choose the latest long slot
   if (!meeting1.preferEarlier && !meeting2.preferEarlier) {
-    return rangesToChooseFrom[rangesToChooseFrom.length - 1].start;
+    return rangesToChooseFrom[rangesToChooseFrom.length - 1].start + timeToPrepare;
   }
     
   // If preferences differ, choose a middle long slot
-  return rangesToChooseFrom[Math.floor(rangesToChooseFrom.length / 2)].start;
+  return rangesToChooseFrom[Math.floor(rangesToChooseFrom.length / 2)].start + timeToPrepare;
 }
 
 // Define error symbols

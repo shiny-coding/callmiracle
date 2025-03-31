@@ -17,7 +17,7 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
 import { isMeetingPassed, getSharedStatuses, getSharedLanguages } from '@/utils/meetingUtils'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStore } from '@/store/useStore'
 import DoneIcon from '@mui/icons-material/Done'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -78,6 +78,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   const now = new Date()
   const { doCall } = useWebRTCContext()
   const { currentUser } = useStore()
+  const [lastUpdate, setLastUpdate] = useState(0)
   const meeting = meetingWithPeer.meeting
   const [updateMeetingStatus] = useMutation(UPDATE_MEETING_LAST_CALL)
 
@@ -272,7 +273,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
           const mins = Math.max(1, Math.ceil(diffSeconds / 60))
           return { 
             status: 'soon', 
-            timeText: t('startsInMinutes', { minutes: mins }) 
+            timeText: t('startsInMinutes', { minutes: mins }),
+            updatePeriod: 30 * 1000 // each 30 seconds
           };
         } else if (diffHours < 3) {
           // Less than 3 hours
@@ -280,7 +282,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
           const mins = Math.floor((diffSeconds % (60 * 60)) / 60);
           return { 
             status: 'upcoming', 
-            timeText: t('startsInHoursMinutes', { hours, minutes: mins }) 
+            timeText: t('startsInHoursMinutes', { hours, minutes: mins }),
+            updatePeriod: 10 * 60 * 1000 // each 10 mins
           };
         } else {
           // Between 3 and 8 hours
@@ -302,6 +305,15 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   
   const meetingStatusLabels = getMeetingStatusLabels();
   const isActiveNow = meetingStatusLabels.status === 'now';
+
+  useEffect(() => {
+    if ( !meetingStatusLabels.updatePeriod ) return;
+    const updateInterval = setInterval(() => {
+      console.log('rerendering')
+      setLastUpdate(Date.now())
+    }, meetingStatusLabels.updatePeriod)
+    return () => clearInterval(updateInterval)
+  }, [meetingStatusLabels.updatePeriod])
 
   const handleCallPeer = () => {
     if (meetingWithPeer.peerUser && meetingWithPeer.peerUser._id) {
@@ -374,27 +386,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
         )}
       </div>
         <div className="absolute bottom-0 right-0">
-        {!meetingPassed && meeting.status === MeetingStatus.Called ? (
-          <Button
-            variant="contained"
-            color="warning"
-            startIcon={<DoneIcon />}
-            onClick={handleFinishMeeting}
-            size="small"
-          >
-            {t('finishMeeting')}
-          </Button>
-        ) : (meeting.status === MeetingStatus.Seeking || meeting.status === MeetingStatus.Found) && !meetingPassed ? (
-          <Button
-            variant="contained"
-            color="warning"
-            startIcon={<CancelIcon />}
-            onClick={handleCancelMeeting}
-            size="small"
-          >
-            {t('cancelMeeting')}
-          </Button>
-        ) : (
+        {(meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished) &&
           <IconButton 
             className="text-red-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
@@ -405,7 +397,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
           >
             <DeleteIcon fontSize="small" />
           </IconButton>
-        )}
+        }
       </div>
       {/* <div className="absolute top-4 left-0">{meeting._id}</div> */}
 
@@ -599,6 +591,34 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
           <Typography variant="body2">
             {t('totalDuration')}: {formatDuration(meeting.totalDuration)}
           </Typography>
+        </div>
+      )}
+
+      {!meetingPassed && meeting.status === MeetingStatus.Called ? (
+        <div className="flex items-center gap-2">
+          <Button
+            className="max-w-min"
+            variant="contained"
+            color="warning"
+            startIcon={<DoneIcon />}
+            onClick={handleFinishMeeting}
+            size="small"
+          >
+            {t('finishMeeting')}
+          </Button>
+        </div>
+      ) : (meeting.status === MeetingStatus.Seeking || meeting.status === MeetingStatus.Found) && !meetingPassed && (
+        <div className="flex mt-2 items-center gap-2">
+          <Button
+            className="max-w-min"
+            variant="contained"
+            color="warning"
+            startIcon={<CancelIcon />}
+            onClick={handleCancelMeeting}
+            size="small"
+          >
+            {t('cancelMeeting')}
+          </Button>
         </div>
       )}
 

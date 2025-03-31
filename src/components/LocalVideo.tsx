@@ -136,20 +136,6 @@ export default function LocalVideo() {
           </div>
         )}
       </div>
-      
-      {connectionStatus !== 'connected' && (
-        <div className="mt-4 flex justify-center">
-          <Button
-            variant={online ? "contained" : "outlined"}
-            color={online ? "primary" : "secondary"}
-            onClick={handleOnlineToggle}
-            className="w-full max-w-[200px]"
-          >
-            {online ? t('online') : t('offline')}
-          </Button>
-        </div>
-      )}
-
       <ProfileDialog 
         open={profileOpen}
         onClose={() => setProfileOpen(false)}

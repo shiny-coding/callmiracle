@@ -43,6 +43,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
   const [tempLanguages, setTempLanguages] = useState<string[]>([])
   const { updateMeeting, loading } = useUpdateMeeting()
   const [occupiedTimeSlots, setOccupiedTimeSlots] = useState<number[]>([])
+  const [hasValidDuration, setHasValidDuration] = useState(true)
 
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
@@ -190,6 +191,51 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
     
     setAvailableTimeSlots(processedSlots)
   }, [open, occupiedTimeSlots])
+
+  // Add new useEffect to validate time slot durations
+  useEffect(() => {
+    if (selectedTimeSlots.length === 0) {
+      setHasValidDuration(true)
+      return
+    }
+
+    // Check if selected time slots can form a continuous period meeting the minimum duration
+    const sortedTimeSlots = [...selectedTimeSlots].sort((a, b) => a - b)
+    
+    const now = new Date().getTime()
+    let longestContinuousDuration = 0
+    let currentContinuousDuration = 0
+    
+    for (let i = 0; i < sortedTimeSlots.length; i++) {
+      // Skip slots that are in the past
+      if (sortedTimeSlots[i] < now) {
+        continue
+      }
+      
+      // Find the slot in availableTimeSlots to check if it's partial
+      const slotInfo = availableTimeSlots.find(slot => slot.timestamp === sortedTimeSlots[i])
+      
+      if (!slotInfo) continue // Skip if slot info not found
+      
+      // For partial slots (current time slot), use remaining minutes instead of full 30 minutes
+      const slotDuration = slotInfo.isPartial ? (slotInfo.remainingMinutes || 0) : 30
+      
+      if (i === 0 || sortedTimeSlots[i] - sortedTimeSlots[i-1] !== 30 * 60 * 1000) {
+        // This is either the first valid slot or there's a gap
+        // Reset the current duration counter
+        longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
+        currentContinuousDuration = slotDuration
+      } else {
+        // This slot is continuous with the previous one
+        currentContinuousDuration += slotDuration
+      }
+    }
+    
+    // Check one last time after the loop finishes
+    longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
+    
+    setHasValidDuration(longestContinuousDuration >= minDuration)
+  }, [selectedTimeSlots, minDuration, availableTimeSlots])
 
   const toggleTimeSlot = (timestamp: number) => {
     // Don't allow toggling disabled slots
@@ -349,6 +395,11 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         <Typography variant="subtitle1" className="mt-4">
           {t('selectTimeSlots')}
         </Typography>
+        {selectedTimeSlots.length > 0 && !hasValidDuration && (
+          <Typography color="error" className="text-sm">
+            {t('insufficientDuration', { minutes: minDuration, })}
+          </Typography>
+        )}
         <TimeSlotsGrid
           timeSlots={availableTimeSlots}
           selectedTimeSlots={selectedTimeSlots}
@@ -368,7 +419,11 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         <Button
           onClick={handleApply}
           variant="contained"
-          disabled={loading || selectedTimeSlots.length === 0 || tempStatuses.length === 0 || tempLanguages.length === 0}
+          disabled={loading || 
+            selectedTimeSlots.length === 0 || 
+            tempStatuses.length === 0 || 
+            tempLanguages.length === 0 ||
+            !hasValidDuration}
         >
           {meeting ? t('update') : t('create')}
         </Button>

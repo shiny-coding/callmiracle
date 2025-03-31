@@ -140,5 +140,6 @@
   "finishMeeting": "Finish",
   "cancelMeeting": "Cancel",
   "meetingCancelled": "Meeting cancelled",
-  "meetingFinished": "Meeting finished"
+  "meetingFinished": "Meeting finished",
+  "insufficientDuration": "Please select adjacent time slots to form at least {minutes} minutes of continuous time."
 } 

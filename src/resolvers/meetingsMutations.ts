@@ -30,13 +30,9 @@ export async function publishMeetingNotification(notificationType: string, db: a
     
     // Publish notification event
     const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
-    pubsub.publish(topic, { 
-      notificationEvent: { 
-        type: 'new-notification',
-      } 
-    })
+    pubsub.publish(topic, { notificationEvent: { type: 'new-notification', } })
     
-    console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId })
+    console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId.toString() })
   }
 }
 

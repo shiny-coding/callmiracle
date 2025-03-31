@@ -136,5 +136,8 @@
   },
   "totalDuration": "Общая продолжительность звонков",
   "finishMeeting": "Завершить",
-  "cancelMeeting": "Отменить"
+  "cancelMeeting": "Отменить",
+  "meetingCancelled": "Встреча отменена",
+  "meetingFinished": "Встреча завершена",
+  "insufficientDuration": "Пожалуйста, выберите смежные временные слоты для формирования хотя бы {minutes} минут непрерывного времени."
 } 
