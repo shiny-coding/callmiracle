@@ -11,10 +11,7 @@ import MeetingDialog from './MeetingDialog'
 import { useState, useEffect } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
-import DeleteIcon from '@mui/icons-material/Delete'
 import { Meeting } from '@/generated/graphql'
-import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
-import ConfirmDialog from './ConfirmDialog'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
@@ -67,9 +64,6 @@ export default function MeetingsList() {
   const t = useTranslations()
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false)
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
-  const { deleteMeeting } = useDeleteMeeting()
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
-  const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null)
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
   const { subscribeToNotifications } = useSubscriptions()
 
@@ -95,25 +89,6 @@ export default function MeetingsList() {
     }
     setSelectedMeeting(null)
     setMeetingDialogOpen(true)
-  }
-
-  const handleDeleteMeeting = async (meetingId: string) => {
-    setMeetingToDelete(meetingId)
-    setConfirmDialogOpen(true)
-  }
-  
-  const confirmDelete = async () => {
-    if (meetingToDelete) {
-      await deleteMeeting(meetingToDelete)
-      setConfirmDialogOpen(false)
-      setMeetingToDelete(null)
-      refetch()
-    }
-  }
-  
-  const cancelDelete = () => {
-    setConfirmDialogOpen(false)
-    setMeetingToDelete(null)
   }
 
   if (loading) return <Typography>Loading...</Typography>
@@ -160,10 +135,6 @@ export default function MeetingsList() {
                   e?.stopPropagation();
                   handleEditMeeting(meetingData);
                 }}
-                onDelete={(e) => {
-                  e?.stopPropagation();
-                  handleDeleteMeeting(meetingData.meeting._id);
-                }}
                 refetch={refetch}
               />
             </ListItem>
@@ -183,13 +154,6 @@ export default function MeetingsList() {
           setMeetingDialogOpen(false)
           setSelectedMeeting(null)
         }}
-      />
-      <ConfirmDialog
-        open={confirmDialogOpen}
-        title={t('deleteMeeting')}
-        message={t('confirmDeleteMeeting')}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
       />
       <ProfileIncompleteDialog
         open={profileIncompleteDialogOpen}

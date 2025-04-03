@@ -14,9 +14,7 @@ export function useDeleteMeeting() {
   const deleteMeeting = async (id: string) => {
     try {
       const result = await deleteMeetingMutation({
-        variables: {
-          id,
-        }
+        variables: { id, }
       })
       return result.data.deleteMeeting
     } catch (err) {

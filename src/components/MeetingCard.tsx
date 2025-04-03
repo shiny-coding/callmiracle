@@ -1,4 +1,4 @@
-import { Typography, Chip, Button } from '@mui/material'
+import { Typography, Chip, Button, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import TimerIcon from '@mui/icons-material/Timer'
@@ -6,7 +6,6 @@ import VideocamIcon from '@mui/icons-material/Videocam'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoodIcon from '@mui/icons-material/Mood'
-import IconButton from '@mui/material/IconButton'
 import { LANGUAGES } from '@/config/languages'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { User } from '@/generated/graphql'
@@ -21,6 +20,8 @@ import { MeetingStatus } from '@/generated/graphql'
 import { useMeetingCardUtils } from './MeetingCardUtils'
 import { differenceInSeconds, isWithinInterval } from 'date-fns'
 import { differenceInHours } from 'date-fns'
+import ConfirmDialog from './ConfirmDialog'
+import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
 
 const UPDATE_MEETING_LAST_CALL = gql`
   mutation UpdateMeetingStatus($input: UpdateMeetingStatusInput!) {
@@ -79,10 +80,13 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   const [, setLastUpdate] = useState(0)
   const meeting = meetingWithPeer.meeting
   const [updateMeetingStatus] = useMutation(UPDATE_MEETING_LAST_CALL)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<'finish' | 'cancel' | 'delete' | null>(null)
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
   const textColor = meetingPassed ? "text-gray-400" : "text-gray-300";
+  const { deleteMeeting } = useDeleteMeeting()
 
   const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, combineAdjacentSlots, MeetingLanguagesChips, GenderChip,
           getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, now, t)
@@ -220,36 +224,44 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
 
   const statusesToShow = getSharedStatuses(meeting, meetingWithPeer.peerMeeting)
 
-
-  const handleFinishMeeting = async () => {
-    try {
-      await updateMeetingStatus({
-        variables: {
-          input: {
-            _id: meeting._id,
-            status: MeetingStatus.Finished
-          }
-        }
-      })
-      refetch()
-    } catch (error) {
-      console.error('Error finishing meeting:', error)
-    }
+  const openConfirmDialog = (action: 'finish' | 'cancel' | 'delete') => {
+    setConfirmAction(action)
+    setConfirmDialogOpen(true)
   }
-  
-  const handleCancelMeeting = async () => {
+
+  const closeConfirmDialog = () => {
+    setConfirmDialogOpen(false)
+    setConfirmAction(null)
+  }
+
+  const handleFinishMeeting = async () => { openConfirmDialog('finish') }
+
+  const handleCancelMeeting = async () => { openConfirmDialog('cancel') }
+
+  const handleDeleteConfirm = () => { openConfirmDialog('delete') }
+
+  const confirmMeetingAction = async () => {
     try {
-      await updateMeetingStatus({
-        variables: {
-          input: {
-            _id: meeting._id,
-            status: MeetingStatus.Cancelled
+      if (confirmAction === 'delete') {
+        // Call the passed onDelete handler
+        await deleteMeeting(meeting._id)
+      } else {
+        await updateMeetingStatus({
+          variables: {
+            input: {
+              _id: meeting._id,
+              status: confirmAction === 'finish' 
+                ? MeetingStatus.Finished 
+                : MeetingStatus.Cancelled
+            }
           }
-        }
-      })
+        })
+      }
+      closeConfirmDialog()
       refetch()
     } catch (error) {
-      console.error('Error canceling meeting:', error)
+      console.error(`Error ${confirmAction}ing meeting:`, error)
+      closeConfirmDialog()
     }
   }
 
@@ -274,8 +286,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
           <IconButton 
             className="text-red-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
-              e.stopPropagation();
-              onDelete?.(e);
+              e.stopPropagation()
+              handleDeleteConfirm()
             }}
             size="small"
           >
@@ -480,6 +492,21 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
         </div>
       )}
 
+      <ConfirmDialog
+        open={confirmDialogOpen}
+        title={
+          confirmAction === 'finish' ? t('confirmFinishTitle') : 
+          confirmAction === 'cancel' ? t('confirmCancelTitle') :
+          t('deleteMeeting')
+        }
+        message={
+          confirmAction === 'finish' ? t('confirmFinishMessage') : 
+          confirmAction === 'cancel' ? t('confirmCancelMessage') :
+          t('confirmDeleteMeeting')
+        }
+        onConfirm={confirmMeetingAction}
+        onCancel={closeConfirmDialog}
+      />
     </div>
   )
 } 
