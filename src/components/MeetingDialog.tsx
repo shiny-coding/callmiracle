@@ -282,7 +282,8 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
       allowedFemales: tempAllowedFemales,
       allowedMinAge: tempAgeRange[0],
       allowedMaxAge: tempAgeRange[1],
-      languages: tempLanguages
+      languages: tempLanguages,
+      peerMeetingId: meeting?.peerMeetingId
     })
     onClose()
   }

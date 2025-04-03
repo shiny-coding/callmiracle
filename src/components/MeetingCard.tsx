@@ -268,7 +268,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   return (
     <div className="flex flex-col gap-2 w-full relative">
       <div className="absolute top-0 right-0">
-        {(meeting.status === MeetingStatus.Cancelled || (meeting.status !== MeetingStatus.Called && !meetingPassed)) && (
+        {(meeting.status === MeetingStatus.Cancelled || (meeting.status === MeetingStatus.Seeking && !meetingPassed)) && (
           <IconButton 
             className="text-blue-400 hover:bg-gray-600 p-1"
             onClick={(e) => {

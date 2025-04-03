@@ -119,13 +119,14 @@ export const meetingsMutations = {
       allowedMinAge,
       allowedMaxAge,
       languages,
-      startTime,
-      peerMeetingId
     } = input
 
     const _meetingId = input._id ? new ObjectId(input._id) : new ObjectId()
-    const _peerMeetingId = input.peerMeetingId ? new ObjectId(input.peerMeetingId) : null
     const _userId = new ObjectId(input.userId)
+    if ( input.peerMeetingId ) {
+      throw new Error('Meeting needs to be cancelled to be updated')
+    }
+
     try {
 
       // Use upsert to either update existing or create new
@@ -157,24 +158,10 @@ export const meetingsMutations = {
           returnDocument: 'after'
         }
       );
-
-      if (_peerMeetingId) {
-        await db.collection('meetings').updateOne(
-          { _id: _peerMeetingId },
-          { $set: { peerMeetingId: null, startTime: null, status: MeetingStatus.Seeking } }
-        )
-      }
       
       // If this meeting doesn't have a peer yet, try to find a match
       console.log('Trying to find match for meeting: ', result?._id)
       result = await tryConnectMeetings(result, db, _userId);
-
-      if (_peerMeetingId) {
-        const peerMeeting = await db.collection('meetings').findOne({ _id: _peerMeetingId })
-        if (peerMeeting && peerMeeting.status === MeetingStatus.Found) {
-          await publishMeetingNotification('meeting-partner-updated', db, peerMeeting)
-        }
-      }
       
       return result;
     } catch (error) {
