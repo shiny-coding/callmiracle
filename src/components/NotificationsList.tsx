@@ -20,6 +20,8 @@ export default function NotificationsList() {
         return t('notificationMessages.meetingConnected')
       case 'meeting-disconnected':
         return t('notificationMessages.meetingDisconnected')
+      case 'meeting-peer-changed':
+        return t('notificationMessages.meetingPartnerUpdated')
       default:
         return t('notificationMessages.newNotification')
     }

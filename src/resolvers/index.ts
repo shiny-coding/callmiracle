@@ -4,10 +4,10 @@ import { meetingsQueries } from './meetingsQueries'
 import { notificationsQueries } from './notificationsQueries'
 import { updateUserMutation } from './updateUserMutation'
 import { callUserMutation } from './callUserMutation'
-import meetingsMutations from './meetingsMutations'
 import { notificationsMutations } from './notificationsMutations'
 import { subscriptions } from './subscriptions'
 import { dateScalar } from './scalarResolvers'
+import { meetingsMutations } from './meetingsMutations'
 
 export const resolvers = {
   Query: {

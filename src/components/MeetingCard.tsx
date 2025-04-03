@@ -1,28 +1,26 @@
 import { Typography, Chip, Button } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import UserCard from './UserCard'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import TimerIcon from '@mui/icons-material/Timer'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import LanguageIcon from '@mui/icons-material/Language'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoodIcon from '@mui/icons-material/Mood'
-import CallIcon from '@mui/icons-material/Call'
 import IconButton from '@mui/material/IconButton'
-import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast, formatDistance, differenceInHours, differenceInSeconds } from 'date-fns'
 import { LANGUAGES } from '@/config/languages'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
-import { isMeetingPassed, getSharedStatuses, getSharedLanguages } from '@/utils/meetingUtils'
+import { isMeetingPassed, getSharedStatuses, getSharedLanguages, class2Hex } from '@/utils/meetingUtils'
 import React, { useEffect, useState } from 'react'
 import { useStore } from '@/store/useStore'
 import DoneIcon from '@mui/icons-material/Done'
 import CancelIcon from '@mui/icons-material/Cancel'
 import { gql, useMutation } from '@apollo/client'
 import { MeetingStatus } from '@/generated/graphql'
+import { useMeetingCardUtils } from './MeetingCardUtils'
+import { differenceInSeconds, isWithinInterval } from 'date-fns'
+import { differenceInHours } from 'date-fns'
 
 const UPDATE_MEETING_LAST_CALL = gql`
   mutation UpdateMeetingStatus($input: UpdateMeetingStatusInput!) {
@@ -33,7 +31,7 @@ const UPDATE_MEETING_LAST_CALL = gql`
   }
 `
 
-interface MeetingProps {
+interface MeetingCardProps {
   meetingWithPeer: {
     meeting: {
       _id: string
@@ -50,7 +48,7 @@ interface MeetingProps {
       startTime?: number
       peerMeetingId?: string
       lastCallTime?: number
-      status: string
+      status: MeetingStatus
       totalDuration: number
     }
     peerMeeting?: {
@@ -72,172 +70,62 @@ interface MeetingProps {
   refetch: () => void
 }
 
-export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch }: MeetingProps) {
+
+export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch }: MeetingCardProps) {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
   const now = new Date()
   const { doCall } = useWebRTCContext()
-  const { currentUser } = useStore()
-  const [lastUpdate, setLastUpdate] = useState(0)
+  const [, setLastUpdate] = useState(0)
   const meeting = meetingWithPeer.meeting
   const [updateMeetingStatus] = useMutation(UPDATE_MEETING_LAST_CALL)
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
-    
-  // Text color class based on meeting status
-  const textColorClass = meetingPassed ? "text-gray-400" : "text-gray-300";
+  const textColor = meetingPassed ? "text-gray-400" : "text-gray-300";
+
+  const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, combineAdjacentSlots, MeetingLanguagesChips, GenderChip,
+          getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, now, t)
+
+  const activeColor = 'text-green-400' // '#4ADE80'
+  const passedColor = 'text-gray-400' // '#9CA3AF'
+  const scheduledColor = 'text-yellow-400' // '#FBBF24'
+  const findingColor = 'text-blue-500' // '#3B82F6'
 
   // Determine meeting color based on its state
   const getMeetingColor = () => {
-    if (meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished) return "#9ca3af"; // gray-400
+    if (meetingPassed) return passedColor; 
     
-    if (meeting.peerMeetingId) {
-      // Meeting has a partner
-      if (meeting.startTime) {
-        const meetingEndTime = new Date(meeting.startTime + meeting.minDuration * 60 * 1000);
-        
-        // Meeting is currently active
-        if (now < meetingEndTime && now >= new Date(meeting.startTime)) {
-          return "#4ADE80"; // green-600
-        }
-        
-        // Meeting is scheduled but not yet started
-        if (now < new Date(meeting.startTime)) {
-          return "#FBBF24"; // yellow-400
-        }
-      }
-      
-      // Partner found but not scheduled yet
-      return "#FBBF24"; // yellow-400
+    if (meeting.startTime) {
+      const meetingEndTime = new Date(Math.max(meeting.startTime + meeting.minDuration * 60 * 1000, (meeting.lastCallTime ?? 0) + 10 * 60 * 1000));
+      // Meeting is currently active
+      if (now < meetingEndTime && now >= new Date(meeting.startTime)) return activeColor
+      // Meeting is scheduled but not yet started
+      return scheduledColor
     }
     
     // Finding partner
-    return "#3B82F6"; // blue-500
+    return findingColor; 
   };
   
   const meetingColor = getMeetingColor();
-  const iconColor = meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished ? "text-gray-400" : 
-                    meetingColor === "#4ADE80" ? "text-green-400" :
-                    meetingColor === "#FBBF24" ? "text-yellow-400" : 
-                    "text-blue-500";
-
-  const iconColorClass = iconColor;
 
   // Reusable chip styling for passed vs active meetings
   const getChipSx = (isActive = isActiveNow) => ({
     backgroundColor: isActive 
       ? 'transparent !important' 
-      : meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished
+      : meetingPassed
         ? 'transparent !important' 
         : '#4B5563 !important',
-    color: meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished
-      ? '#9ca3af !important' 
+    color: meetingPassed
+      ? `${class2Hex(passedColor)} !important` 
       : 'white !important',
     border: isActive 
-      ? '2px solid #4ADE80 !important' 
-      : meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished
-        ? '2px solid #9ca3af !important' 
-        : `2px solid ${meetingColor} !important`,
+      ? `2px solid ${class2Hex(activeColor)} !important` 
+      : meetingPassed
+        ? `2px solid ${class2Hex(passedColor)} !important` 
+        : `2px solid ${class2Hex(meetingColor)} !important`,
   });
-
-  const formatTimeSlot = (startTimestamp: number, endTimestamp: number) => {
-    const startDate = new Date(startTimestamp)
-    const endDate = new Date(endTimestamp)
-    
-    // Check if this is a partial slot (close to current time)
-    const isCurrentSlot = isWithinInterval(now, {
-      start: startDate,
-      end: endDate
-    })
-    
-    // Format the start time - show "NOW" if it's the current slot
-    const startTime = isCurrentSlot ? t('now') : format(startDate, 'HH:mm')
-    
-    return `${startTime}-${format(endDate, 'HH:mm')}`
-  }
-
-  // Format date for display, showing "Today" if it's today
-  const formatDateForDisplay = (date: Date) => {
-    if (isToday(date)) {
-      return `${t('today')} ${format(date, 'HH:mm')}`
-    }
-    return format(date, 'MMM d, HH:mm')
-  }
-
-  // Get the day of the first time slot for passed meetings without a peer
-  const getFirstSlotDay = () => {
-    if (meeting.timeSlots.length === 0) return '';
-    
-    // Sort time slots chronologically
-    const sortedSlots = [...meeting.timeSlots].sort((a, b) => a - b);
-    const firstSlotDate = new Date(sortedSlots[0]);
-    
-    // Format the date to show the day
-    if (isToday(firstSlotDate)) {
-      return t('today');
-    }
-    return format(firstSlotDate, 'MMM d');
-  }
-
-  // Group time slots by day
-  const groupTimeSlotsByDay = () => {
-    const groups: Record<string, number[]> = {}
-    
-    // Sort time slots chronologically
-    const sortedSlots = [...meeting.timeSlots].sort((a, b) => a - b)
-    
-    sortedSlots.forEach(timestamp => {
-      const date = new Date(timestamp)
-      
-      // Skip slots that are in the past (end time is before now)
-      const endTime = new Date(timestamp + 30 * 60 * 1000) // 30 minutes after start
-      if (endTime < now) return
-      
-      // Use "Today" for today's date
-      const dayKey = isToday(date) ? t('today') : format(date, 'EEE dd MMM')
-      
-      if (!groups[dayKey]) {
-        groups[dayKey] = []
-      }
-      
-      groups[dayKey].push(timestamp)
-    })
-    
-    return groups
-  }
-
-  // Combine adjacent time slots
-  const combineAdjacentSlots = (slots: number[]): [number, number][] => {
-    if (slots.length === 0) return []
-    
-    // Sort slots chronologically
-    const sortedSlots = [...slots].sort((a, b) => a - b)
-    
-    const combinedSlots: [number, number][] = []
-    let currentStart = sortedSlots[0]
-    let currentEnd = currentStart + 30 * 60 * 1000 // 30 minutes in milliseconds
-    
-    for (let i = 1; i < sortedSlots.length; i++) {
-      const slotTime = sortedSlots[i]
-      
-      // If this slot starts exactly when the previous ends, combine them
-      if (slotTime === currentEnd) {
-        // Extend the current slot
-        currentEnd = slotTime + 30 * 60 * 1000
-      } else {
-        // This slot is not adjacent, so save the current combined slot and start a new one
-        combinedSlots.push([currentStart, currentEnd])
-        currentStart = slotTime
-        currentEnd = slotTime + 30 * 60 * 1000
-      }
-    }
-    
-    // Add the last slot or combined slot
-    combinedSlots.push([currentStart, currentEnd])
-    
-    return combinedSlots
-  }
 
   const timeSlotsByDay = groupTimeSlotsByDay()
   
@@ -245,7 +133,10 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   const getMeetingStatusLabels = () => {
     if (!meeting.startTime) return { status: 'not-scheduled', timeText: '' };
 
-    if (meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished) {
+    if (meeting.status === MeetingStatus.Cancelled) {
+      return { status: 'cancelled', timeText: t('meetingCancelled') };
+    }
+    if (meeting.status === MeetingStatus.Finished) {
       return { status: 'finished', timeText: t('meetingFinished') };
     }
     
@@ -305,11 +196,15 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   
   const meetingStatusLabels = getMeetingStatusLabels();
   const isActiveNow = meetingStatusLabels.status === 'now';
+  const soonChipSx = getChipSx()
+  if ( meetingStatusLabels.status === 'soon' ) {
+    soonChipSx.border = `2px solid ${class2Hex(activeColor)} !important`
+  }
 
   useEffect(() => {
     if ( !meetingStatusLabels.updatePeriod ) return;
     const updateInterval = setInterval(() => {
-      console.log('rerendering')
+      console.log('rerendering MeetingCard to update time')
       setLastUpdate(Date.now())
     }, meetingStatusLabels.updatePeriod)
     return () => clearInterval(updateInterval)
@@ -324,18 +219,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   }
 
   const statusesToShow = getSharedStatuses(meeting, meetingWithPeer.peerMeeting)
-  const languagesToShow = getSharedLanguages(meeting, meetingWithPeer.peerMeeting)
 
-  const getPartnerIcon = () => {
-    if (meeting.peerMeetingId) {
-      if (currentUser?.sex === meetingWithPeer.peerUser?.sex) {
-        return currentUser?.sex === 'male' ? '👬' : '👭'
-      } else {
-        return '👫'
-      }
-    }
-    return null
-  }
 
   const handleFinishMeeting = async () => {
     try {
@@ -372,7 +256,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   return (
     <div className="flex flex-col gap-2 w-full relative">
       <div className="absolute top-0 right-0">
-        {meeting.status !== MeetingStatus.Called && meeting.status !== MeetingStatus.Finished && !meetingPassed && (
+        {(meeting.status === MeetingStatus.Cancelled || (meeting.status !== MeetingStatus.Called && !meetingPassed)) && (
           <IconButton 
             className="text-blue-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
@@ -386,7 +270,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
         )}
       </div>
         <div className="absolute bottom-0 right-0">
-        {(meetingPassed || meeting.status === MeetingStatus.Cancelled || meeting.status === MeetingStatus.Finished) &&
+        {meetingPassed &&
           <IconButton 
             className="text-red-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
@@ -404,16 +288,16 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
       <div className="flex items-center justify-center">
         <Typography variant="subtitle2" 
           className="font-bold"
-          sx={{ color: meetingColor, fontWeight: 'bold' }}
+          sx={{ color: class2Hex(meetingColor), fontWeight: 'bold' }}
         >
-          {meetingPassed 
-              ? t('meetingPassed')
-            : meeting.status === MeetingStatus.Seeking 
-              ? t('findingPartner')
-              : meeting.status === MeetingStatus.Cancelled
-                ? t('meetingCancelled')
-                : meeting.status === MeetingStatus.Finished
-                  ? t('meetingFinished')
+          {meeting.status === MeetingStatus.Cancelled
+            ? t('meetingCancelled')
+            : meeting.status === MeetingStatus.Finished
+              ? t('meetingFinished')
+              : meetingPassed 
+                ? t('meetingPassed')
+                : meeting.status === MeetingStatus.Seeking 
+                  ? t('findingPartner')                
                   : ( t('partnerFound') + ' ' + getPartnerIcon() )
           }
         </Typography>
@@ -443,7 +327,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                   onClick={handleCallPeer}
                   className="text-white"
                   sx={{
-                    backgroundColor: '#4ADE80 !important', // light green
+                    backgroundColor: `${class2Hex(activeColor)} !important`, // light green
                     '&:hover': {
                       backgroundColor: '#22C55E !important', // slightly darker green on hover
                     }
@@ -458,7 +342,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
         </div>
       )}
       <div className="flex items-center gap-2">
-        <AccessTimeIcon className={iconColorClass} fontSize="small" />
+        <AccessTimeIcon className={meetingColor} fontSize="small" />
         <div className="flex flex-wrap items-center gap-2 w-full">
           {meeting.startTime && !meetingPassed &&
             <>
@@ -466,10 +350,10 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                 label={meetingStatusLabels.timeText || formatDateForDisplay(new Date(meeting.startTime))}
                 size="small"
                 className={`text-xs`}
-                sx={getChipSx()}
+                sx={soonChipSx}
               />
               {!meetingPassed &&
-                <Typography variant="body2" className={`${textColorClass} flex items-center pl-1`}>
+                <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
                   {meeting.minDuration} {t('min')}
                 </Typography>
               }
@@ -485,7 +369,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                     const isLastEntry = index === Object.entries(timeSlotsByDay).length - 1
                     return (
                       <React.Fragment key={day}>
-                        <Typography variant="body2" className={`${textColorClass} whitespace-nowrap flex items-center h-6`}>
+                        <Typography variant="body2" className={`${textColor} whitespace-nowrap flex items-center h-6`}>
                           {day}
                         </Typography>
                         <div className="grid grid-cols-[repeat(auto-fill,90px)] gap-1">
@@ -506,7 +390,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
                             )
                           })}
                           {isLastEntry && (
-                            <Typography variant="body2" className={`${textColorClass} flex items-center pl-1`}>
+                            <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
                               {meeting.minDuration} {t('min')}
                             </Typography>
                           )}
@@ -525,7 +409,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
               className={`text-xs text-white bg-gray-500`}
             />
           )}
-          {meetingPassed && !meeting.peerMeetingId && (
+          {meetingPassed && (
             <Chip
               label={getFirstSlotDay()}
               size="small"
@@ -536,7 +420,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
         </div>        
     </div>
       <div className="flex items-center gap-2">
-        <MoodIcon className={iconColorClass} fontSize="small" />
+        <MoodIcon className={meetingColor} fontSize="small" />
         <div className="flex flex-wrap gap-2">
         {statusesToShow && statusesToShow.map(status => (
           <Chip
@@ -549,37 +433,11 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
         ))}
         </div>
       </div>
-      {languagesToShow && languagesToShow.length > 0 && (
-        <div className="flex items-center gap-2">
-          <LanguageIcon className={iconColorClass} fontSize="small" />
-          <div className="flex flex-wrap gap-1">
-            {languagesToShow.map(langCode => {
-              const language = LANGUAGES.find(l => l.code === langCode)
-              return (
-                <Chip
-                  key={langCode}
-                  label={language?.name || langCode}
-                  size="small"
-                  className="text-xs"
-                  sx={getChipSx()}
-                />
-              )
-            })}
-          </div>
-        </div>
-      )}
-          
-
+      <MeetingLanguagesChips meetingColor={meetingColor} chipSx={getChipSx()} />
       {!meeting.peerMeetingId && (
         <div className="flex items-center gap-2">
-          <Typography variant="body2" className={textColorClass}>
-            {meeting.allowedMales && meeting.allowedFemales 
-              ? t('anyGender') 
-              : meeting.allowedMales 
-                ? t('malesOnly') 
-                : t('femalesOnly')}
-          </Typography>
-          <Typography variant="body2" className={textColorClass}>
+          <GenderChip />
+          <Typography variant="body2" className={textColor}>
             {t('ageRange')}: {meeting.allowedMinAge}-{meeting.allowedMaxAge}
           </Typography>
         </div>

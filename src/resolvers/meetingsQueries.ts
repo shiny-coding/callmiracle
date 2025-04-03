@@ -2,6 +2,7 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { transformUser } from './utils'
 import { isMeetingPassed } from '@/utils/meetingUtils'
+import { MeetingStatus } from '@/generated/graphql'
 
 export const meetingsQueries = {
   getMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
@@ -102,6 +103,10 @@ export const meetingsQueries = {
         
         // If neither has future slots, compare the latest past slots
         if (a.meeting.timeSlots.length > 0 && b.meeting.timeSlots.length > 0) {
+          const aIsCancelled = a.meeting.status === MeetingStatus.Cancelled;
+          const bIsCancelled = b.meeting.status === MeetingStatus.Cancelled;
+          if (aIsCancelled && !bIsCancelled) return -1;
+          if (!aIsCancelled && bIsCancelled) return +1;
           return Math.max(...a.meeting.timeSlots) - Math.max(...b.meeting.timeSlots)
         } else if (a.meeting.timeSlots.length > 0) {
           return -1

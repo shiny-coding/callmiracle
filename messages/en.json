@@ -133,7 +133,8 @@
   "notificationMessages": {
     "meetingConnected": "You've been matched with a meeting partner!",
     "meetingDisconnected": "Your meeting partner has canceled the meeting.",
-    "newNotification": "New notification"
+    "newNotification": "New notification",
+    "meetingPartnerUpdated": "Your meeting with a partner has been updated"
   },
   "meetingCall": "Meeting Call",
   "totalDuration": "Total call duration",

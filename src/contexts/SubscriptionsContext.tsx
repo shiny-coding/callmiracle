@@ -40,7 +40,6 @@ const ON_SUBSCRIPTION_EVENT = gql`
 
 interface SubscriptionsContextType {
   subscribeToNotifications: (callback: (event: any) => void) => void
-  subscribeToMeetings: (callback: (event: any) => void) => void
   subscribeToCallEvents: (callback: (event: any) => void) => void
 }
 
@@ -51,7 +50,6 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
 
   // Store callbacks in refs to avoid unnecessary re-renders
   const notificationCallbacks = React.useRef<((event: any) => void)[]>([])
-  const meetingCallbacks = React.useRef<((event: any) => void)[]>([])
   const callCallbacks = React.useRef<((event: any) => void)[]>([])
 
   // Register callbacks
@@ -59,13 +57,6 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
     notificationCallbacks.current.push(callback)
     return () => {
       notificationCallbacks.current = notificationCallbacks.current.filter(cb => cb !== callback)
-    }
-  }, [])
-
-  const subscribeToMeetings = useCallback((callback: (event: any) => void) => {
-    meetingCallbacks.current.push(callback)
-    return () => {
-      meetingCallbacks.current = meetingCallbacks.current.filter(cb => cb !== callback)
     }
   }, [])
 
@@ -93,16 +84,6 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
         })
       }
       
-      // Handle meeting events (connection/disconnection)
-      if (data.notificationEvent?.type === 'meeting-connected' || 
-          data.notificationEvent?.type === 'meeting-disconnected') {
-            
-        console.log('Meeting event:', data.notificationEvent)
-        meetingCallbacks.current.forEach(callback => {
-          callback(data.notificationEvent)
-        })
-      }
-      
       // Handle call events
       if (data.callEvent) {
         callCallbacks.current.forEach(callback => {
@@ -114,7 +95,6 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
 
   const value = {
     subscribeToNotifications,
-    subscribeToMeetings,
     subscribeToCallEvents,
   }
 

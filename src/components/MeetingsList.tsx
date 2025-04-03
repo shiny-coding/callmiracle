@@ -71,15 +71,17 @@ export default function MeetingsList() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null)
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
-  const { subscribeToMeetings } = useSubscriptions()
+  const { subscribeToNotifications } = useSubscriptions()
 
   useEffect(() => {
-    const unsubscribe = subscribeToMeetings((event) => {
-      refetch();
+    const unsubscribe = subscribeToNotifications((event) => {
+      if (event.type.startsWith('meeting-')) {
+        refetch();
+      }
     })
     
     return unsubscribe
-  }, [subscribeToMeetings, refetch])
+  }, [subscribeToNotifications, refetch])
 
   const handleEditMeeting = (meetingData: any) => {
     setSelectedMeeting(meetingData.meeting)

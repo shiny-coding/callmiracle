@@ -30,13 +30,83 @@ export async function publishMeetingNotification(notificationType: string, db: a
     
     // Publish notification event
     const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
-    pubsub.publish(topic, { notificationEvent: { type: 'new-notification', } })
+    pubsub.publish(topic, { notificationEvent: { type: notificationType, meeting: peerMeeting, user: peerUser } })
     
     console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId.toString() })
   }
 }
 
-const meetingsMutations = {
+const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {
+  try {
+    const { status, lastCallTime } = input
+    const _id = new ObjectId(input._id)
+
+    const meeting = await db.collection('meetings').findOne({ _id })
+    const _peerMeetingId = meeting?.peerMeetingId
+
+    // Create update object with only provided fields
+    const updateFields: any = {}
+    if (status !== undefined) {
+      updateFields.status = status
+      if (status === MeetingStatus.Cancelled) {
+        updateFields.peerMeetingId = null
+        updateFields.startTime = null
+      }
+    }
+    if (lastCallTime !== undefined) updateFields.lastCallTime = lastCallTime
+    
+    // Update the meeting
+    const updatedMeeting = await db.collection('meetings').findOneAndUpdate(
+      { _id },
+      { $set: updateFields },
+      { returnDocument: 'after' }
+    )
+    
+    if (!updatedMeeting) {
+      console.error('Meeting not found', { meetingId: _id.toString() })
+      throw new Error('Meeting not found ' + _id.toString())
+    }
+
+    console.log('Updated meeting:', updatedMeeting._id.toString(), status, lastCallTime)
+
+    const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Seeking
+    
+    // If status is CANCELLED or SEEKING and this meeting has a peer, handle peer notification
+    if (_peerMeetingId) {
+      
+      // Get the peer meeting
+      const peerMeeting = await db.collection('meetings').findOne({ _id: _peerMeetingId })
+
+      if (disconnectPeer) {
+        updateFields.status = MeetingStatus.Seeking
+        updateFields.peerMeetingId = null
+        updateFields.startTime = null
+        console.log('Disconnecting peer:', _peerMeetingId.toString())
+      }
+
+      if (peerMeeting) {
+        // Update the peer meeting to SEEKING status
+        await db.collection('meetings').updateOne(
+          { _id: _peerMeetingId },
+          { $set: updateFields }
+        )
+        console.log('Updated peer meeting:', _peerMeetingId.toString(), updateFields)
+        
+        if (disconnectPeer) {
+          // Use the helper function to publish notification
+          await publishMeetingNotification('meeting-disconnected', db, peerMeeting)
+        }
+      }
+    }
+    
+    return updatedMeeting
+  } catch (error) {
+    console.error('Error updating meeting status:', error)
+    throw error
+  }
+}
+
+export const meetingsMutations = {
   createOrUpdateMeeting: async (_: any, { input }: { input: any }, { db }: Context) => {
     const { 
       userName,
@@ -50,12 +120,14 @@ const meetingsMutations = {
       allowedMaxAge,
       languages,
       startTime,
+      peerMeetingId
     } = input
 
     const _meetingId = input._id ? new ObjectId(input._id) : new ObjectId()
-    const _userId = new ObjectId(input.userId)
     const _peerMeetingId = input.peerMeetingId ? new ObjectId(input.peerMeetingId) : null
+    const _userId = new ObjectId(input.userId)
     try {
+
       // Use upsert to either update existing or create new
       let result = await db.collection('meetings').findOneAndUpdate(
         { _id: _meetingId },
@@ -72,8 +144,8 @@ const meetingsMutations = {
             allowedMinAge,
             allowedMaxAge,
             languages,
-            startTime,
-            peerMeetingId : _peerMeetingId,
+            startTime: null,
+            peerMeetingId : null,
             status: MeetingStatus.Seeking
           },
           $setOnInsert: {
@@ -85,11 +157,23 @@ const meetingsMutations = {
           returnDocument: 'after'
         }
       );
+
+      if (_peerMeetingId) {
+        await db.collection('meetings').updateOne(
+          { _id: _peerMeetingId },
+          { $set: { peerMeetingId: null, startTime: null, status: MeetingStatus.Seeking } }
+        )
+      }
       
       // If this meeting doesn't have a peer yet, try to find a match
-      if (!_peerMeetingId) {
-        console.log('Trying to find match for meeting: ', result?._id)
-        result = await tryConnectMeetings(result, db, _userId);
+      console.log('Trying to find match for meeting: ', result?._id)
+      result = await tryConnectMeetings(result, db, _userId);
+
+      if (_peerMeetingId) {
+        const peerMeeting = await db.collection('meetings').findOne({ _id: _peerMeetingId })
+        if (peerMeeting && peerMeeting.status === MeetingStatus.Found) {
+          await publishMeetingNotification('meeting-partner-updated', db, peerMeeting)
+        }
       }
       
       return result;
@@ -142,74 +226,5 @@ const meetingsMutations = {
       throw error
     }
   },
-  updateMeetingStatus: async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {
-    try {
-      const { status, lastCallTime } = input
-      const _id = new ObjectId(input._id)
-
-      const meeting = await db.collection('meetings').findOne({ _id })
-      const _peerMeetingId = meeting?.peerMeetingId
-
-      // Create update object with only provided fields
-      const updateFields: any = {}
-      if (status !== undefined) {
-        updateFields.status = status
-        if (status === MeetingStatus.Cancelled) {
-          updateFields.peerMeetingId = null
-          updateFields.startTime = null
-        }
-      }
-      if (lastCallTime !== undefined) updateFields.lastCallTime = lastCallTime
-      
-      // Update the meeting
-      const updatedMeeting = await db.collection('meetings').findOneAndUpdate(
-        { _id },
-        { $set: updateFields },
-        { returnDocument: 'after' }
-      )
-      
-      if (!updatedMeeting) {
-        console.error('Meeting not found', { meetingId: _id.toString() })
-        throw new Error('Meeting not found ' + _id.toString())
-      }
-
-      console.log('Updated meeting:', updatedMeeting._id.toString(), status, lastCallTime)
-
-      const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Seeking
-      
-      // If status is CANCELLED or SEEKING and this meeting has a peer, handle peer notification
-      if (_peerMeetingId) {
-        
-        // Get the peer meeting
-        const peerMeeting = await db.collection('meetings').findOne({ _id: _peerMeetingId })
-
-        if (disconnectPeer) {
-          updateFields.status = MeetingStatus.Seeking
-          updateFields.peerMeetingId = null
-          console.log('Disconnecting peer:', _peerMeetingId.toString())
-        }
-
-        if (peerMeeting) {
-          // Update the peer meeting to SEEKING status
-          await db.collection('meetings').updateOne(
-            { _id: _peerMeetingId },
-            { $set: updateFields }
-          )
-          console.log('Updated peer meeting:', _peerMeetingId.toString(), updateFields)
-          
-          if (disconnectPeer) {
-            // Use the helper function to publish notification
-            await publishMeetingNotification('meeting-disconnected', db, peerMeeting)
-          }
-        }
-      }
-      
-      return updatedMeeting
-    } catch (error) {
-      console.error('Error updating meeting status:', error)
-      throw error
-    }
-  },
+  updateMeetingStatus
 }
-
-export default meetingsMutations 

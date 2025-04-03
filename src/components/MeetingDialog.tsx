@@ -303,12 +303,6 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
       <DialogContent className="flex flex-col gap-4">
         <StatusSelector value={tempStatuses} onChange={setTempStatuses} />
         
-        {tempStatuses.length === 0 && (
-          <Typography color="error" className="text-sm">
-            {t('pleaseSelectStatus')}
-          </Typography>
-        )}
-        
         <Typography variant="subtitle1" className="mt-4">
           {t('languages')}
         </Typography>
@@ -395,11 +389,6 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         <Typography variant="subtitle1" className="mt-4">
           {t('selectTimeSlots')}
         </Typography>
-        {selectedTimeSlots.length > 0 && !hasValidDuration && (
-          <Typography color="error" className="text-sm">
-            {t('insufficientDuration', { minutes: minDuration, })}
-          </Typography>
-        )}
         <TimeSlotsGrid
           timeSlots={availableTimeSlots}
           selectedTimeSlots={selectedTimeSlots}
@@ -413,6 +402,19 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
 
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
+        <div className="flex flex-col justify-start gap-2 mr-auto">
+          {tempStatuses.length === 0 && (
+            <Typography color="warning" className="text-sm">
+              {t('pleaseSelectStatus')}
+            </Typography>
+          )}
+
+          {selectedTimeSlots.length > 0 && !hasValidDuration && (
+            <Typography color="warning" className="text-sm">
+              {t('insufficientDuration', { minutes: minDuration, })}
+            </Typography>
+          )}
+        </div>
         <Button onClick={handleCancel}>
           {t('cancel')}
         </Button>

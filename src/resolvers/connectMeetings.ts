@@ -133,7 +133,9 @@ export const determineBestStartTime = (overlappingRanges: TimeRange[], meeting1:
     duration: range.end - range.start
   }));
   
-  const timeToPrepare = 5 * 60 * 1000; // 10 minutes in milliseconds
+  //const timeToPrepare = 5 * 60 * 1000; // 10 minutes in milliseconds
+  const timeToPrepare = 0; // temporary
+
   let rangesToChooseFrom;
   // Find slots with at least one hour duration
   const longRanges = rangesWithDurations.filter(range => range.duration >= oneHourInMs);

@@ -1,3 +1,7 @@
+import { MeetingStatus } from "@/generated/graphql"
+import resolveConfig from "tailwindcss/resolveConfig"
+import tailwindConfig from "../../tailwind.config"
+
 /**
  * Determines if a meeting has passed based on various conditions
  * 
@@ -10,12 +14,12 @@ export function isMeetingPassed(meeting: {
   lastCallTime?: number | null
   timeSlots: number[]
   minDuration: number
-  status?: string
+  status?: MeetingStatus
 }): boolean {
   const now = new Date()
 
   // If meeting status is FINISHED, it's passed
-  if (meeting.status === 'FINISHED') {
+  if (meeting.status === MeetingStatus.Finished || meeting.status === MeetingStatus.Cancelled) {
     return true
   }
   
@@ -82,3 +86,13 @@ export function getSharedLanguages(
     peerMeeting.languages.includes(language)
   )
 } 
+
+export function class2Hex(tailwindColor: string) {
+  // Convert Tailwind color classes like "text-gray-400" to hex color codes
+  const colorMatch = tailwindColor.match(/([a-z]+)-(\d+)/)
+  if (!colorMatch) return '#000000' // Default to black if no match
+  
+  const [_, colorName, shade] = colorMatch
+  const fullConfig = resolveConfig(tailwindConfig)
+  return (fullConfig.theme.colors as any)[colorName][shade]
+}
