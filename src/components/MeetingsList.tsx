@@ -69,7 +69,7 @@ export default function MeetingsList() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
   const { subscribeToNotifications } = useSubscriptions()
-  const { highlightedMeetingId } = useMeetings()
+  const { highlightedMeetingId, setHighlightedMeetingId } = useMeetings()
   const meetingRefs = useRef<Record<string, HTMLElement>>({})
 
   useEffect(() => {
@@ -90,6 +90,16 @@ export default function MeetingsList() {
       })
     }
   }, [highlightedMeetingId])
+
+  useEffect(() => {
+    if (highlightedMeetingId) {
+      const timer = setTimeout(() => {
+        setHighlightedMeetingId(null)
+      }, 2000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [highlightedMeetingId, setHighlightedMeetingId])
 
   const handleEditMeeting = (meetingData: any) => {
     setSelectedMeeting(meetingData.meeting)
