@@ -8,7 +8,7 @@ import CheckIcon from '@mui/icons-material/Check'
 import { formatRelativeTime } from '@/utils/formatRelativeTime'
 
 export default function NotificationsList() {
-  const { notifications, loading, error, refetch, setNotificationSeen } = useNotifications()
+  const { notifications, loading, error, setNotificationSeen } = useNotifications()
   const t = useTranslations()
   
   if (loading && notifications.length === 0) return <Typography>Loading...</Typography>

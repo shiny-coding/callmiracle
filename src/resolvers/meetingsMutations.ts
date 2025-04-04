@@ -22,6 +22,7 @@ export async function publishMeetingNotification(notificationType: string, db: a
     // Create a notification in the database
     await db.collection('notifications').insertOne({
       userId: peerUser._id,
+      userName: peerUser.name,
       type: notificationType,
       seen: false,
       meetingId: peerMeeting._id,

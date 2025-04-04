@@ -64,6 +64,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     variables: { userId: currentUser?._id },
     skip: !currentUser?._id
   })
+
+  const notifications = data?.getNotifications || []
   
   const [markAsSeen] = useMutation(SET_NOTIFICATION_SEEN)
   
@@ -100,12 +102,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }
   
   const value = {
-    notifications: data?.notifications || [],
+    notifications: notifications || [],
     loading,
     error,
     refetch,
     setNotificationSeen,
-    hasUnseenNotifications: data?.notifications?.some((n: any) => !n.seen) || false
+    hasUnseenNotifications: notifications?.some((n: any) => !n.seen) || false
   }
   
   return (
