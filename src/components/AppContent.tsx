@@ -8,7 +8,7 @@ import { useStore } from '@/store/useStore'
 import { UsersProvider } from '@/store/UsersProvider'
 import { SubscriptionsProvider } from '@/contexts/SubscriptionsContext'
 import { NotificationsProvider } from '@/contexts/NotificationsContext'
-
+import { MeetingsProvider } from '@/contexts/MeetingsContext'
 interface AppContentProps {
   children: ReactNode
 }
@@ -18,14 +18,16 @@ export function AppContent({ children }: AppContentProps) {
   if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
   return (
-        <UsersProvider>
-          <SubscriptionsProvider>
-            <NotificationsProvider>
-              {children}
-            </NotificationsProvider>
-          </SubscriptionsProvider>
-        </UsersProvider>
-      )
+      <MeetingsProvider>
+          <UsersProvider>
+            <SubscriptionsProvider>
+              <NotificationsProvider>
+                {children}
+              </NotificationsProvider>
+            </SubscriptionsProvider>
+          </UsersProvider>
+      </MeetingsProvider>
+  )
 } 
 
 export function StoreInitializer({ children }: AppContentProps) {

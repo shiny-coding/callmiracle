@@ -8,7 +8,7 @@ import MeetingCard from './MeetingCard'
 
 import { gql } from '@apollo/client'
 import MeetingDialog from './MeetingDialog'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
 import { Meeting } from '@/generated/graphql'
@@ -16,6 +16,7 @@ import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
+import { useMeetings } from '@/contexts/MeetingsContext'
 
 export const GET_MEETINGS = gql`
   query GetMeetings($userId: ID!) {
@@ -61,11 +62,15 @@ export default function MeetingsList() {
   const { data, loading, error, refetch } = useQuery(GET_MEETINGS, {
     variables: { userId: currentUser?._id }
   })
+  const meetings = useMemo(() => data?.getMeetings || [], [data])
+
   const t = useTranslations()
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false)
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
   const { subscribeToNotifications } = useSubscriptions()
+  const { highlightedMeetingId } = useMeetings()
+  const meetingRefs = useRef<Record<string, HTMLElement>>({})
 
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event) => {
@@ -76,6 +81,15 @@ export default function MeetingsList() {
     
     return unsubscribe
   }, [subscribeToNotifications, refetch])
+
+  useEffect(() => {
+    if (highlightedMeetingId && meetingRefs.current[highlightedMeetingId]) {
+      meetingRefs.current[highlightedMeetingId].scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      })
+    }
+  }, [highlightedMeetingId])
 
   const handleEditMeeting = (meetingData: any) => {
     setSelectedMeeting(meetingData.meeting)
@@ -123,10 +137,12 @@ export default function MeetingsList() {
           </div>
         </div>
         <List className="space-y-4">
-          {data?.getMeetings.map((meetingData: any) => (
+          {meetings.map((meetingData: any) => (
             <ListItem 
               key={meetingData.meeting._id}
-              className="flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative mb-4"
+              ref={(el: any) => el && (meetingRefs.current[meetingData.meeting._id] = el)}
+              className={`flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative mb-4 transition-all duration-500
+                ${highlightedMeetingId === meetingData.meeting._id ? 'highlight-animation' : ''}`}
               disablePadding
             >
               <MeetingCard 

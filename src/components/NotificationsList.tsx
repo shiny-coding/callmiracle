@@ -1,16 +1,20 @@
 import React from 'react'
 import { Paper, List, ListItem, Typography, IconButton, Button, Badge, Chip } from '@mui/material'
-import RefreshIcon from '@mui/icons-material/Refresh'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
 import CheckIcon from '@mui/icons-material/Check'
 import { formatRelativeTime } from '@/utils/formatRelativeTime'
+import { useMeetings } from '@/contexts/MeetingsContext'
+interface NotificationsListProps {
+  onClose?: () => void
+}
 
-export default function NotificationsList() {
+export default function NotificationsList({ onClose }: NotificationsListProps) {
   const { notifications, loading, error, setNotificationSeen } = useNotifications()
   const t = useTranslations()
-  
+  const { setHighlightedMeetingId } = useMeetings()
+
   if (loading && notifications.length === 0) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading notifications</Typography>
 
@@ -25,6 +29,11 @@ export default function NotificationsList() {
       default:
         return t('notificationMessages.newNotification')
     }
+  }
+
+  const handleGoToMeeting = (meetingId: string) => {
+    setHighlightedMeetingId(meetingId)
+    onClose?.()
   }
 
   return (
@@ -78,6 +87,7 @@ export default function NotificationsList() {
                       color="info"
                       startIcon={<ArrowRightIcon />}
                       className="text-xs"
+                      onClick={() => handleGoToMeeting(notification.meetingId)}
                     >
                       {t('goToMeeting')}
                     </Button>

@@ -9,6 +9,7 @@ import CallerDialog from '@/components/CallerDialog'
 import CalleeDialog from '@/components/CalleeDialog'
 import BottomControlsBar from '@/components/BottomControlsBar';
 import MeetingsList from '@/components/MeetingsList';
+import LocaleSelector from '@/components/LocaleSelector';
 
 function MainContent() {
   const { connectionStatus, callee } = useWebRTCContext()

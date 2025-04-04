@@ -37,7 +37,7 @@ export default function LocaleSelector() {
   };
 
   return (
-    <div className="absolute top-4 right-4">
+    <div className="">
       <FormControl size="small" sx={{ minWidth: 100 }}>
         <Select
           value={currentLocale}
