@@ -5,6 +5,8 @@ import UserCard from './UserCard'
 import { useStore } from '@/store/useStore'
 import { useWebRTCCallee } from '@/hooks/webrtc/useWebRTCCallee'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { usePlaySound } from '@/hooks/usePlaySound'
+import { useEffect } from 'react'
 
 interface CalleeDialogProps {
   callee: any
@@ -22,14 +24,24 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const onAccept = callee.handleAcceptCall
   const onReject = callee.handleRejectCall
 
-  if (!user) return null
-
   const meetingId = callee.incomingRequest?.meetingId
   const meetingLastCallTime = callee.incomingRequest?.meetingLastCallTime
   const showUserInfo = !meetingId || meetingLastCallTime
 
   const isConnecting = connectionStatus === 'connecting'
   const onCancelReconnect = callee.hangup
+
+  const { play: playRingingSound, stop: stopRingingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
+
+  useEffect(() => {
+    if (open && connectionStatus === 'receiving-call') {
+      playRingingSound()
+    } else {
+      stopRingingSound()
+    }
+  }, [open, connectionStatus])
+
+  if (!user) return null
 
   return (
     <Dialog 

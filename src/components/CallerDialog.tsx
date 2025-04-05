@@ -1,10 +1,11 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import UserCard from './UserCard'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { usePlaySound } from '@/hooks/usePlaySound'
 
 const MAX_CALLING_TIME_MS = 10000
 
@@ -15,6 +16,8 @@ export default function CallerDialog() {
   const { doCall, callUser, caller } = useWebRTCContext()
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
   const { currentUser } = useStore()
+  const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
+
   useEffect(() => {
     if (!open) return
     
@@ -27,6 +30,14 @@ export default function CallerDialog() {
 
     return () => clearTimeout(timeout)
   }, [open, connectionStatus, setConnectionStatus])
+
+  useEffect(() => {
+    if (open && connectionStatus === 'calling') {
+      playCallingSound()
+    } else {
+      stopCallingSound()
+    }
+  }, [open, connectionStatus, playCallingSound, stopCallingSound])
 
   if (!targetUser) return null
 
