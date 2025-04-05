@@ -134,7 +134,8 @@
     "meetingConnected": "You've been matched with a meeting partner!",
     "meetingDisconnected": "Your meeting partner has canceled the meeting.",
     "newNotification": "New notification",
-    "meetingPartnerUpdated": "Your meeting with a partner has been updated"
+    "meetingPartnerUpdated": "Your meeting with a partner has been updated",
+    "meetingWithFinished": "Your meeting with {name} has been finished"    
   },
   "meetingCall": "Meeting Call",
   "totalDuration": "Total call duration",
@@ -148,5 +149,6 @@
   "confirmFinishMessage": "Are you sure you want to mark this meeting as finished?",
   "confirmCancelMessage": "Are you sure you want to cancel this meeting?",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "markAllAsSeen": "Mark All As Seen"
 } 

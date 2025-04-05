@@ -31,7 +31,7 @@ type Meeting {
   allowedMaxAge: Int!
   startTime: Float
   peerMeetingId: String
-  lastCallTime: Date
+  lastCallTime: Float
   totalDuration: Int
   status: MeetingStatus!
   createdAt: Date
@@ -103,6 +103,7 @@ type Notification {
   meetingId: ID
   createdAt: Float!
   meeting: Meeting
+  peerUserName: String
 }
 
 type SubscriptionEvent {
@@ -193,6 +194,7 @@ type Mutation {
   updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse
   setNotificationSeen(id: ID!): Notification
+  setAllNotificationsSeen(userId: ID!): Boolean!
 }
 
 type Subscription {
@@ -212,6 +214,6 @@ type MeetingWithPeer {
 input UpdateMeetingStatusInput {
   _id: ID!
   status: MeetingStatus
-  lastCallTime: Date
+  lastCallTime: Float
   totalDuration: Int
 } 

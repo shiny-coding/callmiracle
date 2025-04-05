@@ -1,20 +1,31 @@
 import React from 'react'
-import { Paper, List, ListItem, Typography, IconButton, Button, Badge, Chip } from '@mui/material'
+import { Paper, List, ListItem, Typography, IconButton, Button, Badge, Chip, Box } from '@mui/material'
 import { useTranslations, useLocale } from 'next-intl'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
 import CheckIcon from '@mui/icons-material/Check'
 import { formatRelativeTime } from '@/utils/formatRelativeTime'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import DoneAllIcon from '@mui/icons-material/DoneAll'
+
 interface NotificationsListProps {
   onClose?: () => void
 }
 
 export default function NotificationsList({ onClose }: NotificationsListProps) {
-  const { notifications, loading, error, setNotificationSeen } = useNotifications()
+  const { 
+    notifications, 
+    loading, 
+    error, 
+    setNotificationSeen, 
+    setAllNotificationsSeen, 
+    markingAllSeen,
+    hasUnseenNotifications 
+  } = useNotifications()
+  
   const t = useTranslations()
   const { setHighlightedMeetingId } = useMeetings()
-
+  
   if (loading && notifications.length === 0) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading notifications</Typography>
 
@@ -26,6 +37,8 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
         return t('notificationMessages.meetingDisconnected')
       case 'meeting-peer-changed':
         return t('notificationMessages.meetingPartnerUpdated')
+      case 'meeting-finished':
+        return t('notificationMessages.meetingWithFinished', { name: notification.peerUserName })
       default:
         return t('notificationMessages.newNotification')
     }
@@ -39,6 +52,21 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
 
   return (
     <Paper className="p-4 bg-gray-800">
+      {notifications.length > 0 && (
+        <Box className="flex justify-end mb-3">
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<DoneAllIcon />}
+            onClick={setAllNotificationsSeen}
+            disabled={markingAllSeen || !hasUnseenNotifications}
+            className="text-xs"
+          >
+            {t('markAllAsSeen')}
+          </Button>
+        </Box>
+      )}
+      
       <List>
         {notifications.length === 0 ? (
           <Typography className="text-gray-400 text-center py-4">

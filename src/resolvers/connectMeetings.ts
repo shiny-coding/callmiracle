@@ -276,8 +276,8 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
         // If we get here, transaction was successful
         console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
 
-        await publishMeetingNotification('meeting-connected', db, peerMeeting)
-        await publishMeetingNotification('meeting-connected', db, updatedMeeting)
+        await publishMeetingNotification('meeting-connected', db, peerMeeting, updatedMeeting)
+        await publishMeetingNotification('meeting-connected', db, updatedMeeting, peerMeeting)
       });
       break;
     } catch (err) {

@@ -308,16 +308,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
           {meetingWithPeer.peerUser && (
             <div className="flex items-center justify-center gap-2 mt-2">
 
-              {meeting.lastCallTime && (
-                <div className="flex items-center gap-1">
-                  <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
-                    {meetingWithPeer.peerUser.name}
-                  </Typography>
-                  {meetingWithPeer.peerUser.online && (
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  )}
-                </div>
-              )}              
               {isActiveNow && (
                 <Button
                   variant="contained"
@@ -335,6 +325,16 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
                   {t('call')}
                 </Button>
               )}
+              {meeting.lastCallTime && (
+                <div className="flex items-center gap-1">
+                  <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
+                    {meetingWithPeer.peerUser.name}
+                  </Typography>
+                  {meetingWithPeer.peerUser.online && (
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  )}
+                </div>
+              )}     
             </div>
           )}
           

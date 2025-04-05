@@ -13,7 +13,7 @@ interface UpdateMeetingStatusInput {
 }
 
 // Helper function to publish meeting disconnection notification
-export async function publishMeetingNotification(notificationType: string, db: any, peerMeeting: any) {
+export async function publishMeetingNotification(notificationType: string, db: any, peerMeeting: any, meeting: any) {
   
   // Get the peer user for notification
   const peerUser = await db.collection('users').findOne({ _id: peerMeeting.userId })
@@ -26,12 +26,13 @@ export async function publishMeetingNotification(notificationType: string, db: a
       type: notificationType,
       seen: false,
       meetingId: peerMeeting._id,
+      peerUserName: meeting.userName,
       createdAt: new Date()
     })
     
     // Publish notification event
     const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
-    pubsub.publish(topic, { notificationEvent: { type: notificationType, meeting: peerMeeting, user: peerUser } })
+    pubsub.publish(topic, { notificationEvent: { type: notificationType, meeting: peerMeeting, user: peerUser, peerUserName: meeting.userName } })
     
     console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId.toString() })
   }
@@ -95,7 +96,9 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
         
         if (disconnectPeer) {
           // Use the helper function to publish notification
-          await publishMeetingNotification('meeting-disconnected', db, peerMeeting)
+          await publishMeetingNotification('meeting-disconnected', db, peerMeeting, updatedMeeting)
+        } else if ( status === MeetingStatus.Finished ) {
+          await publishMeetingNotification('meeting-finished', db, peerMeeting, updatedMeeting)
         }
       }
     }
@@ -201,7 +204,7 @@ export const meetingsMutations = {
           )
 
           // Use the helper function to publish notification
-          await publishMeetingNotification('meeting-disconnected', db, peerMeeting)
+          await publishMeetingNotification('meeting-disconnected', db, peerMeeting, meeting)
         }
       }
       

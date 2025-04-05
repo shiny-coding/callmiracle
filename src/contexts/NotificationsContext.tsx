@@ -1,8 +1,9 @@
 'use client'
-import React, { createContext, useContext, ReactNode, useEffect } from 'react'
+import React, { createContext, useContext, ReactNode, useEffect, useCallback, useRef } from 'react'
 import { gql, useQuery, useMutation } from '@apollo/client'
 import { useSubscriptions } from './SubscriptionsContext'
 import { useStore } from '@/store/useStore'
+import { usePlaySound } from '@/hooks/usePlaySound'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications($userId: ID!) {
@@ -12,6 +13,7 @@ const GET_NOTIFICATIONS = gql`
       seen
       meetingId
       createdAt
+      peerUserName
       meeting {
         _id
         userId
@@ -36,6 +38,12 @@ const SET_NOTIFICATION_SEEN = gql`
   }
 `
 
+const MARK_ALL_NOTIFICATIONS_SEEN = gql`
+  mutation MarkAllNotificationsSeen($userId: ID!) {
+    setAllNotificationsSeen(userId: $userId)
+  }
+`
+
 type NotificationType = {
   _id: string
   type: string
@@ -52,6 +60,8 @@ interface NotificationsContextType {
   refetch: () => void
   setNotificationSeen: (id: string) => Promise<void>
   hasUnseenNotifications: boolean
+  setAllNotificationsSeen: () => void
+  markingAllSeen: boolean
 }
 
 const NotificationsContext = createContext<NotificationsContextType | null>(null)
@@ -68,17 +78,30 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const notifications = data?.getNotifications || []
   
   const [markAsSeen] = useMutation(SET_NOTIFICATION_SEEN)
+  const [markAllAsSeen, { loading: markingAllSeen }] = useMutation(MARK_ALL_NOTIFICATIONS_SEEN, {
+    onCompleted: () => {
+      refetch()
+    }
+  })
   
-  // Subscribe to notifications through the SubscriptionsProvider
+  // Update to use isPlaying from the hook
+  const { play: playNotificationSound, isPlaying } = usePlaySound('/sounds/notification.mp3')
+  
+  // Update the subscription effect to use isPlaying
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((notificationEvent) => {
       if (notificationEvent) {
+        // Play notification sound if not already playing
+        if (!isPlaying) {
+          playNotificationSound()
+        }
+        
         refetch()
       }
     })
     
     return unsubscribe
-  }, [subscribeToNotifications, refetch])
+  }, [subscribeToNotifications, refetch, playNotificationSound, isPlaying])
   
   const setNotificationSeen = async (id: string) => {
     try {
@@ -101,13 +124,23 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }
   
+  const setAllNotificationsSeen = useCallback(() => {
+    if (currentUser?._id) {
+      markAllAsSeen({ 
+        variables: { userId: currentUser._id }
+      })
+    }
+  }, [currentUser, markAllAsSeen])
+  
   const value = {
     notifications: notifications || [],
     loading,
     error,
     refetch,
     setNotificationSeen,
-    hasUnseenNotifications: notifications?.some((n: any) => !n.seen) || false
+    hasUnseenNotifications: notifications?.some((n: any) => !n.seen) || false,
+    setAllNotificationsSeen,
+    markingAllSeen
   }
   
   return (

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface PlaySoundOptions {
   loop?: boolean
@@ -8,6 +8,7 @@ interface PlaySoundOptions {
 export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) {
   const { loop = false, volume = 1 } = options
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
   
   // Initialize audio on mount
   useEffect(() => {
@@ -15,6 +16,13 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
       audioRef.current = new Audio(soundPath)
       audioRef.current.loop = loop
       audioRef.current.volume = volume
+      
+      // Add ended event listener to update isPlaying state
+      audioRef.current.addEventListener('ended', () => {
+        if (!loop) {
+          setIsPlaying(false)
+        }
+      })
     }
     
     // Cleanup on unmount
@@ -22,7 +30,11 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current.currentTime = 0
+        audioRef.current.removeEventListener('ended', () => {
+          setIsPlaying(false)
+        })
         audioRef.current = null
+        setIsPlaying(false)
       }
     }
   }, [soundPath, loop, volume])
@@ -32,9 +44,14 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
     if (audioRef.current) {
       // Reset to beginning if already playing
       audioRef.current.currentTime = 0
-      audioRef.current.play().catch(err => 
-        console.error(`Error playing sound ${soundPath}:`, err)
-      )
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true)
+        })
+        .catch(err => {
+          console.error(`Error playing sound ${soundPath}:`, err)
+          setIsPlaying(false)
+        })
     }
   }
   
@@ -43,8 +60,9 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
+      setIsPlaying(false)
     }
   }
   
-  return { play, stop }
+  return { play, stop, isPlaying }
 } 

@@ -23,5 +23,26 @@ export const notificationsMutations = {
       console.error('Error updating notification:', error)
       throw new Error('Failed to update notification')
     }
+  },
+  
+  setAllNotificationsSeen: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+    try {
+      const _userId = new ObjectId(userId)
+      
+      const result = await db.collection('notifications').updateMany(
+        { 
+          userId: _userId,
+          seen: false 
+        },
+        { 
+          $set: { seen: true } 
+        }
+      )
+      
+      return result.modifiedCount > 0
+    } catch (error) {
+      console.error('Error marking all notifications as seen:', error)
+      throw new Error('Failed to mark all notifications as seen')
+    }
   }
 } 

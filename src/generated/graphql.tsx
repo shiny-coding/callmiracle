@@ -105,7 +105,7 @@ export type Meeting = {
   allowedMinAge: Scalars['Int']['output'];
   createdAt?: Maybe<Scalars['Date']['output']>;
   languages: Array<Scalars['String']['output']>;
-  lastCallTime?: Maybe<Scalars['Date']['output']>;
+  lastCallTime?: Maybe<Scalars['Float']['output']>;
   minDuration: Scalars['Int']['output'];
   peerMeetingId?: Maybe<Scalars['String']['output']>;
   preferEarlier: Scalars['Boolean']['output'];
@@ -155,6 +155,7 @@ export type Mutation = {
   callUser?: Maybe<ConnectionParams>;
   createOrUpdateMeeting?: Maybe<Meeting>;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
+  setAllNotificationsSeen: Scalars['Boolean']['output'];
   setNotificationSeen?: Maybe<Notification>;
   updateMeetingStatus: Meeting;
   updateUser?: Maybe<User>;
@@ -173,6 +174,11 @@ export type MutationCreateOrUpdateMeetingArgs = {
 
 export type MutationDeleteMeetingArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationSetAllNotificationsSeenArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -274,7 +280,7 @@ export type SubscriptionEvent = {
 
 export type UpdateMeetingStatusInput = {
   _id: Scalars['ID']['input'];
-  lastCallTime?: InputMaybe<Scalars['Date']['input']>;
+  lastCallTime?: InputMaybe<Scalars['Float']['input']>;
   status?: InputMaybe<MeetingStatus>;
   totalDuration?: InputMaybe<Scalars['Int']['input']>;
 };

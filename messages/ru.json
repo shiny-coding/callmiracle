@@ -132,7 +132,9 @@
   "notificationMessages": {
     "meetingConnected": "Вам подобран партнер для встречи!",
     "meetingDisconnected": "Ваш партнер отменил встречу.",
-    "newNotification": "Новое уведомление"
+    "newNotification": "Новое уведомление",
+    "meetingPartnerUpdated": "Ваша встреча с партнером обновлена",
+    "meetingWithFinished": "Ваша встреча с {name} завершена"
   },
   "totalDuration": "Общая продолжительность звонков",
   "finishMeeting": "Завершить",
