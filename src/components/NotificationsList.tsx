@@ -31,8 +31,9 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
     }
   }
 
-  const handleGoToMeeting = (meetingId: string) => {
-    setHighlightedMeetingId(meetingId)
+  const handleGoToMeeting = (notification: any) => {
+    setNotificationSeen(notification._id)
+    setHighlightedMeetingId(notification.meetingId)
     onClose?.()
   }
 
@@ -87,7 +88,7 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
                       color="info"
                       startIcon={<ArrowRightIcon />}
                       className="text-xs"
-                      onClick={() => handleGoToMeeting(notification.meetingId)}
+                      onClick={() => handleGoToMeeting(notification)}
                     >
                       {t('goToMeeting')}
                     </Button>

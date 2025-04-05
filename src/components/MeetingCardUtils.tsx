@@ -2,6 +2,7 @@ import { LANGUAGES } from "@/config/languages";
 import { Meeting, MeetingWithPeer } from "@/generated/graphql";
 import { useStore } from "@/store/useStore";
 import { getSharedLanguages } from "@/utils/meetingUtils";
+import { gql } from "@apollo/client";
 import LanguageIcon from '@mui/icons-material/Language'
 import { Chip, SxProps, Typography } from "@mui/material";
 import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast, formatDistance, differenceInHours, differenceInSeconds } from 'date-fns'
@@ -9,6 +10,14 @@ import { useTranslations } from 'next-intl'; // Import useTranslations to get it
 // Define the type for the t function
 type TFunction = ReturnType<typeof useTranslations>;
 
+export const UPDATE_MEETING_LAST_CALL = gql`
+  mutation UpdateMeetingStatus($input: UpdateMeetingStatusInput!) {
+    updateMeetingStatus(input: $input) {
+      _id
+      status
+    }
+  }
+`
 
 export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor: string, now: Date, t: TFunction) => {
   const meeting = meetingWithPeer.meeting

@@ -6,31 +6,20 @@ import VideocamIcon from '@mui/icons-material/Videocam'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoodIcon from '@mui/icons-material/Mood'
-import { LANGUAGES } from '@/config/languages'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
-import { isMeetingPassed, getSharedStatuses, getSharedLanguages, class2Hex } from '@/utils/meetingUtils'
+import { isMeetingPassed, getSharedStatuses, class2Hex } from '@/utils/meetingUtils'
 import React, { useEffect, useState } from 'react'
-import { useStore } from '@/store/useStore'
 import DoneIcon from '@mui/icons-material/Done'
 import CancelIcon from '@mui/icons-material/Cancel'
-import { gql, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { MeetingStatus } from '@/generated/graphql'
-import { useMeetingCardUtils } from './MeetingCardUtils'
+import { UPDATE_MEETING_LAST_CALL, useMeetingCardUtils } from './MeetingCardUtils'
 import { differenceInSeconds, isWithinInterval } from 'date-fns'
 import { differenceInHours } from 'date-fns'
 import ConfirmDialog from './ConfirmDialog'
 import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
-
-const UPDATE_MEETING_LAST_CALL = gql`
-  mutation UpdateMeetingStatus($input: UpdateMeetingStatusInput!) {
-    updateMeetingStatus(input: $input) {
-      _id
-      status
-    }
-  }
-`
 
 interface MeetingCardProps {
   meetingWithPeer: {
@@ -67,12 +56,11 @@ interface MeetingCardProps {
     }
   }
   onEdit?: (e?: React.MouseEvent) => void
-  onDelete?: (e?: React.MouseEvent) => void
   refetch: () => void
 }
 
 
-export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch }: MeetingCardProps) {
+export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: MeetingCardProps) {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
   const now = new Date()
@@ -208,7 +196,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
   useEffect(() => {
     if ( !meetingStatusLabels.updatePeriod ) return;
     const updateInterval = setInterval(() => {
-      console.log('rerendering MeetingCard to update time')
+      // rerendering MeetingCard to update time
       setLastUpdate(Date.now())
     }, meetingStatusLabels.updatePeriod)
     return () => clearInterval(updateInterval)
@@ -317,20 +305,19 @@ export default function MeetingCard({ meetingWithPeer, onEdit, onDelete, refetch
 
       {meeting.peerMeetingId && meeting.startTime && (
         <div className="flex flex-col gap-1">
-          
           {meetingWithPeer.peerUser && (
             <div className="flex items-center justify-center gap-2 mt-2">
 
-            {meeting.lastCallTime && (
-              <div className="flex items-center gap-1">
-                <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
-                  {meetingWithPeer.peerUser.name}
-                </Typography>
-                {meetingWithPeer.peerUser.online && (
-                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                )}
-              </div>
-            )}              
+              {meeting.lastCallTime && (
+                <div className="flex items-center gap-1">
+                  <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
+                    {meetingWithPeer.peerUser.name}
+                  </Typography>
+                  {meetingWithPeer.peerUser.online && (
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  )}
+                </div>
+              )}              
               {isActiveNow && (
                 <Button
                   variant="contained"

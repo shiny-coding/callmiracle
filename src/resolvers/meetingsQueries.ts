@@ -33,7 +33,7 @@ export const meetingsQueries = {
       // 5. Fetch all peer users in one query
       const _peerUsers = _peerUserIds.length > 0
         ? await db.collection('users').find({ 
-            userId: { $in: _peerUserIds } 
+            _id: { $in: _peerUserIds } 
           }).toArray()
         : []
       

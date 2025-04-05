@@ -277,6 +277,7 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
         console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
 
         await publishMeetingNotification('meeting-connected', db, peerMeeting)
+        await publishMeetingNotification('meeting-connected', db, updatedMeeting)
       });
       break;
     } catch (err) {
