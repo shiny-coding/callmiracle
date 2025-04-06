@@ -7,6 +7,7 @@ import { User } from '@/generated/graphql'
 import { useUsers } from '@/store/UsersProvider'
 import UserCard from './UserCard'
 import { normalizeText } from '@/utils/textNormalization'
+import { useStore } from '@/store/useStore'
 
 interface UserListProps {
   filterLanguages?: string[]
@@ -23,11 +24,13 @@ export default function UserList({
 }: UserListProps) {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations()
+  const currentUser = useStore(state => state.currentUser)
 
   if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
 
   let filteredUsers = users || []
+  filteredUsers = filteredUsers.filter(user => user._id !== currentUser?._id)
 
   // Apply sex filter
   if (!showMales || !showFemales) {

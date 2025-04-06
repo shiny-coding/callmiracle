@@ -81,8 +81,6 @@ const useStore = create<AppState>()(
         callId: null, 
         role: null,
         lastConnectedTime: null,
-        meetingId: null,
-        meetingLastCallTime: null
       }),
       // Media settings setters
       setLocalAudioEnabled: (enabled) => {

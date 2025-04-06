@@ -110,10 +110,8 @@ export function useWebRTCCaller({
       return
     }
 
-    if (meetingId) {
-      setMeetingId(meetingId)
-      setMeetingLastCallTime(meetingLastCallTime)
-    }
+    setMeetingId(meetingId)
+    setMeetingLastCallTime(meetingLastCallTime)
 
     console.log('WebRTC: Initializing connection with:', user._id, isReconnect ? '(reconnecting)' : '')
     if ( !isReconnect ) {
@@ -194,8 +192,6 @@ export function useWebRTCCaller({
     remoteStreamRef.current = null
     setActive(false)
     setCallId(null)
-    setMeetingId(null)
-    setMeetingLastCallTime(null)
   }
 
   const hangup = createHangup(cleanup)

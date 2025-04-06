@@ -9,6 +9,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
   const { loop = false, volume = 1 } = options
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const playPromiseRef = useRef<Promise<void> | null>(null)
   
   // Initialize audio on mount
   useEffect(() => {
@@ -18,50 +19,84 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
       audioRef.current.volume = volume
       
       // Add ended event listener to update isPlaying state
-      audioRef.current.addEventListener('ended', () => {
+      const handleEnded = () => {
         if (!loop) {
           setIsPlaying(false)
         }
-      })
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current.currentTime = 0
-        audioRef.current.removeEventListener('ended', () => {
+      }
+      
+      audioRef.current.addEventListener('ended', handleEnded)
+      
+      // Cleanup on unmount
+      return () => {
+        if (audioRef.current) {
+          // Safely stop audio
+          safeStop()
+          audioRef.current.removeEventListener('ended', handleEnded)
+          audioRef.current = null
           setIsPlaying(false)
-        })
-        audioRef.current = null
-        setIsPlaying(false)
+        }
       }
     }
   }, [soundPath, loop, volume])
   
+  // Safely stop audio, handling any pending play promises
+  const safeStop = () => {
+    if (audioRef.current) {
+      if (playPromiseRef.current) {
+        // If there's a pending play promise, wait for it to resolve before pausing
+        playPromiseRef.current
+          .then(() => {
+            if (audioRef.current) {
+              audioRef.current.pause()
+              audioRef.current.currentTime = 0
+            }
+            setIsPlaying(false)
+            playPromiseRef.current = null
+          })
+          .catch(() => {
+            // If play was aborted or failed, just reset state
+            setIsPlaying(false)
+            playPromiseRef.current = null
+          })
+      } else {
+        // No pending play promise, safe to pause immediately
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+        setIsPlaying(false)
+      }
+    }
+  }
+  
   // Play sound function
   const play = () => {
-    if (audioRef.current) {
-      // Reset to beginning if already playing
+    if (audioRef.current && !isPlaying) {
+      // Reset to beginning
       audioRef.current.currentTime = 0
-      audioRef.current.play()
+      
+      // Store the play promise to handle it properly
+      playPromiseRef.current = audioRef.current.play()
+      
+      playPromiseRef.current
         .then(() => {
           setIsPlaying(true)
+          // Clear the promise ref once it's resolved
+          playPromiseRef.current = null
         })
         .catch(err => {
-          console.error(`Error playing sound ${soundPath}:`, err)
+          // Only log errors that aren't AbortError (which is expected when stopping)
+          if (err.name !== 'AbortError') {
+            console.error(`Error playing sound ${soundPath}:`, err)
+          }
           setIsPlaying(false)
+          playPromiseRef.current = null
         })
     }
   }
   
   // Stop sound function
   const stop = () => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-      setIsPlaying(false)
-    }
+    safeStop()
   }
   
   return { play, stop, isPlaying }

@@ -44,7 +44,7 @@ interface UsersProviderProps {
 
 export function UsersProvider({ children }: UsersProviderProps) {
   const { data, loading, error, refetch } = useQuery(GET_USERS)
-  const users = data?.users || []
+  const users = data?.getUsers || []
 
   return (
     <UsersContext.Provider value={{ users, loading, error, refetch }}>
