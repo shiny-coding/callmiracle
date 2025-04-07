@@ -325,7 +325,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
                   {t('call')}
                 </Button>
               )}
-              {meeting.lastCallTime && (
+              {meeting.lastCallTime ? (
                 <div className="flex items-center gap-1">
                   <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
                     {meetingWithPeer.peerUser.name}
@@ -334,7 +334,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                   )}
                 </div>
-              )}     
+              ) : null}
             </div>
           )}
           
