@@ -1,4 +1,4 @@
-import { Typography, Chip, IconButton, Avatar } from '@mui/material'
+import { Typography, Chip, IconButton, Avatar, Button } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import { LANGUAGES } from '@/config/languages'
@@ -6,11 +6,14 @@ import Image from 'next/image'
 import CallIcon from '@mui/icons-material/Call'
 import HistoryIcon from '@mui/icons-material/History'
 import LockIcon from '@mui/icons-material/Lock'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import CheckIcon from '@mui/icons-material/Check'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useDetailedCallHistory } from '@/store/DetailedCallHistoryProvider'
-import { act, useState } from 'react'
+import { useState } from 'react'
 import UserDetailsPopup from './UserDetailsPopup'
 import { useStore } from '@/store/useStore'
+import { useUpdateUser } from '@/hooks/useUpdateUser'
 
 interface UserCardProps {
   user: User
@@ -23,18 +26,50 @@ export default function UserCard({
   user, 
   showDetails = true, 
   showCallButton = false,
-  showHistoryButton = false 
+  showHistoryButton = false,
 }: UserCardProps) {
   const t = useTranslations()
   const { doCall } = useWebRTCContext()
   const { setSelectedUser } = useDetailedCallHistory()
   const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
-  const { currentUser } = useStore()
+  const { currentUser, setCurrentUser } = useStore()
+  const { updateUserData, loading: updateLoading } = useUpdateUser()
+  
   const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
   const isBlocked = existingBlock?.all || (existingBlock?.statuses.length ?? 0) > 0
+  
+  // Check if this user is a friend
+  const isFriend = currentUser?.friends?.includes(user._id) || false
 
   const handleCall = async () => {
     await doCall(user, false, null, null)
+  }
+
+  const handleFriendToggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    if (!currentUser) return
+    
+    // Create a copy of the current friends list
+    const updatedFriends = [...(currentUser.friends || [])]
+    
+    if (isFriend) {
+      // Remove friend
+      const index = updatedFriends.indexOf(user._id)
+      if (index !== -1) {
+        updatedFriends.splice(index, 1)
+      }
+    } else {
+      // Add friend
+      updatedFriends.push(user._id)
+    }
+    
+    // Update the user with the new friends list
+    setCurrentUser({
+      ...currentUser,
+      friends: updatedFriends
+    })
+    updateUserData()
   }
 
   return (
@@ -62,6 +97,20 @@ export default function UserCard({
           </Typography>
         </div>
         <div className="flex gap-2">
+          {currentUser?._id && currentUser?._id !== user._id && (
+            <Button
+              variant={isFriend ? "outlined" : "contained"}
+              color={isFriend ? "success" : "primary"}
+              size="small"
+              startIcon={isFriend ? <CheckIcon /> : <PersonAddIcon />}
+              onClick={handleFriendToggle}
+              disabled={updateLoading}
+              className="mr-2"
+            >
+              {isFriend ? t('friend') : t('addFriend')}
+            </Button>
+          )}
+          
           {showHistoryButton && (
             <IconButton
               onClick={(e) => {

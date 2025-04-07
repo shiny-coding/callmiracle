@@ -3,7 +3,7 @@ import { transformUser } from './utils'
 import { ObjectId } from 'mongodb'
 
 export const updateUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
-  const { name, statuses, locale, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge, blocks } = input
+  const { name, statuses, locale, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge, blocks, friends } = input
   const _id = new ObjectId(input._id)
   const timestamp = Date.now()
 
@@ -25,7 +25,8 @@ export const updateUserMutation = async (_: any, { input }: { input: any }, { db
         allowedFemales,
         allowedMinAge,
         allowedMaxAge,
-        blocks
+        blocks,
+        friends
       } 
     },
     { 

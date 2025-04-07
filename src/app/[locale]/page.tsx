@@ -34,9 +34,13 @@ function MainContent() {
         </div>
       )}
       <BottomControlsBar />
-      <DetailedCallHistoryDialog />
-      <CallerDialog />
-      <CalleeDialog callee={callee} />
+      {connectionStatus !== 'connected' && (
+        <>
+          <DetailedCallHistoryDialog />
+          <CallerDialog />
+          <CalleeDialog callee={callee} />
+        </>
+      )}
     </div>
   )
 }

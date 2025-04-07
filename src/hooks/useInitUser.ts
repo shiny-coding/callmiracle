@@ -17,6 +17,7 @@ export const GET_OR_CREATE_USER = gql`
       contacts
       sex
       birthYear
+      friends
       blocks {
         userId
         all

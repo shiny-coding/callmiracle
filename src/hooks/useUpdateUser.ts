@@ -15,6 +15,7 @@ const UPDATE_USER = gql`
       contacts
       sex
       birthYear
+      friends
       blocks {
         userId
         all
@@ -25,7 +26,7 @@ const UPDATE_USER = gql`
 `
 
 export const useUpdateUser = () => {
-  const [updateUser] = useMutation(UPDATE_USER)
+  const [updateUser, { loading }] = useMutation(UPDATE_USER)
   const updateUserData = async () => {
     const { currentUser } = useStore.getState()
     
@@ -48,11 +49,12 @@ export const useUpdateUser = () => {
           contacts: currentUser?.contacts,
           sex: currentUser?.sex,
           birthYear: currentUser?.birthYear,
-          blocks: cleanBlocks
+          blocks: cleanBlocks,
+          friends: currentUser?.friends
         }
       }
     })
   }
 
-  return { updateUserData }
+  return { updateUserData, loading }
 } 

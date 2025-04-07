@@ -1,7 +1,8 @@
 'use client'
 
+import React, { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Paper, List, ListItem, Typography, IconButton } from '@mui/material'
+import { Paper, List, ListItem, Typography, IconButton, FormControlLabel, Checkbox } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { User } from '@/generated/graphql'
 import { useUsers } from '@/store/UsersProvider'
@@ -20,11 +21,12 @@ export default function UserList({
   filterLanguages = [], 
   nameFilter = '',
   showMales = true,
-  showFemales = true 
+  showFemales = true,
 }: UserListProps) {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations()
   const currentUser = useStore(state => state.currentUser)
+  const [showOnlyFriends, setShowOnlyFriends] = useState(false)
 
   if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
@@ -55,6 +57,14 @@ export default function UserList({
     )
   }
 
+  // Apply friends filter if enabled
+  const friends = currentUser?.friends ?? []
+  if (showOnlyFriends) {
+    filteredUsers = filteredUsers.filter(user => 
+      friends.includes(user._id)
+    )
+  }
+
   return (
     <Paper 
       className="p-4 relative bg-gray-800" 
@@ -68,8 +78,20 @@ export default function UserList({
           <RefreshIcon className="text-white" />
         </IconButton>
       </div>
+      <div className="filter-controls mb-4">
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={showOnlyFriends}
+              onChange={() => setShowOnlyFriends(!showOnlyFriends)}
+              className="text-white"
+            />
+          }
+          label={<span className="text-white">{t('onlyFriends')}</span>}
+        />
+      </div>
       <List>
-        {filteredUsers?.map((user: User) => (
+        {filteredUsers.map((user: User) => (
           <ListItem 
             key={user._id} 
             className="flex flex-col items-start hover:bg-gray-700 rounded-lg"

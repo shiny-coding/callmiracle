@@ -296,6 +296,7 @@ export type UpdateUserInput = {
   name: Scalars['String']['input'];
   online: Scalars['Boolean']['input'];
   sex: Scalars['String']['input'];
+  friends: Array<Scalars['ID']['input']>;
 };
 
 export type User = {
@@ -304,6 +305,7 @@ export type User = {
   about: Scalars['String']['output'];
   birthYear?: Maybe<Scalars['Int']['output']>;
   blocks: Array<Block>;
+  friends: Array<Scalars['ID']['output']>;
   contacts: Scalars['String']['output'];
   hasImage: Scalars['Boolean']['output'];
   languages: Array<Scalars['String']['output']>;

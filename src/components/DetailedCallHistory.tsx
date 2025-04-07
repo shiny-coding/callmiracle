@@ -7,7 +7,7 @@ import { useStore } from '@/store/useStore'
 
 const DETAILED_CALL_HISTORY = gql`
   query DetailedCallHistory($userId: ID!, $targetUserId: ID!) {
-    detailedCallHistory(userId: $userId, targetUserId: $targetUserId) {
+    getDetailedCallHistory(userId: $userId, targetUserId: $targetUserId) {
       _id
       initiatorUserId
       targetUserId
@@ -33,6 +33,8 @@ export default function DetailedCallHistory({ user, open, onClose }: DetailedCal
     },
     skip: !open
   })
+
+  const detailedCallHistory = data?.getDetailedCallHistory || []
 
   const formatDate = (id: string) => {
     // MongoDB ObjectId contains a timestamp in the first 4 bytes
@@ -67,7 +69,7 @@ export default function DetailedCallHistory({ user, open, onClose }: DetailedCal
         {error && <Typography color="error">Error loading call history</Typography>}
         {data && (
           <List>
-            {data.detailedCallHistory.map((call: any) => (
+            {detailedCallHistory.map((call: any) => (
               <ListItem 
                 key={call._id}
                 className="flex flex-col items-start py-2"
@@ -82,7 +84,7 @@ export default function DetailedCallHistory({ user, open, onClose }: DetailedCal
                 </div>
               </ListItem>
             ))}
-            {data.detailedCallHistory.length === 0 && (
+            {detailedCallHistory.length === 0 && (
               <Typography className="text-center py-4 text-gray-400">
                 {t('noCallHistory')}
               </Typography>

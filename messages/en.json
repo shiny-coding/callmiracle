@@ -150,5 +150,8 @@
   "confirmCancelMessage": "Are you sure you want to cancel this meeting?",
   "yes": "Yes",
   "no": "No",
-  "markAllAsSeen": "Mark All As Seen"
+  "markAllAsSeen": "Mark All As Seen",
+  "onlyFriends": "Only Friends",
+  "friend": "Friend",
+  "addFriend": "Add Friend"
 } 

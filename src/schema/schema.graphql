@@ -58,6 +58,7 @@ type User {
   sex: String!
   birthYear: Int
   blocks: [Block!]!
+  friends: [ID!]
 }
 
 type ConnectionParams {
@@ -130,6 +131,7 @@ input UpdateUserInput {
   sex: String!
   birthYear: Int
   blocks: [BlockInput!]!
+  friends: [ID!]
 }
 
 input ConnectionParamsInput {
@@ -178,7 +180,7 @@ type CallHistoryEntry {
 }
 
 type Query {
-  getUsers: [User!]!
+  getUsers(userId: ID!): [User!]!
   getCalls: [Call!]!
   getOrCreateUser(userId: ID!, defaultLanguages: [String!]!): User!
   getCallHistory(userId: ID!): [CallHistoryEntry!]!

@@ -1,6 +1,7 @@
-import { User } from '@/generated/graphql'
+import { Block, User } from '@/generated/graphql'
 import { existsSync } from 'fs'
 import { join } from 'path'
+import { ObjectId } from 'mongodb'
 
 // Helper function to check if user has profile image
 export const checkUserImage = (userId: string): boolean => {
@@ -23,6 +24,7 @@ export const transformUser = (user: any): User | null => {
     contacts: user.contacts || '',
     sex: user.sex || '',
     birthYear: user.birthYear || null,
-    blocks: user.blocks || [],
+    blocks: user.blocks?.map((block: Block) => ({ ...block, userId: block.userId.toString() })) || [],
+    friends: user.friends?.map((id: ObjectId) => id.toString()) || []
   }
 }

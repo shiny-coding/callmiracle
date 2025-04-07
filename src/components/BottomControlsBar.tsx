@@ -125,23 +125,26 @@ export default function BottomControlsBar() {
           <VideoDeviceSelector />
         </div>
       </div>
-
-      <ProfileDialog 
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-      />
-      <CallHistoryPopup
-        open={callHistoryOpen}
-        onClose={() => setCallHistoryOpen(false)}
-      />
-      <UsersPopup
-        open={usersPopupOpen}
-        onClose={() => setUsersPopupOpen(false)}
-      />
-      <NotificationsPopup
-        open={notificationsOpen}
-        onClose={() => setNotificationsOpen(false)}
-      />
+      {connectionStatus !== 'connected' && (
+        <>
+          <ProfileDialog 
+            open={profileOpen}
+            onClose={() => setProfileOpen(false)}
+          />
+          <CallHistoryPopup
+            open={callHistoryOpen}
+            onClose={() => setCallHistoryOpen(false)}
+          />
+          <UsersPopup
+            open={usersPopupOpen}
+            onClose={() => setUsersPopupOpen(false)}
+          />
+          <NotificationsPopup
+            open={notificationsOpen}
+              onClose={() => setNotificationsOpen(false)}
+          />
+        </>
+      )}
     </div>
   )
 } 
