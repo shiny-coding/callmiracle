@@ -193,7 +193,7 @@ export type MutationUpdateMeetingStatusArgs = {
 
 
 export type MutationUpdateUserArgs = {
-  input: UpdateUserInput;
+  input: UserInput;
 };
 
 export type Notification = {
@@ -202,6 +202,7 @@ export type Notification = {
   createdAt: Scalars['Float']['output'];
   meeting?: Maybe<Meeting>;
   meetingId?: Maybe<Scalars['ID']['output']>;
+  peerUserName?: Maybe<Scalars['String']['output']>;
   seen: Scalars['Boolean']['output'];
   type: Scalars['String']['output'];
   userId: Scalars['ID']['output'];
@@ -252,6 +253,11 @@ export type QueryGetOrCreateUserArgs = {
   userId: Scalars['ID']['input'];
 };
 
+
+export type QueryGetUsersArgs = {
+  userId: Scalars['ID']['input'];
+};
+
 export enum Status {
   Chat = 'CHAT',
   MeetNewPeople = 'MEET_NEW_PEOPLE',
@@ -285,28 +291,14 @@ export type UpdateMeetingStatusInput = {
   totalDuration?: InputMaybe<Scalars['Int']['input']>;
 };
 
-export type UpdateUserInput = {
-  _id: Scalars['ID']['input'];
-  about: Scalars['String']['input'];
-  birthYear?: InputMaybe<Scalars['Int']['input']>;
-  blocks: Array<BlockInput>;
-  contacts: Scalars['String']['input'];
-  languages: Array<Scalars['String']['input']>;
-  locale: Scalars['String']['input'];
-  name: Scalars['String']['input'];
-  online: Scalars['Boolean']['input'];
-  sex: Scalars['String']['input'];
-  friends: Array<Scalars['ID']['input']>;
-};
-
 export type User = {
   __typename?: 'User';
   _id: Scalars['ID']['output'];
   about: Scalars['String']['output'];
   birthYear?: Maybe<Scalars['Int']['output']>;
   blocks: Array<Block>;
-  friends: Array<Scalars['ID']['output']>;
   contacts: Scalars['String']['output'];
+  friends?: Maybe<Array<Scalars['ID']['output']>>;
   hasImage: Scalars['Boolean']['output'];
   languages: Array<Scalars['String']['output']>;
   locale: Scalars['String']['output'];
@@ -314,4 +306,18 @@ export type User = {
   online: Scalars['Boolean']['output'];
   sex: Scalars['String']['output'];
   timestamp: Scalars['Float']['output'];
+};
+
+export type UserInput = {
+  _id: Scalars['ID']['input'];
+  about: Scalars['String']['input'];
+  birthYear?: InputMaybe<Scalars['Int']['input']>;
+  blocks: Array<BlockInput>;
+  contacts: Scalars['String']['input'];
+  friends?: InputMaybe<Array<Scalars['ID']['input']>>;
+  languages: Array<Scalars['String']['input']>;
+  locale: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  online: Scalars['Boolean']['input'];
+  sex: Scalars['String']['input'];
 };

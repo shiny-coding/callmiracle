@@ -97,20 +97,6 @@ export default function UserCard({
           </Typography>
         </div>
         <div className="flex gap-2">
-          {currentUser?._id && currentUser?._id !== user._id && (
-            <Button
-              variant={isFriend ? "outlined" : "contained"}
-              color={isFriend ? "success" : "primary"}
-              size="small"
-              startIcon={isFriend ? <CheckIcon /> : <PersonAddIcon />}
-              onClick={handleFriendToggle}
-              disabled={updateLoading}
-              className="mr-2"
-            >
-              {isFriend ? t('friend') : t('addFriend')}
-            </Button>
-          )}
-          
           {showHistoryButton && (
             <IconButton
               onClick={(e) => {
@@ -160,6 +146,20 @@ export default function UserCard({
           fontSize="small"
           titleAccess={existingBlock?.all ? t('userBlocked') : t('someStatusesBlocked')}
         />
+      )}
+
+      {currentUser?._id && currentUser?._id !== user._id && (
+        <Button
+          variant={isFriend ? "outlined" : "contained"}
+          color={isFriend ? "success" : "primary"}
+          size="small"
+          startIcon={isFriend ? <CheckIcon /> : <PersonAddIcon />}
+          onClick={handleFriendToggle}
+          disabled={updateLoading}
+          className="mr-2"
+        >
+          {isFriend ? t('friend') : t('addFriend')}
+        </Button>
       )}
 
       <UserDetailsPopup

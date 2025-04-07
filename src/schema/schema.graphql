@@ -120,7 +120,7 @@ type Call {
   duration: Int!
 }
 
-input UpdateUserInput {
+input UserInput {
   _id: ID!
   name: String!
   languages: [String!]!
@@ -190,7 +190,7 @@ type Query {
 }
 
 type Mutation {
-  updateUser(input: UpdateUserInput!): User
+  updateUser(input: UserInput!): User
   callUser(input: ConnectionParamsInput!): ConnectionParams
   createOrUpdateMeeting(input: MeetingInput!): Meeting
   updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
