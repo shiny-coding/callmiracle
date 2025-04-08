@@ -71,9 +71,9 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
 
     console.log('Updated meeting:', updatedMeeting._id.toString(), status, lastCallTime)
 
-    const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Seeking
+    const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Finished
     
-    // If status is CANCELLED or SEEKING and this meeting has a peer, handle peer notification
+    // If status is CANCELLED or FINISHED and this meeting has a peer, handle peer notification
     if (_peerMeetingId) {
       
       // Get the peer meeting
@@ -94,12 +94,12 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
         )
         console.log('Updated peer meeting:', _peerMeetingId.toString(), updateFields)
         
-        if (disconnectPeer) {
+        if ( status === MeetingStatus.Finished ) {
+          await publishMeetingNotification('meeting-finished', db, peerMeeting, updatedMeeting)
+        } else if (disconnectPeer) {
           // Use the helper function to publish notification
           await publishMeetingNotification('meeting-disconnected', db, peerMeeting, updatedMeeting)
-        } else if ( status === MeetingStatus.Finished ) {
-          await publishMeetingNotification('meeting-finished', db, peerMeeting, updatedMeeting)
-        }
+        }  
       }
     }
     

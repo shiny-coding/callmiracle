@@ -4,7 +4,6 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useTranslations } from 'next-intl'
 import NotificationsList from './NotificationsList'
 import { useNotifications } from '@/contexts/NotificationsContext'
-import { useMeetings } from '@/contexts/MeetingsContext'
 
 interface NotificationsPopupProps {
   open: boolean

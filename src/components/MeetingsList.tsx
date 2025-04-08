@@ -18,60 +18,16 @@ import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 import { useMeetings } from '@/contexts/MeetingsContext'
 
-export const GET_MEETINGS = gql`
-  query GetMeetings($userId: ID!) {
-    getMeetings(userId: $userId) {
-      meeting {
-        _id
-        userId
-        languages
-        statuses
-        timeSlots
-        minDuration
-        preferEarlier
-        allowedMales
-        allowedFemales
-        allowedMinAge
-        allowedMaxAge
-        startTime
-        peerMeetingId
-        lastCallTime
-        status
-        totalDuration
-      }
-      peerMeeting {
-        _id
-        userId
-        languages
-        statuses
-      }
-      peerUser {
-        _id
-        name
-        hasImage
-        online
-        sex
-        languages
-      }
-    }
-  }
-` 
-
 export default function MeetingsList() {
-  const { currentUser } = useStore()
-  const { data, loading, error, refetch } = useQuery(GET_MEETINGS, {
-    variables: { userId: currentUser?._id }
-  })
-  const meetings = useMemo(() => data?.getMeetings || [], [data])
 
   const t = useTranslations()
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false)
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
   const { subscribeToNotifications } = useSubscriptions()
-  const { highlightedMeetingId, setHighlightedMeetingId } = useMeetings()
+  const { highlightedMeetingId, setHighlightedMeetingId, meetings, loading, error, refetch } = useMeetings()
   const meetingRefs = useRef<Record<string, HTMLElement>>({})
-
+  const { currentUser } = useStore()
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event) => {
       if (event.type.startsWith('meeting-')) {
@@ -165,7 +121,7 @@ export default function MeetingsList() {
               />
             </ListItem>
           ))}
-          {data?.getMeetings.length === 0 && (
+          {meetings.length === 0 && (
             <Typography className="text-gray-400 text-center py-4">
               {t('noMeetings')}
             </Typography>
@@ -173,7 +129,7 @@ export default function MeetingsList() {
         </List>
       </Paper>
       <MeetingDialog
-        meetings={data?.getMeetings}
+        meetings={meetings}
         meeting={selectedMeeting}
         open={meetingDialogOpen}
         onClose={() => {

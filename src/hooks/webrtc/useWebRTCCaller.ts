@@ -3,7 +3,7 @@ import { useMutation } from '@apollo/client'
 import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
-import { Meeting, User } from '@/generated/graphql'
+import { MeetingStatus, User } from '@/generated/graphql'
 import { gql } from '@apollo/client'
 
 interface UseWebRTCCallerProps {
@@ -83,7 +83,7 @@ export function useWebRTCCaller({
               variables: {
                 input: {
                   _id: meetingId,
-                  status: "CALLED",
+                  status: MeetingStatus.Called,
                   lastCallTime: Date.now()
                 }
               }

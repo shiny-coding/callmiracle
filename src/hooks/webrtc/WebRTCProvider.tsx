@@ -9,6 +9,7 @@ import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
 import { User } from '@/generated/graphql'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
+import { useMeetings } from '@/contexts/MeetingsContext'
 
 interface WebRTCContextType {
   doCall: (user: User, isReconnect: boolean, meetingId: string | null, meetingLastCallTime: number | null) => Promise<void>

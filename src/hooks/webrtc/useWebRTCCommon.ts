@@ -3,6 +3,7 @@ import { gql } from '@apollo/client'
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
+import { useMeetings } from '@/contexts/MeetingsContext'
 
 export const CONNECT_WITH_USER = gql`
   mutation CallUser($input: ConnectionParamsInput!) {
@@ -47,6 +48,7 @@ export interface IncomingRequest {
 export function useWebRTCCommon(callUser: any) {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
   const { setConnectionStatus, currentUser } = useStore()
+  const { refetch : refetchMeetings } = useMeetings()
 
   const handleConnectionStateChange = (pc: RTCPeerConnection, peerConnection: React.MutableRefObject<RTCPeerConnection | null>, active: boolean, attemptReconnect: () => Promise<void>) => {
     if (pc.connectionState === 'connected') {
@@ -333,6 +335,7 @@ export function useWebRTCCommon(callUser: any) {
               }
             }
           })
+          refetchMeetings()
         } catch (err) {
           console.error('Failed to send finished signal:', err)
         }
