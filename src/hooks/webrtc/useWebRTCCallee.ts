@@ -1,7 +1,6 @@
-import { useRef, useState, useEffect } from 'react'
-import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
-import type { ConnectionStatus, IncomingRequest } from './useWebRTCCommon'
-import type { VideoQuality } from '@/components/VideoQualitySelector'
+import { useRef, useState } from 'react'
+import { useWebRTCCommon } from './useWebRTCCommon'
+import type { IncomingRequest } from './useWebRTCCommon'
 import { useStore } from '@/store/useStore'
 
 interface UseWebRTCCalleeProps {
@@ -41,7 +40,6 @@ export function useWebRTCCallee({
     qualityWeWantFromRemote,
     localVideoEnabled,
     localAudioEnabled,
-    connectionStatus,
   } = useStore()
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)

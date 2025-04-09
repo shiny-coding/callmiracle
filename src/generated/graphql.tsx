@@ -35,6 +35,7 @@ export type Call = {
   initiatorUserId: Scalars['ID']['output'];
   targetUserId: Scalars['ID']['output'];
   type: Scalars['String']['output'];
+  meetingId?: Maybe<Scalars['ID']['output']>;
 };
 
 export type CallEvent = {
@@ -60,23 +61,7 @@ export type CallHistoryEntry = {
   user: User;
 };
 
-export type ConnectionParams = {
-  __typename?: 'ConnectionParams';
-  answer?: Maybe<Scalars['String']['output']>;
-  audioEnabled?: Maybe<Scalars['Boolean']['output']>;
-  callId?: Maybe<Scalars['ID']['output']>;
-  iceCandidate?: Maybe<Scalars['String']['output']>;
-  initiatorUserId: Scalars['ID']['output'];
-  meetingId?: Maybe<Scalars['ID']['output']>;
-  meetingLastCallTime?: Maybe<Scalars['Float']['output']>;
-  offer?: Maybe<Scalars['String']['output']>;
-  quality?: Maybe<Scalars['String']['output']>;
-  targetUserId: Scalars['ID']['output'];
-  type: Scalars['String']['output'];
-  videoEnabled?: Maybe<Scalars['Boolean']['output']>;
-};
-
-export type ConnectionParamsInput = {
+export type CallUserInput = {
   answer?: InputMaybe<Scalars['String']['input']>;
   audioEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   callId?: InputMaybe<Scalars['ID']['input']>;
@@ -106,6 +91,7 @@ export type Meeting = {
   createdAt?: Maybe<Scalars['Date']['output']>;
   languages: Array<Scalars['String']['output']>;
   lastCallTime?: Maybe<Scalars['Float']['output']>;
+  lastMissedCallTime?: Maybe<Scalars['Float']['output']>;
   minDuration: Scalars['Int']['output'];
   peerMeetingId?: Maybe<Scalars['String']['output']>;
   preferEarlier: Scalars['Boolean']['output'];
@@ -152,7 +138,7 @@ export type MeetingWithPeer = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  callUser?: Maybe<ConnectionParams>;
+  callUser?: Maybe<CallEvent>;
   createOrUpdateMeeting?: Maybe<Meeting>;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   setAllNotificationsSeen: Scalars['Boolean']['output'];
@@ -163,7 +149,7 @@ export type Mutation = {
 
 
 export type MutationCallUserArgs = {
-  input: ConnectionParamsInput;
+  input: CallUserInput;
 };
 
 

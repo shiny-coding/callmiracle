@@ -4,12 +4,11 @@ import { useSubscription, useMutation } from '@apollo/client'
 import { useStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
-import { CONNECT_WITH_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
+import { CALL_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
 import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
 import { User } from '@/generated/graphql'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
-import { useMeetings } from '@/contexts/MeetingsContext'
 
 interface WebRTCContextType {
   doCall: (user: User, isReconnect: boolean, meetingId: string | null, meetingLastCallTime: number | null) => Promise<void>
@@ -50,7 +49,7 @@ export function WebRTCProvider({
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [localStream, setLocalStream] = useState<MediaStream>()
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
-  const [callUser] = useMutation(CONNECT_WITH_USER)
+  const [callUser] = useMutation(CALL_USER)
   const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon(callUser)
   const { subscribeToCallEvents } = useSubscriptions()
 

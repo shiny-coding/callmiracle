@@ -32,6 +32,7 @@ type Meeting {
   startTime: Float
   peerMeetingId: String
   lastCallTime: Float
+  lastMissedCallTime: Float
   totalDuration: Int
   status: MeetingStatus!
   createdAt: Date
@@ -59,21 +60,6 @@ type User {
   birthYear: Int
   blocks: [Block!]!
   friends: [ID!]
-}
-
-type ConnectionParams {
-  type: String!
-  offer: String
-  answer: String
-  iceCandidate: String
-  targetUserId: ID!
-  initiatorUserId: ID!
-  videoEnabled: Boolean
-  audioEnabled: Boolean
-  quality: String
-  callId: ID
-  meetingId: ID
-  meetingLastCallTime: Float
 }
 
 type CallEvent {
@@ -117,6 +103,7 @@ type Call {
   initiatorUserId: ID!
   targetUserId: ID!
   type: String!
+  meetingId: ID
   duration: Int!
 }
 
@@ -134,7 +121,7 @@ input UserInput {
   friends: [ID!]
 }
 
-input ConnectionParamsInput {
+input CallUserInput {
   targetUserId: ID!
   initiatorUserId: ID!
   type: String!  # 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'updateMediaState' | 'expired' | 'reconnect'
@@ -191,7 +178,7 @@ type Query {
 
 type Mutation {
   updateUser(input: UserInput!): User
-  callUser(input: ConnectionParamsInput!): ConnectionParams
+  callUser(input: CallUserInput!): CallEvent
   createOrUpdateMeeting(input: MeetingInput!): Meeting
   updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse

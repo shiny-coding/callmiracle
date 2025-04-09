@@ -353,6 +353,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
           min={10}
           max={100}
           valueLabelDisplay="auto"
+          sx={{ touchAction: 'pan-y' }}
         />
 
         <FormControlLabel

@@ -1,6 +1,27 @@
 import { Context } from './types'
 import { pubsub } from './pubsub'
 import { ObjectId } from 'mongodb'
+import { Call, CallEvent, User } from '@/generated/graphql'
+
+// Helper function to publish meeting discall notification
+export async function publishCallNotification(notificationType: string, db: any, initiator: User, targetUser: User, call: Call) {
+  
+  // Create a notification in the database
+  await db.collection('notifications').insertOne({
+    userId: targetUser._id,
+    userName: targetUser.name,
+    type: notificationType,
+    seen: false,
+    peerUserName: initiator.name,
+    createdAt: new Date()
+  })
+  
+  // Publish notification event
+  const topic = `SUBSCRIPTION_EVENT:${targetUser._id.toString()}`
+  pubsub.publish(topic, { notificationEvent: { type: notificationType, call, user: targetUser, peerUserName: initiator.name } })
+  
+  console.log(`Published ${notificationType} event for peer:`, { name: targetUser.name, userId: targetUser._id.toString() })
+}
 
 export const callUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
   const { type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality } = input
@@ -9,52 +30,54 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
   const _targetUserId = new ObjectId(input.targetUserId)
   const _meetingId = input.meetingId ? new ObjectId(input.meetingId) : null
 
-  let connection: any
+  let call: Call|null = null
 
   // Get user info for publishing
-  const initiator = await db.collection('users').findOne({ _id: _initiatorUserId })
+  const initiator = await db.collection('users').findOne<User>({ _id: _initiatorUserId })
   if (!initiator) {
-    console.error('no user found for initiator', { _initiatorUserId })
-    return connection
+    console.error('no user found for initiator', _initiatorUserId.toString())
+    return null
   }
 
-  const targetUser = await db.collection('users').findOne({ _id: _targetUserId })
+  const targetUser = await db.collection('users').findOne<User>({ _id: _targetUserId })
   if (!targetUser) {
-    console.error('no user found for target', { _targetUserId })
-    return connection
+    console.error('no user found for target', _targetUserId.toString())
+    return null
   }      
   console.log('callUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
 
   // Only handle calls table for specific types
   if (type === 'initiate') {
     // Create new call record
-    connection = await db.collection('calls').insertOne({
+    const _call = await db.collection('calls').insertOne({
       initiatorUserId: _initiatorUserId,
       targetUserId: _targetUserId,
       type: 'initiated',
       duration: 0,
       meetingId: _meetingId
     })
-    _callId = connection.insertedId
+    _callId = _call.insertedId
   } 
   if (!_callId) {
     throw new Error('CallId is required')
   }
 
   // Get current call state
-  const currentCall = await db.collection('calls').findOne({ _id: _callId })
+  call = await db.collection('calls').findOne<Call>({ _id: _callId })
 
   if (type === 'answer') {
     // Update call status to connected
-    connection = await db.collection('calls').findOneAndUpdate(
+    call = await db.collection('calls').findOneAndUpdate(
       { _id: _callId },
       { $set: { type: 'connected' } },
       { returnDocument: 'after' }
-    )
+    ) as Call|null
+
   } else if (type === 'finished' || type == 'expired') {
     // Only set duration if the call was connected and is now finished
     let callDuration = 0;
-    const updateFields = type === 'finished' || (type === 'expired' && currentCall?.type === 'connected')
+    // currentCall?.type === 'connected' means that the expired is due to call timeout
+    const updateFields = type === 'finished' || (type === 'expired' && call?.type === 'connected')
       ? { 
           type: 'finished',
           duration: callDuration = Math.floor((Date.now() - _callId.getTimestamp().getTime()) / 1000)
@@ -62,26 +85,38 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       : { type: 'expired', duration: 0 }
 
     // Update call status
-    connection = await db.collection('calls').findOneAndUpdate(
+    call = await db.collection('calls').findOneAndUpdate(
       { _id: _callId },
       { $set: updateFields },
       { returnDocument: 'after' }
-    )
+    ) as Call|null
+
+    if (!_meetingId && type === 'expired' && call?.type !== 'connected') {
+      await publishCallNotification('missed-call', db, initiator, targetUser, call as Call)
+    }
     
     // If this call was for a meeting and has a duration, update the meeting's total duration
-    if (_meetingId && callDuration > 0) {
+    if (_meetingId && (callDuration > 0 || type === 'expired')) {
       try {
         const meeting = await db.collection('meetings').findOne({ _id: _meetingId });
-        
-        // Add this call's duration to the meeting's total duration
-        const totalDuration = (meeting?.totalDuration || 0) + callDuration;
+        const updateFields: any = {}
+        if (callDuration > 0) {
+          updateFields.totalDuration = (meeting?.totalDuration || 0) + callDuration;
+        }
+        if (type === 'expired') {
+          updateFields.lastMissedCallTime = Date.now()
+        }
         
         await db.collection('meetings').updateOne(
           { _id: _meetingId },
-          { $set: { totalDuration } }
+          { $set: updateFields }
         );
         
-        console.log(`Updated meeting ${_meetingId.toString()} duration to ${totalDuration}s`);
+        if (callDuration > 0) {
+          console.log(`Updated meeting ${_meetingId.toString()} duration to ${updateFields.totalDuration}s`);
+        } else if (type === 'expired') {
+          console.log(`Updated meeting ${_meetingId.toString()} last missed call time to ${updateFields.lastMissedCallTime}`);
+        }
       } catch (err) {
         console.error('Failed to update meeting duration:', err);
       }
@@ -93,7 +128,7 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     type,
     from: initiator,
     callId: _callId,
-    meetingId: currentCall?.meetingId,
+    meetingId: call?.meetingId,
     userId: _targetUserId
   }
 
@@ -113,26 +148,17 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     }
   }
 
-  // Create a unique topic for this user's connection requests
+  // Create a unique topic for this user's call requests
   const topic = `SUBSCRIPTION_EVENT:${_targetUserId.toString()}`
 
   const callEvent = {
     ...basePayload,
     ...additionalFields[type]
-  }
+  } as unknown as CallEvent
 
-  console.log('Publishing connection request:', { callEvent })
+  console.log('Publishing call request:', { callEvent })
   
   pubsub.publish(topic, { callEvent })
 
-  return {
-    type,
-    offer: connection?.offer || null,
-    answer: connection?.answer || null,
-    iceCandidate: connection?.iceCandidate || null,
-    targetUserId: _targetUserId,
-    initiatorUserId: _initiatorUserId,
-    callId: _callId,
-    meetingId: _meetingId
-  }
+  return callEvent
 }

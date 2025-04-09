@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
-import { useWebRTCCommon, CONNECT_WITH_USER } from './useWebRTCCommon'
+import { useWebRTCCommon, CALL_USER } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
 import { useStore } from '@/store/useStore'
 import { MeetingStatus, User } from '@/generated/graphql'

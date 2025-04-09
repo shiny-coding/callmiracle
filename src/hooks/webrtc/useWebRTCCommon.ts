@@ -5,8 +5,8 @@ import { useStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 import { useMeetings } from '@/contexts/MeetingsContext'
 
-export const CONNECT_WITH_USER = gql`
-  mutation CallUser($input: ConnectionParamsInput!) {
+export const CALL_USER = gql`
+  mutation CallUser($input: CallUserInput!) {
     callUser(input: $input) {
       type
       offer
@@ -335,6 +335,7 @@ export function useWebRTCCommon(callUser: any) {
               }
             }
           })
+          console.log('refetching meetings')
           refetchMeetings()
         } catch (err) {
           console.error('Failed to send finished signal:', err)

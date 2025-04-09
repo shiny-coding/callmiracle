@@ -1,5 +1,5 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import UserCard from './UserCard'
@@ -18,18 +18,33 @@ export default function CallerDialog() {
   const { currentUser } = useStore()
   const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
 
+  const sendExpired = useCallback(async () => {
+    const { targetUser, callId } = useStore.getState()
+    if (callId && targetUser) {
+      console.log('Sending expired', callId)
+      await callUser({
+        variables: {
+          input: {
+            type: 'expired',
+            targetUserId: targetUser._id,
+            initiatorUserId: currentUser?._id,
+            callId
+          }
+        }
+      })
+    }
+  }, [currentUser, callUser])
+
   useEffect(() => {
-    if (!open) return
-    
-    const timeout = setTimeout(() => {
-      if (connectionStatus === 'calling') {
+    if (connectionStatus == 'calling') {
+      const timeout = setTimeout(() => {
         sendExpired()
         setConnectionStatus('no-answer')
-      }
-    }, MAX_CALLING_TIME_MS)
+      }, MAX_CALLING_TIME_MS)
 
-    return () => clearTimeout(timeout)
-  }, [open, connectionStatus, setConnectionStatus])
+      return () => clearTimeout(timeout)
+    }
+  }, [open, connectionStatus, setConnectionStatus, sendExpired])
 
   useEffect(() => {
     if (open && connectionStatus === 'calling') {
@@ -45,23 +60,6 @@ export default function CallerDialog() {
     await doCall(targetUser, false, meetingId, meetingLastCallTime)
   }
 
-
-  const sendExpired = async () => {
-    const { targetUser, callId } = useStore.getState()
-    if (callId && targetUser) {
-      console.log('Sending expired', callId)
-      await callUser({
-        variables: {
-          input: {
-            type: 'expired',
-            targetUserId: targetUser._id,
-            initiatorUserId: currentUser?._id,
-            callId
-          }
-        }
-      })
-    }
-  }
 
   const handleCancel = async () => {
     setConnectionStatus('disconnected')
