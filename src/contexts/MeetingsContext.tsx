@@ -33,8 +33,6 @@ export const GET_MEETINGS = gql`
       peerUser {
         _id
         name
-        hasImage
-        online
         sex
         languages
       }

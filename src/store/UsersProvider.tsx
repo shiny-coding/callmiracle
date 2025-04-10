@@ -12,8 +12,6 @@ const GET_USERS = gql`
       languages
       timestamp
       locale
-      online
-      hasImage
       about
       contacts
       sex

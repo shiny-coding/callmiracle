@@ -10,6 +10,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
+import { useCheckImage } from '@/hooks/useCheckImage'
 
 interface UserDetailsPopupProps {
   user: User
@@ -23,6 +24,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
   const { currentUser, setCurrentUser } = useStore()
   const { updateUserData } = useUpdateUser()
   const [showFullImage, setShowFullImage] = useState(false)
+  const { exists: imageExists } = useCheckImage(user._id)
 
   const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
   const [blockAll, setBlockAll] = useState(existingBlock?.all || false)
@@ -35,7 +37,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
 
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (user.hasImage) {
+    if (imageExists) {
       setShowFullImage(true)
     }
   }
@@ -83,7 +85,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
           </IconButton>
         </DialogTitle>
         <DialogContent className="flex flex-col gap-4 overflow-y-auto">
-          {user.hasImage && (
+          {imageExists && (
             <div 
               className="relative w-full cursor-pointer overflow-hidden rounded-lg"
               style={{

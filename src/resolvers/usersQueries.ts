@@ -1,5 +1,4 @@
 import { Context } from './types'
-import { transformUser } from './utils'
 import { ObjectId } from 'mongodb'
 
 export const usersQueries = {
@@ -54,8 +53,7 @@ export const usersQueries = {
       })
     }
     
-    const transformedUsers = users.map(transformUser)
-    return transformedUsers
+    return users
   },
 
   getOrCreateUser: async (_: any, { userId, defaultLanguages }: { userId: string, defaultLanguages: string[] }, { db }: Context) => {
@@ -82,8 +80,6 @@ export const usersQueries = {
       user = await db.collection('users').findOne({ _id: result.insertedId })
     }
 
-    const transformedUser = transformUser(user)
-    if (!transformedUser) throw new Error('Failed to transform user')
-    return transformedUser
+    return user
   },
 } 

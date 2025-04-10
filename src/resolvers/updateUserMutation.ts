@@ -1,5 +1,4 @@
 import { Context } from './types'
-import { transformUser } from './utils'
 import { ObjectId } from 'mongodb'
 
 export const updateUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
@@ -7,7 +6,7 @@ export const updateUserMutation = async (_: any, { input }: { input: any }, { db
   const _id = new ObjectId(input._id)
   const timestamp = Date.now()
 
-  const result = await db.collection('users').findOneAndUpdate(
+  const user = await db.collection('users').findOneAndUpdate(
     { _id },
     { 
       $set: { 
@@ -35,10 +34,7 @@ export const updateUserMutation = async (_: any, { input }: { input: any }, { db
     }
   )
 
-  if (!result) throw new Error('Failed to update user')
+  if (!user) throw new Error('Failed to update user')
 
-  const transformedUser = transformUser(result)
-  if (!transformedUser) throw new Error('Failed to transform updated user')
-  
-  return transformedUser
+  return user
 }

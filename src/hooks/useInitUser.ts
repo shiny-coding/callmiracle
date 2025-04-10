@@ -11,8 +11,6 @@ export const GET_OR_CREATE_USER = gql`
       languages
       timestamp
       locale
-      online
-      hasImage
       about
       contacts
       sex

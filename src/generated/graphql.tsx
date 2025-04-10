@@ -285,11 +285,9 @@ export type User = {
   blocks: Array<Block>;
   contacts: Scalars['String']['output'];
   friends?: Maybe<Array<Scalars['ID']['output']>>;
-  hasImage: Scalars['Boolean']['output'];
   languages: Array<Scalars['String']['output']>;
   locale: Scalars['String']['output'];
   name: Scalars['String']['output'];
-  online: Scalars['Boolean']['output'];
   sex: Scalars['String']['output'];
   timestamp: Scalars['Float']['output'];
 };

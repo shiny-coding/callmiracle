@@ -13,6 +13,7 @@ import { useState } from 'react'
 import UserDetailsPopup from './UserDetailsPopup'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
+import { useCheckImage } from '@/hooks/useCheckImage'
 
 interface UserCardProps {
   user: User
@@ -33,6 +34,7 @@ export default function UserCard({
   const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
   const { currentUser, setCurrentUser } = useStore()
   const { updateUserData, loading: updateLoading } = useUpdateUser()
+  const { exists: imageExists } = useCheckImage(user._id)
   
   const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
   const isBlocked = existingBlock?.all || (existingBlock?.statuses.length ?? 0) > 0
@@ -79,16 +81,11 @@ export default function UserCard({
       >
         <div className="relative">
           <Avatar
-            src={user.hasImage ? `/profiles/${user._id}.jpg` : undefined}
-            className={`
-              w-12 h-12
-            `}
+            src={imageExists ? `/profiles/${user._id}.jpg` : undefined}
+            className="w-12 h-12"
           >
-            {!user.hasImage && user.name?.[0]?.toUpperCase()}
+            {!imageExists && user.name?.[0]?.toUpperCase()}
           </Avatar>
-          {user.online && (
-            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-          )}
         </div>
         <div className="flex-grow">
           <Typography variant="h6" className="text-white">

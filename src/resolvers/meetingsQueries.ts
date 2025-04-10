@@ -1,6 +1,5 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { transformUser } from './utils'
 import { isMeetingPassed } from '@/utils/meetingUtils'
 import { MeetingStatus } from '@/generated/graphql'
 
@@ -38,7 +37,7 @@ export const meetingsQueries = {
         : []
       
       // 6. Transform data to the requested structure
-      const result = []
+      const meetingsWithPeers = []
       for (const meeting of userMeetings) {
         let peerMeeting: any = null
         let peerUser: any = null
@@ -51,17 +50,17 @@ export const meetingsQueries = {
           }
         }
         
-        result.push({
+        meetingsWithPeers.push({
           meeting,
           peerMeeting,
-          peerUser: peerUser ? transformUser(peerUser) : null
+          peerUser
         })
       }
       
       // 7. Sort meetings by earliest time slot or start time
       const now = new Date().getTime()
 
-      result.sort((a, b) => {
+      meetingsWithPeers.sort((a, b) => {
         const aEnded = isMeetingPassed(a.meeting as any);
         const bEnded = isMeetingPassed(b.meeting as any);
         
@@ -118,7 +117,7 @@ export const meetingsQueries = {
         return a.meeting._id.toString().localeCompare(b.meeting._id.toString())
       })
 
-      return result
+      return meetingsWithPeers
     } catch (error) {
       console.error('Error fetching meetings:', error)
       throw new Error('Failed to fetch meetings')

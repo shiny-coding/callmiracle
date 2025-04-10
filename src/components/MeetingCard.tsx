@@ -49,8 +49,6 @@ interface MeetingCardProps {
     peerUser?: {
       _id: string
       name: string
-      hasImage: boolean
-      online: boolean
       sex: string
       languages: string[]
     }
@@ -330,9 +328,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
                   <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
                     {meetingWithPeer.peerUser.name}
                   </Typography>
-                  {meetingWithPeer.peerUser.online && (
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                  )}
                 </div>
               ) : null}
             </div>

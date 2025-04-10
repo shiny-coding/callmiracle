@@ -10,6 +10,7 @@ import { useUpdateUser } from '@/hooks/useUpdateUser'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { Dialog as CameraDialog } from '@mui/material'
+import { useCheckImage } from '@/hooks/useCheckImage'
 
 interface ProfileDialogProps {
   open: boolean
@@ -20,7 +21,7 @@ export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
   const t = useTranslations('Profile')
   const tRoot = useTranslations()
   const { currentUser, setCurrentUser } = useStore()
-  const { name = '', languages = [], hasImage = false, about = '', contacts = '', sex = null, birthYear = null } = currentUser || {}
+  const { name = '', languages = [], about = '', contacts = '', sex = null, birthYear = null } = currentUser || {}
   const [tempName, setTempName] = useState(name)
   const [tempLanguages, setTempLanguages] = useState(languages)
   const [tempAbout, setTempAbout] = useState(about)
@@ -34,7 +35,8 @@ export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
   const { localStream } = useWebRTCContext()
   const [showCameraPreview, setShowCameraPreview] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const currentUserId = currentUser?._id || ''  
+  const currentUserId = currentUser?._id || ''
+  const { exists: imageExists } = useCheckImage(currentUserId)
 
   useEffect(() => {
     if (open) {
@@ -83,7 +85,6 @@ export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
           method: 'POST',
           body: formData
         })
-        setCurrentUser({ ...currentUser!, hasImage: true })
       }
 
       setCurrentUser({
@@ -171,7 +172,7 @@ export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">
                   {uploading ? t('uploading') : selectedFile ? selectedFile.name : t('uploadPhoto')}
                 </div>
-                {(hasImage || selectedFile) && (
+                {(imageExists || selectedFile) && (
                     <Image
                       src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${currentUserId}.jpg?t=${timestamp}`}
                       alt={t('photo')}

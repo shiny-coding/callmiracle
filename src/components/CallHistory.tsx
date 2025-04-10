@@ -16,8 +16,6 @@ const CALL_HISTORY = gql`
         languages
         timestamp
         locale
-        online
-        hasImage
       }
       lastCallAt
       duration

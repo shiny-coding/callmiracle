@@ -1,6 +1,5 @@
 import { ObjectId } from 'mongodb'
 import { Context } from './types'
-import { transformUser } from './utils'
 
 export const callsQueries = {
   getCalls: async (_: any, __: any, { db }: Context) => {
@@ -46,11 +45,8 @@ export const callsQueries = {
       const user = await db.collection('users').findOne({ _id: otherUserId })
       if (!user) continue
 
-      const transformedUser = transformUser(user)
-      if (!transformedUser) continue
-
       result.push({
-        user: transformedUser,
+        user: user,
         lastCallAt: callData.lastCallAt,
         duration: callData.totalDuration,
         totalCalls: callData.calls.length

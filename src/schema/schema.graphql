@@ -52,8 +52,6 @@ type User {
   languages: [String!]!
   timestamp: Float!
   locale: String!
-  online: Boolean!
-  hasImage: Boolean!
   about: String!
   contacts: String!
   sex: String!
