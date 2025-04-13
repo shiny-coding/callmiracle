@@ -49,8 +49,10 @@ enum MeetingStatus {
 type User {
   _id: ID!
   name: String!
+  email: String!
   languages: [String!]!
-  timestamp: Float!
+  createdAt: Float!
+  updatedAt: Float!
   locale: String!
   about: String!
   contacts: String!
@@ -165,9 +167,9 @@ type CallHistoryEntry {
 }
 
 type Query {
+  getUser(userId: ID!): User
   getUsers(userId: ID!): [User!]!
   getCalls: [Call!]!
-  getOrCreateUser(userId: ID!, defaultLanguages: [String!]!): User!
   getCallHistory(userId: ID!): [CallHistoryEntry!]!
   getDetailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
   getMeetings(userId: ID!): [MeetingWithPeer!]!

@@ -1,31 +1,53 @@
-import { getToken } from 'next-auth/jwt'
 import { NextRequest, NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
+import createIntlMiddleware from 'next-intl/middleware'
+import { Locale, locales } from './config'
 
-export async function middleware(req: NextRequest) {
-  const path = req.nextUrl.pathname
+// Create internationalization middleware
+const intlMiddleware = createIntlMiddleware({
+  locales: ['en', 'ru'],
+  defaultLocale: 'en'
+})
+
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
   
-  // Define public paths that don't require authentication
-  const isPublicPath = path === '/auth/signin'
-  
-  const session = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  })
-  
-  // Redirect unauthenticated users to login page
-  if (!session && !isPublicPath) {
-    return NextResponse.redirect(new URL('/auth/signin', req.url))
+  // Handle signin and signout redirects 
+  if (pathname === '/auth/signin' || pathname === '/auth/signout') {
+    // Allow the route handler to process the request
+    return NextResponse.next()
   }
   
-  // Redirect authenticated users away from auth pages
-  if (session && isPublicPath) {
-    return NextResponse.redirect(new URL('/', req.url))
+  // Check if the path is a public path (no auth needed)
+  const isAuthPage = pathname.includes('/auth/signin')
+  
+  // For protected routes, check authentication
+  if (!isAuthPage) {
+    // Check for authentication token
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    })
+    
+    // Redirect to sign-in if no token
+    if (!token) {
+      // Preserve the original URL's locale
+      const locale = pathname.split('/')[1] || 'en'
+      
+      // Handle cases where the first segment might not be a locale
+      const signInPath = locales.includes(locale as Locale) 
+        ? `/${locale}/auth/signin`
+        : '/auth/signin'
+        
+      return NextResponse.redirect(new URL(signInPath, request.url))
+    }
   }
   
-  return NextResponse.next()
+  // Apply internationalization after auth check
+  return intlMiddleware(request)
 }
 
 // Specify which paths this middleware should run on
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|profiles).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|profiles|.*\\.png$).*)']
 }

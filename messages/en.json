@@ -153,5 +153,25 @@
   "markAllAsSeen": "Mark All As Seen",
   "onlyFriends": "Only Friends",
   "friend": "Friend",
-  "addFriend": "Add Friend"
+  "addFriend": "Add Friend",
+  "Auth": {
+    "signIn": "Sign In",
+    "register": "Register",
+    "nameNickname": "Name / Nickname",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "or": "OR",
+    "signInWithGoogle": "Sign in with Google",
+    "registerWithGoogle": "Register with Google",
+    "signInWithApple": "Sign in with Apple",
+    "registerWithApple": "Register with Apple",
+    "invalidCredentials": "Invalid email or password",
+    "somethingWentWrong": "Something went wrong",
+    "passwordsMismatch": "Passwords do not match",
+    "registrationFailed": "Registration failed",
+    "registrationError": "Something went wrong during registration",
+    "missingRequiredFields": "Missing required fields",
+    "fieldRequired": "Field is required"
+  }
 } 

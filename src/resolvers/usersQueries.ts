@@ -56,30 +56,9 @@ export const usersQueries = {
     return users
   },
 
-  getOrCreateUser: async (_: any, { userId, defaultLanguages }: { userId: string, defaultLanguages: string[] }, { db }: Context) => {
+  getUser: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     const _userId = userId ? new ObjectId(userId) : null
-    let user = _userId ? await db.collection('users').findOne({ _id: _userId }) : null
-    
-    if (!user) {
-      // Create new user with default values
-      const newUser = {
-        name: '',
-        languages: defaultLanguages,  // Use provided default languages
-        timestamp: Date.now(),
-        locale: 'en',
-        online: false,
-        sex: '',  // Provide a default empty string instead of null
-        blocks: [],
-        friends: []  // Add empty friends array
-      }
-      
-      // Insert the new user and get the result
-      const result = await db.collection('users').insertOne(newUser)
-      
-      // Fetch the newly created user to ensure we have the correct document with the inserted ID
-      user = await db.collection('users').findOne({ _id: result.insertedId })
-    }
-
+    const user = _userId ? await db.collection('users').findOne({ _id: _userId }) : null
     return user
   },
 } 

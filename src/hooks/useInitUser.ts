@@ -1,15 +1,15 @@
 import { gql, useQuery } from '@apollo/client'
 import { useStore } from '@/store/useStore'
 import { useEffect } from 'react'
-import { getBrowserLanguage } from '@/utils/language'
+import { useSession, signOut } from 'next-auth/react'
 
-export const GET_OR_CREATE_USER = gql`
-  query GetOrCreateUser($userId: ID!, $defaultLanguages: [String!]!) {
-    getOrCreateUser(userId: $userId, defaultLanguages: $defaultLanguages) {
+export const GET_USER = gql`
+  query GetUser($userId: ID!) {
+    getUser(userId: $userId) {
       _id
       name
+      email
       languages
-      timestamp
       locale
       about
       contacts
@@ -26,23 +26,32 @@ export const GET_OR_CREATE_USER = gql`
 `
 
 export function useInitUser() {
-  const { currentUser, setCurrentUser, setCurrentUserId, currentUserId } = useStore()
-  
-  const { data, loading, error, refetch } = useQuery(GET_OR_CREATE_USER, {
-    variables: { 
-      userId: currentUserId || '',
-      defaultLanguages: getBrowserLanguage()
+  const { data: session, status } = useSession()
+  const { currentUser, setCurrentUser } = useStore()
+
+  const authenticatedUserId = status === 'authenticated' ? session?.user?.id : null
+
+  const { data, loading, error, refetch } = useQuery(GET_USER, {
+    variables: {
+      userId: authenticatedUserId || '',
     },
-    fetchPolicy: 'network-only'
+    skip: status !== 'authenticated' || !authenticatedUserId,
+    fetchPolicy: 'network-only',
   })
 
   useEffect(() => {
-    if (data?.getOrCreateUser) {
-      const user = data.getOrCreateUser
-      setCurrentUser(user)
-      setCurrentUserId(user._id)
+    if (data?.getUser) {
+      const user = data.getUser
+      if ( !user ) {
+        console.log('User not found in database, signing out')
+        signOut({ redirect: true, callbackUrl: '/auth/signin' })
+      } else {
+        setCurrentUser(user)
+      }
     }
-  }, [data]) // it's important to not include currentUser/setCurrentUser/setCurrentUserId in the dependency array, not to trigger unnecessary re-renders
+  }, [data, status, setCurrentUser])
 
-  return { loading: loading || !currentUser, error, refetch }
+  const isLoading = status === 'loading' || (status === 'authenticated' && loading) || (status === 'authenticated' && !currentUser)
+
+  return { loading: isLoading, error, refetch }
 } 

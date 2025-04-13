@@ -10,7 +10,7 @@ import CalleeDialog from '@/components/CalleeDialog'
 import BottomControlsBar from '@/components/BottomControlsBar';
 import MeetingsList from '@/components/MeetingsList';
 import LocaleSelector from '@/components/LocaleSelector';
-
+import { AppContent } from '@/components/AppContent';
 function MainContent() {
   const { connectionStatus, callee } = useWebRTCContext()
 
@@ -47,10 +47,12 @@ function MainContent() {
 
 export default function Home() {
   return (
-    <WebRTCProvider>
-      <DetailedCallHistoryProvider>
-        <MainContent />
-      </DetailedCallHistoryProvider>
-    </WebRTCProvider>
+    <AppContent>
+      <WebRTCProvider>
+        <DetailedCallHistoryProvider>
+          <MainContent />
+        </DetailedCallHistoryProvider>
+      </WebRTCProvider>
+    </AppContent>
   )
 } 

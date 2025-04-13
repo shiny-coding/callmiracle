@@ -4,7 +4,6 @@ import { ObjectId } from 'mongodb'
 export const updateUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
   const { name, statuses, locale, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge, blocks, friends } = input
   const _id = new ObjectId(input._id)
-  const timestamp = Date.now()
 
   const user = await db.collection('users').findOneAndUpdate(
     { _id },
@@ -12,7 +11,7 @@ export const updateUserMutation = async (_: any, { input }: { input: any }, { db
       $set: { 
         name, 
         statuses, 
-        timestamp,
+        updatedAt: Date.now(),
         locale,
         languages,
         online,
@@ -29,7 +28,7 @@ export const updateUserMutation = async (_: any, { input }: { input: any }, { db
       } 
     },
     { 
-      upsert: true,
+      upsert: false,
       returnDocument: 'after'
     }
   )

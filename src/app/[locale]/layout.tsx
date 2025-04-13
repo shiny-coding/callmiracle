@@ -31,10 +31,7 @@ export default async function LocaleLayout({
         <ApolloWrapper>
           <ThemeRegistry>
             <StoreInitializer>
-              <AppContent>
-                {/* <LocaleSelector /> */}
-                {children}
-              </AppContent>
+              {children}
             </StoreInitializer>
           </ThemeRegistry>
         </ApolloWrapper>

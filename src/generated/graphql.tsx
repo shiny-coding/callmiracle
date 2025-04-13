@@ -208,7 +208,7 @@ export type Query = {
   getDetailedCallHistory: Array<Call>;
   getMeetings: Array<MeetingWithPeer>;
   getNotifications: Array<Notification>;
-  getOrCreateUser: User;
+  getUser: Maybe<User>;
   getUsers: Array<User>;
 };
 
@@ -234,8 +234,7 @@ export type QueryGetNotificationsArgs = {
 };
 
 
-export type QueryGetOrCreateUserArgs = {
-  defaultLanguages: Array<Scalars['String']['input']>;
+export type QueryGetUserArgs = {
   userId: Scalars['ID']['input'];
 };
 
@@ -288,8 +287,10 @@ export type User = {
   languages: Array<Scalars['String']['output']>;
   locale: Scalars['String']['output'];
   name: Scalars['String']['output'];
+  email: Scalars['String']['output'];
   sex: Scalars['String']['output'];
-  timestamp: Scalars['Float']['output'];
+  createdAt: Scalars['Float']['output'];
+  updatedAt: Scalars['Float']['output'];
 };
 
 export type UserInput = {

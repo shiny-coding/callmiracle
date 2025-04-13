@@ -144,5 +144,25 @@
   "insufficientDuration": "Пожалуйста, выберите смежные временные слоты для формирования хотя бы {minutes} минут непрерывного времени.",
   "onlyFriends": "Только друзья",
   "friend": "Друг",
-  "addFriend": "Добавить в друзья"
+  "addFriend": "Добавить в друзья",
+  "Auth": {
+    "signIn": "Вход",
+    "register": "Регистрация",
+    "nameNickname": "Имя / Никнейм",
+    "email": "Email",
+    "password": "Пароль",
+    "confirmPassword": "Подтвердить пароль",
+    "or": "ИЛИ",
+    "signInWithGoogle": "Войти с Google",
+    "registerWithGoogle": "Зарегистрироваться с Google",
+    "signInWithApple": "Войти с Apple",
+    "registerWithApple": "Зарегистрироваться с Apple",
+    "invalidCredentials": "Неверный email или пароль",
+    "somethingWentWrong": "Что-то пошло не так",
+    "passwordsMismatch": "Пароли не совпадают",
+    "registrationFailed": "Регистрация не удалась",
+    "registrationError": "Что-то пошло не так во время регистрации",
+    "missingRequiredFields": "Отсутствуют обязательные поля",
+    "fieldRequired": "Поле обязательно"
+  }
 } 

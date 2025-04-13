@@ -25,13 +25,13 @@ export default function LocaleSelector() {
   };
 
   // Use the current URL locale or detect from browser
-  const currentLocale = pathname.split('/')[1] || getDefaultLocale();
+  const currentLocale = pathname?.split('/')[1] || getDefaultLocale();
 
   const handleChange = (newLocale: string) => {
     // Set cookie with 1 year expiry
     Cookies.set('NEXT_LOCALE', newLocale, { expires: 365 })
     
-    const pathWithoutLocale = pathname.split('/').slice(2).join('/')
+    const pathWithoutLocale = pathname?.split('/').slice(2).join('/')
     const newPath = `/${newLocale}/${pathWithoutLocale}`
     router.push(newPath)
   };

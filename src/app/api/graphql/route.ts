@@ -7,7 +7,7 @@ const yoga = createYoga({
   schema,
   context: async () => {
     const client = await clientPromise
-    const db = client.db('commiracle')
+    const db = client.db()
     return { db }
   },
   graphqlEndpoint: '/api/graphql',

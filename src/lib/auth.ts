@@ -5,6 +5,7 @@ import clientPromise from "./mongodb"
 import GoogleProvider from "next-auth/providers/google"
 import AppleProvider from "next-auth/providers/apple"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { compare } from "bcrypt"
 
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -21,15 +22,34 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        username: { label: "Username", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Add your own logic here to find the user in your database
-        if (credentials?.username === "test" && credentials?.password === "test") {
-          return { id: "1", name: "Test User", email: "test@example.com" }
+        console.log("authorize")
+        try {
+          // Connect to the database
+          const client = await clientPromise;
+          const usersCollection = client.db().collection("users");
+          
+          // Find the user by email
+          const user = await usersCollection.findOne({ 
+            email: credentials?.email?.toLowerCase() 
+          });
+          
+          // Check if user exists and password matches
+          if (user && await compare(credentials?.password || '', user.password)) {
+            return {
+              ...user,
+              id: user._id.toString(),
+            }
+          }
+          
+          return null;
+        } catch (error) {
+          console.error("Error in credentials authorization:", error);
+          return null;
         }
-        return null
       }
     })
   ],
@@ -53,7 +73,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/signin',
-    // signOut: '/auth/signout',
+    signOut: '/auth/signout',
     // error: '/auth/error',
     // verifyRequest: '/auth/verify-request',
     // newUser: '/auth/new-user'
