@@ -1,5 +1,7 @@
 import { Dialog, DialogTitle, DialogContent, TextField, IconButton, DialogActions, Button, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Select, MenuItem } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import LogoutIcon from '@mui/icons-material/Logout'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { useTranslations } from 'next-intl'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
@@ -11,6 +13,14 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { Dialog as CameraDialog } from '@mui/material'
 import { useCheckImage } from '@/hooks/useCheckImage'
+import { signOut } from 'next-auth/react'
+import { gql, useMutation } from '@apollo/client'
+
+const DELETE_USER = gql`
+  mutation DeleteUser($userId: ID!) {
+    deleteUser(userId: $userId)
+  }
+`
 
 interface ProfileDialogProps {
   open: boolean
@@ -37,6 +47,8 @@ export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const currentUserId = currentUser?._id || ''
   const { exists: imageExists } = useCheckImage(currentUserId)
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
+  const [deleteUser] = useMutation(DELETE_USER)
 
   useEffect(() => {
     if (open) {
@@ -142,193 +154,259 @@ export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 80 }, (_, i) => currentYear - i - 10)
 
+  const handleLogout = () => {
+    signOut({ callbackUrl: '/auth/signin' })
+  }
+
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteUser({ variables: { userId: currentUserId } })
+      signOut({ callbackUrl: '/auth/signin' })
+    } catch (error) {
+      console.error('Error deleting account:', error)
+    }
+  }
+
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleCancel}
-      maxWidth="sm"
-      fullWidth
-    >
-      <DialogTitle className="flex justify-between items-center">
-        {t('title')}
-        <IconButton onClick={handleCancel} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent className="flex flex-col gap-4">
-        <div className="relative flex justify-center items-center">
-          <div 
-            {...getRootProps()} 
-            className={`
-              w-full aspect-square max-w-[240px] mx-auto rounded-lg border-2 border-dashed 
-              ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} 
-              flex items-center justify-center cursor-pointer overflow-hidden
-              hover:border-blue-500 transition-colors
-            `}
-          >
-            <input {...getInputProps()} />
-            {currentUserId ? (
-              <div className="relative w-full h-full">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-                  {uploading ? t('uploading') : selectedFile ? selectedFile.name : t('uploadPhoto')}
-                </div>
-                {(imageExists || selectedFile) && (
-                    <Image
-                      src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${currentUserId}.jpg?t=${timestamp}`}
-                      alt={t('photo')}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                      onLoad={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.nextElementSibling?.classList.remove('flex')
-                      }}
-                    />
-                )}
-              </div>
-            ) : (
-              <div className="text-gray-500">
-                {uploading ? t('uploading') : t('uploadPhoto')}
-              </div>
-            )}
-          </div>
-
-          <div className="">
-            <IconButton 
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowCameraPreview(true)
-              }}
-              className="bg-black/50 hover:bg-black/70"
-              disabled={!localStream}
-            >
-              <PhotoCameraIcon className="text-white" />
-            </IconButton>
-          </div>
-        </div>
-
-        <TextField
-          label={t('name')}
-          fullWidth
-          value={tempName}
-          onChange={(e) => setTempName(e.target.value)}
-        />
-        <TextField
-          label={t('about')}
-          fullWidth
-          multiline
-          minRows={2}
-          maxRows={Math.floor(window.innerHeight * 0.5 / 24)}
-          value={tempAbout}
-          onChange={(e) => setTempAbout(e.target.value)}
-          className="resize-none"
-        />
-        <TextField
-          label={t('contacts')}
-          fullWidth
-          multiline
-          minRows={2}
-          maxRows={Math.floor(window.innerHeight * 0.5 / 24)}
-          value={tempContacts}
-          onChange={(e) => setTempContacts(e.target.value)}
-          className="resize-none"
-        />
-        <LanguageSelector
-          value={tempLanguages}
-          onChange={setTempLanguages}
-          label={t('iSpeak')}
-        />
-        <FormControl>
-          <FormLabel id="sex-radio-group">{t('sex')}</FormLabel>
-          <RadioGroup
-            row
-            value={tempSex || ''}
-            onChange={(e) => setTempSex(e.target.value)}
-          >
-            <FormControlLabel 
-              value="female" 
-              control={<Radio />} 
-              label={t('female')} 
-            />
-            <FormControlLabel 
-              value="male" 
-              control={<Radio />} 
-              label={t('male')} 
-            />
-          </RadioGroup>
-        </FormControl>
-
-        <FormControl fullWidth>
-          <FormLabel id="birth-year-select">{t('birthYear')}</FormLabel>
-          <Select
-            value={tempBirthYear || ''}
-            onChange={(e) => setTempBirthYear(Number(e.target.value) || null)}
-            displayEmpty
-          >
-            <MenuItem value="">{t('selectYear')}</MenuItem>
-            {years.map(year => (
-              <MenuItem key={year} value={year}>{year}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </DialogContent>
-      <DialogActions className="border-t border-gray-800">
-        <Button onClick={handleCancel}>{t('cancel')}</Button>
-        <Button 
-          onClick={handleApply}
-          variant="contained" 
-          disabled={
-            tempName === name && 
-            JSON.stringify(tempLanguages) === JSON.stringify(languages) && 
-            tempAbout === about &&
-            tempContacts === contacts &&
-            tempSex === sex &&
-            tempBirthYear === birthYear &&
-            !selectedFile
-          }
-        >
-          {tRoot('apply')}
-        </Button>
-      </DialogActions>
-
-      <CameraDialog
-        open={showCameraPreview}
-        onClose={() => setShowCameraPreview(false)}
-        TransitionProps={{
-          onEntered: onCameraDialogReady
-        }}
+    <>
+      <Dialog 
+        open={open} 
+        onClose={handleCancel}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle className="flex justify-between items-center">
-          {t('takePhoto')}
-          <IconButton onClick={() => setShowCameraPreview(false)} size="small">
-            <CloseIcon />
-          </IconButton>
+          <div className="flex-grow">{t('title')}</div>
+          <div className="flex items-center gap-2">
+            <IconButton 
+              onClick={handleLogout} 
+              size="small" 
+              color="primary"
+              title={t('logout')}
+              aria-label={t('logout')}
+            >
+              <LogoutIcon />
+            </IconButton>
+            <IconButton 
+              onClick={handleCancel} 
+              size="small"
+              aria-label={t('close')}
+            >
+              <CloseIcon />
+            </IconButton>
+          </div>
         </DialogTitle>
         <DialogContent className="flex flex-col gap-4">
-          <div className="relative aspect-square w-full max-w-[240px] mx-auto overflow-hidden rounded-lg">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
+          <div className="relative flex justify-center items-center">
+            <div 
+              {...getRootProps()} 
+              className={`
+                w-full aspect-square max-w-[240px] mx-auto rounded-lg border-2 border-dashed 
+                ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} 
+                flex items-center justify-center cursor-pointer overflow-hidden
+                hover:border-blue-500 transition-colors
+              `}
+            >
+              <input {...getInputProps()} />
+              {currentUserId ? (
+                <div className="relative w-full h-full">
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                    {uploading ? t('uploading') : selectedFile ? selectedFile.name : t('uploadPhoto')}
+                  </div>
+                  {(imageExists || selectedFile) && (
+                      <Image
+                        src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${currentUserId}.jpg?t=${timestamp}`}
+                        alt={t('photo')}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                        onLoad={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.nextElementSibling?.classList.remove('flex')
+                        }}
+                      />
+                  )}
+                </div>
+              ) : (
+                <div className="text-gray-500">
+                  {uploading ? t('uploading') : t('uploadPhoto')}
+                </div>
+              )}
+            </div>
+
+            <div className="">
+              <IconButton 
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowCameraPreview(true)
+                }}
+                className="bg-black/50 hover:bg-black/70"
+                disabled={!localStream}
+              >
+                <PhotoCameraIcon className="text-white" />
+              </IconButton>
+            </div>
+          </div>
+
+          <TextField
+            label={t('name')}
+            fullWidth
+            value={tempName}
+            onChange={(e) => setTempName(e.target.value)}
+          />
+          <TextField
+            label={t('about')}
+            fullWidth
+            multiline
+            minRows={2}
+            maxRows={Math.floor(window.innerHeight * 0.5 / 24)}
+            value={tempAbout}
+            onChange={(e) => setTempAbout(e.target.value)}
+            className="resize-none"
+          />
+          <TextField
+            label={t('contacts')}
+            fullWidth
+            multiline
+            minRows={2}
+            maxRows={Math.floor(window.innerHeight * 0.5 / 24)}
+            value={tempContacts}
+            onChange={(e) => setTempContacts(e.target.value)}
+            className="resize-none"
+          />
+          <LanguageSelector
+            value={tempLanguages}
+            onChange={setTempLanguages}
+            label={t('iSpeak')}
+          />
+          <FormControl>
+            <FormLabel id="sex-radio-group">{t('sex')}</FormLabel>
+            <RadioGroup
+              row
+              value={tempSex || ''}
+              onChange={(e) => setTempSex(e.target.value)}
+            >
+              <FormControlLabel 
+                value="female" 
+                control={<Radio />} 
+                label={t('female')} 
+              />
+              <FormControlLabel 
+                value="male" 
+                control={<Radio />} 
+                label={t('male')} 
+              />
+            </RadioGroup>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <FormLabel id="birth-year-select">{t('birthYear')}</FormLabel>
+            <Select
+              value={tempBirthYear || ''}
+              onChange={(e) => setTempBirthYear(Number(e.target.value) || null)}
+              displayEmpty
+            >
+              <MenuItem value="">{t('selectYear')}</MenuItem>
+              {years.map(year => (
+                <MenuItem key={year} value={year}>{year}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <div className="mt-4 pt-4 border-t border-gray-300">
+            <Button 
+              onClick={() => setShowDeleteConfirmation(true)}
+              color="error"
+              startIcon={<DeleteIcon />}
+              size="small"
+            >
+              {t('deleteAccount')}
+            </Button>
           </div>
         </DialogContent>
+
         <DialogActions className="border-t border-gray-800">
-          <Button onClick={() => setShowCameraPreview(false)}>
+          <Button onClick={handleCancel}>{t('cancel')}</Button>
+          <Button 
+            onClick={handleApply}
+            variant="contained" 
+            disabled={
+              tempName === name && 
+              JSON.stringify(tempLanguages) === JSON.stringify(languages) && 
+              tempAbout === about &&
+              tempContacts === contacts &&
+              tempSex === sex &&
+              tempBirthYear === birthYear &&
+              !selectedFile
+            }
+          >
+            {tRoot('apply')}
+          </Button>
+        </DialogActions>
+
+        <CameraDialog
+          open={showCameraPreview}
+          onClose={() => setShowCameraPreview(false)}
+          TransitionProps={{
+            onEntered: onCameraDialogReady
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle className="flex justify-between items-center">
+            {t('takePhoto')}
+            <IconButton onClick={() => setShowCameraPreview(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent className="flex flex-col gap-4">
+            <div className="relative aspect-square w-full max-w-[240px] mx-auto overflow-hidden rounded-lg">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </DialogContent>
+          <DialogActions className="border-t border-gray-800">
+            <Button onClick={() => setShowCameraPreview(false)}>
+              {tRoot('cancel')}
+            </Button>
+            <Button 
+              onClick={handleCameraCapture}
+              variant="contained"
+            >
+              {t('takePhoto')}
+            </Button>
+          </DialogActions>
+        </CameraDialog>
+      </Dialog>
+
+      <Dialog
+        open={showDeleteConfirmation}
+        onClose={() => setShowDeleteConfirmation(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>{t('deleteAccountConfirmTitle')}</DialogTitle>
+        <DialogContent>
+          <p>{t('deleteAccountConfirmMessage')}</p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowDeleteConfirmation(false)}>
             {tRoot('cancel')}
           </Button>
           <Button 
-            onClick={handleCameraCapture}
-            variant="contained"
+            onClick={handleDeleteAccount}
+            variant="contained" 
+            color="error"
           >
-            {t('takePhoto')}
+            {t('deleteAccount')}
           </Button>
         </DialogActions>
-      </CameraDialog>
-    </Dialog>
+      </Dialog>
+    </>
   )
 } 

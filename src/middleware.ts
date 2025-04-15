@@ -47,7 +47,17 @@ export async function middleware(request: NextRequest) {
   return intlMiddleware(request)
 }
 
-// Specify which paths this middleware should run on
+// Update the matcher to exclude sound files
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|profiles|.*\\.png$).*)']
+  matcher: [
+    // Match all paths except:
+    // - API routes
+    // - Next.js static files
+    // - Next.js image optimization files
+    // - Favicon
+    // - Profile images
+    // - PNG files
+    // - Sound files (new exclusion)
+    '/((?!api|_next/static|_next/image|favicon.ico|profiles|sounds|.*\\.png$).*)' 
+  ]
 }

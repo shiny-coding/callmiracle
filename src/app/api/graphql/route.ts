@@ -2,13 +2,22 @@ import { createYoga } from 'graphql-yoga'
 import { schema } from '@/schema/schema'
 import clientPromise from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
+import { getServerSession } from "next-auth/next"
+import { authOptions } from '@/lib/auth'
+
+const dbName = process.env.DB_NAME
+
+if (!dbName) {
+  throw new Error('Please define the DB_NAME environment variable')
+}
 
 const yoga = createYoga({
   schema,
-  context: async () => {
+  context: async ({ request }) => {
     const client = await clientPromise
-    const db = client.db()
-    return { db }
+    const db = client.db(dbName)
+    const session = await getServerSession(authOptions)
+    return { db, session }
   },
   graphqlEndpoint: '/api/graphql',
   fetchAPI: { Response },

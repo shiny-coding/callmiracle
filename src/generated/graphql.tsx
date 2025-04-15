@@ -291,6 +291,8 @@ export type User = {
   sex: Scalars['String']['output'];
   createdAt: Scalars['Float']['output'];
   updatedAt: Scalars['Float']['output'];
+  deleted: Scalars['Boolean']['output'];
+  deletedAt: Scalars['Float']['output'];
 };
 
 export type UserInput = {

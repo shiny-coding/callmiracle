@@ -60,6 +60,8 @@ type User {
   birthYear: Int
   blocks: [Block!]!
   friends: [ID!]
+  deleted: Boolean
+  deletedAt: Float
 }
 
 type CallEvent {
@@ -184,6 +186,7 @@ type Mutation {
   deleteMeeting(id: ID!): DeleteMeetingResponse
   setNotificationSeen(id: ID!): Notification
   setAllNotificationsSeen(userId: ID!): Boolean!
+  deleteUser(userId: ID!): Boolean!
 }
 
 type Subscription {

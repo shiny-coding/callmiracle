@@ -26,7 +26,12 @@
     "photo": "Profile photo",
     "takePhoto": "Take Photo",
     "cancel": "Cancel",
-    "iSpeak": "I speak"
+    "iSpeak": "I speak",
+    "logout": "Logout",
+    "close": "Close",
+    "deleteAccount": "Delete Account",
+    "deleteAccountConfirmMessage": "Are you sure you want to delete your account? This action cannot be undone.",
+    "deleteAccountConfirmTitle": "Delete Account"
   },
   "Status": {
     "MEET_NEW_PEOPLE": "Meet New People",

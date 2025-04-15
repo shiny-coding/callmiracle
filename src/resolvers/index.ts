@@ -8,6 +8,7 @@ import { notificationsMutations } from './notificationsMutations'
 import { subscriptions } from './subscriptions'
 import { dateScalar } from './scalarResolvers'
 import { meetingsMutations } from './meetingsMutations'
+import { deleteUserMutation } from './deleteUserMutation'
 
 export const resolvers = {
   Query: {
@@ -20,7 +21,8 @@ export const resolvers = {
     updateUser: updateUserMutation,
     callUser: callUserMutation,
     ...meetingsMutations,
-    ...notificationsMutations
+    ...notificationsMutations,
+    deleteUser: deleteUserMutation
   },
   Subscription: {
     ...subscriptions

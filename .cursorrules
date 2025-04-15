@@ -1,3 +1,4 @@
 
 - prefer omitting semicolons in js
 - use normal for loops, not forEach
+- my messages files are located at src/messages/

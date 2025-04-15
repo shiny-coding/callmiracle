@@ -14,7 +14,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
   // Initialize audio on mount
   useEffect(() => {
     if (!audioRef.current) {
-      audioRef.current = new Audio(soundPath)
+      audioRef.current = new Audio(process.env.NEXT_PUBLIC_APP_URL + soundPath)
       audioRef.current.loop = loop
       audioRef.current.volume = volume
       

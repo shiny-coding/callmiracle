@@ -22,7 +22,12 @@
     "photo": "Фото профиля",
     "takePhoto": "Сделать фото",
     "cancel": "Отмена",
-    "iSpeak": "Я говорю на"
+    "iSpeak": "Я говорю на",
+    "logout": "Выйти",
+    "close": "Закрыть",
+    "deleteAccount": "Удалить аккаунт",
+    "deleteAccountConfirmMessage": "Вы уверены, что хотите удалить свой аккаунт? Это действие нельзя отменить.",
+    "deleteAccountConfirmTitle": "Удалить аккаунт"
   },
   "Status": {
     "MEET_NEW_PEOPLE": "Познакомиться",

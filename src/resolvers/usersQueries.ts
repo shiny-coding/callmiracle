@@ -53,12 +53,18 @@ export const usersQueries = {
       })
     }
     
-    return users
+    // Add filter to exclude deleted users
+    return users.filter(user => !user.deleted)
   },
 
   getUser: async (_: any, { userId }: { userId: string }, { db }: Context) => {
-    const _userId = userId ? new ObjectId(userId) : null
-    const user = _userId ? await db.collection('users').findOne({ _id: _userId }) : null
-    return user
+    try {
+      const _id = new ObjectId(userId)
+      // Add filter to exclude deleted users
+      return await db.collection('users').findOne({ _id })
+    } catch (error) {
+      console.error('Error fetching user:', error)
+      return null
+    }
   },
 } 
