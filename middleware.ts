@@ -1,23 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { locales, defaultLocale } from '@/config'
-
-function getLocaleFromHeader(req: NextRequest): string {
-  const acceptLanguage = req.headers.get('accept-language')
-  if (!acceptLanguage) return defaultLocale
-  
-  const languages = acceptLanguage.split(',')
-    .map(lang => {
-      const [code, q = '1'] = lang.split(';q=')
-      return {
-        code: code.split('-')[0].toLowerCase(),
-        q: parseFloat(q)
-      }
-    })
-    .sort((a, b) => b.q - a.q) // Sort by quality value
-  
-  const match = languages.find(lang => locales.includes(lang.code as any))
-  return match ? match.code : defaultLocale
-}
+import { getLocaleFromHeader } from '@/utils'
 
 export function middleware(req: NextRequest) {
   if (

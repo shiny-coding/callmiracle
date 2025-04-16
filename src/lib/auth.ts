@@ -1,11 +1,14 @@
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter"
-import { NextAuthOptions } from "next-auth"
+import { NextAuthOptions, User } from "next-auth"
 import { getServerSession } from "next-auth/next"
 import clientPromise from "./mongodb"
 import GoogleProvider from "next-auth/providers/google"
 import AppleProvider from "next-auth/providers/apple"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { compare } from "bcrypt"
+import { ObjectId } from 'mongodb'
+import { getBrowserLanguage } from "@/utils/language"
+
 
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -42,7 +45,10 @@ export const authOptions: NextAuthOptions = {
             return {
               ...user,
               id: user._id.toString(),
-            }
+              name: user.name,
+              email: user.email,
+              image: user.image,
+            } as User
           }
           
           return null;
@@ -57,6 +63,50 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    async signIn({ user, account, profile, email, credentials }) {
+      console.log("Provider:", account);
+      // Log the entire user object structure received by signIn
+      console.log("User object in signIn:", user);
+
+      if (account?.provider === "google" && user.id) {
+        const userFromAdapter = user as User & { createdAt?: Date | string | null };
+
+        if (!userFromAdapter.createdAt) {
+          console.log(`User ${user.email} ${user.id} from ${account.provider} needs augmentation.`);
+          try {
+            const client = await clientPromise;
+            const db = client.db();
+            const usersCollection = db.collection("users");
+            const now = new Date();
+
+            await usersCollection.updateOne(
+              { _id: new ObjectId(user.id) },
+              {
+                $set: {
+                  createdAt: now,
+                  updatedAt: now,
+                  blocks: [],
+                  friends: [],
+                  about: '',
+                  contacts: '',
+                  sex: '',
+                  birthYear: null,
+                }
+              }
+            );
+            console.log(`Augmented user ${user.email} with default fields.`);
+
+          } catch (error) {
+            console.error("Error augmenting Google user data:", error);
+            return false;
+          }
+        } else {
+          console.log(`User ${user.email} from ${account.provider} already augmented or doesn't need it.`);
+        }
+      }
+
+      return true;
+    },
     async session({ session, token }) {
       // Send properties to the client
       if (token.sub) {
@@ -64,7 +114,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id
       }

@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useRef } from 'react'
+import Cookies from 'js-cookie'
 import { 
   Button, TextField, Typography, Card, CardContent, Divider, Box, 
   Tabs, Tab, FormControl, FormLabel, RadioGroup, FormControlLabel, 
@@ -107,6 +108,18 @@ export default function SignInContent() {
     }
   }
 
+  const handleSignIn = (provider: string) => {
+    // Extract locale from URL path
+    const pathname = window.location.pathname
+    const localeMatch = pathname.match(/^\/([^\/]+)/)
+    const locale = localeMatch ? localeMatch[1] : 'en'
+    // Set a cookie that expires in 5 minutes
+    Cookies.set('socialSignInLocale', locale, { expires: 1/288, path: '/', sameSite: 'Lax' })
+
+    // Initiate Google Sign-In
+    signIn(provider, { callbackUrl })
+  }
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-black-100">
       <Card className="w-full max-w-md p-4">
@@ -129,7 +142,7 @@ export default function SignInContent() {
           </Tabs>
           
           {error && (
-            <Typography color="error" className="mb-4 text-center">
+            <Typography color="error" className="text-center" sx={{ mb: 1 }}>
               {error}
             </Typography>
           )}
@@ -237,7 +250,7 @@ export default function SignInContent() {
             <Button
               variant="outlined"
               startIcon={<GoogleIcon />}
-              onClick={() => signIn('google', { callbackUrl })}
+              onClick={() => handleSignIn('google')}
               fullWidth
             >
               {mode === 'signin' ? t('signInWithGoogle') : t('registerWithGoogle')}
@@ -245,7 +258,7 @@ export default function SignInContent() {
             <Button
               variant="outlined"
               startIcon={<AppleIcon />}
-              onClick={() => signIn('apple', { callbackUrl })}
+              onClick={() => handleSignIn('apple')}
               fullWidth
             >
               {mode === 'signin' ? t('signInWithApple') : t('registerWithApple')}

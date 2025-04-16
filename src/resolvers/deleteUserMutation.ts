@@ -29,7 +29,7 @@ export const deleteUserMutation = async (
     const _id = new ObjectId(userId)
     
     // Update user to mark as deleted instead of removing
-    const result = await db.collection('users').updateOne(
+    const userUpdateResult = await db.collection('users').updateOne(
       { _id },
       { 
         $set: { 
@@ -38,14 +38,22 @@ export const deleteUserMutation = async (
           // Anonymize user data
           name: 'Deleted User',
           email: `deleted_${_id}@example.com`,
+          image: null,
           about: '',
           contacts: '',
+          // Clear other sensitive or identifying fields as needed
+          sex: '',
+          birthYear: null,
+          languages: [],
+          locale: 'en',
+          friends: [],
+          blocks: [],
           // Keep minimal data for record-keeping
         } 
       }
     )
     
-    if (result.matchedCount === 0) {
+    if (userUpdateResult.matchedCount === 0) {
       throw new GraphQLError('User not found', {
         extensions: {
           code: 'NOT_FOUND',
@@ -54,6 +62,11 @@ export const deleteUserMutation = async (
       })
     }
     
+    // Delete associated accounts (Google, Apple, etc.) from the 'accounts' collection
+    const accountDeleteResult = await db.collection('accounts').deleteMany({ userId: _id })
+
+    console.log(`Marked user ${_id} as deleted. Removed ${accountDeleteResult.deletedCount} associated account links.`)
+
     return true
   } catch (error) {
     console.error('Error marking user as deleted:', error)

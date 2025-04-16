@@ -40,7 +40,7 @@ export function useInitUser() {
   })
 
   useEffect(() => {
-    if (data?.getUser) {
+    if (data) {
       const user = data.getUser
       if ( !user ) {
         console.log('User not found in database, signing out')

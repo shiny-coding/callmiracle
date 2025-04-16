@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import clientPromise from '@/lib/mongodb'
 import { hash } from 'bcrypt'
 import { getTranslations } from 'next-intl/server'
+import { getLocaleFromHeader } from '@/utils'
 
 export async function POST(req: NextRequest) {
-  const locale = req.headers.get('Accept-Language')?.split(',')[0] || 'en'
+  const locale = getLocaleFromHeader(req)
   const t = await getTranslations({ locale, namespace: 'Auth' })
   
   try {
