@@ -285,7 +285,6 @@ export type User = {
   contacts: Scalars['String']['output'];
   friends?: Maybe<Array<Scalars['ID']['output']>>;
   languages: Array<Scalars['String']['output']>;
-  locale: Scalars['String']['output'];
   name: Scalars['String']['output'];
   email: Scalars['String']['output'];
   sex: Scalars['String']['output'];
@@ -303,8 +302,6 @@ export type UserInput = {
   contacts: Scalars['String']['input'];
   friends?: InputMaybe<Array<Scalars['ID']['input']>>;
   languages: Array<Scalars['String']['input']>;
-  locale: Scalars['String']['input'];
   name: Scalars['String']['input'];
-  online: Scalars['Boolean']['input'];
   sex: Scalars['String']['input'];
 };

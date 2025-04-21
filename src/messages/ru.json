@@ -168,6 +168,19 @@
     "registrationFailed": "Регистрация не удалась",
     "registrationError": "Что-то пошло не так во время регистрации",
     "missingRequiredFields": "Отсутствуют обязательные поля",
-    "fieldRequired": "Поле обязательно"
-  }
+    "fieldRequired": "Поле обязательно",
+    "userExists": "Пользователь уже существует",
+    "socialAccountExists": "Аккаунт с этим email уже существует. Пожалуйста, войдите с помощью {provider}.",
+    "invalidEmail": "Пожалуйста, введите корректный email",
+    "signingOut": "Выход..."
+  },
+  "meetingCall": "Звонок по встрече",
+  "confirmFinishTitle": "Завершить встречу",
+  "confirmCancelTitle": "Отменить встречу",
+  "confirmFinishMessage": "Вы уверены, что хотите отметить эту встречу как завершенную?",
+  "confirmCancelMessage": "Вы уверены, что хотите отменить эту встречу?",
+  "yes": "Да",
+  "no": "Нет",
+  "markAllAsSeen": "Отметить все как прочитанные",
+  "cancel": "Отмена"
 } 

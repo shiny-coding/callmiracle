@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import clientPromise from '@/lib/mongodb'
 import { hash } from 'bcrypt'
 import { getTranslations } from 'next-intl/server'
-import { getLocaleFromHeader } from '@/utils'
+import { getCurrentLocale } from '@/utils'
 
 export async function POST(req: NextRequest) {
-  const locale = getLocaleFromHeader(req)
+  const locale = getCurrentLocale(req)
   const t = await getTranslations({ locale, namespace: 'Auth' })
   
   try {
@@ -23,16 +23,27 @@ export async function POST(req: NextRequest) {
     const client = await clientPromise
     const db = client.db()
     
-    // Check if user already exists
+    // Check if user exists with this email but used a social provider
     const existingUser = await db.collection('users').findOne({
       email: email.toLowerCase()
     })
     
     if (existingUser) {
-      return NextResponse.json(
-        { message: t('userExists') },
-        { status: 409 }
-      )
+      // Check if they used a social provider
+      if (!existingUser.password) {
+        const accountsCollection = db.collection("accounts")
+        const account = await accountsCollection.findOne({ userId: existingUser._id })
+        
+        if (account) {
+          return NextResponse.json({ 
+            error: 'provider_exists', 
+            provider: account.provider,
+            message: `An account already exists with this email address. Please log in using ${account.provider} instead.` 
+          }, { status: 400 })
+        }
+      }
+      
+      return NextResponse.json({ error: 'user_exists', message: 'User already exists' }, { status: 400 })
     }
     
     // Hash the password
@@ -44,8 +55,7 @@ export async function POST(req: NextRequest) {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      languages: defaultLanguages,
-      locale: defaultLanguages[ 0 ],
+      languages: [],
       createdAt: now,
       updatedAt: now,
       blocks: [],

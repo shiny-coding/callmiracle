@@ -177,6 +177,10 @@
     "registrationFailed": "Registration failed",
     "registrationError": "Something went wrong during registration",
     "missingRequiredFields": "Missing required fields",
-    "fieldRequired": "Field is required"
+    "fieldRequired": "Field is required",
+    "userExists": "User already exists",
+    "socialAccountExists": "An account already exists with this email address. Please log in using {provider} instead.",
+    "invalidEmail": "Please enter a valid email address",
+    "signingOut": "Signing out..."
   }
 } 

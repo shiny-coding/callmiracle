@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server'
 import { defaultLocale, locales } from '@/config'
 
-// Supported locales
-const supportedLocales = ['en', 'ru']
+export function getCurrentLocale(req: NextRequest): string {
 
-export function getLocaleFromHeader(req: NextRequest): string {
+  const locale = req.cookies.get('NEXT_LOCALE')?.value
+  if (locale) return locale
+
   const acceptLanguage = req.headers.get('accept-language')
   if (!acceptLanguage) return defaultLocale
   
@@ -18,6 +19,6 @@ export function getLocaleFromHeader(req: NextRequest): string {
     })
     .sort((a, b) => b.q - a.q) // Sort by quality value
   
-  const match = languages.find(lang => supportedLocales.includes(lang.code as any))
+  const match = languages.find(lang => locales.includes(lang.code as any))
   return match ? match.code : defaultLocale
 }

@@ -12,7 +12,7 @@ interface ProfileIncompleteDialogProps {
 export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncompleteDialogProps) {
   const t = useTranslations()
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false)
-  const { user } = useStore()
+  const { currentUser } = useStore()
   
   const handleOpenProfileSettings = () => {
     setProfileSettingsOpen(true)
@@ -21,13 +21,16 @@ export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncomp
   
   // Determine which fields are missing
   const missingFields = []
-  if (!user?.name || user.name.trim() === '') {
+  if (!currentUser?.languages || currentUser.languages.length === 0) {
+    missingFields.push('languages')
+  }
+  if (!currentUser?.name || currentUser.name.trim() === '') {
     missingFields.push('name')
   }
-  if (!user?.sex || user.sex.trim() === '') {
+  if (!currentUser?.sex || currentUser.sex.trim() === '') {
     missingFields.push('gender')
   }
-  if (!user?.birthYear) {
+  if (!currentUser?.birthYear) {
     missingFields.push('age')
   }
   

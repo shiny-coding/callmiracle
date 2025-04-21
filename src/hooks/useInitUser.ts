@@ -2,6 +2,7 @@ import { gql, useQuery } from '@apollo/client'
 import { useStore } from '@/store/useStore'
 import { useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
+import { getBrowserLanguage } from '@/utils/language'
 
 export const GET_USER = gql`
   query GetUser($userId: ID!) {
@@ -10,7 +11,6 @@ export const GET_USER = gql`
       name
       email
       languages
-      locale
       about
       contacts
       sex
@@ -32,9 +32,7 @@ export function useInitUser() {
   const authenticatedUserId = status === 'authenticated' ? session?.user?.id : null
 
   const { data, loading, error, refetch } = useQuery(GET_USER, {
-    variables: {
-      userId: authenticatedUserId || '',
-    },
+    variables: { userId: authenticatedUserId || '', },
     skip: status !== 'authenticated' || !authenticatedUserId,
     fetchPolicy: 'network-only',
   })

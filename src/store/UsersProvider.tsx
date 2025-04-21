@@ -10,7 +10,6 @@ const GET_USERS = gql`
       _id
       name
       languages
-      locale
       about
       contacts
       sex

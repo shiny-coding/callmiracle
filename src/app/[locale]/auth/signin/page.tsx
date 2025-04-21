@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Cookies from 'js-cookie'
 import { 
   Button, TextField, Typography, Card, CardContent, Divider, Box, 
@@ -65,6 +65,11 @@ export default function SignInContent() {
 
         if (!res?.error) {
           router.push(callbackUrl)
+        } else if (res.error.startsWith('provider_')) {
+          // Handle provider error
+          const provider = res.error.replace('provider_', '')
+          const providerName = provider.charAt(0).toUpperCase() + provider.slice(1)
+          setError(t('socialAccountExists', { provider: providerName }))
         } else {
           setError(t('invalidCredentials'))
         }
@@ -98,6 +103,10 @@ export default function SignInContent() {
             password,
           })
           router.push(callbackUrl)
+        } else if (data.error === 'provider_exists') {
+          // Handle case where email is already used with a social provider
+          const provider = data.provider.charAt(0).toUpperCase() + data.provider.slice(1)
+          setError(t('socialAccountExists', { provider }))
         } else {
           setError(data.message || t('registrationFailed'))
         }
@@ -109,13 +118,6 @@ export default function SignInContent() {
   }
 
   const handleSignIn = (provider: string) => {
-    // Extract locale from URL path
-    const pathname = window.location.pathname
-    const localeMatch = pathname.match(/^\/([^\/]+)/)
-    const locale = localeMatch ? localeMatch[1] : 'en'
-    // Set a cookie that expires in 5 minutes
-    Cookies.set('socialSignInLocale', locale, { expires: 1/288, path: '/', sameSite: 'Lax' })
-
     // Initiate Google Sign-In
     signIn(provider, { callbackUrl })
   }

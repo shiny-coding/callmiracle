@@ -38,8 +38,6 @@ export const useUpdateUser = () => {
       _id: currentUser._id,
       name: currentUser.name,
       languages: currentUser.languages,
-      locale: 'en',
-      online: currentUser.online,
       about: currentUser.about,
       contacts: currentUser.contacts,
       sex: currentUser.sex,

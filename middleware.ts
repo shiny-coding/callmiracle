@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { locales, defaultLocale } from '@/config'
-import { getLocaleFromHeader } from '@/utils'
+import { getCurrentLocale } from '@/utils'
 
 export function middleware(req: NextRequest) {
   if (
@@ -13,7 +12,7 @@ export function middleware(req: NextRequest) {
 
   const pathname = req.nextUrl.pathname
   if (pathname === '/') {
-    const locale = req.cookies.get('NEXT_LOCALE')?.value || getLocaleFromHeader(req)
+    const locale = getCurrentLocale(req)
     return NextResponse.redirect(new URL(`/${locale}${pathname}`, req.url))
   }
 }

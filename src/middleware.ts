@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import createIntlMiddleware from 'next-intl/middleware'
-import { Locale, locales } from './config'
+import { Locale, locales, defaultLocale } from './config'
+import { getCurrentLocale } from './utils'
 
 // Create internationalization middleware
 const intlMiddleware = createIntlMiddleware({
-  locales: ['en', 'ru'],
-  defaultLocale: 'en'
+  locales: locales,
+  defaultLocale: defaultLocale
 })
 
 export async function middleware(request: NextRequest) {
@@ -32,8 +33,7 @@ export async function middleware(request: NextRequest) {
     // Redirect to sign-in if no token
     if (!token) {
       // Preserve the original URL's locale
-      const locale = pathname.split('/')[1] || 'en'
-      
+      const locale = getCurrentLocale(request) || pathname.split('/')[1] || 'en'
       // Handle cases where the first segment might not be a locale
       const signInPath = locales.includes(locale as Locale) 
         ? `/${locale}/auth/signin`

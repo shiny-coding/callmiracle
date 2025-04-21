@@ -45,7 +45,6 @@ export const deleteUserMutation = async (
           sex: '',
           birthYear: null,
           languages: [],
-          locale: 'en',
           friends: [],
           blocks: [],
           // Keep minimal data for record-keeping
