@@ -91,33 +91,15 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async session({ session, token }) {
-      console.log("Session Callback - Token:", token);
+      // Send properties to the client
       if (token.sub) {
         session.user.id = token.sub
       }
-      // Ensure name/email from token are passed to session if they exist
-      if (token.name) {
-        session.user.name = token.name;
-      }
-      if (token.email) {
-        session.user.email = token.email;
-      }
-      console.log("Session Callback - Session:", session);
       return session
     },
     async jwt({ token, user, account, profile }) {
-      console.log("JWT Callback - Account:", account);
-      console.log("JWT Callback - Profile:", profile);
       if (user) {
-        // Persist the user ID from the adapter/db to the token
         token.id = user.id
-        // Potentially store name/email in token if needed, especially on first login
-        if (profile?.name) {
-          token.name = profile.name;
-        }
-        if (profile?.email) {
-          token.email = profile.email;
-        }
       }
       return token
     }
@@ -131,10 +113,13 @@ export const authOptions: NextAuthOptions = {
           const usersCollection = client.db().collection("users");
           const now = new Date();
 
+          if ( !user.name ) user.name = '';
+
           await usersCollection.updateOne(
             { _id: new ObjectId(user.id) }, // user.id SHOULD be the MongoDB ID here
             {
               $set: {
+                name: user.name,
                 createdAt: now, // Good to set here
                 updatedAt: now, // Good to set here
                 languages: [],
@@ -150,8 +135,6 @@ export const authOptions: NextAuthOptions = {
           console.log(`[Event: signIn] Successfully augmented user ${user.id}`);
         } catch (error) {
           console.error(`[Event: signIn] Error augmenting user ${user.id}:`, error);
-          // Decide if you need to do anything else if augmentation fails
-          // The user is already signed in at this point.
         }
       }
     }

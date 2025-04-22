@@ -39,7 +39,6 @@ export default function BottomControlsBar() {
     hangup,
     sendWantedMediaState
   } = useWebRTCContext()
-  const { hasUnseenNotifications } = useNotifications()
 
   const handleAudioToggle = () => {
     setLocalAudioEnabled(!localAudioEnabled)
@@ -53,25 +52,7 @@ export default function BottomControlsBar() {
 
 
   return (
-    <div className="mt-auto p-4 w-full flex justify-around items-center gap-4 bg-gradient-to-b from-black to-white/50">
-      {connectionStatus !== 'connected' && (
-        <div className="flex gap-2 items-center">
-          <IconButton
-            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-            onClick={() => setProfileOpen(true)}
-          >
-            <AccountCircleIcon className="text-white" />
-          </IconButton>
-          <IconButton
-            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-            onClick={() => setNotificationsOpen(true)}
-          >
-            <Badge color="error" variant="dot" invisible={!hasUnseenNotifications}>
-              <NotificationsIcon className="text-white" />
-            </Badge>
-          </IconButton>
-        </div>
-      )}
+    <div className="mt-auto p-4 w-full flex justify-between items-center gap-4 bg-gradient-to-b from-black to-white/50">
       {connectionStatus !== 'connected' && (
         <div className="flex gap-2 items-center">
           <IconButton onClick={() => setUsersPopupOpen(true)}>
@@ -127,10 +108,6 @@ export default function BottomControlsBar() {
       </div>
       {connectionStatus !== 'connected' && (
         <>
-          <ProfileDialog 
-            open={profileOpen}
-            onClose={() => setProfileOpen(false)}
-          />
           <CallHistoryPopup
             open={callHistoryOpen}
             onClose={() => setCallHistoryOpen(false)}
@@ -138,10 +115,6 @@ export default function BottomControlsBar() {
           <UsersPopup
             open={usersPopupOpen}
             onClose={() => setUsersPopupOpen(false)}
-          />
-          <NotificationsPopup
-            open={notificationsOpen}
-              onClose={() => setNotificationsOpen(false)}
           />
         </>
       )}
