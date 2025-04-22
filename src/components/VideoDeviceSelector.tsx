@@ -2,6 +2,10 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import DeviceSelector from './DeviceSelector'
 import { useStore } from '@/store/useStore'
 
+interface VideoDeviceSelectorProps {
+  onOpenChange?: (isOpen: boolean) => void;
+}
+
 async function getDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
   try {
     // Try to get capabilities by creating a stream
@@ -31,7 +35,7 @@ async function getDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
   return null
 }
 
-export default function VideoDeviceSelector() {
+export default function VideoDeviceSelector({ onOpenChange }: VideoDeviceSelectorProps) {
   const { setLocalStream } = useWebRTCContext()
   const { localVideoEnabled } = useStore()
 
@@ -50,6 +54,7 @@ export default function VideoDeviceSelector() {
       isEnabled={localVideoEnabled}
       setStream={setLocalStream}
       getLabel={getDeviceLabel}
+      onOpenChange={onOpenChange}
     />
   )
 } 

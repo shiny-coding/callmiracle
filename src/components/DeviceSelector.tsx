@@ -9,6 +9,7 @@ interface DeviceSelectorProps {
   isEnabled: boolean
   setStream: (stream: MediaStream | undefined) => void
   getLabel?: (device: MediaDeviceInfo) => Promise<string | null>
+  onOpenChange?: (isOpen: boolean) => void
 }
 
 export default function DeviceSelector({ 
@@ -17,12 +18,17 @@ export default function DeviceSelector({
   getStream, 
   isEnabled,
   setStream,
-  getLabel 
+  getLabel,
+  onOpenChange
 }: DeviceSelectorProps) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [deviceLabels, setDeviceLabels] = useState<Record<string, string>>({})
   const [selectedDevice, setSelectedDevice] = useState<string>('')
   const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    onOpenChange?.(isOpen)
+  }, [isOpen, onOpenChange])
 
   // Initialize client-side only state
   useEffect(() => {

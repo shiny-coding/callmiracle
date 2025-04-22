@@ -19,7 +19,7 @@ export default function LocalVideo() {
   const t = useTranslations()
   const tStatus = useTranslations('Status')
   const { currentUser, setCurrentUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
-  const { name = '', languages = [], online = false } = currentUser || {}
+  const { name = '', languages = [] } = currentUser || {}
   const { 
     localStream, 
     setLocalStream, 
@@ -29,12 +29,6 @@ export default function LocalVideo() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
-  const { updateUserData } = useUpdateUser()
-
-  const handleOnlineToggle = () => {
-    setCurrentUser({ ...currentUser!, online: !online })
-    updateUserData()
-  }
 
   // Stream management and video element updates
   useEffect(() => {

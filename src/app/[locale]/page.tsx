@@ -15,17 +15,12 @@ import TopControlsBar from '@/components/TopControlsBar';
 function MainContent() {
   const { connectionStatus, callee } = useWebRTCContext()
 
+
   return (
     <div className="h-full bg-black flex flex-col items-center w-full max-w-[1536px] mx-auto">
       {connectionStatus !== 'connected' && (
         <TopControlsBar />
       )}
-      <div className={`${connectionStatus === 'connected' 
-        ? 'absolute bottom-[72px] right-4 z-10 w-[240px]' 
-        : 'flex justify-center pt-4'
-      }`}>
-        <LocalVideo />
-      </div>
       <div className={`flex items-center justify-center w-full h-[calc(100%-72px)] ${
         connectionStatus === 'connected' ? 'relative opacity-100' : 'absolute opacity-0 pointer-events-none'
       }`}>
