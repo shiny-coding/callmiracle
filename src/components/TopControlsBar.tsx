@@ -12,7 +12,7 @@ export default function TopControlsBar() {
   const { hasUnseenNotifications } = useNotifications()
 
   return (
-    <div className="p-4 w-full flex justify-between items-center gap-4 bg-gradient-to-t from-black to-white/50">
+    <div className="p-4 w-full flex justify-between items-center gap-4 bg-gradient-to-t from-transparent to-white/30">
       <IconButton
         className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
         onClick={() => setNotificationsOpen(true)}

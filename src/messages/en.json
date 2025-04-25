@@ -181,6 +181,12 @@
     "userExists": "User already exists",
     "socialAccountExists": "An account already exists with this email address. Please log in using {provider} instead.",
     "invalidEmail": "Please enter a valid email address",
-    "signingOut": "Signing out..."
-  }
+    "signingOut": "Signing out...",
+    "registrationSuccess": "Registration successful"
+  },
+  "futureMeetingsCalendar": "Future Meetings Calendar",
+  "timeSlot": "Time Slot",
+  "meetingsCount": "Meetings Count",
+  "statuses": "Statuses",
+  "tomorrow": "Tomorrow"
 } 

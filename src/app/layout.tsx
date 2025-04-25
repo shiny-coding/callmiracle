@@ -25,8 +25,8 @@ export default async function RootLayout({ children, }: { children: React.ReactN
   const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en'
 
   return (
-    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} dark:bg-gray-900`}>
-      <body className="dark:bg-gray-900 dark:text-gray-100">
+    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="dark:text-gray-100">
         <SessionProvider>
           <ThemeProvider>
             {children}

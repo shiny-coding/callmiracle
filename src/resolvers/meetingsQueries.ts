@@ -2,6 +2,7 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { isMeetingPassed } from '@/utils/meetingUtils'
 import { MeetingStatus } from '@/generated/graphql'
+import { subDays } from 'date-fns'
 
 export const meetingsQueries = {
   getMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
@@ -121,6 +122,38 @@ export const meetingsQueries = {
     } catch (error) {
       console.error('Error fetching meetings:', error)
       throw new Error('Failed to fetch meetings')
+    }
+  },
+  getFutureMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+    try {
+      const _userId = new ObjectId(userId)
+      const fourDaysAgo = Date.now() - 4 * 24 * 60 * 60 * 1000
+
+      // Fetch meetings for user, no peer, updated/created within 4 days
+      const meetings = await db.collection('meetings').find({
+        userId: _userId,
+        $or: [
+          { peerMeetingId: { $exists: false } },
+          { peerMeetingId: null }
+        ],
+        $or: [
+          { updatedAt: { $gte: fourDaysAgo } },
+          { createdAt: { $gte: fourDaysAgo } }
+        ]
+      }).toArray()
+
+      // Filter out meetings that are already passed
+      const futureMeetings = []
+      for (let i = 0; i < meetings.length; i++) {
+        if (!isMeetingPassed(meetings[i])) {
+          futureMeetings.push(meetings[i])
+        }
+      }
+
+      return futureMeetings
+    } catch (error) {
+      console.error('Error fetching future meetings:', error)
+      throw new Error('Failed to fetch future meetings')
     }
   }
 } 

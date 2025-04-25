@@ -172,7 +172,8 @@
     "userExists": "Пользователь уже существует",
     "socialAccountExists": "Аккаунт с этим email уже существует. Пожалуйста, войдите с помощью {provider}.",
     "invalidEmail": "Пожалуйста, введите корректный email",
-    "signingOut": "Выход..."
+    "signingOut": "Выход...",
+    "registrationSuccess": "Регистрация прошла успешно"
   },
   "meetingCall": "Звонок по встрече",
   "confirmFinishTitle": "Завершить встречу",
@@ -182,5 +183,10 @@
   "yes": "Да",
   "no": "Нет",
   "markAllAsSeen": "Отметить все как прочитанные",
-  "cancel": "Отмена"
+  "cancel": "Отмена",
+  "futureMeetingsCalendar": "Календарь будущих встреч",
+  "timeSlot": "Временной слот",
+  "meetingsCount": "Количество встреч",
+  "statuses": "Статусы",
+  "tomorrow": "Завтра"
 } 

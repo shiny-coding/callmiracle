@@ -17,6 +17,7 @@ import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import MeetingsCalendar from './MeetingsCalendar'
 
 export default function MeetingsList() {
 

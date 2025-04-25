@@ -12,12 +12,13 @@ import MeetingsList from '@/components/MeetingsList';
 import LocaleSelector from '@/components/LocaleSelector';
 import { AppContent } from '@/components/AppContent';
 import TopControlsBar from '@/components/TopControlsBar';
+import MeetingsCalendar from '@/components/MeetingsCalendar';
 function MainContent() {
   const { connectionStatus, callee } = useWebRTCContext()
 
 
   return (
-    <div className="h-full bg-black flex flex-col items-center w-full max-w-[1536px] mx-auto">
+    <div className="h-full flex flex-col items-center w-full max-w-[1536px] mx-auto">
       {connectionStatus !== 'connected' && (
         <TopControlsBar />
       )}
@@ -29,7 +30,8 @@ function MainContent() {
 
       {connectionStatus !== 'connected' && (
         <div className="px-4 mt-4 overflow-y-auto pb-4 w-full max-w-[800px]">
-          <MeetingsList />
+          {/* <MeetingsList /> */}
+          <MeetingsCalendar />
         </div>
       )}
       <BottomControlsBar />

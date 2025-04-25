@@ -74,7 +74,7 @@ export default function BottomControlsBar() {
         <LocalVideo />
       </div>
 
-      <div className="mt-auto p-4 w-full flex justify-between items-center gap-4 bg-gradient-to-b from-black to-white/50">
+      <div className="mt-auto p-4 w-full flex justify-between items-center gap-4 bg-gradient-to-b from-transparent to-white/30">
         {connectionStatus !== 'connected' && (
           <div className="flex gap-2 items-center">
             <IconButton onClick={() => setUsersPopupOpen(true)}>

@@ -10,8 +10,17 @@ const intlMiddleware = createIntlMiddleware({
   defaultLocale: defaultLocale
 })
 
+// Add any other extensions you want to exclude
+const PUBLIC_FILE = /\.(.*)$/i
+
 export async function middleware(request: NextRequest) {
+
   const pathname = request.nextUrl.pathname
+  
+  // Skip middleware for public files (e.g. .jpg, .png, .css, .js, .ico, etc)
+  if (PUBLIC_FILE.test(pathname)) {
+    return NextResponse.next()
+  }
   
   // Handle signin and signout redirects 
   if (pathname === '/auth/signin' || pathname === '/auth/signout') {

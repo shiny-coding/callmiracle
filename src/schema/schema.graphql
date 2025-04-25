@@ -173,6 +173,7 @@ type Query {
   getDetailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
   getMeetings(userId: ID!): [MeetingWithPeer!]!
   getNotifications(userId: ID!): [Notification!]!
+  getFutureMeetings(userId: ID!): [Meeting!]!
 }
 
 type Mutation {
