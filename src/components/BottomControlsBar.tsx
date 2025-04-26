@@ -31,31 +31,29 @@ export default function BottomControlsBar() {
   const locale = useLocale()
   const listPath = `/${locale}/list`
   const calendarPath = `/${locale}/calendar`
+  const usersPath = `/${locale}/users`
 
   return (
     <>
       <div className="mt-auto p-3 w-full flex justify-center items-center gap-4 bg-gradient-to-b from-transparent to-white/30">
         <IconButton
-          onClick={() => router.push(listPath)}
-          style={{
-            color: pathname === listPath ? '#60a5fa' : undefined,
-          }}
+          onClick={() => router.push(listPath)} style={{ color: pathname === listPath ? '#60a5fa' : undefined, }}
         >
           <ListIcon />
         </IconButton>
         <IconButton
-          onClick={() => router.push(calendarPath)}
-          style={{
-            color: pathname === calendarPath ? '#60a5fa' : undefined,
-          }}
+          onClick={() => router.push(calendarPath)} style={{ color: pathname === calendarPath ? '#60a5fa' : undefined, }}
         >
           <CalendarMonthIcon />
         </IconButton>
+
+        <IconButton onClick={() => router.push(usersPath)} style={{ color: pathname === usersPath ? '#60a5fa' : undefined, }}
+        >
+          <PeopleIcon />
+        </IconButton>        
         {connectionStatus !== 'connected' && (
           <>
-            <IconButton onClick={() => setUsersPopupOpen(true)}>
-              <PeopleIcon />
-            </IconButton>
+
             <IconButton onClick={() => setCallHistoryOpen(true)}>
               <HistoryIcon />
             </IconButton>

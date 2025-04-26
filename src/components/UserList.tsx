@@ -2,31 +2,32 @@
 
 import React, { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Paper, List, ListItem, Typography, IconButton, FormControlLabel, Checkbox } from '@mui/material'
+import { Paper, List, ListItem, Typography, IconButton, FormControlLabel, Checkbox, TextField, FormGroup, Divider } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { User } from '@/generated/graphql'
 import { useUsers } from '@/store/UsersProvider'
 import UserCard from './UserCard'
 import { normalizeText } from '@/utils/textNormalization'
 import { useStore } from '@/store/useStore'
+import LanguageSelector from './LanguageSelector'
 
-interface UserListProps {
-  filterLanguages?: string[]
-  nameFilter?: string
-  showMales?: boolean
-  showFemales?: boolean
-}
-
-export default function UserList({ 
-  filterLanguages = [], 
-  nameFilter = '',
-  showMales = true,
-  showFemales = true,
-}: UserListProps) {
+export default function UserList() {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations()
   const currentUser = useStore(state => state.currentUser)
   const [showOnlyFriends, setShowOnlyFriends] = useState(false)
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
+  const [nameFilter, setNameFilter] = useState('')
+  const [showMales, setShowMales] = useState(true)
+  const [showFemales, setShowFemales] = useState(true)
+
+  // Collect all available languages from users
+  let availableLanguages: string[] = []
+  if (users) {
+    availableLanguages = Array.from(
+      new Set(users.flatMap(user => user.languages))
+    )
+  }
 
   if (loading && !users) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading users</Typography>
@@ -37,22 +38,22 @@ export default function UserList({
   // Apply sex filter
   if (!showMales || !showFemales) {
     filteredUsers = filteredUsers.filter(user => {
-      if (!user.sex) return showMales && showFemales // Include users without sex set only if both are selected
+      if (!user.sex) return showMales && showFemales
       return (showMales && user.sex === 'male') || (showFemales && user.sex === 'female')
     })
   }
 
   // Apply language filter if any languages are selected
-  if (filterLanguages.length > 0) {
+  if (selectedLanguages.length > 0) {
     filteredUsers = filteredUsers.filter(user =>
-      user.languages.some(lang => filterLanguages.includes(lang))
+      user.languages.some(lang => selectedLanguages.includes(lang))
     )
   }
 
   // Apply name filter if provided
   if (nameFilter) {
     const normalizedFilter = normalizeText(nameFilter)
-    filteredUsers = filteredUsers.filter(user => 
+    filteredUsers = filteredUsers.filter(user =>
       normalizeText(user.name).includes(normalizedFilter)
     )
   }
@@ -60,53 +61,96 @@ export default function UserList({
   // Apply friends filter if enabled
   const friends = currentUser?.friends ?? []
   if (showOnlyFriends) {
-    filteredUsers = filteredUsers.filter(user => 
+    filteredUsers = filteredUsers.filter(user =>
       friends.includes(user._id)
     )
   }
 
   return (
-    <Paper 
-      className="p-4 relative bg-gray-800" 
-    >
-      <div className="flex justify-between items-center mb-4 absolute top-0 right-0">
-        <IconButton 
-          onClick={() => refetch()} 
+    <div className="user-list-page">
+      <div className="user-filters mb-4">
+        <TextField
+          fullWidth
+          placeholder={t('searchByName')}
+          value={nameFilter}
+          onChange={e => setNameFilter(e.target.value)}
+          className="mb-4"
           size="small"
-          className="hover:bg-gray-700 text-white"
-        >
-          <RefreshIcon className="text-white" />
-        </IconButton>
-      </div>
-      <div className="filter-controls mb-4">
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={showOnlyFriends}
-              onChange={() => setShowOnlyFriends(!showOnlyFriends)}
-              className="text-white"
+        />
+        <FormGroup className="mb-4">
+          <div className="flex gap-4">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showMales}
+                  onChange={e => setShowMales(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={t('Profile.male')}
             />
-          }
-          label={<span className="text-white">{t('onlyFriends')}</span>}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showFemales}
+                  onChange={e => setShowFemales(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={t('Profile.female')}
+            />
+          </div>
+        </FormGroup>
+        <LanguageSelector
+          value={selectedLanguages}
+          onChange={setSelectedLanguages}
+          label={t('filterByLanguages')}
+          availableLanguages={availableLanguages}
         />
       </div>
-      <List>
-        {filteredUsers.map((user: User) => (
-          <ListItem 
-            key={user._id} 
-            className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
+      <Divider className="mb-4" />
+      <Paper 
+        className="p-4 relative bg-gray-800" 
+      >
+        <div className="flex justify-between items-center mb-4 absolute top-0 right-0">
+          <IconButton 
+            onClick={() => refetch()} 
+            size="small"
+            className="hover:bg-gray-700 text-white"
           >
-            <div className="w-full">
-              <UserCard 
-                user={user} 
-                showDetails={true} 
-                showCallButton={true}
-                showHistoryButton={true}
+            <RefreshIcon className="text-white" />
+          </IconButton>
+        </div>
+        <div className="filter-controls mb-4">
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showOnlyFriends}
+                onChange={() => setShowOnlyFriends(!showOnlyFriends)}
+                className="text-white"
               />
-            </div>
-          </ListItem>
-        ))}
-      </List>
-    </Paper>
+            }
+            label={<span className="text-white">{t('onlyFriends')}</span>}
+          />
+        </div>
+        <List>
+          {filteredUsers.map((user: User) => (
+            <ListItem 
+              key={user._id} 
+              className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
+            >
+              <div className="w-full">
+                <UserCard 
+                  user={user} 
+                  showDetails={true} 
+                  showCallButton={true}
+                  showHistoryButton={true}
+                />
+              </div>
+            </ListItem>
+          ))}
+        </List>
+      </Paper>
+    </div>
   )
 } 

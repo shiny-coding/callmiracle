@@ -18,6 +18,7 @@ interface LanguageSelectorProps {
   value: string[];
   onChange: (languages: string[]) => void;
   label?: string;
+  availableLanguages: string[];
 }
 
 const ITEM_HEIGHT = 48;
@@ -40,7 +41,7 @@ function getStyles(name: string, selectedLangs: string[], theme: Theme) {
   };
 }
 
-export default function LanguageSelector({ value, onChange, label }: LanguageSelectorProps) {
+export default function LanguageSelector({ value, onChange, label, availableLanguages }: LanguageSelectorProps) {
   const theme = useTheme();
   const t = useTranslations('Profile');
 
@@ -50,6 +51,11 @@ export default function LanguageSelector({ value, onChange, label }: LanguageSel
     } = event;
     onChange(typeof newValue === 'string' ? newValue.split(',') : newValue);
   };
+
+  // Filter LANGUAGES if availableLanguages is provided
+  const filteredLanguages = availableLanguages && availableLanguages.length > 0
+    ? LANGUAGES.filter(lang => availableLanguages.includes(lang.code))
+    : LANGUAGES;
 
   return (
     <FormGroup className="mb-4">
@@ -95,7 +101,7 @@ export default function LanguageSelector({ value, onChange, label }: LanguageSel
               }
             }}
           >
-            {LANGUAGES.map((lang) => (
+            {filteredLanguages.map((lang) => (
               <MenuItem key={lang.code} value={lang.code}>
                 <Checkbox checked={value.indexOf(lang.code) > -1} />
                 <ListItemText primary={lang.name} />
