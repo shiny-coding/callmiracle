@@ -119,7 +119,7 @@ export default function MeetingsCalendar() {
   }
 
   return (
-    <Paper className="p-4 bg-gray-800 mt-6">
+    <Paper className="p-4 bg-gray-800">
       <Typography variant="h6" className="mb-4">{t('futureMeetingsCalendar')}</Typography>
       <Table>
         <TableHead>

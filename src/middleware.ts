@@ -28,31 +28,36 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
   
-  // Check if the path is a public path (no auth needed)
-  const isAuthPage = pathname.includes('/auth/signin')
-  
-  // For protected routes, check authentication
-  if (!isAuthPage) {
+  // Check if the path is root or a locale root (e.g. /, /en, /fr)
+  const isRoot = pathname === '/'
+  const isLocaleRoot = locales.some(locale => pathname === `/${locale}`)
+
+  if (isRoot || isLocaleRoot) {
+    // Figure out the locale to use
+    const locale = getCurrentLocale(request) || pathname.split('/')[1] || defaultLocale
+
     // Check for authentication token
     const token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
     })
-    
-    // Redirect to sign-in if no token
+
     if (!token) {
-      // Preserve the original URL's locale
-      const locale = getCurrentLocale(request) || pathname.split('/')[1] || 'en'
-      // Handle cases where the first segment might not be a locale
-      const signInPath = locales.includes(locale as Locale) 
+      // Not authenticated: redirect to sign-in
+      const signInPath = locales.includes(locale as Locale)
         ? `/${locale}/auth/signin`
         : '/auth/signin'
-        
       return NextResponse.redirect(new URL(signInPath, request.url))
+    } else {
+      // Authenticated: redirect to calendar
+      const calendarPath = locales.includes(locale as Locale)
+        ? `/${locale}/calendar`
+        : `/${defaultLocale}/calendar`
+      return NextResponse.redirect(new URL(calendarPath, request.url))
     }
   }
   
-  // Apply internationalization after auth check
+  // For all other routes, run intlMiddleware after auth check
   return intlMiddleware(request)
 }
 

@@ -16,6 +16,7 @@ export const GET_USER = gql`
       sex
       birthYear
       friends
+      updatedAt
       blocks {
         userId
         all

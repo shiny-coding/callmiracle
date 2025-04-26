@@ -4,7 +4,7 @@ import { UserInput } from '@/generated/graphql'
 
 const UPDATE_USER = gql`
   mutation UpdateUser($input: UserInput!) {
-    updateUser(input: $input) { _id }
+    updateUser(input: $input) { _id, updatedAt }
   }
 `
 
@@ -26,9 +26,9 @@ const removeTypename = <T>(value: T): Omit<T, '__typename'> => {
 
 
 export const useUpdateUser = () => {
-  const [updateUser, { loading }] = useMutation(UPDATE_USER)
+  const [updateUser, { data, loading }] = useMutation(UPDATE_USER)
   const updateUserData = async () => {
-    const { currentUser } = useStore.getState()
+    const { currentUser, setCurrentUser } = useStore.getState()
 
     if (!currentUser) {
       return
@@ -49,6 +49,12 @@ export const useUpdateUser = () => {
     await updateUser({
       variables: { input: removeTypename(input) }
     })
+    if (data?.updateUser) {
+      setCurrentUser({
+        ...currentUser,
+        ...data.updateUser
+      })
+    }
   }
 
   return { updateUserData, loading }

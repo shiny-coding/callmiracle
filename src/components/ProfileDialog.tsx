@@ -215,7 +215,7 @@ export default function ProfileDialog({ open, onClose }: ProfileDialogProps) {
                   </div>
                   {(imageExists || selectedFile) && (
                       <Image
-                        src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${currentUserId}.jpg?t=${timestamp}`}
+                        src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${currentUserId}.jpg?v=${currentUser?.updatedAt}`}
                         alt={t('photo')}
                         fill
                         unoptimized

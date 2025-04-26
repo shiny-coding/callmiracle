@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation';
 import { ApolloWrapper } from '@/lib/apollo-provider';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import ThemeRegistry from '@/components/ThemeRegistry';
-import { AppContent, StoreInitializer } from '@/components/AppContent';
+import {StoreInitializer } from '@/components/AppContent';
 import { cookies } from 'next/headers';
+import { ClientLayout } from './ClientLayout';
+
 
 export default async function LocaleLayout({ children, }: { children: React.ReactNode; }) {
   const cookieStore = await cookies()
@@ -17,14 +19,16 @@ export default async function LocaleLayout({ children, }: { children: React.Reac
     console.error('Failed to load messages:', error);
     notFound();
   }
-
+  
   return (
     <AppRouterCacheProvider>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <ApolloWrapper>
           <ThemeRegistry>
             <StoreInitializer>
-              {children}
+              <ClientLayout>
+                {children}
+              </ClientLayout>
             </StoreInitializer>
           </ThemeRegistry>
         </ApolloWrapper>
@@ -32,3 +36,4 @@ export default async function LocaleLayout({ children, }: { children: React.Reac
     </AppRouterCacheProvider>
   );
 } 
+

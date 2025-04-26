@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { cookies } from 'next/headers'
+import ViewportHeightSetter from '@/components/ViewportHeightSetter'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,7 @@ export default async function RootLayout({ children, }: { children: React.ReactN
   return (
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="dark:text-gray-100">
+        <ViewportHeightSetter />
         <SessionProvider>
           <ThemeProvider>
             {children}

@@ -13,7 +13,6 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { LANGUAGES } from '@/config/languages'
 import ProfileDialog from './ProfileDialog'
 import MeetingDialog from './MeetingDialog'
-import { useUpdateUser } from '@/hooks/useUpdateUser'
 
 export default function LocalVideo() {
   const t = useTranslations()
