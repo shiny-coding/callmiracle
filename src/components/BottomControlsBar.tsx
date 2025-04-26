@@ -18,8 +18,6 @@ document.addEventListener("mousemove", function (event) {
 });
 
 export default function BottomControlsBar() {
-  const [callHistoryOpen, setCallHistoryOpen] = useState(false)
-  const [usersPopupOpen, setUsersPopupOpen] = useState(false)
   
   const {
     connectionStatus,
@@ -32,29 +30,26 @@ export default function BottomControlsBar() {
   const listPath = `/${locale}/list`
   const calendarPath = `/${locale}/calendar`
   const usersPath = `/${locale}/users`
+  const callHistoryPath = `/${locale}/call-history`
+
+  const selectedColor = '#60a5fa'
 
   return (
     <>
       <div className="mt-auto p-3 w-full flex justify-center items-center gap-4 bg-gradient-to-b from-transparent to-white/30">
-        <IconButton
-          onClick={() => router.push(listPath)} style={{ color: pathname === listPath ? '#60a5fa' : undefined, }}
-        >
-          <ListIcon />
-        </IconButton>
-        <IconButton
-          onClick={() => router.push(calendarPath)} style={{ color: pathname === calendarPath ? '#60a5fa' : undefined, }}
-        >
-          <CalendarMonthIcon />
-        </IconButton>
-
-        <IconButton onClick={() => router.push(usersPath)} style={{ color: pathname === usersPath ? '#60a5fa' : undefined, }}
-        >
-          <PeopleIcon />
-        </IconButton>        
         {connectionStatus !== 'connected' && (
           <>
+            <IconButton onClick={() => router.push(listPath)} style={{ color: pathname === listPath ? selectedColor : undefined, }} >
+              <ListIcon />
+            </IconButton>
+            <IconButton onClick={() => router.push(calendarPath)} style={{ color: pathname === calendarPath ? selectedColor : undefined, }} >
+              <CalendarMonthIcon />
+            </IconButton>
 
-            <IconButton onClick={() => setCallHistoryOpen(true)}>
+            <IconButton onClick={() => router.push(usersPath)} style={{ color: pathname === usersPath ? selectedColor : undefined, }} >
+              <PeopleIcon />
+            </IconButton>        
+            <IconButton onClick={() => router.push(callHistoryPath)} style={{ color: pathname === callHistoryPath ? selectedColor : undefined, }} >
               <HistoryIcon />
             </IconButton>
           </>
@@ -68,19 +63,6 @@ export default function BottomControlsBar() {
               <CallEndIcon className="text-red-400" />
             </IconButton>
           </div>
-        )}
-
-        {connectionStatus !== 'connected' && (
-          <>
-            <CallHistoryPopup
-              open={callHistoryOpen}
-              onClose={() => setCallHistoryOpen(false)}
-            />
-            <UsersPopup
-              open={usersPopupOpen}
-              onClose={() => setUsersPopupOpen(false)}
-            />
-          </>
         )}
       </div>
     </>

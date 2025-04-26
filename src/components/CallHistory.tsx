@@ -14,7 +14,6 @@ const CALL_HISTORY = gql`
         name
         sex
         languages
-        timestamp
       }
       lastCallAt
       duration
