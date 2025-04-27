@@ -45,3 +45,4 @@ next-env.d.ts
 /certs
 /public/profiles
 /keys
+/output.mp4
