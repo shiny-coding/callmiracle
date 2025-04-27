@@ -67,7 +67,7 @@ export default function UserList() {
   }
 
   return (
-    <div className="user-list-page">
+    <Paper className="p-4 h-full">
       <div className="user-filters mb-4">
         <TextField
           fullWidth
@@ -99,6 +99,16 @@ export default function UserList() {
               }
               label={t('Profile.female')}
             />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showOnlyFriends}
+                  onChange={() => setShowOnlyFriends(!showOnlyFriends)}
+                  className="text-white"
+                />
+              }
+              label={<span className="text-white">{t('onlyFriends')}</span>}
+            />
           </div>
         </FormGroup>
         <LanguageSelector
@@ -109,30 +119,7 @@ export default function UserList() {
         />
       </div>
       <Divider className="mb-4" />
-      <Paper 
-        className="p-4 relative bg-gray-800" 
-      >
-        <div className="flex justify-between items-center mb-4 absolute top-0 right-0">
-          <IconButton 
-            onClick={() => refetch()} 
-            size="small"
-            className="hover:bg-gray-700 text-white"
-          >
-            <RefreshIcon className="text-white" />
-          </IconButton>
-        </div>
-        <div className="filter-controls mb-4">
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={showOnlyFriends}
-                onChange={() => setShowOnlyFriends(!showOnlyFriends)}
-                className="text-white"
-              />
-            }
-            label={<span className="text-white">{t('onlyFriends')}</span>}
-          />
-        </div>
+      <div className="p-4 relative">
         <List>
           {filteredUsers.map((user: User) => (
             <ListItem 
@@ -150,7 +137,7 @@ export default function UserList() {
             </ListItem>
           ))}
         </List>
-      </Paper>
-    </div>
+      </div>
+    </Paper>
   )
 } 

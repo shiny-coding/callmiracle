@@ -1,0 +1,5 @@
+
+body:before {
+  content: '';
+  background-image: url('/space2.jpg');
+}

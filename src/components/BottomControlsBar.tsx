@@ -5,9 +5,6 @@ import PeopleIcon from '@mui/icons-material/People'
 import ListIcon from '@mui/icons-material/List'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
-import { useState } from 'react'
-import CallHistoryPopup from './CallHistoryPopup'
-import UsersPopup from './UsersPopup'
 import { useRouter, usePathname  } from 'next/navigation'
 import { useLocale } from 'next-intl';
 

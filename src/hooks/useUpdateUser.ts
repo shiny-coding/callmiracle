@@ -46,13 +46,13 @@ export const useUpdateUser = () => {
       friends: currentUser.friends
     }
 
-    await updateUser({
+    const result = await updateUser({
       variables: { input: removeTypename(input) }
     })
-    if (data?.updateUser) {
+    if (result.data?.updateUser) {
       setCurrentUser({
         ...currentUser,
-        ...data.updateUser
+        ...result.data.updateUser
       })
     }
   }

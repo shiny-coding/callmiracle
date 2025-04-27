@@ -18,7 +18,7 @@ interface LanguageSelectorProps {
   value: string[];
   onChange: (languages: string[]) => void;
   label?: string;
-  availableLanguages: string[];
+  availableLanguages?: string[];
 }
 
 const ITEM_HEIGHT = 48;

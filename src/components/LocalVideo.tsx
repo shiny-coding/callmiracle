@@ -129,10 +129,6 @@ export default function LocalVideo() {
           </div>
         )}
       </div>
-      <ProfileDialog 
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-      />
       <MeetingDialog
         open={statusOpen}
         onClose={() => setStatusOpen(false)}

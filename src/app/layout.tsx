@@ -30,9 +30,7 @@ export default async function RootLayout({ children, }: { children: React.ReactN
       <body className="dark:text-gray-100">
         <ViewportHeightSetter />
         <SessionProvider>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
+          {children}
         </SessionProvider>
       </body>
     </html>

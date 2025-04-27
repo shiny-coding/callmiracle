@@ -15,15 +15,16 @@ import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import LocalVideo from './LocalVideo'
 import { useCheckImage } from '@/hooks/useCheckImage'
+import { useRouter } from 'next/navigation'
 
 export default function TopControlsBar() {
-  const [profileOpen, setProfileOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const { hasUnseenNotifications } = useNotifications()
   const { currentUser } = useStore()
   const [isHoveringOverVideoControls, setIsHoveringOverVideoControls] = useState(false)
   const [isVideoDeviceSelectorOpen, setIsVideoDeviceSelectorOpen] = useState(false)
   const { exists: imageExists } = useCheckImage(currentUser?._id)
+  const router = useRouter()
 
   const {
     localAudioEnabled,
@@ -113,7 +114,7 @@ export default function TopControlsBar() {
         <div className="relative w-10 h-10">
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40 p-0"
-            onClick={() => setProfileOpen(true)}
+            onClick={() => router.push('/profile')}
             style={{ width: 40, height: 40 }}
           >
             <Avatar
@@ -125,10 +126,6 @@ export default function TopControlsBar() {
           </IconButton>
         </div>
       </div>
-      <ProfileDialog 
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-      />
       <NotificationsPopup
         open={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}

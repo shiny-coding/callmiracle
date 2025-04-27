@@ -43,7 +43,7 @@ function MainContent({ children }: { children: React.ReactNode }) {
       </div>
 
       {connectionStatus !== 'connected' && (
-        <div className="px-4 overflow-y-auto pb-4 w-full max-w-[800px]">
+        <div className="overflow-y-auto px-2 w-full max-w-[800px] grow">
           {children}
         </div>
       )}

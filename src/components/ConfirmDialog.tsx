@@ -17,7 +17,7 @@ export default function ConfirmDialog({ open, title, message, onConfirm, onCance
       <DialogContent className="mt-4">
         <Typography>{message}</Typography>
       </DialogContent>
-      <DialogActions className="border-t border-gray-200">
+      <DialogActions className="border-t panel-border">
         <Button onClick={onCancel} color="primary">
           {/* Cancel */}
           No

@@ -72,11 +72,6 @@ export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncomp
           </Button>
         </DialogActions>
       </Dialog>
-      
-      <ProfileDialog
-        open={profileSettingsOpen}
-        onClose={() => setProfileSettingsOpen(false)}
-      />
     </>
   )
 } 
