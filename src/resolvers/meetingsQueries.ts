@@ -127,30 +127,16 @@ export const meetingsQueries = {
   getFutureMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
       const _userId = new ObjectId(userId)
-      const fourDaysAgo = Date.now() - 4 * 24 * 60 * 60 * 1000
+      const MS_IN_2_DAYS = 2 * 24 * 60 * 60 * 1000
+      const now = Date.now()
+      const twoDaysFromNow = now + MS_IN_2_DAYS
 
-      // Fetch meetings for user, no peer, updated/created within 4 days
       const meetings = await db.collection('meetings').find({
-        userId: _userId,
-        $or: [
-          { peerMeetingId: { $exists: false } },
-          { peerMeetingId: null }
-        ],
-        $or: [
-          { updatedAt: { $gte: fourDaysAgo } },
-          { createdAt: { $gte: fourDaysAgo } }
-        ]
+        status: MeetingStatus.Seeking,
+        lastSlotEnd: { $lt: twoDaysFromNow }
       }).toArray()
 
-      // Filter out meetings that are already passed
-      const futureMeetings = []
-      for (let i = 0; i < meetings.length; i++) {
-        if (!isMeetingPassed(meetings[i])) {
-          futureMeetings.push(meetings[i])
-        }
-      }
-
-      return futureMeetings
+      return meetings
     } catch (error) {
       console.error('Error fetching future meetings:', error)
       throw new Error('Failed to fetch future meetings')

@@ -46,3 +46,7 @@ next-env.d.ts
 /public/profiles
 /keys
 /output.mp4
+/public/design/output-8x-2.mp4
+/public/design/input.mp4
+/public/design/output-4x.mp4
+/public/design/output-8x.mp4

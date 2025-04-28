@@ -12,6 +12,7 @@ import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilli
 import TimeSlotsGrid from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
 import { isMeetingPassed } from '@/utils/meetingUtils'
+import CircularProgress from '@mui/material/CircularProgress'
 
 interface Props {
   open: boolean
@@ -270,8 +271,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
     onClose()
   }
 
-  const handleApply = async () => {
-    console.log('selectedTimeSlots', selectedTimeSlots)
+  const handleSave = async () => {
     await updateMeeting({
       _id: meetingId,
       statuses: tempStatuses,
@@ -289,149 +289,159 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
   }
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleCancel}
-      maxWidth="sm"
-      fullWidth
-    >
-      <DialogTitle className="flex justify-between items-center">
-        {meeting ? t('editMeeting') : t('createMeeting')}
-        <IconButton onClick={handleCancel} size="small">
-          <CloseIcon /> 
-        </IconButton>
-      </DialogTitle>
-      <DialogContent className="flex flex-col gap-4">
-        <StatusSelector value={tempStatuses} onChange={setTempStatuses} />
-        
-        <Typography variant="subtitle1" className="mt-4">
-          {t('languages')}
-        </Typography>
-        <LanguageSelector
-          value={tempLanguages}
-          onChange={setTempLanguages}
-          label={t('Profile.iSpeak')}
-        />
-        
-        {tempLanguages.length === 0 && (
-          <Typography color="error" className="text-sm">
-            {t('pleaseSelectLanguages')}
-          </Typography>
-        )}
-        
-        <Typography variant="subtitle1" className="mt-4">
-          {t('preferences')}
-        </Typography>
-        
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={tempAllowedMales}
-                onChange={(e) => handleMalesChange(e.target.checked)}
-              />
-            }
-            label={t('allowMales')}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={tempAllowedFemales}
-                onChange={(e) => handleFemalesChange(e.target.checked)}
-              />
-            }
-            label={t('allowFemales')}
-          />
-        </FormGroup>
-        
-        <Typography>
-          {t('ageRange')}: {tempAgeRange[0]} - {tempAgeRange[1]}
-        </Typography>
-        <Slider
-          value={tempAgeRange}
-          onChange={(_, newValue) => setTempAgeRange(newValue as [number, number])}
-          min={10}
-          max={100}
-          valueLabelDisplay="auto"
-          sx={{ touchAction: 'pan-y' }}
-        />
-
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={preferEarlier}
-              onChange={(e) => setPreferEarlier(e.target.checked)}
-            />
-          }
-          label={t('preferEarlier')}
-        />
-
-        <Typography variant="subtitle1" className="mt-4">
-          {t('minDuration')}
-        </Typography>
-        <div className="flex gap-4 justify-center">
-          <Button 
-            variant={minDuration === 30 ? "contained" : "outlined"}
-            onClick={() => setMinDuration(30)}
-            className="flex-1"
-          >
-            30 {t('minutes')}
-          </Button>
-          <Button 
-            variant={minDuration === 60 ? "contained" : "outlined"}
-            onClick={() => setMinDuration(60)}
-            className="flex-1"
-          >
-            1 {t('hour')}
-          </Button>
-        </div>
-        
-        <Divider className="my-4" />
-
-        <Typography variant="subtitle1" className="mt-4">
-          {t('selectTimeSlots')}
-        </Typography>
-        <TimeSlotsGrid
-          timeSlots={availableTimeSlots}
-          selectedTimeSlots={selectedTimeSlots}
-          onToggleTimeSlot={toggleTimeSlot}
-        />
-        {selectedTimeSlots.length === 0 && (
-          <Typography color="error" className="text-sm">
-            {t('pleaseSelectTimeSlots')}
-          </Typography>
-        )}
-
-      </DialogContent>
-      <DialogActions className="border-t border-gray-800">
-        <div className="flex flex-col justify-start gap-2 mr-auto">
-          {tempStatuses.length === 0 && (
-            <Typography color="warning" className="text-sm">
-              {t('pleaseSelectStatus')}
-            </Typography>
-          )}
-
-          {selectedTimeSlots.length > 0 && !hasValidDuration && (
-            <Typography color="warning" className="text-sm">
-              {t('insufficientDuration', { minutes: minDuration, })}
-            </Typography>
-          )}
-        </div>
-        <Button onClick={handleCancel}>
-          {t('cancel')}
-        </Button>
-        <Button
-          onClick={handleApply}
-          variant="contained"
-          disabled={loading || 
-            selectedTimeSlots.length === 0 || 
-            tempStatuses.length === 0 || 
-            tempLanguages.length === 0 ||
-            !hasValidDuration}
+    <div className="flex flex-col h-full panel-bg relative">
+      {loading && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
+          style={{ pointerEvents: 'all' }}
         >
-          {meeting ? t('update') : t('create')}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <CircularProgress color="inherit" />
+        </div>
+      )}
+      <Dialog
+        open={open}
+        onClose={handleCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          {meeting ? t('editMeeting') : t('createMeeting')}
+          <IconButton onClick={handleCancel} size="small">
+            <CloseIcon /> 
+          </IconButton>
+        </DialogTitle>
+        <DialogContent className="flex flex-col gap-4">
+          <StatusSelector value={tempStatuses} onChange={setTempStatuses} />
+          
+          <Typography variant="subtitle1" className="mt-4">
+            {t('languages')}
+          </Typography>
+          <LanguageSelector
+            value={tempLanguages}
+            onChange={setTempLanguages}
+            label={t('Profile.iSpeak')}
+          />
+          
+          {tempLanguages.length === 0 && (
+            <Typography color="error" className="text-sm">
+              {t('pleaseSelectLanguages')}
+            </Typography>
+          )}
+          
+          <Typography variant="subtitle1" className="mt-4">
+            {t('preferences')}
+          </Typography>
+          
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={tempAllowedMales}
+                  onChange={(e) => handleMalesChange(e.target.checked)}
+                />
+              }
+              label={t('allowMales')}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={tempAllowedFemales}
+                  onChange={(e) => handleFemalesChange(e.target.checked)}
+                />
+              }
+              label={t('allowFemales')}
+            />
+          </FormGroup>
+          
+          <Typography>
+            {t('ageRange')}: {tempAgeRange[0]} - {tempAgeRange[1]}
+          </Typography>
+          <Slider
+            value={tempAgeRange}
+            onChange={(_, newValue) => setTempAgeRange(newValue as [number, number])}
+            min={10}
+            max={100}
+            valueLabelDisplay="auto"
+            sx={{ touchAction: 'pan-y' }}
+          />
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={preferEarlier}
+                onChange={(e) => setPreferEarlier(e.target.checked)}
+              />
+            }
+            label={t('preferEarlier')}
+          />
+
+          <Typography variant="subtitle1" className="mt-4">
+            {t('minDuration')}
+          </Typography>
+          <div className="flex gap-4 justify-center">
+            <Button 
+              variant={minDuration === 30 ? "contained" : "outlined"}
+              onClick={() => setMinDuration(30)}
+              className="flex-1"
+            >
+              30 {t('minutes')}
+            </Button>
+            <Button 
+              variant={minDuration === 60 ? "contained" : "outlined"}
+              onClick={() => setMinDuration(60)}
+              className="flex-1"
+            >
+              1 {t('hour')}
+            </Button>
+          </div>
+          
+          <Divider className="my-4" />
+
+          <Typography variant="subtitle1" className="mt-4">
+            {t('selectTimeSlots')}
+          </Typography>
+          <TimeSlotsGrid
+            timeSlots={availableTimeSlots}
+            selectedTimeSlots={selectedTimeSlots}
+            onToggleTimeSlot={toggleTimeSlot}
+          />
+          {selectedTimeSlots.length === 0 && (
+            <Typography color="error" className="text-sm">
+              {t('pleaseSelectTimeSlots')}
+            </Typography>
+          )}
+
+        </DialogContent>
+        <DialogActions className="border-t border-gray-800">
+          <div className="flex flex-col justify-start gap-2 mr-auto">
+            {tempStatuses.length === 0 && (
+              <Typography color="warning" className="text-sm">
+                {t('pleaseSelectStatus')}
+              </Typography>
+            )}
+
+            {selectedTimeSlots.length > 0 && !hasValidDuration && (
+              <Typography color="warning" className="text-sm">
+                {t('insufficientDuration', { minutes: minDuration, })}
+              </Typography>
+            )}
+          </div>
+          <Button onClick={handleCancel}>
+            {t('cancel')}
+          </Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disabled={loading || 
+              selectedTimeSlots.length === 0 || 
+              tempStatuses.length === 0 || 
+              tempLanguages.length === 0 ||
+              !hasValidDuration}
+          >
+            {meeting ? t('update') : t('create')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
   )
 } 

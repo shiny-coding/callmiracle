@@ -46,6 +46,21 @@ body:before {
   z-index: -1;
 }
 
+.video-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: -1;
+
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  filter: brightness(0.7) contrast(1.2);
+}
+
 .panel-bg {
   background-color: #1e2b3f;
 }

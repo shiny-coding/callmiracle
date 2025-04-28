@@ -99,6 +99,7 @@ export type Meeting = {
   status: MeetingStatus;
   statuses: Array<Scalars['String']['output']>;
   timeSlots: Array<Scalars['Float']['output']>;
+  lastSlotEnd: Scalars['Float']['output'];
   totalDuration?: Maybe<Scalars['Int']['output']>;
   userId: Scalars['ID']['output'];
   userName?: Maybe<Scalars['String']['output']>;

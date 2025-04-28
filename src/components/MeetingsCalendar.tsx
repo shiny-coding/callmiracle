@@ -150,39 +150,54 @@ export default function MeetingsCalendar() {
               </TableRow>
               {daySlots.map(slot => {
                 const meetings = slotMap[slot.timestamp]
-                const statuses = new Set<string>()
-                const languages = new Set<string>()
+                // Count statuses
+                const statusCounts: Record<string, number> = {}
+                const languageCounts: Record<string, number> = {}
                 for (let i = 0; i < meetings.length; i++) {
                   for (let j = 0; j < meetings[i].statuses.length; j++) {
-                    statuses.add(meetings[i].statuses[j])
+                    const status = meetings[i].statuses[j]
+                    if (!statusCounts[status]) statusCounts[status] = 0
+                    statusCounts[status]++
                   }
                   for (let j = 0; j < meetings[i].languages.length; j++) {
-                    languages.add(meetings[i].languages[j])
+                    const lang = meetings[i].languages[j]
+                    if (!languageCounts[lang]) languageCounts[lang] = 0
+                    languageCounts[lang]++
                   }
                 }
                 const startLabel = slot.isNow ? t('now') : slot.startTime
                 return (
                   <TableRow key={slot.timestamp}>
-                    <TableCell padding="none" style={{ width: 40, textAlign: 'center' }}>
+                    <TableCell padding="none" style={{ width: 36, textAlign: 'center' }}>
                       {startLabel}
                     </TableCell>
                     <TableCell padding="none" style={{ width: 8, textAlign: 'center' }}>
                       -
                     </TableCell>
-                    <TableCell padding="none" style={{ width: 40, textAlign: 'center' }}>
+                    <TableCell padding="none" style={{ width: 36, textAlign: 'center' }}>
                       {slot.endTime}
                     </TableCell>
-                    <TableCell>
-                      {meetings.length}
+                    <TableCell style={{ width: 36, textAlign: 'center' }}>
+                      {meetings.length ? meetings.length : ''}
                     </TableCell>
                     <TableCell>
-                      {[...statuses].map(status => (
-                        <Chip key={status} label={status} size="small" className="mr-1 mb-1" />
+                      {Object.entries(statusCounts).map(([status, count]) => (
+                        <Chip
+                          key={status}
+                          label={`${status} (${count})`}
+                          size="small"
+                          className="mr-1 mb-1"
+                        />
                       ))}
                     </TableCell>
                     <TableCell>
-                      {[...languages].map(lang => (
-                        <Chip key={lang} label={lang} size="small" className="mr-1 mb-1" />
+                      {Object.entries(languageCounts).map(([lang, count]) => (
+                        <Chip
+                          key={lang}
+                          label={`${lang} (${count})`}
+                          size="small"
+                          className="mr-1 mb-1"
+                        />
                       ))}
                     </TableCell>
                   </TableRow>

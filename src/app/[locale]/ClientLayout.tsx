@@ -32,29 +32,36 @@ function MainContent({ children }: { children: React.ReactNode }) {
   const { connectionStatus, callee } = useWebRTCContext()
 
   return (
-    <div className="flex flex-col items-center w-full max-w-[1536px] mx-auto" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
-      {connectionStatus !== 'connected' && (
-        <TopControlsBar />
-      )}
-      <div className={`flex items-center justify-center w-full h-[calc(100%-72px)] ${
-        connectionStatus === 'connected' ? 'relative opacity-100' : 'absolute opacity-0 pointer-events-none'
-      }`}>
-        <RemoteVideo />
-      </div>
-
-      {connectionStatus !== 'connected' && (
-        <div className="overflow-y-auto px-2 w-full max-w-[800px] grow">
-          {children}
+    <>
+      {/* {connectionStatus !== 'connected' && (
+        <video className="video-bg" autoPlay muted loop playsInline>
+          <source src="/output-8x.mp4" type="video/mp4" />
+        </video>
+      )} */}
+      <div className="flex flex-col items-center w-full max-w-[1536px] mx-auto" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+        {connectionStatus !== 'connected' && (
+          <TopControlsBar />
+        )}
+        <div className={`flex items-center justify-center w-full h-[calc(100%-72px)] ${
+          connectionStatus === 'connected' ? 'relative opacity-100' : 'absolute opacity-0 pointer-events-none'
+        }`}>
+          <RemoteVideo />
         </div>
-      )}
-      <BottomControlsBar />
-      {connectionStatus !== 'connected' && (
-        <>
-          <DetailedCallHistoryDialog />
-          <CallerDialog />
-          <CalleeDialog callee={callee} />
-        </>
-      )}
-    </div>
+
+        {connectionStatus !== 'connected' && (
+          <div className="overflow-y-auto px-2 w-full max-w-[800px] grow">
+            {children}
+          </div>
+        )}
+        <BottomControlsBar />
+        {connectionStatus !== 'connected' && (
+          <>
+            <DetailedCallHistoryDialog />
+            <CallerDialog />
+            <CalleeDialog callee={callee} />
+          </> 
+        )}
+      </div>
+    </>
   )
 }

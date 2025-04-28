@@ -18,6 +18,7 @@ import { useCheckImage } from '@/hooks/useCheckImage'
 import { signOut } from 'next-auth/react'
 import { gql, useMutation } from '@apollo/client'
 import { useRouter } from 'next/navigation'
+import CircularProgress from '@mui/material/CircularProgress'
 const DELETE_USER = gql`
   mutation DeleteUser($userId: ID!) {
     deleteUser(userId: $userId)
@@ -172,7 +173,16 @@ export default function ProfileDialog() {
   }
 
   return (
-    <div className="flex flex-col h-full panel-bg">
+    <div className="flex flex-col h-full panel-bg relative">
+      {/* Loader Overlay */}
+      {uploading && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
+          style={{ pointerEvents: 'all' }}
+        >
+          <CircularProgress color="inherit" />
+        </div>
+      )}
       {/* Header */}
       <div className="flex justify-between items-center px-4 py-3 border-b panel-border">
         <div className="flex-grow font-semibold text-lg">{t('title')}</div>

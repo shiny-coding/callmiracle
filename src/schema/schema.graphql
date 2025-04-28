@@ -23,6 +23,7 @@ type Meeting {
   languages: [String!]!
   statuses: [String!]!
   timeSlots: [Float!]!
+  lastSlotEnd: Float!
   minDuration: Int!
   preferEarlier: Boolean!
   allowedMales: Boolean!

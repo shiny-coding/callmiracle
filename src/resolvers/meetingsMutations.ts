@@ -133,6 +133,8 @@ export const meetingsMutations = {
 
     try {
 
+      const lastSlotEnd = Math.max( ...timeSlots ) + 30 * 60 * 1000
+
       // Use upsert to either update existing or create new
       let result = await db.collection('meetings').findOneAndUpdate(
         { _id: _meetingId },
@@ -142,6 +144,7 @@ export const meetingsMutations = {
             userName,
             statuses,
             timeSlots,
+            lastSlotEnd,
             minDuration,
             preferEarlier,
             allowedMales,
