@@ -65,6 +65,10 @@ body:before {
   background-color: #1e2b3f;
 }
 
+.input-bg {
+  background-color: #273d58;
+}
+
 .panel-border {
   border-color: #273d58;
 }

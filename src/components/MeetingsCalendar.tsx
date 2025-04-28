@@ -6,7 +6,7 @@ import { Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Ch
 import { useTranslations } from 'next-intl'
 import { Meeting } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, addMinutes, isToday, isTomorrow } from 'date-fns'
-import { Fragment } from 'react'
+import { Fragment, useMemo } from 'react'
 import { enUS } from 'date-fns/locale'
 
 const GET_FUTURE_MEETINGS = gql`
@@ -17,9 +17,15 @@ const GET_FUTURE_MEETINGS = gql`
       statuses
       languages
       minDuration
+      userId
     }
   }
 `
+
+const VERTICAL_CELL_PADDING = '0.1rem'
+const HORIZONTAL_CELL_PADDING = '0.5rem'
+const CELL_PADDING = `${VERTICAL_CELL_PADDING} ${HORIZONTAL_CELL_PADDING}`
+const MIN_CELL_HEIGHT = '2rem'
 
 function getTimeSlotsGrid(now: number, hoursAhead: number, slotDuration: number) {
   const slots = []
@@ -118,6 +124,22 @@ export default function MeetingsCalendar() {
     slotsByDay[slot.dayKey].push(slot)
   }
 
+  // Collect all unique user IDs from all meetings in all slots
+  const userIdSet = new Set<string>()
+  for (let i = 0; i < slots.length; i++) {
+    const meetings = slotMap[slots[i].timestamp]
+    for (let j = 0; j < meetings.length; j++) {
+      if (meetings[j].userId) userIdSet.add(meetings[j].userId)
+    }
+  }
+  const userIds = Array.from(userIdSet)
+  const userIdToX: Record<string, number> = {}
+  for (let i = 0; i < userIds.length; i++) {
+    userIdToX[userIds[i]] = i
+  }
+
+  console.log(userIds)
+
   return (
     <Paper className="p-4">
       <Typography variant="h6" className="mb-4">{t('futureMeetingsCalendar')}</Typography>
@@ -125,7 +147,10 @@ export default function MeetingsCalendar() {
         <TableHead>
           <TableRow>
             <TableCell colSpan={3} padding="none">{t('timeSlot')}</TableCell>
-            <TableCell>{t('meetingsCount')}</TableCell>
+            <TableCell style={{ width: 1 }}>{t('meetingsCount')}</TableCell>
+            <TableCell padding="none" style={{ width: userIds.length * 6 + 8 }}>
+              {/* Optionally, a label or icon for the timeline */}
+            </TableCell>
             <TableCell>{t('statuses')}</TableCell>
             <TableCell>{t('languages')}</TableCell>
           </TableRow>
@@ -135,9 +160,9 @@ export default function MeetingsCalendar() {
             <Fragment key={dayKey}>
               <TableRow>
                 <TableCell
-                  colSpan={6}
-                  className="bg-gray-900 font-bold"
-                  style={{ paddingTop: 4, paddingBottom: 4 }}
+                  colSpan={7}
+                  className="input-bg font-bold"
+                  style={{ padding: CELL_PADDING, height: MIN_CELL_HEIGHT }}
                 >
                   <Typography
                     variant="body2"
@@ -177,26 +202,61 @@ export default function MeetingsCalendar() {
                     <TableCell padding="none" style={{ width: 36, textAlign: 'center' }}>
                       {slot.endTime}
                     </TableCell>
-                    <TableCell style={{ width: 36, textAlign: 'center' }}>
+                    <TableCell style={{ width: 1, textAlign: 'center', padding: CELL_PADDING }}>
                       {meetings.length ? meetings.length : ''}
                     </TableCell>
-                    <TableCell>
+                    <TableCell
+                      padding="none"
+                      sx={{
+                        width: userIds.length * 6 + 8,
+                        padding: 0,
+                        height: 0
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'stretch',
+                        height: '100%',
+                        position: 'relative'
+                      }}>
+                        {userIds.map((userId, idx) => {
+                          // Check if this user has a meeting in this slot
+                          const hasMeeting = meetings.some(m => m.userId === userId)
+                          return (
+                            <div
+                              key={userId}
+                              style={{
+                                width: 2,
+                                height: '100%',
+                                background: hasMeeting ? '#1976d2' : 'transparent',
+                                marginLeft: idx === 0 ? 0 : 4,
+                                borderRadius: 1,
+                                transition: 'background 0.2s'
+                              }}
+                              title={userId}
+                            />
+                          )
+                        })}
+                      </div>
+                    </TableCell>
+                    <TableCell style={{ padding: CELL_PADDING, width: 1 }}>
                       {Object.entries(statusCounts).map(([status, count]) => (
                         <Chip
                           key={status}
                           label={`${status} (${count})`}
                           size="small"
-                          className="mr-1 mb-1"
+                          className=""
                         />
                       ))}
                     </TableCell>
-                    <TableCell>
+                    <TableCell style={{ padding: CELL_PADDING, width: 1, height: MIN_CELL_HEIGHT }}>
                       {Object.entries(languageCounts).map(([lang, count]) => (
                         <Chip
                           key={lang}
                           label={`${lang} (${count})`}
                           size="small"
-                          className="mr-1 mb-1"
+                          className=""
                         />
                       ))}
                     </TableCell>
