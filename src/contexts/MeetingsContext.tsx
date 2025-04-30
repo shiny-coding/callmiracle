@@ -1,4 +1,4 @@
-import { MeetingWithPeer } from '@/generated/graphql'
+import { MeetingWithPeer, Meeting } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { ApolloError, gql, useQuery } from '@apollo/client'
 import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react'
@@ -38,7 +38,20 @@ export const GET_MEETINGS = gql`
       }
     }
   }
-` 
+`
+
+export const GET_FUTURE_MEETINGS = gql`
+  query GetFutureMeetings($userId: ID!) {
+    getFutureMeetings(userId: $userId) {
+      _id
+      timeSlots
+      statuses
+      languages
+      minDuration
+      userId
+    }
+  }
+`
 
 interface MeetingsContextType {
   highlightedMeetingId: string | null
@@ -47,6 +60,10 @@ interface MeetingsContextType {
   loading: boolean
   error: ApolloError | undefined
   refetch: () => void
+  futureMeetings: Meeting[]
+  loadingFutureMeetings: boolean
+  errorFutureMeetings: ApolloError | undefined
+  refetchFutureMeetings: () => void
 }
 
 const MeetingsContext = createContext<MeetingsContextType | undefined>(undefined)
@@ -63,6 +80,17 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
   })
   const meetings = useMemo(() => data?.getMeetings || [], [data])
 
+  const {
+    data: futureData,
+    loading: loadingFutureMeetings,
+    error: errorFutureMeetings,
+    refetch: refetchFutureMeetings
+  } = useQuery(GET_FUTURE_MEETINGS, {
+    variables: { userId: currentUser?._id },
+    skip: !currentUser?._id
+  })
+  const futureMeetings = useMemo(() => futureData?.getFutureMeetings || [], [futureData])
+
   return (
     <MeetingsContext.Provider
       value={{
@@ -71,7 +99,11 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
         meetings,
         loading,
         error,
-        refetch
+        refetch,
+        futureMeetings,
+        loadingFutureMeetings,
+        errorFutureMeetings,
+        refetchFutureMeetings
       }}
     >
       {children}

@@ -11,6 +11,7 @@ import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { useCheckImage } from '@/hooks/useCheckImage'
+import { useMeetings } from '@/contexts/MeetingsContext'
 
 interface UserDetailsPopupProps {
   user: User
@@ -30,7 +31,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
   const [blockAll, setBlockAll] = useState(existingBlock?.all || false)
   const [blockedStatuses, setBlockedStatuses] = useState<Status[]>(existingBlock?.statuses || [])
   const [isEditing, setIsEditing] = useState(false)
-
+  const { refetchFutureMeetings } = useMeetings()
   // Split statuses into left and right columns
   const leftColumnStatuses = Array.from(statusRelationships.keys())
   const rightColumnStatuses = Array.from(new Set(statusRelationships.values()))
@@ -60,6 +61,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     })
     await updateUserData()
     setIsEditing(false)
+    refetchFutureMeetings()
     onClose()
   }
 

@@ -1,6 +1,5 @@
 'use client'
 
-import { useQuery, gql } from '@apollo/client'
 import { useStore } from '@/store/useStore'
 import { Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Chip } from '@mui/material'
 import { useTranslations } from 'next-intl'
@@ -8,19 +7,7 @@ import { Meeting } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, addMinutes, isToday, isTomorrow } from 'date-fns'
 import { Fragment, useMemo } from 'react'
 import { enUS } from 'date-fns/locale'
-
-const GET_FUTURE_MEETINGS = gql`
-  query GetFutureMeetings($userId: ID!) {
-    getFutureMeetings(userId: $userId) {
-      _id
-      timeSlots
-      statuses
-      languages
-      minDuration
-      userId
-    }
-  }
-`
+import { useMeetings } from '@/contexts/MeetingsContext'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -85,27 +72,28 @@ function getDayLabel(date: Date, t: any) {
 
 export default function MeetingsCalendar() {
   const t = useTranslations()
-  const { currentUser } = useStore()
+  const {
+    futureMeetings,
+    loadingFutureMeetings,
+    errorFutureMeetings,
+    refetchFutureMeetings
+  } = useMeetings()
+
   const now = Date.now()
   const slotDuration = 30 * 60 * 1000 // 30 minutes in ms
   const hoursAhead = 48
   const slots = getTimeSlotsGrid(now, hoursAhead, slotDuration)
 
-  const { data, loading, error } = useQuery(GET_FUTURE_MEETINGS, {
-    variables: { userId: currentUser?._id },
-    skip: !currentUser?._id
-  })
-
-  if (loading) return <Typography>Loading...</Typography>
-  if (error) return <Typography color="error">Error loading calendar</Typography>
+  if (loadingFutureMeetings) return <Typography>Loading...</Typography>
+  if (errorFutureMeetings) return <Typography color="error">Error loading calendar</Typography>
 
   // Map: slotTime -> meetings
   const slotMap: Record<number, Meeting[]> = {}
   for (let i = 0; i < slots.length; i++) {
     slotMap[slots[i].timestamp] = []
   }
-  for (let i = 0; i < data.getFutureMeetings.length; i++) {
-    const meeting = data.getFutureMeetings[i]
+  for (let i = 0; i < futureMeetings.length; i++) {
+    const meeting = futureMeetings[i]
     for (let j = 0; j < meeting.timeSlots.length; j++) {
       const slot = meeting.timeSlots[j]
       // Snap slot to our slot grid
@@ -138,135 +126,180 @@ export default function MeetingsCalendar() {
     userIdToX[userIds[i]] = i
   }
 
-  console.log(userIds)
+  const headerStyle = {
+    fontSize: '0.8rem',
+  }
+
+
+  // Define grid columns: timeSlot (3), meetingsCount, timeline, statuses, languages
+  const gridTemplateColumns = `
+    42px 8px 42px
+    30px
+    70px 
+    ${Math.max(userIds.length * 6 + 8, 100)}px 
+    minmax(24px, 2fr) 
+    minmax(24px, 1fr)
+  `
 
   return (
-    <Paper className="p-4">
-      <Typography variant="h6" className="mb-4">{t('futureMeetingsCalendar')}</Typography>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell colSpan={3} padding="none">{t('timeSlot')}</TableCell>
-            <TableCell style={{ width: 1 }}>{t('meetingsCount')}</TableCell>
-            <TableCell padding="none" style={{ width: userIds.length * 6 + 8 }}>
-              {/* Optionally, a label or icon for the timeline */}
-            </TableCell>
-            <TableCell>{t('statuses')}</TableCell>
-            <TableCell>{t('languages')}</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {Object.entries(slotsByDay).map(([dayKey, daySlots]) => (
-            <Fragment key={dayKey}>
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="input-bg font-bold"
-                  style={{ padding: CELL_PADDING, height: MIN_CELL_HEIGHT }}
+    <Paper className="p-4 flex flex-col h-full">
+      <Typography variant="h6" className="mb-4">{t('upcomingMeetings')}</Typography>
+      {/* Header grid */}
+      <div
+        className="calendar-grid-header input-bg"
+        style={{
+          display: 'grid',
+          gridTemplateColumns,
+          alignItems: 'stretch',
+          width: '100%',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+        }}
+      >
+        <div style={{ gridColumn: '1 / span 3', padding: CELL_PADDING, ...headerStyle }}>
+          {t('timeSlot')}
+        </div>
+        <div></div>
+        <div style={{ fontWeight: 700, padding: CELL_PADDING, textAlign: 'center', ...headerStyle }}>
+          {t('meetingsCount')}
+        </div>
+        <div style={{ fontWeight: 700, padding: CELL_PADDING, ...headerStyle }}>
+          {/* Timeline */}
+        </div>
+        <div style={{ fontWeight: 700, padding: CELL_PADDING, ...headerStyle }}>
+          {t('statuses')}
+        </div>
+        <div style={{ fontWeight: 700, padding: CELL_PADDING, ...headerStyle }}>
+          {t('languages')}
+        </div>
+      </div>
+      {/* Body grid (scrollable) */}
+      <div
+        className="calendar-grid-body"
+        style={{
+          display: 'grid',
+          gridTemplateColumns,
+          alignItems: 'stretch',
+          width: '100%',
+          overflowY: 'auto',
+          flex: 1
+        }}
+      >
+        {Object.entries(slotsByDay).map(([dayKey, daySlots]) => (
+          <Fragment key={dayKey}>
+            {/* Day label row (skip for today) */}
+            {!isToday(new Date(dayKey)) && (
+              <div
+                style={{
+                  gridColumn: `1 / span 8`,
+                  padding: CELL_PADDING,
+                  minHeight: '0.7rem',
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  style={{ fontWeight: 500 }}
                 >
-                  <Typography
-                    variant="body2"
-                    className="font-bold"
-                    style={{ fontWeight: 700 }}
-                  >
-                    {getDayLabel(new Date(dayKey), t)}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-              {daySlots.map(slot => {
-                const meetings = slotMap[slot.timestamp]
-                // Count statuses
-                const statusCounts: Record<string, number> = {}
-                const languageCounts: Record<string, number> = {}
-                for (let i = 0; i < meetings.length; i++) {
-                  for (let j = 0; j < meetings[i].statuses.length; j++) {
-                    const status = meetings[i].statuses[j]
-                    if (!statusCounts[status]) statusCounts[status] = 0
-                    statusCounts[status]++
-                  }
-                  for (let j = 0; j < meetings[i].languages.length; j++) {
-                    const lang = meetings[i].languages[j]
-                    if (!languageCounts[lang]) languageCounts[lang] = 0
-                    languageCounts[lang]++
-                  }
+                  {getDayLabel(new Date(dayKey), t)}
+                </Typography>
+              </div>
+            )}
+            {/* Slot rows */}
+            {daySlots.map(slot => {
+              const meetings = slotMap[slot.timestamp]
+              // Count statuses
+              const statusCounts: Record<string, number> = {}
+              const languageCounts: Record<string, number> = {}
+              for (let i = 0; i < meetings.length; i++) {
+                for (let j = 0; j < meetings[i].statuses.length; j++) {
+                  const status = meetings[i].statuses[j]
+                  if (!statusCounts[status]) statusCounts[status] = 0
+                  statusCounts[status]++
                 }
-                const startLabel = slot.isNow ? t('now') : slot.startTime
-                return (
-                  <TableRow key={slot.timestamp}>
-                    <TableCell padding="none" style={{ width: 36, textAlign: 'center' }}>
-                      {startLabel}
-                    </TableCell>
-                    <TableCell padding="none" style={{ width: 8, textAlign: 'center' }}>
-                      -
-                    </TableCell>
-                    <TableCell padding="none" style={{ width: 36, textAlign: 'center' }}>
-                      {slot.endTime}
-                    </TableCell>
-                    <TableCell style={{ width: 1, textAlign: 'center', padding: CELL_PADDING }}>
-                      {meetings.length ? meetings.length : ''}
-                    </TableCell>
-                    <TableCell
-                      padding="none"
-                      sx={{
-                        width: userIds.length * 6 + 8,
-                        padding: 0,
-                        height: 0
-                      }}
-                    >
-                      <div style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'stretch',
-                        height: '100%',
-                        position: 'relative'
-                      }}>
-                        {userIds.map((userId, idx) => {
-                          // Check if this user has a meeting in this slot
-                          const hasMeeting = meetings.some(m => m.userId === userId)
-                          return (
-                            <div
-                              key={userId}
-                              style={{
-                                width: 2,
-                                height: '100%',
-                                background: hasMeeting ? '#1976d2' : 'transparent',
-                                marginLeft: idx === 0 ? 0 : 4,
-                                borderRadius: 1,
-                                transition: 'background 0.2s'
-                              }}
-                              title={userId}
-                            />
-                          )
-                        })}
-                      </div>
-                    </TableCell>
-                    <TableCell style={{ padding: CELL_PADDING, width: 1 }}>
-                      {Object.entries(statusCounts).map(([status, count]) => (
-                        <Chip
-                          key={status}
-                          label={`${status} (${count})`}
-                          size="small"
-                          className=""
+                for (let j = 0; j < meetings[i].languages.length; j++) {
+                  const lang = meetings[i].languages[j]
+                  if (!languageCounts[lang]) languageCounts[lang] = 0
+                  languageCounts[lang]++
+                }
+              }
+              const startLabel = slot.isNow ? t('now') : slot.startTime
+              return (
+                <Fragment key={slot.timestamp}>
+                  {/* Start time */}
+                  <div style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}>
+                    {startLabel}
+                  </div>
+                  {/* Dash */}
+                  <div style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}>
+                    -
+                  </div>
+                  {/* End time */}
+                  <div style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}>
+                    {slot.endTime}
+                  </div>
+                  <div></div>
+                  {/* Meetings count */}
+                  <div style={{ padding: CELL_PADDING, textAlign: 'center', minHeight: MIN_CELL_HEIGHT, whiteSpace: 'nowrap' }}>
+                    {meetings.length ? meetings.length : ''}
+                  </div>
+                  {/* Timeline */}
+                  <div
+                    style={{
+                      minHeight: MIN_CELL_HEIGHT,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'stretch',
+                      height: '100%',
+                      position: 'relative',
+                    }}
+                  >
+                    {userIds.map((userId, idx) => {
+                      const hasMeeting = meetings.some(m => m.userId === userId)
+                      return (
+                        <div
+                          key={userId}
+                          style={{
+                            width: 2,
+                            height: '100%',
+                            background: hasMeeting ? '#1976d2' : 'transparent',
+                            marginLeft: idx === 0 ? 0 : 4,
+                            borderRadius: 0,
+                            transition: 'background 0.2s'
+                          }}
+                          title={userId}
                         />
-                      ))}
-                    </TableCell>
-                    <TableCell style={{ padding: CELL_PADDING, width: 1, height: MIN_CELL_HEIGHT }}>
-                      {Object.entries(languageCounts).map(([lang, count]) => (
-                        <Chip
-                          key={lang}
-                          label={`${lang} (${count})`}
-                          size="small"
-                          className=""
-                        />
-                      ))}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </Fragment>
-          ))}
-        </TableBody>
-      </Table>
+                      )
+                    })}
+                  </div>
+                  {/* Statuses */}
+                  <div style={{ padding: CELL_PADDING, minHeight: MIN_CELL_HEIGHT, whiteSpace: 'nowrap' }}>
+                    {Object.entries(statusCounts).map(([status, count]) => (
+                      <Chip
+                        key={status}
+                        label={`${t(`Status.${status}`)} (${count})`}
+                        size="small"
+                        style={{ marginRight: 2, marginBottom: 2 }}
+                      />
+                    ))}
+                  </div>
+                  {/* Languages */}
+                  <div style={{ padding: CELL_PADDING, minHeight: MIN_CELL_HEIGHT, whiteSpace: 'nowrap' }}>
+                    {Object.entries(languageCounts).map(([lang, count]) => (
+                      <Chip
+                        key={lang}
+                        label={`${lang} (${count})`}
+                        size="small"
+                        style={{ marginRight: 2, marginBottom: 2 }}
+                      />
+                    ))}
+                  </div>
+                </Fragment>
+              )
+            })}
+          </Fragment>
+        ))}
+      </div>
     </Paper>
   )
 } 

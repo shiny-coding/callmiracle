@@ -110,3 +110,14 @@ body:before {
 .highlight-animation {
   animation: highlight-blink 1s ease-in-out;
 }
+
+.calendar-grid-header div,
+.calendar-grid-body div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-grid-body div {
+  font-size: 0.75rem;
+}

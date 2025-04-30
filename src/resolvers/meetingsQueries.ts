@@ -1,7 +1,7 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { isMeetingPassed } from '@/utils/meetingUtils'
-import { MeetingStatus } from '@/generated/graphql'
+import { MeetingStatus, Status, User } from '@/generated/graphql'
 import { subDays } from 'date-fns'
 
 export const meetingsQueries = {
@@ -127,16 +127,60 @@ export const meetingsQueries = {
   getFutureMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
       const _userId = new ObjectId(userId)
-      const MS_IN_2_DAYS = 2 * 24 * 60 * 60 * 1000
       const now = Date.now()
-      const twoDaysFromNow = now + MS_IN_2_DAYS
 
+      // 1. Fetch meetings as before
       const meetings = await db.collection('meetings').find({
         status: MeetingStatus.Seeking,
-        lastSlotEnd: { $lt: twoDaysFromNow }
+        lastSlotEnd: { $gt: now }
       }).toArray()
 
-      return meetings
+      // 2. Collect unique userIds from meetings
+      const userIdsSet = new Set<string>( meetings.map(m => m.userId?.toString()) )
+      const userIds = Array.from(userIdsSet).map(id => new ObjectId(id))
+
+      // 3. Fetch all users in one query
+      const usersArr:User[] = userIds.length > 0
+        ? await db.collection('users').find<User>({ _id: { $in: userIds } }).toArray()
+        : []
+
+      // 4. Map userId string to user object for quick lookup
+      const usersById: { [key: string]: User } = {}
+      for (let i = 0; i < usersArr.length; i++) {
+        usersById[usersArr[i]._id.toString()] = usersArr[i]
+      }
+
+      // 5. Fetch the current user
+      const currentUser: User | null = await db.collection('users').findOne<User>({ _id: _userId })
+
+      const filteredMeetings = meetings
+        .filter(meeting => {
+          const meetingUserId = meeting.userId?.toString()
+          const meetingUser = usersById[meetingUserId]
+          if (!meetingUser) return false
+
+          // Check if current user blocks all statuses of this meeting
+          const block = currentUser?.blocks?.find(b => b.userId === meetingUserId)
+          if (block) {
+            if (block.all) return false // all statuses are blocked
+
+            meeting.statuses = meeting.statuses.filter((status: Status) => !block.statuses.includes(status))
+            if (meeting.statuses.length === 0) return false
+          }
+
+          // Check if the meeting's author blocks the current user and all statuses
+          const authorBlock = meetingUser?.blocks?.find(b => b.userId === userId)
+          if (authorBlock) {
+            if (authorBlock.all) return false // all statuses are blocked
+
+            meeting.statuses = meeting.statuses.filter((status: Status) => !authorBlock.statuses.includes(status))
+            if (meeting.statuses.length === 0) return false
+          }
+
+          return true
+        })
+
+      return filteredMeetings
     } catch (error) {
       console.error('Error fetching future meetings:', error)
       throw new Error('Failed to fetch future meetings')
