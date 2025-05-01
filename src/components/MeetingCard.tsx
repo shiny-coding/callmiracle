@@ -7,9 +7,9 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoodIcon from '@mui/icons-material/Mood'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
-import { User } from '@/generated/graphql'
+import { Interest, User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
-import { isMeetingPassed, getSharedStatuses, class2Hex } from '@/utils/meetingUtils'
+import { isMeetingPassed, getSharedInterests, class2Hex } from '@/utils/meetingUtils'
 import React, { useEffect, useState } from 'react'
 import DoneIcon from '@mui/icons-material/Done'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -27,7 +27,7 @@ interface MeetingCardProps {
       _id: string
       userId: string
       languages: string[]
-      statuses: string[]
+      interests: Interest[]
       timeSlots: number[]
       minDuration: number
       preferEarlier: boolean
@@ -44,7 +44,7 @@ interface MeetingCardProps {
     peerMeeting?: {
       userId: string
       languages: string[]
-      statuses: string[]
+      interests: Interest[]
     }
     peerUser?: {
       _id: string
@@ -60,7 +60,7 @@ interface MeetingCardProps {
 
 export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: MeetingCardProps) {
   const t = useTranslations()
-  const tStatus = useTranslations('Status')
+  const tInterest = useTranslations('Interest')
   const now = new Date()
   const { doCall } = useWebRTCContext()
   const [, setLastUpdate] = useState(0)
@@ -208,7 +208,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
     }
   }
 
-  const statusesToShow = getSharedStatuses(meeting, meetingWithPeer.peerMeeting)
+  const interestsToShow = getSharedInterests(meeting, meetingWithPeer.peerMeeting)
 
   const openConfirmDialog = (action: 'finish' | 'cancel' | 'delete') => {
     setConfirmAction(action)
@@ -416,10 +416,10 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
       <div className="flex items-center gap-2">
         <MoodIcon className={meetingColor} fontSize="small" />
         <div className="flex flex-wrap gap-2">
-        {statusesToShow && statusesToShow.map(status => (
+        {interestsToShow && interestsToShow.map(interest => (
           <Chip
-            key={status}
-            label={tStatus(status)}
+            key={interest}
+            label={tInterest(interest)}
             size="small"
             className="text-xs"
             sx={getChipSx()}

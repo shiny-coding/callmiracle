@@ -1,8 +1,7 @@
 {
   "name": "Name",
   "searchByName": "Search by name",
-  "selectStatus": "Select your status",
-  "pleaseSelectStatus": "Please select at least one status",
+  "pleaseSelectInterest": "Please select at least one status",
   "online": "Online",
   "offline": "Offline",
   "cancel": "Cancel",
@@ -33,7 +32,7 @@
     "deleteAccountConfirmMessage": "Are you sure you want to delete your account? This action cannot be undone.",
     "deleteAccountConfirmTitle": "Delete Account"
   },
-  "Status": {
+  "Interest": {
     "MEET_NEW_PEOPLE": "Meet New People",
     "CHAT": "Chat",
     "WANT_TO_SPEAK_OUT": "Want to Speak Out",
@@ -84,10 +83,10 @@
     "meetingCall": "Meeting Call"
   },
   "blockUser": "Block User",
-  "blockStatuses": "Block Statuses",
+  "blockInterests": "Block Interests",
   "searchUser": "Search for a user",
   "userBlocked": "User is blocked",
-  "someStatusesBlocked": "Some statuses are blocked",
+  "someInterestsBlocked": "Some interests are blocked",
   "noMeetings": "No meetings scheduled",
   "meetings": "Meetings",
   "myMeetings": "My Meetings",
@@ -187,6 +186,6 @@
   "upcomingMeetings": "Upcoming Meetings",
   "timeSlot": "Time Slot",
   "meetingsCount": "Meetings Count",
-  "statuses": "Statuses",
+  "interests": "Interests",
   "tomorrow": "Tomorrow"
 } 

@@ -1,8 +1,7 @@
 {
   "name": "Имя",
   "searchByName": "Поиск по имени",
-  "selectStatus": "Выберите статус",
-  "pleaseSelectStatus": "Пожалуйста, выберите хотя бы один статус",
+  "pleaseSelectInterest": "Пожалуйста, выберите хотя бы один статус",
   "pleaseSelectTimeSlots": "Пожалуйста, выберите хотя бы одно время",
   "pleaseSelectLanguages": "Пожалуйста, выберите хотя бы один язык",
   "online": "В сети",
@@ -29,7 +28,7 @@
     "deleteAccountConfirmMessage": "Вы уверены, что хотите удалить свой аккаунт? Это действие нельзя отменить.",
     "deleteAccountConfirmTitle": "Удалить аккаунт"
   },
-  "Status": {
+  "Interest": {
     "MEET_NEW_PEOPLE": "Познакомиться",
     "CHAT": "Поболтать",
     "WANT_TO_SPEAK_OUT": "Хочу высказаться",
@@ -85,10 +84,10 @@
   "allowFemales": "Разрешить женщин",
   "ageRange": "Возрастной диапазон",
   "blockUser": "Заблокировать пользователя",
-  "blockStatuses": "Заблокировать статусы",
+  "blockInterests": "Заблокировать интересы",
   "searchUser": "Найти пользователя",
   "userBlocked": "Пользователь заблокирован",
-  "someStatusesBlocked": "Некоторые статусы заблокированы",
+  "someInterestsBlocked": "Некоторые интересы заблокированы",
   "noMeetings": "Нет запланированных встреч",
   "meetings": "Встречи",
   "myMeetings": "Мои встречи",
@@ -187,6 +186,6 @@
   "upcomingMeetings": "Будущие встречи",
   "timeSlot": "Временной слот",
   "meetingsCount": "Количество встреч",
-  "statuses": "Статусы",
+  "interests": "Интересы",
   "tomorrow": "Завтра"
 } 

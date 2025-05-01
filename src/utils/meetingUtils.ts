@@ -1,6 +1,7 @@
-import { MeetingStatus } from "@/generated/graphql"
+import { Block, Interest, MeetingStatus } from "@/generated/graphql"
 import resolveConfig from "tailwindcss/resolveConfig"
 import tailwindConfig from "../../tailwind.config"
+import { ObjectId } from "mongodb"
 
 /**
  * Determines if a meeting has passed based on various conditions
@@ -48,22 +49,22 @@ export function isMeetingPassed(meeting: {
 }
 
 /**
- * Gets the shared statuses between a meeting and its peer meeting
+ * Gets the shared interests between a meeting and its peer meeting
  * 
  * @param meeting The primary meeting
  * @param peerMeeting The peer meeting
- * @returns Array of shared statuses
+ * @returns Array of shared interests
  */
-export function getSharedStatuses(
-  meeting: { statuses: string[], peerMeetingId?: string | null },
-  peerMeeting?: { statuses: string[] } | null
-): string[] {
+export function getSharedInterests(
+  meeting: { interests: Interest[], peerMeetingId?: string | null },
+  peerMeeting?: { interests: Interest[] } | null
+): Interest[] {
   if (!meeting.peerMeetingId || !peerMeeting) {
-    return meeting.statuses
+    return meeting.interests
   }
   
-  return meeting.statuses.filter(status => 
-    peerMeeting.statuses.includes(status)
+  return meeting.interests.filter(interest => 
+    peerMeeting.interests.includes(interest)
   )
 }
 
@@ -95,4 +96,26 @@ export function class2Hex(tailwindColor: string) {
   const [_, colorName, shade] = colorMatch
   const fullConfig = resolveConfig(tailwindConfig)
   return (fullConfig.theme.colors as any)[colorName][shade]
+}
+
+/**
+ * Returns interests from meeting that are not blocked by meetingUser for otherUser
+ * @param meeting The meeting object (must have .interests)
+ * @param meetingUser The user who owns the meeting (must have .blocks)
+ * @param otherUser The user to check blocks against (must have ._id)
+ * @returns Array of compatible interests
+ */
+export function getCompatibleInterests(
+  meeting: { interests: Interest[] },
+  meetingUser: { blocks?: Block[] },
+  otherUser: { _id: ObjectId }
+): Interest[] {
+  if (!meetingUser?.blocks) return meeting.interests
+
+  const otherUserId = otherUser._id.toString()
+
+  const block = meetingUser.blocks.find(b => b.userId === otherUserId)
+  if (!block) return meeting.interests
+  if (block.all) return []
+  return meeting.interests.filter(interest => !block.interests.includes(interest))
 }

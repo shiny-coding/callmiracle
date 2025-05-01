@@ -1,7 +1,8 @@
-import { MeetingStatus } from "@/generated/graphql";
+import { Interest, MeetingStatus } from "@/generated/graphql";
 import { pubsub } from "./pubsub";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./meetingsMutations";
+import { getCompatibleInterests } from '@/utils/meetingUtils'
 const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 type TimeRange = {
@@ -102,11 +103,11 @@ export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]) =
   );
   if (languageOverlap.length === 0) return false;
   
-  // Check status overlap
-  const statusOverlap = meeting1.statuses.filter((status: string) => 
-    meeting2.statuses.includes(status)
-  );
-  if (statusOverlap.length === 0) return false;
+  // Use getCompatibleInterests for both meetings
+  const interests1 = getCompatibleInterests(meeting1, user1, user2);
+  const interests2 = getCompatibleInterests(meeting2, user2, user1);
+  const interestOverlap = interests1.filter((interest: Interest) => interests2.includes(interest));
+  if (interestOverlap.length === 0) return false;
   
   // Check time slot overlap
   const minDuration = Math.max(meeting1.minDuration, meeting2.minDuration);

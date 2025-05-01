@@ -37,7 +37,7 @@ export default function UserCard({
   const { exists: imageExists } = useCheckImage(user._id)
   
   const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
-  const isBlocked = existingBlock?.all || (existingBlock?.statuses.length ?? 0) > 0
+  const isBlocked = existingBlock?.all || (existingBlock?.interests.length ?? 0) > 0
   
   // Check if this user is a friend
   const isFriend = currentUser?.friends?.includes(user._id) || false
@@ -140,7 +140,7 @@ export default function UserCard({
         <LockIcon 
           className="text-red-500 absolute bottom-7 right-7" 
           fontSize="small"
-          titleAccess={existingBlock?.all ? t('userBlocked') : t('someStatusesBlocked')}
+          titleAccess={existingBlock?.all ? t('userBlocked') : t('someInterestsBlocked')}
         />
       )}
 

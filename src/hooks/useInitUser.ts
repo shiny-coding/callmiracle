@@ -20,7 +20,7 @@ export const GET_USER = gql`
       blocks {
         userId
         all
-        statuses
+        interests
       }
     }
   }

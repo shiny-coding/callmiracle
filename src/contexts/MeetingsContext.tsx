@@ -10,7 +10,7 @@ export const GET_MEETINGS = gql`
         _id
         userId
         languages
-        statuses
+        interests
         timeSlots
         minDuration
         preferEarlier
@@ -28,7 +28,7 @@ export const GET_MEETINGS = gql`
         _id
         userId
         languages
-        statuses
+        interests
       }
       peerUser {
         _id
@@ -45,7 +45,7 @@ export const GET_FUTURE_MEETINGS = gql`
     getFutureMeetings(userId: $userId) {
       _id
       timeSlots
-      statuses
+      interests
       languages
       minDuration
       userId

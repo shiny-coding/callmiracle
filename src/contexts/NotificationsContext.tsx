@@ -18,7 +18,7 @@ const GET_NOTIFICATIONS = gql`
         _id
         userId
         languages
-        statuses
+        interests
         timeSlots
         minDuration
         startTime

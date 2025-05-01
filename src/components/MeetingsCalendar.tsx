@@ -5,7 +5,7 @@ import { Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Ch
 import { useTranslations } from 'next-intl'
 import { Meeting } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, addMinutes, isToday, isTomorrow } from 'date-fns'
-import { Fragment, useMemo } from 'react'
+import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
 import { enUS } from 'date-fns/locale'
 import { useMeetings } from '@/contexts/MeetingsContext'
 
@@ -84,6 +84,39 @@ export default function MeetingsCalendar() {
   const hoursAhead = 48
   const slots = getTimeSlotsGrid(now, hoursAhead, slotDuration)
 
+  const gridBodyRef = useRef<HTMLDivElement>(null)
+  const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
+  const [topDayKey, setTopDayKey] = useState<string | null>(null)
+
+  // Find the first visible slot and update topDayKey
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!gridBodyRef.current) return
+      const gridRect = gridBodyRef.current.getBoundingClientRect()
+      let firstVisibleSlotDay: string | null = null
+      for (const slot of slots) {
+        const ref = slotRefs.current[slot.timestamp]
+        if (ref) {
+          const rect = ref.getBoundingClientRect()
+          if (rect.bottom > gridRect.top + 1) { // +1 for tolerance
+            firstVisibleSlotDay = slot.dayKey
+            break
+          }
+        }
+      }
+      setTopDayKey(firstVisibleSlotDay)
+    }
+    const grid = gridBodyRef.current
+    if (grid) {
+      grid.addEventListener('scroll', handleScroll)
+      // Initial call
+      handleScroll()
+    }
+    return () => {
+      if (grid) grid.removeEventListener('scroll', handleScroll)
+    }
+  }, [slots])
+
   if (loadingFutureMeetings) return <Typography>Loading...</Typography>
   if (errorFutureMeetings) return <Typography color="error">Error loading calendar</Typography>
 
@@ -131,7 +164,7 @@ export default function MeetingsCalendar() {
   }
 
 
-  // Define grid columns: timeSlot (3), meetingsCount, timeline, statuses, languages
+  // Define grid columns: timeSlot (3), meetingsCount, timeline, interests, languages
   const gridTemplateColumns = `
     42px 8px 42px
     30px
@@ -168,7 +201,7 @@ export default function MeetingsCalendar() {
           {/* Timeline */}
         </div>
         <div style={{ fontWeight: 700, padding: CELL_PADDING, ...headerStyle }}>
-          {t('statuses')}
+          {t('interests')}
         </div>
         <div style={{ fontWeight: 700, padding: CELL_PADDING, ...headerStyle }}>
           {t('languages')}
@@ -177,15 +210,37 @@ export default function MeetingsCalendar() {
       {/* Body grid (scrollable) */}
       <div
         className="calendar-grid-body"
+        ref={gridBodyRef}
         style={{
           display: 'grid',
           gridTemplateColumns,
           alignItems: 'stretch',
           width: '100%',
           overflowY: 'auto',
-          flex: 1
+          flex: 1,
+          position: 'relative'
         }}
       >
+        {/* Absolutely positioned sticky day label */}
+        {topDayKey && (
+          <div className="panel-bg panel-border"
+            style={{
+              position: 'sticky',
+              top: 0,
+              left: 0,
+              width: '100%',
+              zIndex: 2,
+              gridColumn: `1 / span 8`,
+              padding: CELL_PADDING,
+              minHeight: '2rem',
+              borderBottomWidth: '1px'
+            }}
+          >
+            <Typography variant="body2" style={{ }}>
+              {getDayLabel(new Date(topDayKey), t)}
+            </Typography>
+          </div>
+        )}
         {Object.entries(slotsByDay).map(([dayKey, daySlots]) => (
           <Fragment key={dayKey}>
             {/* Day label row (skip for today) */}
@@ -194,7 +249,7 @@ export default function MeetingsCalendar() {
                 style={{
                   gridColumn: `1 / span 8`,
                   padding: CELL_PADDING,
-                  minHeight: '0.7rem',
+                  minHeight: '2rem',
                 }}
               >
                 <Typography
@@ -208,14 +263,14 @@ export default function MeetingsCalendar() {
             {/* Slot rows */}
             {daySlots.map(slot => {
               const meetings = slotMap[slot.timestamp]
-              // Count statuses
-              const statusCounts: Record<string, number> = {}
+              // Count interests
+              const interestCounts: Record<string, number> = {}
               const languageCounts: Record<string, number> = {}
               for (let i = 0; i < meetings.length; i++) {
-                for (let j = 0; j < meetings[i].statuses.length; j++) {
-                  const status = meetings[i].statuses[j]
-                  if (!statusCounts[status]) statusCounts[status] = 0
-                  statusCounts[status]++
+                for (let j = 0; j < meetings[i].interests.length; j++) {
+                  const interest = meetings[i].interests[j]
+                  if (!interestCounts[interest]) interestCounts[interest] = 0
+                  interestCounts[interest]++
                 }
                 for (let j = 0; j < meetings[i].languages.length; j++) {
                   const lang = meetings[i].languages[j]
@@ -226,8 +281,11 @@ export default function MeetingsCalendar() {
               const startLabel = slot.isNow ? t('now') : slot.startTime
               return (
                 <Fragment key={slot.timestamp}>
-                  {/* Start time */}
-                  <div style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}>
+                  {/* Attach ref to the first cell of each slot row */}
+                  <div
+                    ref={el => { slotRefs.current[slot.timestamp] = el }}
+                    style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}
+                  >
                     {startLabel}
                   </div>
                   {/* Dash */}
@@ -272,12 +330,12 @@ export default function MeetingsCalendar() {
                       )
                     })}
                   </div>
-                  {/* Statuses */}
+                  {/* Interests */}
                   <div style={{ padding: CELL_PADDING, minHeight: MIN_CELL_HEIGHT, whiteSpace: 'nowrap' }}>
-                    {Object.entries(statusCounts).map(([status, count]) => (
+                    {Object.entries(interestCounts).map(([interest, count]) => (
                       <Chip
-                        key={status}
-                        label={`${t(`Status.${status}`)} (${count})`}
+                        key={interest}
+                        label={`${t(`Interest.${interest}`)} (${count})`}
                         size="small"
                         style={{ marginRight: 2, marginBottom: 2 }}
                       />

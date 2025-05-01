@@ -114,7 +114,7 @@ export const meetingsMutations = {
   createOrUpdateMeeting: async (_: any, { input }: { input: any }, { db }: Context) => {
     const { 
       userName,
-      statuses, 
+      interests, 
       timeSlots, 
       minDuration, 
       preferEarlier,
@@ -142,7 +142,7 @@ export const meetingsMutations = {
           $set: {
             userId: _userId,
             userName,
-            statuses,
+            interests,
             timeSlots,
             lastSlotEnd,
             minDuration,

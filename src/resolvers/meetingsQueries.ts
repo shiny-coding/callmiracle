@@ -1,7 +1,7 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { isMeetingPassed } from '@/utils/meetingUtils'
-import { MeetingStatus, Status, User } from '@/generated/graphql'
+import { isMeetingPassed, getCompatibleInterests } from '@/utils/meetingUtils'
+import { Meeting, MeetingStatus, User } from '@/generated/graphql'
 import { subDays } from 'date-fns'
 
 export const meetingsQueries = {
@@ -127,10 +127,13 @@ export const meetingsQueries = {
   getFutureMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
       const _userId = new ObjectId(userId)
+      const currentUser: User | null = await db.collection('users').findOne<User>({ _id: _userId })
+      if (!currentUser) throw new Error('Current user not found')
+
       const now = Date.now()
 
       // 1. Fetch meetings as before
-      const meetings = await db.collection('meetings').find({
+      const meetings: Meeting[] = await db.collection('meetings').find<Meeting>({
         status: MeetingStatus.Seeking,
         lastSlotEnd: { $gt: now }
       }).toArray()
@@ -150,35 +153,32 @@ export const meetingsQueries = {
         usersById[usersArr[i]._id.toString()] = usersArr[i]
       }
 
-      // 5. Fetch the current user
-      const currentUser: User | null = await db.collection('users').findOne<User>({ _id: _userId })
-
       const filteredMeetings = meetings
-        .filter(meeting => {
+        .map(meeting => {
           const meetingUserId = meeting.userId?.toString()
           const meetingUser = usersById[meetingUserId]
-          if (!meetingUser) return false
+          if (!meetingUser) return null
 
-          // Check if current user blocks all statuses of this meeting
-          const block = currentUser?.blocks?.find(b => b.userId === meetingUserId)
-          if (block) {
-            if (block.all) return false // all statuses are blocked
+          // Filter interests blocked by meetingUser for currentUser
+          const compatibleInterests = getCompatibleInterests(
+            meeting,
+            meetingUser,
+            { _id: _userId }
+          )
 
-            meeting.statuses = meeting.statuses.filter((status: Status) => !block.statuses.includes(status))
-            if (meeting.statuses.length === 0) return false
+          // Filter interests blocked by currentUser for meetingUser
+          const compatibleForCurrentUser = getCompatibleInterests(
+            { interests: compatibleInterests },
+            currentUser,
+            { _id: new ObjectId(meetingUserId) }
+          )
+
+          return {
+            ...meeting,
+            interests: compatibleForCurrentUser
           }
-
-          // Check if the meeting's author blocks the current user and all statuses
-          const authorBlock = meetingUser?.blocks?.find(b => b.userId === userId)
-          if (authorBlock) {
-            if (authorBlock.all) return false // all statuses are blocked
-
-            meeting.statuses = meeting.statuses.filter((status: Status) => !authorBlock.statuses.includes(status))
-            if (meeting.statuses.length === 0) return false
-          }
-
-          return true
         })
+        .filter(meeting => meeting && meeting.interests.length > 0)
 
       return filteredMeetings
     } catch (error) {

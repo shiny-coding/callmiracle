@@ -6,8 +6,8 @@ import { useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect, ChangeEvent } from 'react'
-import { Status, Meeting } from '@/generated/graphql'
-import StatusSelector from './StatusSelector'
+import { Interest, Meeting } from '@/generated/graphql'
+import InterestSelector from './InterestSelector'
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes } from 'date-fns'
 import TimeSlotsGrid from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
@@ -23,17 +23,16 @@ interface Props {
 
 export default function MeetingDialog({ open, onClose, meetings = [], meeting = null }: Props) {
   const t = useTranslations()
-  const tStatus = useTranslations('Status')
   const { currentUser } = useStore()
   const [meetingId, setMeetingId] = useState<string | undefined>(undefined)
   const { 
-    statuses = [], 
+    interests = [], 
     allowedMales = true, 
     allowedFemales = true, 
     allowedMinAge = 10, 
     allowedMaxAge = 100 
   } =  {}
-  const [tempStatuses, setTempStatuses] = useState<Status[]>(statuses)
+  const [tempInterests, setTempInterests] = useState<Interest[]>(interests)
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
   const [availableTimeSlots, setAvailableTimeSlots] = useState<{timestamp: number, startTime: string, endTime: string, day: string, isPartial?: boolean, remainingMinutes?: number, isDummy?: boolean, isDisabled?: boolean}[]>([])
   const [minDuration, setMinDuration] = useState(60)
@@ -51,7 +50,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
     if (open) {
       if (meeting) {
         setMeetingId(meeting._id)
-        setTempStatuses(meeting.statuses || [])
+        setTempInterests(meeting.interests || [])
         setSelectedTimeSlots(meeting.timeSlots || [])
         setMinDuration(meeting.minDuration || 60)
         setPreferEarlier(meeting.preferEarlier)
@@ -65,7 +64,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
       } else {
         // Creating a new meeting
         setMeetingId(undefined)
-        setTempStatuses([])
+        setTempInterests([])
         setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
         setMinDuration(60)
         setPreferEarlier(true)
@@ -274,7 +273,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
   const handleSave = async () => {
     await updateMeeting({
       _id: meetingId,
-      statuses: tempStatuses,
+      interests: tempInterests,
       timeSlots: selectedTimeSlots,
       minDuration,
       preferEarlier,
@@ -311,7 +310,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
           </IconButton>
         </DialogTitle>
         <DialogContent className="flex flex-col gap-4">
-          <StatusSelector value={tempStatuses} onChange={setTempStatuses} />
+          <InterestSelector value={tempInterests} onChange={setTempInterests} />
           
           <Typography variant="subtitle1" className="mt-4">
             {t('languages')}
@@ -414,9 +413,9 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
         </DialogContent>
         <DialogActions className="border-t border-gray-800">
           <div className="flex flex-col justify-start gap-2 mr-auto">
-            {tempStatuses.length === 0 && (
+            {tempInterests.length === 0 && (
               <Typography color="warning" className="text-sm">
-                {t('pleaseSelectStatus')}
+                {t('pleaseSelectInterest')}
               </Typography>
             )}
 
@@ -434,7 +433,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
             variant="contained"
             disabled={loading || 
               selectedTimeSlots.length === 0 || 
-              tempStatuses.length === 0 || 
+              tempInterests.length === 0 || 
               tempLanguages.length === 0 ||
               !hasValidDuration}
           >

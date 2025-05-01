@@ -1,22 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { IconButton, FormControl, InputLabel, Select, MenuItem, Typography, Button } from '@mui/material'
-import VideocamIcon from '@mui/icons-material/Videocam'
-import VideocamOffIcon from '@mui/icons-material/VideocamOff'
-import MicIcon from '@mui/icons-material/Mic'
-import MicOffIcon from '@mui/icons-material/MicOff'
 import { useTranslations } from 'next-intl'
-import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { LANGUAGES } from '@/config/languages'
-import ProfileDialog from './ProfileDialog'
 import MeetingDialog from './MeetingDialog'
 
 export default function LocalVideo() {
   const t = useTranslations()
-  const tStatus = useTranslations('Status')
   const { currentUser, setCurrentUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
   const { name = '', languages = [] } = currentUser || {}
   const { 

@@ -1,6 +1,6 @@
 scalar Date
 
-enum Status {
+enum Interest {
   CHAT
   MEET_NEW_PEOPLE
   WANT_TO_SPEAK_OUT
@@ -13,7 +13,7 @@ enum Status {
 type Block {
   userId: ID!
   all: Boolean!
-  statuses: [Status!]!
+  interests: [Interest!]!
 }
 
 type Meeting {
@@ -21,7 +21,7 @@ type Meeting {
   userId: ID!
   userName: String
   languages: [String!]!
-  statuses: [String!]!
+  interests: [Interest!]!
   timeSlots: [Float!]!
   lastSlotEnd: Float!
   minDuration: Int!
@@ -139,7 +139,7 @@ input CallUserInput {
 input BlockInput {
   userId: ID!
   all: Boolean!
-  statuses: [Status!]!
+  interests: [Interest!]!
 }
 
 input MeetingInput {
@@ -147,7 +147,7 @@ input MeetingInput {
   userId: ID!
   userName: String
   languages: [String!]!
-  statuses: [Status!]!
+  interests: [Interest!]!
   timeSlots: [Float!]!
   minDuration: Int!
   preferEarlier: Boolean!

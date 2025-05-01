@@ -1,8 +1,8 @@
 import React from 'react'
 import { Dialog, DialogTitle, DialogContent, IconButton, Typography, Chip, Divider, FormGroup, FormControlLabel, Checkbox, Button } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { User, Status } from '@/generated/graphql'
-import { statusRelationships } from './StatusSelector'
+import { User, Interest } from '@/generated/graphql'
+import { interestRelationships } from './InterestSelector'
 import { useTranslations } from 'next-intl'
 import { LANGUAGES } from '@/config/languages'
 import { formatTextWithLinks } from '@/utils/formatTextWithLinks'
@@ -21,7 +21,7 @@ interface UserDetailsPopupProps {
 
 export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPopupProps) {
   const t = useTranslations()
-  const tStatus = useTranslations('Status')
+  const tInterest = useTranslations('Interest')
   const { currentUser, setCurrentUser } = useStore()
   const { updateUserData } = useUpdateUser()
   const [showFullImage, setShowFullImage] = useState(false)
@@ -29,12 +29,12 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
 
   const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
   const [blockAll, setBlockAll] = useState(existingBlock?.all || false)
-  const [blockedStatuses, setBlockedStatuses] = useState<Status[]>(existingBlock?.statuses || [])
+  const [blockedInterests, setBlockedInterests] = useState<Interest[]>(existingBlock?.interests || [])
   const [isEditing, setIsEditing] = useState(false)
   const { refetchFutureMeetings } = useMeetings()
-  // Split statuses into left and right columns
-  const leftColumnStatuses = Array.from(statusRelationships.keys())
-  const rightColumnStatuses = Array.from(new Set(statusRelationships.values()))
+  // Split interests into left and right columns
+  const leftColumnInterests = Array.from(interestRelationships.keys())
+  const rightColumnInterests = Array.from(new Set(interestRelationships.values()))
 
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -47,11 +47,11 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     if (!currentUser) return
 
     const updatedBlocks = currentUser.blocks.filter(b => b.userId !== user._id)
-    if (blockAll || blockedStatuses.length > 0) {
+    if (blockAll || blockedInterests.length > 0) {
       updatedBlocks.push({
         userId: user._id,
         all: blockAll,
-        statuses: blockedStatuses
+        interests: blockedInterests
       })
     }
 
@@ -67,7 +67,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
 
   const handleCancel = () => {
     setBlockAll(existingBlock?.all || false)
-    setBlockedStatuses(existingBlock?.statuses || [])
+    setBlockedInterests(existingBlock?.interests || [])
     setIsEditing(false)
     onClose()
   }
@@ -169,44 +169,44 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
           {!blockAll && (
             <>
               <Typography variant="subtitle1" className="mt-2">
-                {t('blockStatuses')}
+                {t('blockInterests')}
               </Typography>
               <div className="grid grid-cols-2 gap-4">
-                {leftColumnStatuses.map((leftStatus, index) => {
-                  const rightStatus = rightColumnStatuses[index]
+                {leftColumnInterests.map((leftInterest, index) => {
+                  const rightInterest = rightColumnInterests[index]
                   return (
-                    <React.Fragment key={leftStatus}>
+                    <React.Fragment key={leftInterest}>
                       <Button
                         fullWidth
-                        variant={blockedStatuses.includes(leftStatus) ? "contained" : "outlined"}
+                        variant={blockedInterests.includes(leftInterest) ? "contained" : "outlined"}
                         onClick={() => {
-                          if (blockedStatuses.includes(leftStatus)) {
-                            setBlockedStatuses(blockedStatuses.filter(s => s !== leftStatus))
+                          if (blockedInterests.includes(leftInterest)) {
+                            setBlockedInterests(blockedInterests.filter(i => i !== leftInterest))
                           } else {
-                            setBlockedStatuses([...blockedStatuses, leftStatus])
+                            setBlockedInterests([...blockedInterests, leftInterest])
                           }
                           setIsEditing(true)
                         }}
-                        color={blockedStatuses.includes(leftStatus) ? "error" : "success"}
+                        color={blockedInterests.includes(leftInterest) ? "error" : "success"}
                         className="h-full"
                       >
-                        {tStatus(leftStatus)}
+                        {tInterest(leftInterest)}
                       </Button>
                       <Button
                         fullWidth
-                        variant={blockedStatuses.includes(rightStatus) ? "contained" : "outlined"}
+                        variant={blockedInterests.includes(rightInterest) ? "contained" : "outlined"}
                         onClick={() => {
-                          if (blockedStatuses.includes(rightStatus)) {
-                            setBlockedStatuses(blockedStatuses.filter(s => s !== rightStatus))
+                          if (blockedInterests.includes(rightInterest)) {
+                            setBlockedInterests(blockedInterests.filter(i => i !== rightInterest))
                           } else {
-                            setBlockedStatuses([...blockedStatuses, rightStatus])
+                            setBlockedInterests([...blockedInterests, rightInterest])
                           }
                           setIsEditing(true)
                         }}
-                        color={blockedStatuses.includes(rightStatus) ? "error" : "success"}
+                        color={blockedInterests.includes(rightInterest) ? "error" : "success"}
                         className="h-full"
                       >
-                        {tStatus(rightStatus)}
+                        {tInterest(rightInterest)}
                       </Button>
                     </React.Fragment>
                   )
