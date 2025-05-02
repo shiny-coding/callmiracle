@@ -47,7 +47,6 @@ export default function InterestSelector({ value, onChange }: InterestSelectorPr
                 fullWidth
                 variant={value.includes(leftInterest) ? "contained" : "outlined"}
                 onClick={() => toggleInterest(leftInterest)}
-                color={value.includes(leftInterest) ? "primary" : "inherit"}
                 className="h-full"
               >
                 {t(leftInterest)}
@@ -56,7 +55,6 @@ export default function InterestSelector({ value, onChange }: InterestSelectorPr
                 fullWidth
                 variant={value.includes(rightInterest) ? "contained" : "outlined"}
                 onClick={() => toggleInterest(rightInterest)}
-                color={value.includes(rightInterest) ? "primary" : "inherit"}
                 className="h-full"
               >
                 {t(rightInterest)}

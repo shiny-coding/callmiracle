@@ -1,7 +1,9 @@
 {
+  "loading": "Загрузка...",
   "name": "Имя",
   "searchByName": "Поиск по имени",
-  "pleaseSelectInterest": "Пожалуйста, выберите хотя бы один статус",
+  "selectInterest": "Выберите интересы",
+  "pleaseSelectInterest": "Пожалуйста, выберите хотя бы один интерес",
   "pleaseSelectTimeSlots": "Пожалуйста, выберите хотя бы одно время",
   "pleaseSelectLanguages": "Пожалуйста, выберите хотя бы один язык",
   "online": "В сети",

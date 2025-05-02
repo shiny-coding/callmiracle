@@ -45,7 +45,7 @@ function getTimeSlotsGrid(now: number, hoursAhead: number, slotDuration: number)
   return slots
 }
 
-function getDayLabel(date: Date, t: any) {
+export function getDayLabel(date: Date, t: any) {
   // Get day of month with ordinal (e.g., 1st, 2nd, 3rd, 4th, ...)
   const day = date.getDate()
   const ordinal =
@@ -81,7 +81,7 @@ export default function MeetingsCalendar() {
 
   const now = Date.now()
   const slotDuration = 30 * 60 * 1000 // 30 minutes in ms
-  const hoursAhead = 48
+  const hoursAhead = 24 * 7
   const slots = getTimeSlotsGrid(now, hoursAhead, slotDuration)
 
   const gridBodyRef = useRef<HTMLDivElement>(null)

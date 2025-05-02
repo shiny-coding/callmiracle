@@ -1,13 +1,11 @@
 'use client'
 
-import { useQuery } from '@apollo/client'
 import { Paper, List, ListItem, Typography, IconButton } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useTranslations } from 'next-intl'
 import MeetingCard from './MeetingCard'
+import { useRouter } from 'next/navigation'
 
-import { gql } from '@apollo/client'
-import MeetingDialog from './MeetingDialog'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
@@ -17,18 +15,17 @@ import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import MeetingsCalendar from './MeetingsCalendar'
 
 export default function MeetingsList() {
 
   const t = useTranslations()
-  const [meetingDialogOpen, setMeetingDialogOpen] = useState(false)
-  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
   const { subscribeToNotifications } = useSubscriptions()
   const { highlightedMeetingId, setHighlightedMeetingId, meetings, loading, error, refetch } = useMeetings()
   const meetingRefs = useRef<Record<string, HTMLElement>>({})
   const { currentUser } = useStore()
+  const router = useRouter()
+
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event) => {
       if (event.type.startsWith('meeting-')) {
@@ -58,19 +55,6 @@ export default function MeetingsList() {
     }
   }, [highlightedMeetingId, setHighlightedMeetingId])
 
-  const handleEditMeeting = (meetingData: any) => {
-    setSelectedMeeting(meetingData.meeting)
-    setMeetingDialogOpen(true)
-  }
-
-  const handleCreateMeeting = () => {
-    if (!isProfileComplete(currentUser)) {
-      setProfileIncompleteDialogOpen(true)
-      return
-    }
-    setSelectedMeeting(null)
-    setMeetingDialogOpen(true)
-  }
 
   if (loading) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading meetings</Typography>
@@ -87,8 +71,14 @@ export default function MeetingsList() {
             </Typography>
           </div>
           <div className="flex gap-2">
-            <IconButton 
-              onClick={handleCreateMeeting} 
+            <IconButton
+              onClick={() => {
+                if (!isProfileComplete(currentUser)) {
+                  setProfileIncompleteDialogOpen(true)
+                  return
+                }
+                router.push('/meeting')
+              }}
               size="small"
               className="hover:bg-gray-700 text-white"
             >
@@ -114,9 +104,9 @@ export default function MeetingsList() {
             >
               <MeetingCard 
                 meetingWithPeer={meetingData} 
-                onEdit={(e) => {
-                  e?.stopPropagation();
-                  handleEditMeeting(meetingData);
+                onEdit={e => {
+                  e?.stopPropagation()
+                  router.push(`/meeting/${meetingData.meeting._id}`)
                 }}
                 refetch={refetch}
               />
@@ -129,15 +119,6 @@ export default function MeetingsList() {
           )}
         </List>
       </Paper>
-      <MeetingDialog
-        meetings={meetings}
-        meeting={selectedMeeting}
-        open={meetingDialogOpen}
-        onClose={() => {
-          setMeetingDialogOpen(false)
-          setSelectedMeeting(null)
-        }}
-      />
       <ProfileIncompleteDialog
         open={profileIncompleteDialogOpen}
         onClose={() => setProfileIncompleteDialogOpen(false)}

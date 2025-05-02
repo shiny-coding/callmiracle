@@ -1,4 +1,4 @@
-import { Dialog, DialogTitle, DialogContent, IconButton, DialogActions, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider } from '@mui/material'
+import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -13,17 +13,18 @@ import TimeSlotsGrid from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
 import { isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
+import { useRouter } from 'next/navigation'
+import { getDayLabel } from './MeetingsCalendar'
 
 interface Props {
-  open: boolean
-  onClose: () => void
   meetings?: any[]
   meeting?: any
 }
 
-export default function MeetingDialog({ open, onClose, meetings = [], meeting = null }: Props) {
+export default function MeetingDialog({ meetings = [], meeting = null }: Props) {
   const t = useTranslations()
   const { currentUser } = useStore()
+  const router = useRouter()
   const [meetingId, setMeetingId] = useState<string | undefined>(undefined)
   const { 
     interests = [], 
@@ -47,45 +48,43 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
 
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
-    if (open) {
-      if (meeting) {
-        setMeetingId(meeting._id)
-        setTempInterests(meeting.interests || [])
-        setSelectedTimeSlots(meeting.timeSlots || [])
-        setMinDuration(meeting.minDuration || 60)
-        setPreferEarlier(meeting.preferEarlier)
-        setTempAllowedMales(meeting.allowedMales !== undefined ? meeting.allowedMales : true)
-        setTempAllowedFemales(meeting.allowedFemales !== undefined ? meeting.allowedFemales : true)
-        setTempAgeRange([
-          meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
-          meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
-        ])
-        setTempLanguages(meeting.languages || (currentUser?.languages || []))
-      } else {
-        // Creating a new meeting
-        setMeetingId(undefined)
-        setTempInterests([])
-        setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
-        setMinDuration(60)
-        setPreferEarlier(true)
-        setTempAllowedMales(true)
-        setTempAllowedFemales(true)
-        setTempAgeRange([10, 100])
-        setTempLanguages(currentUser?.languages || [])
-      }
-      
-      // Collect all time slots from other meetings that haven't passed
-      const otherMeetings = meetings.filter(m => 
-        !meeting || m.meeting._id !== meeting._id
-      )
-      
-      const occupied = otherMeetings
-        .filter(m => !isMeetingPassed(m.meeting)) // Only consider active meetings
-        .flatMap(m => m.meeting.timeSlots || [])
-      
-      setOccupiedTimeSlots(occupied)
+    if (meeting) {
+      setMeetingId(meeting._id)
+      setTempInterests(meeting.interests || [])
+      setSelectedTimeSlots(meeting.timeSlots || [])
+      setMinDuration(meeting.minDuration || 60)
+      setPreferEarlier(meeting.preferEarlier)
+      setTempAllowedMales(meeting.allowedMales !== undefined ? meeting.allowedMales : true)
+      setTempAllowedFemales(meeting.allowedFemales !== undefined ? meeting.allowedFemales : true)
+      setTempAgeRange([
+        meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
+        meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
+      ])
+      setTempLanguages(meeting.languages || (currentUser?.languages || []))
+    } else {
+      // Creating a new meeting
+      setMeetingId(undefined)
+      setTempInterests([])
+      setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
+      setMinDuration(60)
+      setPreferEarlier(true)
+      setTempAllowedMales(true)
+      setTempAllowedFemales(true)
+      setTempAgeRange([10, 100])
+      setTempLanguages(currentUser?.languages || [])
     }
-  }, [open, meeting, currentUser?.languages, meetings])
+    
+    // Collect all time slots from other meetings that haven't passed
+    const otherMeetings = meetings.filter(m => 
+      !meeting || m.meeting._id !== meeting._id
+    )
+    
+    const occupied = otherMeetings
+      .filter(m => !isMeetingPassed(m.meeting)) // Only consider active meetings
+      .flatMap(m => m.meeting.timeSlots || [])
+    
+    setOccupiedTimeSlots(occupied)
+  }, [meeting, currentUser?.languages, meetings])
 
   // Generate available time slots
   useEffect(() => {
@@ -127,8 +126,8 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
       })
     }
     
-    // Generate slots for the next 48 hours in 30-minute increments
-    for (let i = 0; i < 48 * 2; i++) {
+    // Generate slots for the next 7 days in 30-minute increments
+    for (let i = 0; i < 7 * 24 * 2; i++) {
       const slotTime = addMinutes(nextHalfHourTime, i * 30)
       const endTime = addMinutes(slotTime, 30)
       
@@ -267,7 +266,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
   }
 
   const handleCancel = () => {
-    onClose()
+    router.back()
   }
 
   const handleSave = async () => {
@@ -284,7 +283,7 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
       languages: tempLanguages,
       peerMeetingId: meeting?.peerMeetingId
     })
-    onClose()
+    router.back()
   }
 
   return (
@@ -297,150 +296,139 @@ export default function MeetingDialog({ open, onClose, meetings = [], meeting = 
           <CircularProgress color="inherit" />
         </div>
       )}
-      <Dialog
-        open={open}
-        onClose={handleCancel}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex justify-between items-center px-4 py-3 border-b panel-border sticky top-0 bg-inherit z-10">
+        <div className="flex-grow font-semibold text-lg">
           {meeting ? t('editMeeting') : t('createMeeting')}
-          <IconButton onClick={handleCancel} size="small">
-            <CloseIcon /> 
-          </IconButton>
-        </DialogTitle>
-        <DialogContent className="flex flex-col gap-4">
-          <InterestSelector value={tempInterests} onChange={setTempInterests} />
-          
-          <Typography variant="subtitle1" className="mt-4">
-            {t('languages')}
+        </div>
+        <IconButton onClick={handleCancel} size="small" aria-label={t('close')}>
+          <CloseIcon />
+        </IconButton>
+      </div>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
+        <InterestSelector value={tempInterests} onChange={setTempInterests} />
+        <Typography variant="subtitle1" className="mt-4">
+          {t('languages')}
+        </Typography>
+        <LanguageSelector
+          value={tempLanguages}
+          onChange={setTempLanguages}
+          label={t('Profile.iSpeak')}
+        />
+        {tempLanguages.length === 0 && (
+          <Typography color="error" className="text-sm">
+            {t('pleaseSelectLanguages')}
           </Typography>
-          <LanguageSelector
-            value={tempLanguages}
-            onChange={setTempLanguages}
-            label={t('Profile.iSpeak')}
+        )}
+        <Typography variant="subtitle1" className="mt-4">
+          {t('preferences')}
+        </Typography>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={tempAllowedMales}
+                onChange={(e) => handleMalesChange(e.target.checked)}
+              />
+            }
+            label={t('allowMales')}
           />
-          
-          {tempLanguages.length === 0 && (
-            <Typography color="error" className="text-sm">
-              {t('pleaseSelectLanguages')}
-            </Typography>
-          )}
-          
-          <Typography variant="subtitle1" className="mt-4">
-            {t('preferences')}
-          </Typography>
-          
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={tempAllowedMales}
-                  onChange={(e) => handleMalesChange(e.target.checked)}
-                />
-              }
-              label={t('allowMales')}
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={tempAllowedFemales}
-                  onChange={(e) => handleFemalesChange(e.target.checked)}
-                />
-              }
-              label={t('allowFemales')}
-            />
-          </FormGroup>
-          
-          <Typography>
-            {t('ageRange')}: {tempAgeRange[0]} - {tempAgeRange[1]}
-          </Typography>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={tempAllowedFemales}
+                onChange={(e) => handleFemalesChange(e.target.checked)}
+              />
+            }
+            label={t('allowFemales')}
+          />
+        </FormGroup>
+        <Typography>
+          {t('ageRange')}: {tempAgeRange[0]} - {tempAgeRange[1]}
+        </Typography>
+        <div className="w-full px-2">
           <Slider
             value={tempAgeRange}
             onChange={(_, newValue) => setTempAgeRange(newValue as [number, number])}
             min={10}
             max={100}
             valueLabelDisplay="auto"
-            sx={{ touchAction: 'pan-y' }}
+            sx={{ touchAction: 'pan-y', width: '100%', maxWidth: '100%' }}
           />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={preferEarlier}
-                onChange={(e) => setPreferEarlier(e.target.checked)}
-              />
-            }
-            label={t('preferEarlier')}
-          />
-
-          <Typography variant="subtitle1" className="mt-4">
-            {t('minDuration')}
+        </div>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={preferEarlier}
+              onChange={(e) => setPreferEarlier(e.target.checked)}
+            />
+          }
+          label={t('preferEarlier')}
+        />
+        <Typography variant="subtitle1" className="mt-4">
+          {t('minDuration')}
+        </Typography>
+        <div className="flex gap-4 justify-center">
+          <Button 
+            variant={minDuration === 30 ? "contained" : "outlined"}
+            onClick={() => setMinDuration(30)}
+            className="flex-1"
+          >
+            30 {t('minutes')}
+          </Button>
+          <Button 
+            variant={minDuration === 60 ? "contained" : "outlined"}
+            onClick={() => setMinDuration(60)}
+            className="flex-1"
+          >
+            1 {t('hour')}
+          </Button>
+        </div>
+        <Divider className="my-4" />
+        <Typography variant="subtitle1" className="mt-4">
+          {t('selectTimeSlots')}
+        </Typography>
+        <TimeSlotsGrid
+          timeSlots={availableTimeSlots}
+          selectedTimeSlots={selectedTimeSlots}
+          onToggleTimeSlot={toggleTimeSlot}
+        />
+        {selectedTimeSlots.length === 0 && (
+          <Typography color="error" className="text-sm">
+            {t('pleaseSelectTimeSlots')}
           </Typography>
-          <div className="flex gap-4 justify-center">
-            <Button 
-              variant={minDuration === 30 ? "contained" : "outlined"}
-              onClick={() => setMinDuration(30)}
-              className="flex-1"
-            >
-              30 {t('minutes')}
-            </Button>
-            <Button 
-              variant={minDuration === 60 ? "contained" : "outlined"}
-              onClick={() => setMinDuration(60)}
-              className="flex-1"
-            >
-              1 {t('hour')}
-            </Button>
-          </div>
-          
-          <Divider className="my-4" />
-
-          <Typography variant="subtitle1" className="mt-4">
-            {t('selectTimeSlots')}
-          </Typography>
-          <TimeSlotsGrid
-            timeSlots={availableTimeSlots}
-            selectedTimeSlots={selectedTimeSlots}
-            onToggleTimeSlot={toggleTimeSlot}
-          />
-          {selectedTimeSlots.length === 0 && (
-            <Typography color="error" className="text-sm">
-              {t('pleaseSelectTimeSlots')}
+        )}
+      </div>
+      {/* Bottom Controls Bar */}
+      <div className="sticky bottom-0 left-0 w-full panel-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10">
+        <div className="flex flex-col justify-start gap-2 mr-auto">
+          {tempInterests.length === 0 && (
+            <Typography color="warning" className="text-sm">
+              {t('pleaseSelectInterest')}
             </Typography>
           )}
-
-        </DialogContent>
-        <DialogActions className="border-t border-gray-800">
-          <div className="flex flex-col justify-start gap-2 mr-auto">
-            {tempInterests.length === 0 && (
-              <Typography color="warning" className="text-sm">
-                {t('pleaseSelectInterest')}
-              </Typography>
-            )}
-
-            {selectedTimeSlots.length > 0 && !hasValidDuration && (
-              <Typography color="warning" className="text-sm">
-                {t('insufficientDuration', { minutes: minDuration, })}
-              </Typography>
-            )}
-          </div>
-          <Button onClick={handleCancel}>
-            {t('cancel')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            disabled={loading || 
-              selectedTimeSlots.length === 0 || 
-              tempInterests.length === 0 || 
-              tempLanguages.length === 0 ||
-              !hasValidDuration}
-          >
-            {meeting ? t('update') : t('create')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          {selectedTimeSlots.length > 0 && !hasValidDuration && (
+            <Typography color="warning" className="text-sm">
+              {t('insufficientDuration', { minutes: minDuration })}
+            </Typography>
+          )}
+        </div>
+        <Button onClick={handleCancel}>
+          {t('cancel')}
+        </Button>
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disabled={loading || 
+            selectedTimeSlots.length === 0 || 
+            tempInterests.length === 0 || 
+            tempLanguages.length === 0 ||
+            !hasValidDuration}
+        >
+          {meeting ? t('update') : t('create')}
+        </Button>
+      </div>
     </div>
   )
 } 

@@ -13,6 +13,9 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           // backgroundColor: '#f0f0f0' // your desired color
+        },
+        notchedOutline: {
+          borderColor: '#444c62' // <-- your desired border color
         }
       }
     },

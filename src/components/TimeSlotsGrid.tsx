@@ -1,6 +1,6 @@
 import { Button, Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
-
+import { getDayLabel } from './MeetingsCalendar'
 interface TimeSlot {
   timestamp: number
   startTime: string
@@ -34,10 +34,14 @@ export default function TimeSlotsGrid({
   }, {} as Record<string, TimeSlot[]>)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {Object.entries(timeSlotsByDay).map(([day, slots]) => (
-        <div key={day} className="mb-4">
-          <Typography variant="subtitle2" className="mb-2">{day}</Typography>
+        <div key={day} className="mb-2">
+          <div className="mb-2">
+            <Typography variant="subtitle2">
+              {getDayLabel(new Date(slots[0].timestamp), t)}
+            </Typography>
+          </div>
           <div className="grid grid-cols-4 gap-2">
             {slots.map(slot => (
               slot.isDummy ? (

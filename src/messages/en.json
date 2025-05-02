@@ -1,7 +1,9 @@
 {
+  "loading": "Loading...",
   "name": "Name",
   "searchByName": "Search by name",
-  "pleaseSelectInterest": "Please select at least one status",
+  "selectInterest": "Select Interests",
+  "pleaseSelectInterest": "Please select at least one interest",
   "online": "Online",
   "offline": "Offline",
   "cancel": "Cancel",

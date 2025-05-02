@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { LANGUAGES } from '@/config/languages'
-import MeetingDialog from './MeetingDialog'
 
 export default function LocalVideo() {
   const t = useTranslations()
@@ -16,7 +15,6 @@ export default function LocalVideo() {
     setLocalStream, 
   } = useWebRTCContext()
   const [profileOpen, setProfileOpen] = useState(false)
-  const [statusOpen, setStatusOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
@@ -121,10 +119,6 @@ export default function LocalVideo() {
           </div>
         )}
       </div>
-      <MeetingDialog
-        open={statusOpen}
-        onClose={() => setStatusOpen(false)}
-      />
     </div>
   )
 }

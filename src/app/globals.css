@@ -73,6 +73,10 @@ body:before {
   border-color: #273d58;
 }
 
+.brighter-border {
+  border: 1px solid #273d58;
+}
+
 /* Dark scrollbar styles */
 * {
   scrollbar-width: normal;
