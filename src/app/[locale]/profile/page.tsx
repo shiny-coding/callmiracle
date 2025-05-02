@@ -1,7 +1,7 @@
 'use client';
 
-import ProfileDialog from '@/components/ProfileDialog';
+import ProfileForm from '@/components/ProfileForm';
 
 export default function ListPage() {
-  return <ProfileDialog />
+  return <ProfileForm />
 }

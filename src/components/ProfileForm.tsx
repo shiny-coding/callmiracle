@@ -25,7 +25,7 @@ const DELETE_USER = gql`
   }
 `
 
-export default function ProfileDialog() {
+export default function ProfileForm() {
   const t = useTranslations('Profile')
   const tRoot = useTranslations()
   const { currentUser, setCurrentUser } = useStore()

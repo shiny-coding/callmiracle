@@ -1,8 +1,8 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import ProfileDialog from './ProfileDialog'
 import { useStore } from '@/store/useStore'
+import { useRouter } from 'next/navigation'
 
 interface ProfileIncompleteDialogProps {
   open: boolean
@@ -11,11 +11,11 @@ interface ProfileIncompleteDialogProps {
 
 export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncompleteDialogProps) {
   const t = useTranslations()
-  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false)
   const { currentUser } = useStore()
-  
+  const router = useRouter()
+
   const handleOpenProfileSettings = () => {
-    setProfileSettingsOpen(true)
+    router.push( '/profile' )
     onClose()
   }
   

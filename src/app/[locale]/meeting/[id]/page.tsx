@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { useTranslations } from 'next-intl'
-import MeetingDialog from '@/components/MeetingDialog'
+import MeetingForm from '@/components/MeetingForm'
 
 export default function MeetingPage() {
   const { id } = useParams()
@@ -25,7 +25,7 @@ export default function MeetingPage() {
   }
 
   return (
-    <MeetingDialog
+    <MeetingForm
       meetings={meetings}
       meeting={meetingWithPeer.meeting}
     />

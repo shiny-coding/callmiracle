@@ -1,7 +1,6 @@
 import { IconButton, Badge, Avatar } from '@mui/material'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import NotificationsIcon from '@mui/icons-material/Notifications'
-import ProfileDialog from './ProfileDialog'
 import { useState } from 'react'
 import NotificationsPopup from './NotificationsPopup'
 import { useNotifications } from '@/contexts/NotificationsContext'

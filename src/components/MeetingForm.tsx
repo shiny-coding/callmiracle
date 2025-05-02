@@ -15,13 +15,14 @@ import { isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useRouter } from 'next/navigation'
 import { getDayLabel } from './MeetingsCalendar'
+import { useMeetings } from '@/contexts/MeetingsContext'
 
 interface Props {
   meetings?: any[]
   meeting?: any
 }
 
-export default function MeetingDialog({ meetings = [], meeting = null }: Props) {
+export default function MeetingForm({ meetings = [], meeting = null }: Props) {
   const t = useTranslations()
   const { currentUser } = useStore()
   const router = useRouter()
@@ -45,6 +46,7 @@ export default function MeetingDialog({ meetings = [], meeting = null }: Props) 
   const { updateMeeting, loading } = useUpdateMeeting()
   const [occupiedTimeSlots, setOccupiedTimeSlots] = useState<number[]>([])
   const [hasValidDuration, setHasValidDuration] = useState(true)
+  const { refetchFutureMeetings } = useMeetings()
 
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
@@ -283,6 +285,7 @@ export default function MeetingDialog({ meetings = [], meeting = null }: Props) 
       languages: tempLanguages,
       peerMeetingId: meeting?.peerMeetingId
     })
+    refetchFutureMeetings()
     router.back()
   }
 

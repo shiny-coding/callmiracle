@@ -2,7 +2,7 @@
 
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { useTranslations } from 'next-intl'
-import MeetingDialog from '@/components/MeetingDialog'
+import MeetingForm from '@/components/MeetingForm'
 
 export default function NewMeetingPage() {
   const t = useTranslations()
@@ -12,7 +12,7 @@ export default function NewMeetingPage() {
   if (error) return <div>{t('errorLoadingMeeting')}</div>
 
   return (
-    <MeetingDialog
+    <MeetingForm
       meetings={meetings}
       meeting={null}
     />
