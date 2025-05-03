@@ -8,6 +8,8 @@ import { format, setMinutes, setSeconds, setMilliseconds, addMinutes, isToday, i
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
 import { enUS } from 'date-fns/locale'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import Link from 'next/link'
+import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -88,6 +90,8 @@ export default function MeetingsCalendar() {
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
 
+  const occupiedTimeSlots = getOccupiedTimeSlots(futureMeetings)
+
   // Find the first visible slot and update topDayKey
   useEffect(() => {
     const handleScroll = () => {
@@ -166,7 +170,7 @@ export default function MeetingsCalendar() {
 
   // Define grid columns: timeSlot (3), meetingsCount, timeline, interests, languages
   const gridTemplateColumns = `
-    42px 8px 42px
+    92px
     30px
     70px 
     ${Math.max(userIds.length * 6 + 8, 100)}px 
@@ -190,7 +194,7 @@ export default function MeetingsCalendar() {
           zIndex: 1,
         }}
       >
-        <div style={{ gridColumn: '1 / span 3', padding: CELL_PADDING, ...headerStyle }}>
+        <div style={{ padding: CELL_PADDING, ...headerStyle }}>
           {t('timeSlot')}
         </div>
         <div></div>
@@ -230,7 +234,7 @@ export default function MeetingsCalendar() {
               left: 0,
               width: '100%',
               zIndex: 2,
-              gridColumn: `1 / span 8`,
+              gridColumn: `1 / span 6`,
               padding: CELL_PADDING,
               minHeight: '2rem',
               borderBottomWidth: '1px'
@@ -247,7 +251,7 @@ export default function MeetingsCalendar() {
             {!isToday(new Date(dayKey)) && (
               <div
                 style={{
-                  gridColumn: `1 / span 8`,
+                  gridColumn: `1 / span 6`,
                   padding: CELL_PADDING,
                   minHeight: '2rem',
                 }}
@@ -263,6 +267,7 @@ export default function MeetingsCalendar() {
             {/* Slot rows */}
             {daySlots.map(slot => {
               const meetings = slotMap[slot.timestamp]
+              const isOccupied = occupiedTimeSlots.includes(slot.timestamp)
               // Count interests
               const interestCounts: Record<string, number> = {}
               const languageCounts: Record<string, number> = {}
@@ -286,15 +291,25 @@ export default function MeetingsCalendar() {
                     ref={el => { slotRefs.current[slot.timestamp] = el }}
                     style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}
                   >
-                    {startLabel}
-                  </div>
-                  {/* Dash */}
-                  <div style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}>
-                    -
-                  </div>
-                  {/* End time */}
-                  <div style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}>
-                    {slot.endTime}
+                    {!isOccupied ? (
+                      <Link
+                        href={`/meeting?timeslot=${slot.timestamp}`}
+                        style={{
+                          color: 'var(--link-color)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <div className="min-w-10 text-center">{startLabel}</div>
+                        -
+                        <div className="min-w-10 text-center">{slot.endTime}</div>
+                      </Link>
+                    ) : (
+                      startLabel
+                    )}
                   </div>
                   <div></div>
                   {/* Meetings count */}

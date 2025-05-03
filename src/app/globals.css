@@ -61,6 +61,14 @@ body:before {
   filter: brightness(0.7) contrast(1.2);
 }
 
+:root {
+  --link-color: #459ff8;
+}
+
+.link-color {
+  color: var(--link-color);
+}
+
 .panel-bg {
   background-color: #1e2b3f;
 }

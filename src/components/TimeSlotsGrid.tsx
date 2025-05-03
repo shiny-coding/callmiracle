@@ -1,6 +1,7 @@
 import { Button, Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { getDayLabel } from './MeetingsCalendar'
+
 interface TimeSlot {
   timestamp: number
   startTime: string
@@ -21,7 +22,7 @@ interface TimeSlotsGridProps {
 export default function TimeSlotsGrid({ 
   timeSlots, 
   selectedTimeSlots, 
-  onToggleTimeSlot 
+  onToggleTimeSlot
 }: TimeSlotsGridProps) {
   const t = useTranslations()
   
@@ -49,6 +50,7 @@ export default function TimeSlotsGrid({
               ) : (
                 <Button
                   key={slot.timestamp}
+                  data-timeslot={slot.timestamp}
                   variant={selectedTimeSlots.includes(slot.timestamp) ? "contained" : "outlined"}
                   size="small"
                   onClick={() => onToggleTimeSlot(slot.timestamp)}

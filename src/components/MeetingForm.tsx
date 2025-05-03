@@ -5,7 +5,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
-import { useState, useEffect, ChangeEvent } from 'react'
+import { useState, useEffect, ChangeEvent, useRef } from 'react'
 import { Interest, Meeting } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes } from 'date-fns'
@@ -13,19 +13,26 @@ import TimeSlotsGrid from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
 import { isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { getDayLabel } from './MeetingsCalendar'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
 
 interface Props {
   meetings?: any[]
   meeting?: any
 }
 
+function isSlotSelectable(slot: any) {
+  return slot && !slot.isDummy && !slot.isDisabled
+}
+
 export default function MeetingForm({ meetings = [], meeting = null }: Props) {
   const t = useTranslations()
   const { currentUser } = useStore()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const timeslotParam = searchParams?.get('timeslot')
   const [meetingId, setMeetingId] = useState<string | undefined>(undefined)
   const { 
     interests = [], 
@@ -47,7 +54,7 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
   const [occupiedTimeSlots, setOccupiedTimeSlots] = useState<number[]>([])
   const [hasValidDuration, setHasValidDuration] = useState(true)
   const { refetchFutureMeetings } = useMeetings()
-
+  const formContentRef = useRef<HTMLDivElement>(null)
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
     if (meeting) {
@@ -77,15 +84,9 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
     }
     
     // Collect all time slots from other meetings that haven't passed
-    const otherMeetings = meetings.filter(m => 
-      !meeting || m.meeting._id !== meeting._id
-    )
-    
-    const occupied = otherMeetings
-      .filter(m => !isMeetingPassed(m.meeting)) // Only consider active meetings
-      .flatMap(m => m.meeting.timeSlots || [])
-    
-    setOccupiedTimeSlots(occupied)
+    if (meeting || meetings.length > 0) {
+      setOccupiedTimeSlots(getOccupiedTimeSlots(meetings, meeting?._id))
+    }
   }, [meeting, currentUser?.languages, meetings])
 
   // Generate available time slots
@@ -238,6 +239,39 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
     setHasValidDuration(longestContinuousDuration >= minDuration)
   }, [selectedTimeSlots, minDuration, availableTimeSlots])
 
+  // Preselect timeslot(s) if timeslot param is present
+  useEffect(() => {
+    if (!meeting && timeslotParam && availableTimeSlots.length > 0) {
+      const ts = parseInt(timeslotParam, 10)
+      const slotIdx = availableTimeSlots.findIndex(slot => slot.timestamp === ts)
+      const slot = availableTimeSlots[slotIdx]
+      if (
+        slotIdx !== -1 &&
+        isSlotSelectable(slot)
+      ) {
+        const slotsToSelect = [slot.timestamp]
+        const nextSlot = availableTimeSlots[slotIdx + 1]
+        if (isSlotSelectable(nextSlot)) {
+          slotsToSelect.push(nextSlot.timestamp)
+        }
+        setSelectedTimeSlots(slotsToSelect)
+        setTimeout(() => {
+          // Scroll so that the next slot (if selected) is at the bottom
+          const scrollToSlot = nextSlot && slotsToSelect.includes(nextSlot.timestamp)
+            ? nextSlot
+            : slot
+          const slotEl = document.querySelector(`[data-timeslot="${scrollToSlot?.timestamp}"]`)
+          if (slotEl && formContentRef.current) {
+            const formRect = formContentRef.current.getBoundingClientRect()
+            const slotRect = slotEl.getBoundingClientRect()
+            // Scroll so that the bottom of the slot is at the bottom of the container (minus 40px offset)
+            formContentRef.current.scrollTop += (slotRect.bottom - formRect.bottom) + 10
+          }
+        }, 200)
+      }
+    }
+  }, [availableTimeSlots, timeslotParam, meeting])
+
   const toggleTimeSlot = (timestamp: number) => {
     // Don't allow toggling disabled slots
     if (availableTimeSlots.find(slot => slot.timestamp === timestamp)?.isDisabled) {
@@ -309,7 +343,7 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
         </IconButton>
       </div>
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
+      <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
         <InterestSelector value={tempInterests} onChange={setTempInterests} />
         <Typography variant="subtitle1" className="mt-4">
           {t('languages')}

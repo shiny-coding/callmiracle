@@ -119,3 +119,10 @@ export function getCompatibleInterests(
   if (block.all) return []
   return meeting.interests.filter(interest => !block.interests.includes(interest))
 }
+
+export function getOccupiedTimeSlots(meetings: any[], currentMeetingId?: string) {
+  return meetings
+    .filter(m => !currentMeetingId || m.meeting._id !== currentMeetingId)
+    .filter(m => !isMeetingPassed(m.meeting))
+    .flatMap(m => m.meeting.timeSlots || [])
+}
