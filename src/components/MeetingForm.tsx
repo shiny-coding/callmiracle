@@ -14,7 +14,6 @@ import LanguageSelector from './LanguageSelector'
 import { isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { getDayLabel } from './MeetingsCalendar'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
 

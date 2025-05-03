@@ -9,7 +9,7 @@ import MoodIcon from '@mui/icons-material/Mood'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { Interest, MeetingWithPeer, User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
-import { isMeetingPassed, getSharedInterests, class2Hex, ACTIVE_MEETING_COLOR, PASSED_MEETING_COLOR, SCHEDULED_MEETING_COLOR, FINDING_MEETING_COLOR, getMeetingColorClass, canEditMeeting } from '@/utils/meetingUtils'
+import { isMeetingPassed, getSharedInterests, class2Hex, ACTIVE_MEETING_COLOR, PASSED_MEETING_COLOR, SCHEDULED_MEETING_COLOR, FINDING_MEETING_COLOR, getMeetingColorClass, canEditMeeting, meetingIsActiveNow } from '@/utils/meetingUtils'
 import React, { useEffect, useState } from 'react'
 import DoneIcon from '@mui/icons-material/Done'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -83,7 +83,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
     const threeHoursAfterStart = new Date(meeting.startTime + 3 * 60 * 60 * 1000);
     
     // Meeting is happening now
-    if (now >= startDate && !meetingPassed) {
+    if (meetingIsActiveNow(meeting)) {
       return { status: 'now', timeText: t('now') };
     }
     
@@ -134,7 +134,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
   };
   
   const meetingStatusLabels = getMeetingStatusLabels();
-  const isActiveNow = meetingStatusLabels.status === 'now';
+  const isActiveNow = meetingIsActiveNow(meeting);
   const soonChipSx = getChipSx()
   if ( meetingStatusLabels.status === 'soon' ) {
     soonChipSx.border = `2px solid ${class2Hex(ACTIVE_MEETING_COLOR)} !important`

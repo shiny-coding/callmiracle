@@ -1,6 +1,6 @@
 import { Button, Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { getDayLabel } from './MeetingsCalendar'
+import { getDayLabel } from '@/utils/meetingUtils'
 
 interface TimeSlot {
   timestamp: number

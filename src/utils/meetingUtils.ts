@@ -2,6 +2,8 @@ import { Block, Interest, Meeting, MeetingStatus } from "@/generated/graphql"
 import resolveConfig from "tailwindcss/resolveConfig"
 import tailwindConfig from "../../tailwind.config"
 import { ObjectId } from "mongodb"
+import { format, setMinutes, setSeconds, setMilliseconds, addMinutes, isToday, isTomorrow } from 'date-fns'
+import { enUS } from "date-fns/locale"
 
 /**
  * Determines if a meeting has passed based on various conditions
@@ -124,7 +126,13 @@ export function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: str
   return meetings
     .filter(m => !currentMeetingId || m._id !== currentMeetingId)
     .filter(m => !isMeetingPassed(m))
-    .flatMap(m => m.timeSlots || [])
+    .flatMap(m => {
+      if (m.startTime) {
+        // Only two slots: startTime and startTime + 30min
+        return [m.startTime, m.startTime + 30 * 60 * 1000]
+      }
+      return m.timeSlots || []
+    })
 }
 
 export const ACTIVE_MEETING_COLOR = 'text-green-400' // '#4ADE80'
@@ -135,12 +143,9 @@ export const FINDING_MEETING_COLOR = 'text-blue-500' // '#3B82F6'
 
 export function getMeetingColorClass(meeting: Meeting) {
   if (isMeetingPassed(meeting)) return PASSED_MEETING_COLOR; 
-  const now = new Date()
+
   if (meeting.startTime) {
-    const meetingEndTime = new Date(Math.max(meeting.startTime + meeting.minDuration * 60 * 1000, (meeting.lastCallTime ?? 0) + 10 * 60 * 1000));
-    // Meeting is currently active
-    if (now < meetingEndTime && now >= new Date(meeting.startTime)) return ACTIVE_MEETING_COLOR
-    // Meeting is scheduled but not yet started
+    if ( meetingIsActiveNow(meeting) ) return ACTIVE_MEETING_COLOR
     return SCHEDULED_MEETING_COLOR
   }
   
@@ -150,4 +155,35 @@ export function getMeetingColorClass(meeting: Meeting) {
 
 export function canEditMeeting(meeting: Meeting) {
   return (meeting.status === MeetingStatus.Cancelled || (meeting.status === MeetingStatus.Seeking && !isMeetingPassed(meeting)))
+}
+
+export function getDayLabel(date: Date, t: any) {
+  // Get day of month with ordinal (e.g., 1st, 2nd, 3rd, 4th, ...)
+  const day = date.getDate()
+  const ordinal =
+    day % 10 === 1 && day !== 11
+      ? 'st'
+      : day % 10 === 2 && day !== 12
+      ? 'nd'
+      : day % 10 === 3 && day !== 13
+      ? 'rd'
+      : 'th'
+  const dayWithOrdinal = `${day}${ordinal}`
+
+  const weekday = format(date, 'EEEE', { locale: enUS })
+  const month = format(date, 'LLLL', { locale: enUS })
+
+  if (isToday(date)) {
+    return `${t('today')}, ${weekday}, ${dayWithOrdinal} of ${month}`
+  }
+  if (isTomorrow(date)) {
+    return `${t('tomorrow')}, ${weekday}, ${dayWithOrdinal} of ${month}`
+  }
+  return `${weekday}, ${dayWithOrdinal} of ${month}`
+}
+
+export function meetingIsActiveNow(meeting: Meeting) {
+  if (!meeting.startTime) return false
+  const now = new Date()
+  return now >= new Date(meeting.startTime) && !isMeetingPassed(meeting)
 }

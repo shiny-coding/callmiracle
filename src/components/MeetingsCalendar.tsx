@@ -4,75 +4,19 @@ import { useStore } from '@/store/useStore'
 import { Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Chip } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Meeting } from '@/generated/graphql'
-import { format, setMinutes, setSeconds, setMilliseconds, addMinutes, isToday, isTomorrow } from 'date-fns'
+import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
-import { enUS } from 'date-fns/locale'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import Link from 'next/link'
-import { getOccupiedTimeSlots, getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting } from '@/utils/meetingUtils'
+import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
+import { getTimeSlotsGrid } from './MeetingsCalendarUtils'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
 const CELL_PADDING = `${VERTICAL_CELL_PADDING} ${HORIZONTAL_CELL_PADDING}`
 const MIN_CELL_HEIGHT = '2rem'
-
-function getTimeSlotsGrid(now: number, hoursAhead: number, slotDuration: number) {
-  const slots = []
-  const nowDate = new Date(now)
-  const minutes = nowDate.getMinutes()
-  let firstSlotStart: Date
-
-  // Find the previous half-hour boundary
-  if (minutes < 30) {
-    firstSlotStart = setMilliseconds(setSeconds(setMinutes(new Date(now), 0), 0), 0)
-  } else {
-    firstSlotStart = setMilliseconds(setSeconds(setMinutes(new Date(now), 30), 0), 0)
-  }
-
-  const end = now + hoursAhead * 60 * 60 * 1000
-  for (let t = firstSlotStart.getTime(); t < end; t += slotDuration) {
-    const slotStart = new Date(t)
-    const slotEnd = new Date(t + slotDuration)
-    slots.push({
-      timestamp: t,
-      startTime: format(slotStart, 'HH:mm'),
-      endTime: format(slotEnd, 'HH:mm'),
-      isNow: t <= now && now < t + slotDuration,
-      dayKey: format(slotStart, 'yyyy-MM-dd'),
-      dayLabel: isToday(slotStart)
-        ? `Today (${format(slotStart, 'EEE, yyyy-MM-dd')})`
-        : format(slotStart, 'EEE, yyyy-MM-dd')
-    })
-  }
-  return slots
-}
-
-export function getDayLabel(date: Date, t: any) {
-  // Get day of month with ordinal (e.g., 1st, 2nd, 3rd, 4th, ...)
-  const day = date.getDate()
-  const ordinal =
-    day % 10 === 1 && day !== 11
-      ? 'st'
-      : day % 10 === 2 && day !== 12
-      ? 'nd'
-      : day % 10 === 3 && day !== 13
-      ? 'rd'
-      : 'th'
-  const dayWithOrdinal = `${day}${ordinal}`
-
-  const weekday = format(date, 'EEEE', { locale: enUS })
-  const month = format(date, 'LLLL', { locale: enUS })
-
-  if (isToday(date)) {
-    return `${t('today')}, ${weekday}, ${dayWithOrdinal} of ${month}`
-  }
-  if (isTomorrow(date)) {
-    return `${t('tomorrow')}, ${weekday}, ${dayWithOrdinal} of ${month}`
-  }
-  return `${weekday}, ${dayWithOrdinal} of ${month}`
-}
 
 export default function MeetingsCalendar() {
   const t = useTranslations()
@@ -85,22 +29,29 @@ export default function MeetingsCalendar() {
   } = useMeetings()
 
   const now = Date.now()
-  const slotDuration = 30 * 60 * 1000 // 30 minutes in ms
-  const hoursAhead = 24 * 7
-  const slots = getTimeSlotsGrid(now, hoursAhead, slotDuration)
+  const SLOT_DURATION = 30 * 60 * 1000 // 30 minutes in ms
+  const HOURS_AHEAD = 24 * 7
+  const slots = getTimeSlotsGrid(now, HOURS_AHEAD, SLOT_DURATION)
 
   const gridBodyRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
 
-  const occupiedTimeSlots = loadingFutureMeetings ? [] : getOccupiedTimeSlots(futureMeetings)
-
   // Collect all meetingIds for quick lookup
   const myMeetingSlotToId: Record<number, string> = {}
-  meetingsWithPeers.forEach(mwp => {
-    mwp.meeting.timeSlots.forEach(slot => {
-      myMeetingSlotToId[slot] = mwp.meeting._id
-    })
+  meetingsWithPeers.forEach(meetingWithPeer => {
+    const meeting = meetingWithPeer.meeting
+    const isPassed = isMeetingPassed(meeting)
+    if (isPassed) return
+    if ( meeting.startTime ) {
+      // if meeting is scheduled, it occupies two slots (an hour)
+      myMeetingSlotToId[meeting.startTime] = meeting._id
+      myMeetingSlotToId[meeting.startTime + SLOT_DURATION] = meeting._id
+    } else {
+      meeting.timeSlots.forEach(slot => {
+        myMeetingSlotToId[slot] = meeting._id
+      })
+    }
   })
 
   // Find the first visible slot and update topDayKey
@@ -145,7 +96,7 @@ export default function MeetingsCalendar() {
     for (let j = 0; j < meeting.timeSlots.length; j++) {
       const slot = meeting.timeSlots[j]
       // Snap slot to our slot grid
-      const snapped = slots.find(s => Math.abs(s.timestamp - slot) < slotDuration / 2)
+      const snapped = slots.find(s => Math.abs(s.timestamp - slot) < SLOT_DURATION / 2)
       if (snapped) {
         slotMap[snapped.timestamp].push(meeting)
       }
@@ -297,18 +248,23 @@ export default function MeetingsCalendar() {
 
               // Check if this slot belongs to one of my meetings
               const myMeetingId = myMeetingSlotToId[slot.timestamp]
-              let slotLink = myMeetingId
-                ? `/meeting/${myMeetingId}`
-                : `/meeting?timeslot=${slot.timestamp}`
-              let tooltipText = myMeetingId ? t('editMeeting') : t('createMeeting')
+              const myMeeting = meetingsWithPeers.find(mwp => mwp.meeting._id === myMeetingId)?.meeting
+              const meetingPassed = myMeeting && isMeetingPassed(myMeeting)
+              let slotLink = `/meeting?timeslot=${slot.timestamp}`
+              let tooltipText = t('createMeeting')
+              let meetingColorClass = FINDING_MEETING_COLOR
 
-              const myMeeting = meetingsWithPeers.find(mwp => mwp.meeting._id === myMeetingId)
-              const meetingColorClass = myMeeting ? getMeetingColorClass(myMeeting.meeting) : FINDING_MEETING_COLOR
-              const meetingColor = class2Hex(meetingColorClass)
-              if ( myMeeting && !canEditMeeting(myMeeting.meeting) ) {
-                slotLink = `list?meetingId=${myMeeting.meeting._id}`
-                tooltipText = t('viewMeeting')
+              if (myMeeting && !meetingPassed) {
+                meetingColorClass = getMeetingColorClass(myMeeting)
+                if ( canEditMeeting(myMeeting) ) {
+                  slotLink = `/meeting/${myMeetingId}`
+                  tooltipText = t('editMeeting')
+                } else {
+                  slotLink = `list?meetingId=${myMeetingId}`
+                  tooltipText = t('viewMeeting')
+                }
               }
+              const meetingColor = class2Hex(meetingColorClass)
 
               return (
                 <Fragment key={slot.timestamp}>
@@ -337,61 +293,17 @@ export default function MeetingsCalendar() {
                             justifyContent: 'center'
                           }}
                         >
-                        <span
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 20,
-                            height: 20,
-                            }}>
-                          {myMeetingId ? (
-                            <span
-                              className={meetingColorClass}
-                              style={{
-                                display: 'inline-block',
-                                borderRadius: '50%',
-                                width: 12,
-                                height: 12,
-                                background: meetingColor,
-                                border: `2px solid ${meetingColor}`,
-                                boxSizing: 'border-box',
-                                transition: 'background 0.2s',
-                                marginRight: 8
-                              }}
-                            />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, }}>
+                          {myMeeting && !meetingPassed ? (
+                            <span className={meetingColorClass}
+                              style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s', marginRight: 8 }} />
                           ) : (
-                            <span
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: 8,
-                                position: 'relative'
-                              }}
-                            >
-                              <AddIcon
-                                className="calendar-plus"
-                                sx={{
-                                  width: 20,
-                                  height: 20,
-                                  color: '#1976d2',
-                                  opacity: 0,
-                                  transition: 'opacity 0.15s'
-                                }}
-                              />
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 8, position: 'relative' }}>
+                              <AddIcon className="calendar-plus" sx={{ width: 20, height: 20, color: '#1976d2', opacity: 0, transition: 'opacity 0.15s' }} />
                             </span>
                           )}
-                        </span>
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            color: meetingColor,
-                            justifyContent: 'center'
-                          }}
-                        >
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'center' }}>
                           <div className="min-w-10 text-center">{startLabel}</div>
                           -
                           <div className="min-w-10 text-center">{slot.endTime}</div>
