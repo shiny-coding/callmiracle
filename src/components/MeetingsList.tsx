@@ -4,12 +4,12 @@ import { Paper, List, ListItem, Typography, IconButton } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useTranslations } from 'next-intl'
 import MeetingCard from './MeetingCard'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
-import { Meeting } from '@/generated/graphql'
+import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
@@ -21,27 +21,38 @@ export default function MeetingsList() {
   const t = useTranslations()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
   const { subscribeToNotifications } = useSubscriptions()
-  const { highlightedMeetingId, setHighlightedMeetingId, meetings, loading, error, refetch } = useMeetings()
+  const { highlightedMeetingId, setHighlightedMeetingId, meetingsWithPeers, loadingMeetingsWithPeers, errorMeetingsWithPeers, refetchMeetingsWithPeers } = useMeetings()
   const meetingRefs = useRef<Record<string, HTMLElement>>({})
   const { currentUser } = useStore()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event) => {
       if (event.type.startsWith('meeting-')) {
-        refetch();
+        refetchMeetingsWithPeers();
       }
     })
     
     return unsubscribe
-  }, [subscribeToNotifications, refetch])
+  }, [subscribeToNotifications, refetchMeetingsWithPeers])
 
   useEffect(() => {
     if (highlightedMeetingId && meetingRefs.current[highlightedMeetingId]) {
-      meetingRefs.current[highlightedMeetingId].scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      })
+      const el = meetingRefs.current[highlightedMeetingId]
+      // Find the scrollable container (the Paper element)
+      const container = el?.closest('.MuiPaper-root')
+      if (el && container) {
+        const elRect = el.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+        // Check if the element is fully in view
+        if (
+          elRect.top < containerRect.top ||
+          elRect.bottom > containerRect.bottom
+        ) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }
     }
   }, [highlightedMeetingId])
 
@@ -55,9 +66,15 @@ export default function MeetingsList() {
     }
   }, [highlightedMeetingId, setHighlightedMeetingId])
 
+  useEffect(() => {
+    const meetingId = searchParams?.get('meetingId')
+    if (meetingId) {
+      setHighlightedMeetingId(meetingId)
+    }
+  }, [searchParams, setHighlightedMeetingId])
 
-  if (loading) return <Typography>Loading...</Typography>
-  if (error) return <Typography color="error">Error loading meetings</Typography>
+  if (loadingMeetingsWithPeers) return <Typography>Loading...</Typography>
+  if (errorMeetingsWithPeers) return <Typography color="error">Error loading meetings</Typography>
 
 
   return (
@@ -85,7 +102,7 @@ export default function MeetingsList() {
               <AddIcon className="text-white" />
             </IconButton>
             <IconButton 
-              onClick={() => refetch()} 
+              onClick={() => refetchMeetingsWithPeers()} 
               size="small"
               className="hover:bg-gray-700 text-white"
             >
@@ -94,25 +111,25 @@ export default function MeetingsList() {
           </div>
         </div>
         <List className="space-y-4">
-          {meetings.map((meetingData: any) => (
+          {meetingsWithPeers.map((meetingWithPeer: MeetingWithPeer) => (
             <ListItem 
-              key={meetingData.meeting._id}
-              ref={(el: any) => el && (meetingRefs.current[meetingData.meeting._id] = el)}
+              key={meetingWithPeer.meeting._id}
+              ref={(el: any) => el && (meetingRefs.current[meetingWithPeer.meeting._id] = el)}
               className={`flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative mb-4 transition-all duration-500
-                ${highlightedMeetingId === meetingData.meeting._id ? 'highlight-animation' : ''}`}
+                ${highlightedMeetingId === meetingWithPeer.meeting._id ? 'highlight-animation' : ''}`}
               disablePadding
             >
               <MeetingCard 
-                meetingWithPeer={meetingData} 
+                meetingWithPeer={meetingWithPeer} 
                 onEdit={e => {
                   e?.stopPropagation()
-                  router.push(`/meeting/${meetingData.meeting._id}`)
+                  router.push(`/meeting/${meetingWithPeer.meeting._id}`)
                 }}
-                refetch={refetch}
+                refetch={refetchMeetingsWithPeers}
               />
             </ListItem>
           ))}
-          {meetings.length === 0 && (
+          {meetingsWithPeers.length === 0 && (
             <Typography className="text-gray-400 text-center py-4">
               {t('noMeetings')}
             </Typography>

@@ -126,3 +126,28 @@ export function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: str
     .filter(m => !isMeetingPassed(m))
     .flatMap(m => m.timeSlots || [])
 }
+
+export const ACTIVE_MEETING_COLOR = 'text-green-400' // '#4ADE80'
+export const PASSED_MEETING_COLOR = 'text-gray-400' // '#9CA3AF'
+export const SCHEDULED_MEETING_COLOR = 'text-yellow-400' // '#FBBF24'
+export const FINDING_MEETING_COLOR = 'text-blue-500' // '#3B82F6'
+
+
+export function getMeetingColorClass(meeting: Meeting) {
+  if (isMeetingPassed(meeting)) return PASSED_MEETING_COLOR; 
+  const now = new Date()
+  if (meeting.startTime) {
+    const meetingEndTime = new Date(Math.max(meeting.startTime + meeting.minDuration * 60 * 1000, (meeting.lastCallTime ?? 0) + 10 * 60 * 1000));
+    // Meeting is currently active
+    if (now < meetingEndTime && now >= new Date(meeting.startTime)) return ACTIVE_MEETING_COLOR
+    // Meeting is scheduled but not yet started
+    return SCHEDULED_MEETING_COLOR
+  }
+  
+  // Finding partner
+  return FINDING_MEETING_COLOR; 
+}
+
+export function canEditMeeting(meeting: Meeting) {
+  return (meeting.status === MeetingStatus.Cancelled || (meeting.status === MeetingStatus.Seeking && !isMeetingPassed(meeting)))
+}

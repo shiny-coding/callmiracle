@@ -247,7 +247,7 @@ export type QueryGetFutureMeetingsArgs = {
 };
 
 
-export type QueryGetMeetingsWithPeersArgs = {
+export type QueryGetMeetingsArgs = {
   userId: Scalars['ID']['input'];
 };
 

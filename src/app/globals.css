@@ -115,7 +115,7 @@ body:before {
 /* Add this animation to your global CSS */
 @keyframes highlight-blink {
   0% { background-color: rgb(55, 65, 81); } /* bg-gray-700 */
-  50% { background-color: rgb(255, 255, 255); } /* white */
+  50% { background-color: rgb(48, 87, 123); } /* white */
   100% { background-color: rgb(55, 65, 81); } /* bg-gray-700 */
 }
 
@@ -132,4 +132,9 @@ body:before {
 
 .calendar-grid-body div {
   font-size: 0.75rem;
+}
+
+/* You can put this in your global styles or in a CSS module */
+.calendar-timeslot-cell:hover .calendar-plus {
+  opacity: 1 !important;
 }

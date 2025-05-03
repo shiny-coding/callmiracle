@@ -7,9 +7,9 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoodIcon from '@mui/icons-material/Mood'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
-import { Interest, User } from '@/generated/graphql'
+import { Interest, MeetingWithPeer, User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
-import { isMeetingPassed, getSharedInterests, class2Hex } from '@/utils/meetingUtils'
+import { isMeetingPassed, getSharedInterests, class2Hex, ACTIVE_MEETING_COLOR, PASSED_MEETING_COLOR, SCHEDULED_MEETING_COLOR, FINDING_MEETING_COLOR, getMeetingColorClass, canEditMeeting } from '@/utils/meetingUtils'
 import React, { useEffect, useState } from 'react'
 import DoneIcon from '@mui/icons-material/Done'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -22,37 +22,7 @@ import ConfirmDialog from './ConfirmDialog'
 import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
 
 interface MeetingCardProps {
-  meetingWithPeer: {
-    meeting: {
-      _id: string
-      userId: string
-      languages: string[]
-      interests: Interest[]
-      timeSlots: number[]
-      minDuration: number
-      preferEarlier: boolean
-      allowedMales: boolean
-      allowedFemales: boolean
-      allowedMinAge: number
-      allowedMaxAge: number
-      startTime?: number
-      peerMeetingId?: string
-      lastCallTime?: number
-      status: MeetingStatus
-      totalDuration: number
-    }
-    peerMeeting?: {
-      userId: string
-      languages: string[]
-      interests: Interest[]
-    }
-    peerUser?: {
-      _id: string
-      name: string
-      sex: string
-      languages: string[]
-    }
-  }
+  meetingWithPeer: MeetingWithPeer
   onEdit?: (e?: React.MouseEvent) => void
   refetch: () => void
 }
@@ -77,28 +47,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
   const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, combineAdjacentSlots, MeetingLanguagesChips, GenderChip,
           getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, now, t)
 
-  const activeColor = 'text-green-400' // '#4ADE80'
-  const passedColor = 'text-gray-400' // '#9CA3AF'
-  const scheduledColor = 'text-yellow-400' // '#FBBF24'
-  const findingColor = 'text-blue-500' // '#3B82F6'
-
-  // Determine meeting color based on its state
-  const getMeetingColor = () => {
-    if (meetingPassed) return passedColor; 
-    
-    if (meeting.startTime) {
-      const meetingEndTime = new Date(Math.max(meeting.startTime + meeting.minDuration * 60 * 1000, (meeting.lastCallTime ?? 0) + 10 * 60 * 1000));
-      // Meeting is currently active
-      if (now < meetingEndTime && now >= new Date(meeting.startTime)) return activeColor
-      // Meeting is scheduled but not yet started
-      return scheduledColor
-    }
-    
-    // Finding partner
-    return findingColor; 
-  };
-  
-  const meetingColor = getMeetingColor();
+  const meetingColor = getMeetingColorClass(meeting);
 
   // Reusable chip styling for passed vs active meetings
   const getChipSx = (isActive = isActiveNow) => ({
@@ -108,12 +57,12 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
         ? 'transparent !important' 
         : '#4B5563 !important',
     color: meetingPassed
-      ? `${class2Hex(passedColor)} !important` 
+      ? `${class2Hex(PASSED_MEETING_COLOR)} !important` 
       : 'white !important',
     border: isActive 
-      ? `2px solid ${class2Hex(activeColor)} !important` 
+      ? `2px solid ${class2Hex(ACTIVE_MEETING_COLOR)} !important` 
       : meetingPassed
-        ? `2px solid ${class2Hex(passedColor)} !important` 
+        ? `2px solid ${class2Hex(PASSED_MEETING_COLOR)} !important` 
         : `2px solid ${class2Hex(meetingColor)} !important`,
   });
 
@@ -188,7 +137,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
   const isActiveNow = meetingStatusLabels.status === 'now';
   const soonChipSx = getChipSx()
   if ( meetingStatusLabels.status === 'soon' ) {
-    soonChipSx.border = `2px solid ${class2Hex(activeColor)} !important`
+    soonChipSx.border = `2px solid ${class2Hex(ACTIVE_MEETING_COLOR)} !important`
   }
 
   useEffect(() => {
@@ -254,7 +203,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
   return (
     <div className="flex flex-col gap-2 w-full relative">
       <div className="absolute top-0 right-0">
-        {(meeting.status === MeetingStatus.Cancelled || (meeting.status === MeetingStatus.Seeking && !meetingPassed)) && (
+        {canEditMeeting(meeting) && (
           <IconButton 
             className="text-blue-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
@@ -314,7 +263,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
                   onClick={handleCallPeer}
                   className="text-white"
                   sx={{
-                    backgroundColor: `${class2Hex(activeColor)} !important`, // light green
+                    backgroundColor: `${class2Hex(ACTIVE_MEETING_COLOR)} !important`, // light green
                     '&:hover': {
                       backgroundColor: '#22C55E !important', // slightly darker green on hover
                     }
@@ -437,7 +386,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
         </div>
       )}
 
-      {meeting.totalDuration > 0 && (
+      {meeting.totalDuration && (
         <div className="flex items-center gap-2">
           <TimerIcon className="text-blue-400" />
           <Typography variant="body2">

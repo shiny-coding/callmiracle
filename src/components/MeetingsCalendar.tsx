@@ -9,8 +9,9 @@ import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
 import { enUS } from 'date-fns/locale'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import Link from 'next/link'
-import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
+import { getOccupiedTimeSlots, getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
+import AddIcon from '@mui/icons-material/Add'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -79,7 +80,8 @@ export default function MeetingsCalendar() {
     futureMeetings,
     loadingFutureMeetings,
     errorFutureMeetings,
-    refetchFutureMeetings
+    refetchFutureMeetings,
+    meetingsWithPeers
   } = useMeetings()
 
   const now = Date.now()
@@ -92,6 +94,14 @@ export default function MeetingsCalendar() {
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
 
   const occupiedTimeSlots = loadingFutureMeetings ? [] : getOccupiedTimeSlots(futureMeetings)
+
+  // Collect all meetingIds for quick lookup
+  const myMeetingSlotToId: Record<number, string> = {}
+  meetingsWithPeers.forEach(mwp => {
+    mwp.meeting.timeSlots.forEach(slot => {
+      myMeetingSlotToId[slot] = mwp.meeting._id
+    })
+  })
 
   // Find the first visible slot and update topDayKey
   useEffect(() => {
@@ -171,7 +181,7 @@ export default function MeetingsCalendar() {
 
   // Define grid columns: timeSlot (3), meetingsCount, timeline, interests, languages
   const gridTemplateColumns = `
-    92px
+    110px
     30px
     70px 
     ${Math.max(userIds.length * 6 + 8, 100)}px 
@@ -268,7 +278,6 @@ export default function MeetingsCalendar() {
             {/* Slot rows */}
             {daySlots.map(slot => {
               const meetings = slotMap[slot.timestamp]
-              const isOccupied = occupiedTimeSlots.includes(slot.timestamp)
               // Count interests
               const interestCounts: Record<string, number> = {}
               const languageCounts: Record<string, number> = {}
@@ -285,34 +294,110 @@ export default function MeetingsCalendar() {
                 }
               }
               const startLabel = slot.isNow ? t('now') : slot.startTime
+
+              // Check if this slot belongs to one of my meetings
+              const myMeetingId = myMeetingSlotToId[slot.timestamp]
+              let slotLink = myMeetingId
+                ? `/meeting/${myMeetingId}`
+                : `/meeting?timeslot=${slot.timestamp}`
+              let tooltipText = myMeetingId ? t('editMeeting') : t('createMeeting')
+
+              const myMeeting = meetingsWithPeers.find(mwp => mwp.meeting._id === myMeetingId)
+              const meetingColorClass = myMeeting ? getMeetingColorClass(myMeeting.meeting) : FINDING_MEETING_COLOR
+              const meetingColor = class2Hex(meetingColorClass)
+              if ( myMeeting && !canEditMeeting(myMeeting.meeting) ) {
+                slotLink = `list?meetingId=${myMeeting.meeting._id}`
+                tooltipText = t('viewMeeting')
+              }
+
               return (
                 <Fragment key={slot.timestamp}>
                   {/* Attach ref to the first cell of each slot row */}
                   <div
                     ref={el => { slotRefs.current[slot.timestamp] = el }}
-                    style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}
+                    style={{
+                      textAlign: 'center',
+                      minHeight: MIN_CELL_HEIGHT,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative'
+                    }}
+                    className="calendar-timeslot-cell"
                   >
-                    {!isOccupied ? (
-                      <Tooltip title={t('createMeeting')} placement="left">
-                        <Link
-                          href={`/meeting?timeslot=${slot.timestamp}`}
+                    <Tooltip title={tooltipText} placement="left">
+                      <Link
+                          href={slotLink}
                           style={{
                             color: 'var(--link-color)',
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'row',
                             alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                        <span
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
                             justifyContent: 'center',
+                            width: 20,
+                            height: 20,
+                            }}>
+                          {myMeetingId ? (
+                            <span
+                              className={meetingColorClass}
+                              style={{
+                                display: 'inline-block',
+                                borderRadius: '50%',
+                                width: 12,
+                                height: 12,
+                                background: meetingColor,
+                                border: `2px solid ${meetingColor}`,
+                                boxSizing: 'border-box',
+                                transition: 'background 0.2s',
+                                marginRight: 8
+                              }}
+                            />
+                          ) : (
+                            <span
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: 8,
+                                position: 'relative'
+                              }}
+                            >
+                              <AddIcon
+                                className="calendar-plus"
+                                sx={{
+                                  width: 20,
+                                  height: 20,
+                                  color: '#1976d2',
+                                  opacity: 0,
+                                  transition: 'opacity 0.15s'
+                                }}
+                              />
+                            </span>
+                          )}
+                        </span>
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            color: meetingColor,
+                            justifyContent: 'center'
                           }}
                         >
                           <div className="min-w-10 text-center">{startLabel}</div>
                           -
                           <div className="min-w-10 text-center">{slot.endTime}</div>
-                        </Link>
-                      </Tooltip>
-                    ) : (
-                      startLabel
-                    )}
+                        </div>
+                      </Link>
+                    </Tooltip>
                   </div>
                   <div></div>
                   {/* Meetings count */}
