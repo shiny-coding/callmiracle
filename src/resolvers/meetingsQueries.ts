@@ -5,7 +5,7 @@ import { Meeting, MeetingStatus, User } from '@/generated/graphql'
 import { subDays } from 'date-fns'
 
 export const meetingsQueries = {
-  getMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+  getMeetingsWithPeers: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
       const _userId = new ObjectId(userId)
 

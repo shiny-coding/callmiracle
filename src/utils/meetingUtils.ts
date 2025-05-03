@@ -1,4 +1,4 @@
-import { Block, Interest, MeetingStatus } from "@/generated/graphql"
+import { Block, Interest, Meeting, MeetingStatus } from "@/generated/graphql"
 import resolveConfig from "tailwindcss/resolveConfig"
 import tailwindConfig from "../../tailwind.config"
 import { ObjectId } from "mongodb"
@@ -120,9 +120,9 @@ export function getCompatibleInterests(
   return meeting.interests.filter(interest => !block.interests.includes(interest))
 }
 
-export function getOccupiedTimeSlots(meetings: any[], currentMeetingId?: string) {
+export function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
   return meetings
-    .filter(m => !currentMeetingId || m.meeting._id !== currentMeetingId)
-    .filter(m => !isMeetingPassed(m.meeting))
-    .flatMap(m => m.meeting.timeSlots || [])
+    .filter(m => !currentMeetingId || m._id !== currentMeetingId)
+    .filter(m => !isMeetingPassed(m))
+    .flatMap(m => m.timeSlots || [])
 }

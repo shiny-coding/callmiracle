@@ -62,7 +62,7 @@ body:before {
 }
 
 :root {
-  --link-color: #459ff8;
+  --link-color: rgb(96, 165, 250);
 }
 
 .link-color {

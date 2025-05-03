@@ -13,27 +13,26 @@ import TimeSlotsGrid from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
 import { isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { getDayLabel } from './MeetingsCalendar'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
-
-interface Props {
-  meetings?: any[]
-  meeting?: any
-}
 
 function isSlotSelectable(slot: any) {
   return slot && !slot.isDummy && !slot.isDisabled
 }
 
-export default function MeetingForm({ meetings = [], meeting = null }: Props) {
+export default function MeetingForm() {
   const t = useTranslations()
+
+  const { meetingsWithPeers, loadingMeetingsWithPeers, errorMeetingsWithPeers } = useMeetings()
+  const { id: meetingId } = useParams()
+  const meeting = meetingsWithPeers.find(m => m.meeting._id === meetingId)?.meeting
+
   const { currentUser } = useStore()
   const router = useRouter()
   const searchParams = useSearchParams()
   const timeslotParam = searchParams?.get('timeslot')
-  const [meetingId, setMeetingId] = useState<string | undefined>(undefined)
   const { 
     interests = [], 
     allowedMales = true, 
@@ -55,10 +54,10 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
   const [hasValidDuration, setHasValidDuration] = useState(true)
   const { refetchFutureMeetings } = useMeetings()
   const formContentRef = useRef<HTMLDivElement>(null)
+
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
     if (meeting) {
-      setMeetingId(meeting._id)
       setTempInterests(meeting.interests || [])
       setSelectedTimeSlots(meeting.timeSlots || [])
       setMinDuration(meeting.minDuration || 60)
@@ -72,7 +71,6 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
       setTempLanguages(meeting.languages || (currentUser?.languages || []))
     } else {
       // Creating a new meeting
-      setMeetingId(undefined)
       setTempInterests([])
       setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
       setMinDuration(60)
@@ -84,10 +82,10 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
     }
     
     // Collect all time slots from other meetings that haven't passed
-    if (meeting || meetings.length > 0) {
-      setOccupiedTimeSlots(getOccupiedTimeSlots(meetings, meeting?._id))
+    if (meeting || meetingsWithPeers.length > 0) {
+      setOccupiedTimeSlots(getOccupiedTimeSlots(meetingsWithPeers.map(m => m.meeting), meeting?._id))
     }
-  }, [meeting, currentUser?.languages, meetings])
+  }, [meeting, currentUser?.languages, meetingsWithPeers])
 
   // Generate available time slots
   useEffect(() => {
@@ -272,6 +270,9 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
     }
   }, [availableTimeSlots, timeslotParam, meeting])
 
+  if (loadingMeetingsWithPeers) return <div>{t('loading')}</div>
+  if (errorMeetingsWithPeers) return <div>{t('errorLoadingMeeting')}</div>
+
   const toggleTimeSlot = (timestamp: number) => {
     // Don't allow toggling disabled slots
     if (availableTimeSlots.find(slot => slot.timestamp === timestamp)?.isDisabled) {
@@ -307,7 +308,7 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
 
   const handleSave = async () => {
     await updateMeeting({
-      _id: meetingId,
+      _id: meetingId as string,
       interests: tempInterests,
       timeSlots: selectedTimeSlots,
       minDuration,
@@ -317,7 +318,7 @@ export default function MeetingForm({ meetings = [], meeting = null }: Props) {
       allowedMinAge: tempAgeRange[0],
       allowedMaxAge: tempAgeRange[1],
       languages: tempLanguages,
-      peerMeetingId: meeting?.peerMeetingId
+      peerMeetingId: meeting?.peerMeetingId || undefined
     })
     refetchFutureMeetings()
     router.back()

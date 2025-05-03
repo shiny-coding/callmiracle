@@ -3,9 +3,9 @@ import { useStore } from '@/store/useStore'
 import { ApolloError, gql, useQuery } from '@apollo/client'
 import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react'
 
-export const GET_MEETINGS = gql`
-  query GetMeetings($userId: ID!) {
-    getMeetings(userId: $userId) {
+export const GET_MEETINGS_WITH_PEERS = gql`
+  query GetMeetingsWithPeers($userId: ID!) {
+    getMeetingsWithPeers(userId: $userId) {
       meeting {
         _id
         userId
@@ -56,10 +56,10 @@ export const GET_FUTURE_MEETINGS = gql`
 interface MeetingsContextType {
   highlightedMeetingId: string | null
   setHighlightedMeetingId: (meetingId: string | null) => void
-  meetings: MeetingWithPeer[]
-  loading: boolean
-  error: ApolloError | undefined
-  refetch: () => void
+  meetingsWithPeers: MeetingWithPeer[]
+  loadingMeetingsWithPeers: boolean
+  errorMeetingsWithPeers: ApolloError | undefined
+  refetchMeetingsWithPeers: () => void
   futureMeetings: Meeting[]
   loadingFutureMeetings: boolean
   errorFutureMeetings: ApolloError | undefined
@@ -75,13 +75,13 @@ interface MeetingsProviderProps {
 export function MeetingsProvider({ children }: MeetingsProviderProps) {
   const [highlightedMeetingId, setHighlightedMeetingId] = useState<string | null>(null)
   const { currentUser } = useStore()
-  const { data, loading, error, refetch } = useQuery(GET_MEETINGS, {
+  const { data: meetingsWithPeersData, loading: loadingMeetingsWithPeers, error: errorMeetingsWithPeers, refetch: refetchMeetingsWithPeers } = useQuery(GET_MEETINGS_WITH_PEERS, {
     variables: { userId: currentUser?._id }
   })
-  const meetings = useMemo(() => data?.getMeetings || [], [data])
+  const meetingsWithPeers = useMemo(() => meetingsWithPeersData?.getMeetingsWithPeers || [], [meetingsWithPeersData])
 
   const {
-    data: futureData,
+    data: futureMeetingsData,
     loading: loadingFutureMeetings,
     error: errorFutureMeetings,
     refetch: refetchFutureMeetings
@@ -89,17 +89,17 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     variables: { userId: currentUser?._id },
     skip: !currentUser?._id
   })
-  const futureMeetings = useMemo(() => futureData?.getFutureMeetings || [], [futureData])
+  const futureMeetings = useMemo(() => futureMeetingsData?.getFutureMeetings || [], [futureMeetingsData])
 
   return (
     <MeetingsContext.Provider
       value={{
         highlightedMeetingId,
         setHighlightedMeetingId,
-        meetings,
-        loading,
-        error,
-        refetch,
+        meetingsWithPeers,
+        loadingMeetingsWithPeers,
+        errorMeetingsWithPeers,
+        refetchMeetingsWithPeers,
         futureMeetings,
         loadingFutureMeetings,
         errorFutureMeetings,

@@ -54,7 +54,7 @@ export const useUpdateMeeting = () => {
           ...meetingData
         }
       },
-      refetchQueries: ['GetMeetings']
+      refetchQueries: ['GetMeetingsWithPeers']
     })
 
     return data.createOrUpdateMeeting

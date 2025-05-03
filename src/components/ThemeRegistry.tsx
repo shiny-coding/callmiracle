@@ -55,6 +55,14 @@ const theme = createTheme({
           padding: '1rem'
         }
       }
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          backgroundColor: 'rgba(50, 150, 150, 0.7)', // adjust alpha for transparency
+          color: '#fff'
+        }
+      }
     }
   }
 })

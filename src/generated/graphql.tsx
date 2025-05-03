@@ -224,7 +224,7 @@ export type Query = {
   getCalls: Array<Call>;
   getDetailedCallHistory: Array<Call>;
   getFutureMeetings: Array<Meeting>;
-  getMeetings: Array<MeetingWithPeer>;
+  getMeetingsWithPeers: Array<MeetingWithPeer>;
   getNotifications: Array<Notification>;
   getUser?: Maybe<User>;
   getUsers: Array<User>;
@@ -247,7 +247,7 @@ export type QueryGetFutureMeetingsArgs = {
 };
 
 
-export type QueryGetMeetingsArgs = {
+export type QueryGetMeetingsWithPeersArgs = {
   userId: Scalars['ID']['input'];
 };
 

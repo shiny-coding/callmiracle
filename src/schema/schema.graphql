@@ -172,7 +172,7 @@ type Query {
   getCalls: [Call!]!
   getCallHistory(userId: ID!): [CallHistoryEntry!]!
   getDetailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
-  getMeetings(userId: ID!): [MeetingWithPeer!]!
+  getMeetingsWithPeers(userId: ID!): [MeetingWithPeer!]!
   getNotifications(userId: ID!): [Notification!]!
   getFutureMeetings(userId: ID!): [Meeting!]!
 }

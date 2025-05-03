@@ -10,6 +10,7 @@ import { enUS } from 'date-fns/locale'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import Link from 'next/link'
 import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
+import Tooltip from '@mui/material/Tooltip'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -90,7 +91,7 @@ export default function MeetingsCalendar() {
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
 
-  const occupiedTimeSlots = getOccupiedTimeSlots(futureMeetings)
+  const occupiedTimeSlots = loadingFutureMeetings ? [] : getOccupiedTimeSlots(futureMeetings)
 
   // Find the first visible slot and update topDayKey
   useEffect(() => {
@@ -292,21 +293,23 @@ export default function MeetingsCalendar() {
                     style={{ textAlign: 'center', minHeight: MIN_CELL_HEIGHT }}
                   >
                     {!isOccupied ? (
-                      <Link
-                        href={`/meeting?timeslot=${slot.timestamp}`}
-                        style={{
-                          color: 'var(--link-color)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <div className="min-w-10 text-center">{startLabel}</div>
-                        -
-                        <div className="min-w-10 text-center">{slot.endTime}</div>
-                      </Link>
+                      <Tooltip title={t('createMeeting')} placement="left">
+                        <Link
+                          href={`/meeting?timeslot=${slot.timestamp}`}
+                          style={{
+                            color: 'var(--link-color)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <div className="min-w-10 text-center">{startLabel}</div>
+                          -
+                          <div className="min-w-10 text-center">{slot.endTime}</div>
+                        </Link>
+                      </Tooltip>
                     ) : (
                       startLabel
                     )}
