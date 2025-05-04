@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "./globals.scss";
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { cookies } from 'next/headers'

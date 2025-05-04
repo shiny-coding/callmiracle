@@ -37,7 +37,9 @@
     "WANT_TO_LISTEN": "Хочу выслушать",
     "NEED_HELP_WITH_SITUATION": "Хочу помощь в разборе ситуации",
     "WANT_TO_HELP_WITH_SITUATION": "Хочу помочь в разборе ситуации",
-    "SIT_TOGETHER_IN_SILENCE": "Посидеть вместе в тишине"
+    "SIT_TOGETHER_IN_SILENCE": "Посидеть вместе в тишине",
+    "NEED_EMOTIONAL_SUPPORT": "Хочу эмоциональной поддержки",
+    "WANT_TO_GIVE_EMOTIONAL_SUPPORT": "Хочу эмоционально поддержать"
   },
   "connect": "Найти собеседника",
   "filterByLanguages": "Фильтр по языкам",

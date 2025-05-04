@@ -62,7 +62,8 @@ body:before {
 }
 
 :root {
-  --link-color: rgb(96, 165, 250);
+  --link-color: rgb(121, 179, 250);
+  --border-color: #273d58;
 }
 
 .link-color {
@@ -78,11 +79,11 @@ body:before {
 }
 
 .panel-border {
-  border-color: #273d58;
+  border-color: var(--border-color);
 }
 
 .brighter-border {
-  border: 1px solid #273d58;
+  border: 1px solid var(--border-color);
 }
 
 /* Dark scrollbar styles */
@@ -135,6 +136,70 @@ body:before {
 }
 
 /* You can put this in your global styles or in a CSS module */
-.calendar-timeslot-cell:hover .calendar-plus {
-  opacity: 1 !important;
+.calendar-timeslot-cell {
+  &:hover .calendar-plus {
+    opacity: 1 !important;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .calendar-timeslot-cell {
+    .count-badge:empty {
+      display: none;
+    }
+    .calendar-plus {
+      opacity: 1 !important;
+    }
+  }
+}
+
+/******************************************************************************
+        adjustable sizes for paddings / margins / gaps
+*******************************************************************************/
+:root {
+  @for $i from 1 through 50 {
+    --ai-full-#{$i}sp: calc(#{$i}rem/16);
+  }
+
+  --ai-scale-min: 0.35;
+  --ai-scale: var(--ai-scale-min);
+}
+
+@for $i from 3 through 13 {
+  @media (min-width: #{$i * 100}px) {
+    :root { --ai-scale: calc( var(--ai-scale-min) + ( ( (#{$i * 100} - 300) / 1400 ) * ( 1 - var(--ai-scale-min) ) ) ); }
+  }
+}
+
+@media (min-width: 1400px) {
+  :root { --ai-scale: 1; }
+}
+
+:root {
+  @for $i from 1 through 50 {
+    --#{$i}sp: calc( var(--ai-scale) * var(--ai-full-#{$i}sp) );
+
+    .px-#{$i}sp {
+      padding-left: var(--#{$i}sp);
+      padding-right: var(--#{$i}sp);
+    }
+    .mx-#{$i}sp {
+      margin-left: var(--#{$i}sp);
+      margin-right: var(--#{$i}sp);
+    }
+    .py-#{$i}sp {
+      padding-top: var(--#{$i}sp);
+      padding-bottom: var(--#{$i}sp);
+    }
+    .my-#{$i}sp {
+      margin-top: var(--#{$i}sp);
+      margin-bottom: var(--#{$i}sp);
+    }
+    .p-#{$i}sp {
+      padding: var(--#{$i}sp);
+    }
+    .m-#{$i}sp {
+      margin: var(--#{$i}sp);
+    }
+  }
 }

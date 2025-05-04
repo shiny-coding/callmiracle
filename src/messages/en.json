@@ -41,7 +41,9 @@
     "WANT_TO_LISTEN": "Want to Listen",
     "NEED_HELP_WITH_SITUATION": "Need Help with Situation",
     "WANT_TO_HELP_WITH_SITUATION": "Want to Help with Situation",
-    "SIT_TOGETHER_IN_SILENCE": "Sit together in Silence"
+    "SIT_TOGETHER_IN_SILENCE": "Sit together in Silence",
+    "NEED_EMOTIONAL_SUPPORT": "Need Emotional Support",
+    "WANT_TO_GIVE_EMOTIONAL_SUPPORT": "Want to Give Emotional Support"
   },
   "connect": "Find Partner",
   "filterByLanguages": "Filter by languages",

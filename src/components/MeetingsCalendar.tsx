@@ -16,7 +16,7 @@ import { getTimeSlotsGrid } from './MeetingsCalendarUtils'
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
 const CELL_PADDING = `${VERTICAL_CELL_PADDING} ${HORIZONTAL_CELL_PADDING}`
-const MIN_CELL_HEIGHT = '2rem'
+const MIN_CELL_HEIGHT = '4rem'
 
 export default function MeetingsCalendar() {
   const t = useTranslations()
@@ -132,15 +132,13 @@ export default function MeetingsCalendar() {
 
   // Define grid columns: timeSlot (3), meetingsCount, timeline, interests, languages
   const gridTemplateColumns = `
-    110px
-    35px 
-    ${Math.max(userIds.length * 6 + 8, 100)}px 
-    minmax(24px, 2fr) 
-    100px
+    80px
+    10fr
+    80px
   `
 
   return (
-    <Paper className="p-4 flex flex-col h-full">
+    <Paper className="flex flex-col h-full" sx={{ padding: 'var(--16sp)' }}>
       <Typography variant="h6" sx={{ marginBottom: '0.5rem' }}>{t('upcomingMeetings')}</Typography>
       {/* Header grid */}
       <div
@@ -155,19 +153,13 @@ export default function MeetingsCalendar() {
           zIndex: 1,
         }}
       >
-        <div style={{ padding: CELL_PADDING, paddingLeft: '1.5rem', ...headerStyle }}>
-          {t('timeSlot')}
-        </div>
-        <div style={{ padding: CELL_PADDING, textAlign: 'center', ...headerStyle, marginLeft: '0.5rem' }}>
-          {t('count')}
-        </div>
         <div style={{ padding: CELL_PADDING, ...headerStyle }}>
-          {/* Timeline */}
+          {t('timeSlot')}
         </div>
         <div style={{ padding: CELL_PADDING, ...headerStyle }}>
           {t('interests')}
         </div>
-        <div style={{ padding: CELL_PADDING, ...headerStyle }}>
+        <div style={{ padding: CELL_PADDING, ...headerStyle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
           {t('languages')}
         </div>
       </div>
@@ -190,7 +182,7 @@ export default function MeetingsCalendar() {
           <div className="panel-bg panel-border"
             style={{
               position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
-              gridColumn: `1 / span 5`, padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
+              gridColumn: `1 / span 3`, padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
             }}
           >
             {getDayLabel(new Date(topDayKey), t)}
@@ -200,12 +192,12 @@ export default function MeetingsCalendar() {
           <Fragment key={dayKey}>
             {/* Day label row (skip for today) */}
             {!isToday(new Date(dayKey)) && (
-              <div style={{ gridColumn: `1 / span 5`, padding: CELL_PADDING, minHeight: '2rem' }}>
+              <div style={{ gridColumn: `1 / span 3`, padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
                 {getDayLabel(new Date(dayKey), t)}
               </div>
             )}
             {/* Slot rows */}
-            {daySlots.map(slot => {
+            {daySlots.map((slot, slotIdx) => {
               const meetings = slotMap[slot.timestamp]
               // Count interests
               const interestCounts: Record<string, number> = {}
@@ -250,8 +242,13 @@ export default function MeetingsCalendar() {
                   <div
                     ref={el => { slotRefs.current[slot.timestamp] = el }}
                     style={{
-                      textAlign: 'center', minHeight: MIN_CELL_HEIGHT, display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', position: 'relative'
+                      minHeight: MIN_CELL_HEIGHT,
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                      borderBottom: '1px solid var(--border-color)'
                     }}
                     className="calendar-timeslot-cell"
                   >
@@ -259,59 +256,38 @@ export default function MeetingsCalendar() {
                       <Link
                           href={slotLink}
                           style={{
-                            color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'row',
+                            color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
                             alignItems: 'center', justifyContent: 'center'
                           }}
                         >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, }}>
                           {myMeeting && !meetingPassed ? (
                             <span className={meetingColorClass}
-                              style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s', marginRight: 8 }} />
+                              style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s' }} />
                           ) : (
-                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 8, position: 'relative' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                               <AddIcon className="calendar-plus" sx={{ width: 20, height: 20, color: '#1976d2', opacity: 0, transition: 'opacity 0.15s' }} />
                             </span>
                           )}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'center' }}>
-                          <div className="min-w-10 text-center">{startLabel}</div>
+                          <div className="min-w-8 px-4sp text-center">{startLabel}</div>
                           -
-                          <div className="min-w-10 text-center">{slot.endTime}</div>
+                          <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
                         </div>
+                        <div className="count-badge w-full h-5">{meetings.length ? `(${meetings.length})` : null}</div>
                       </Link>
                     </Tooltip>
                   </div>
-                  {/* Meetings count */}
-                  <div style={{ padding: CELL_PADDING, textAlign: 'center', minHeight: MIN_CELL_HEIGHT, whiteSpace: 'nowrap', marginLeft: '0.5rem' }}>
-                    {meetings.length ? meetings.length : ''}
-                  </div>
-                  {/* Timeline */}
+                  {/* Interests */}
                   <div
                     style={{
-                      minHeight: MIN_CELL_HEIGHT, display: 'flex', flexDirection: 'row', alignItems: 'stretch',
-                      height: '100%', position: 'relative',
+                      padding: `0.3rem ${HORIZONTAL_CELL_PADDING}`,
+                      flexWrap: 'wrap',
+                      gap: '0.1rem',
+                      borderBottom: '1px solid var(--border-color)'
                     }}
                   >
-                    {userIds.map((userId, idx) => {
-                      const hasMeeting = meetings.some(m => m.userId === userId)
-                      return (
-                        <div
-                          key={userId}
-                          style={{
-                            width: 2,
-                            height: '100%',
-                            background: hasMeeting ? '#1976d2' : 'transparent',
-                            marginLeft: idx === 0 ? 0 : 4,
-                            borderRadius: 0,
-                            transition: 'background 0.2s'
-                          }}
-                          title={userId}
-                        />
-                      )
-                    })}
-                  </div>
-                  {/* Interests */}
-                  <div style={{ padding: CELL_PADDING, minHeight: MIN_CELL_HEIGHT, whiteSpace: 'nowrap', flexWrap: 'wrap' }}>
                     {Object.entries(interestCounts).map(([interest, count]) => (
                       <Chip
                         key={interest}
@@ -322,7 +298,12 @@ export default function MeetingsCalendar() {
                     ))}
                   </div>
                   {/* Languages */}
-                  <div style={{ padding: CELL_PADDING, minHeight: MIN_CELL_HEIGHT, whiteSpace: 'nowrap' }}>
+                  <div
+                    style={{
+                      padding: CELL_PADDING,
+                      borderBottom: '1px solid var(--border-color)'
+                    }}
+                  >
                     {Object.entries(languageCounts).map(([lang, count]) => (
                       <Chip
                         key={lang}

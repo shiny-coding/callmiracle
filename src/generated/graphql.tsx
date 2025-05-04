@@ -88,7 +88,9 @@ export enum Interest {
   SitTogetherInSilence = 'SIT_TOGETHER_IN_SILENCE',
   WantToHelpWithSituation = 'WANT_TO_HELP_WITH_SITUATION',
   WantToListen = 'WANT_TO_LISTEN',
-  WantToSpeakOut = 'WANT_TO_SPEAK_OUT'
+  WantToSpeakOut = 'WANT_TO_SPEAK_OUT',
+  NeedEmotionalSupport = 'NEED_EMOTIONAL_SUPPORT',
+  WantToGiveEmotionalSupport = 'WANT_TO_GIVE_EMOTIONAL_SUPPORT',
 }
 
 export type Meeting = {

@@ -17,6 +17,7 @@ export const interestRelationships = new Map<Interest, Interest>([
   [Interest.SitTogetherInSilence, Interest.SitTogetherInSilence],
   [Interest.NeedHelpWithSituation, Interest.WantToHelpWithSituation],
   [Interest.WantToSpeakOut, Interest.WantToListen],
+  [Interest.NeedEmotionalSupport, Interest.WantToGiveEmotionalSupport],
 ])
 
 export default function InterestSelector({ value, onChange }: InterestSelectorProps) {
