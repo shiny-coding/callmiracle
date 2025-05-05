@@ -28,6 +28,15 @@ export type BlockInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type BroadcastEvent = {
+  __typename?: 'BroadcastEvent';
+  type: BroadcastType;
+};
+
+export enum BroadcastType {
+  MeetingUpdated = 'MEETING_UPDATED'
+}
+
 export type Call = {
   __typename?: 'Call';
   _id: Scalars['ID']['output'];
@@ -50,6 +59,7 @@ export type CallEvent = {
   offer?: Maybe<Scalars['String']['output']>;
   quality?: Maybe<Scalars['String']['output']>;
   type: Scalars['String']['output'];
+  userId?: Maybe<Scalars['ID']['output']>;
   videoEnabled?: Maybe<Scalars['Boolean']['output']>;
 };
 
@@ -84,13 +94,13 @@ export type DeleteMeetingResponse = {
 export enum Interest {
   Chat = 'CHAT',
   MeetNewPeople = 'MEET_NEW_PEOPLE',
+  NeedEmotionalSupport = 'NEED_EMOTIONAL_SUPPORT',
   NeedHelpWithSituation = 'NEED_HELP_WITH_SITUATION',
   SitTogetherInSilence = 'SIT_TOGETHER_IN_SILENCE',
+  WantToGiveEmotionalSupport = 'WANT_TO_GIVE_EMOTIONAL_SUPPORT',
   WantToHelpWithSituation = 'WANT_TO_HELP_WITH_SITUATION',
   WantToListen = 'WANT_TO_LISTEN',
-  WantToSpeakOut = 'WANT_TO_SPEAK_OUT',
-  NeedEmotionalSupport = 'NEED_EMOTIONAL_SUPPORT',
-  WantToGiveEmotionalSupport = 'WANT_TO_GIVE_EMOTIONAL_SUPPORT',
+  WantToSpeakOut = 'WANT_TO_SPEAK_OUT'
 }
 
 export type Meeting = {
@@ -216,9 +226,15 @@ export type Notification = {
 export type NotificationEvent = {
   __typename?: 'NotificationEvent';
   meeting?: Maybe<Meeting>;
-  type: Scalars['String']['output'];
+  type: NotificationType;
   user?: Maybe<User>;
 };
+
+export enum NotificationType {
+  MeetingConnected = 'MEETING_CONNECTED',
+  MeetingDisconnected = 'MEETING_DISCONNECTED',
+  MeetingFinished = 'MEETING_FINISHED'
+}
 
 export type Query = {
   __typename?: 'Query';
@@ -249,7 +265,7 @@ export type QueryGetFutureMeetingsArgs = {
 };
 
 
-export type QueryGetMeetingsArgs = {
+export type QueryGetMeetingsWithPeersArgs = {
   userId: Scalars['ID']['input'];
 };
 
@@ -280,6 +296,7 @@ export type SubscriptionOnSubscriptionEventArgs = {
 
 export type SubscriptionEvent = {
   __typename?: 'SubscriptionEvent';
+  broadcastEvent?: Maybe<BroadcastEvent>;
   callEvent?: Maybe<CallEvent>;
   notificationEvent?: Maybe<NotificationEvent>;
 };

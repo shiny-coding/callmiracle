@@ -2,6 +2,7 @@
 import React, { createContext, useContext, ReactNode, useCallback } from 'react'
 import { gql, useSubscription } from '@apollo/client'
 import { useStore } from '@/store/useStore'
+import { CallEvent, NotificationEvent, BroadcastEvent } from '@/generated/graphql'
 
 const ON_SUBSCRIPTION_EVENT = gql`
   subscription OnSubscriptionEvent($userId: ID!) {
@@ -34,13 +35,17 @@ const ON_SUBSCRIPTION_EVENT = gql`
           name
         }
       }
+      broadcastEvent {
+        type
+      }
     }
   }
 `
 
 interface SubscriptionsContextType {
-  subscribeToNotifications: (callback: (event: any) => void) => void
-  subscribeToCallEvents: (callback: (event: any) => void) => void
+  subscribeToNotifications: (callback: (event: NotificationEvent) => void) => void
+  subscribeToCallEvents: (callback: (event: CallEvent) => void) => void
+  subscribeToBroadcastEvents: (callback: (event: BroadcastEvent) => void) => void
 }
 
 const SubscriptionsContext = createContext<SubscriptionsContextType | null>(null)
@@ -51,19 +56,26 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
   // Store callbacks in refs to avoid unnecessary re-renders
   const notificationCallbacks = React.useRef<((event: any) => void)[]>([])
   const callCallbacks = React.useRef<((event: any) => void)[]>([])
-
+  const broadcastCallbacks = React.useRef<((event: any) => void)[]>([])
   // Register callbacks
-  const subscribeToNotifications = useCallback((callback: (event: any) => void) => {
+  const subscribeToNotifications = useCallback((callback: (event: NotificationEvent) => void) => {
     notificationCallbacks.current.push(callback)
     return () => {
       notificationCallbacks.current = notificationCallbacks.current.filter(cb => cb !== callback)
     }
   }, [])
 
-  const subscribeToCallEvents = useCallback((callback: (event: any) => void) => {
+  const subscribeToCallEvents = useCallback((callback: (event: CallEvent) => void) => {
     callCallbacks.current.push(callback)
     return () => {
       callCallbacks.current = callCallbacks.current.filter(cb => cb !== callback)
+    }
+  }, [])
+
+  const subscribeToBroadcastEvents = useCallback((callback: (event: BroadcastEvent) => void) => {
+    broadcastCallbacks.current.push(callback)
+    return () => {
+      broadcastCallbacks.current = broadcastCallbacks.current.filter(cb => cb !== callback)
     }
   }, [])
 
@@ -90,12 +102,20 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
           callback(data.callEvent)
         })
       }
+
+      // Handle broadcast events
+      if (data.broadcastEvent) {
+        broadcastCallbacks.current.forEach(callback => {
+          callback(data.broadcastEvent)
+        })
+      }
     }
   })
 
   const value = {
     subscribeToNotifications,
     subscribeToCallEvents,
+    subscribeToBroadcastEvents
   }
 
   return (

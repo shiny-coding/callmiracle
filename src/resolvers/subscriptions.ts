@@ -1,25 +1,10 @@
-import { Meeting } from '@/generated/graphql'
-import { User } from '@/generated/graphql'
+import { CallEvent, Meeting, NotificationEvent } from '@/generated/graphql'
 import { pubsub } from './pubsub'
+import { mergeAsyncIterators } from '@/utils'
 
-type SubscriptionEventPayload = {
-  callEvent: {
-    type: 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'updateMediaState'
-    offer: string
-    answer?: string
-    iceCandidate?: string
-    videoEnabled?: boolean
-    audioEnabled?: boolean
-    quality?: string
-    from?: User
-    callId: string
-    userId: string
-  }
-  notificationEvent: {
-    type: 'meeting-connected' | 'meeting-disconnected'
-    meeting?: Meeting
-    user?: User
-  }
+export type SubscriptionEventPayload = {
+  callEvent: CallEvent
+  notificationEvent: NotificationEvent
 }
 
 export type PubSubEvents = {
@@ -31,9 +16,13 @@ export const subscriptions = {
   onSubscriptionEvent: {
     subscribe: (_: any, { userId }: { userId: string }) => {
       // Subscribe to user-specific topic
-      const topic = `SUBSCRIPTION_EVENT:${userId}`
-      console.log('Subscribing to topic:', topic)
-      return pubsub.subscribe(topic)
+      const userTopic = `SUBSCRIPTION_EVENT:${userId}`
+      const globalTopic = `SUBSCRIPTION_EVENT:ALL`
+      console.log('Subscribing to topics:', userTopic, globalTopic)
+      return mergeAsyncIterators([
+        pubsub.subscribe(userTopic),
+        pubsub.subscribe(globalTopic)
+      ])
     },
     resolve: (payload: SubscriptionEventPayload) => {
       if ( payload.notificationEvent ) {

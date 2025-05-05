@@ -1,8 +1,8 @@
-import { Interest, MeetingStatus } from "@/generated/graphql";
-import { pubsub } from "./pubsub";
+import { Interest, MeetingStatus, NotificationType } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./meetingsMutations";
 import { getCompatibleInterests } from '@/utils/meetingUtils'
+
 const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 type TimeRange = {
@@ -277,8 +277,8 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
         // If we get here, transaction was successful
         console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
 
-        await publishMeetingNotification('meeting-connected', db, peerMeeting, updatedMeeting)
-        await publishMeetingNotification('meeting-connected', db, updatedMeeting, peerMeeting)
+        await publishMeetingNotification(NotificationType.MeetingConnected, db, peerMeeting, updatedMeeting)
+        await publishMeetingNotification(NotificationType.MeetingConnected, db, updatedMeeting, peerMeeting)
       });
       break;
     } catch (err) {

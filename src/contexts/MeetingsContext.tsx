@@ -1,7 +1,8 @@
-import { MeetingWithPeer, Meeting } from '@/generated/graphql'
+import { MeetingWithPeer, Meeting, NotificationEvent, BroadcastEvent } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { ApolloError, gql, useQuery } from '@apollo/client'
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react'
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react'
+import { useSubscriptions } from './SubscriptionsContext'
 
 export const GET_MEETINGS_WITH_PEERS = gql`
   query GetMeetingsWithPeers($userId: ID!) {
@@ -75,6 +76,7 @@ interface MeetingsProviderProps {
 export function MeetingsProvider({ children }: MeetingsProviderProps) {
   const [highlightedMeetingId, setHighlightedMeetingId] = useState<string | null>(null)
   const { currentUser } = useStore()
+  const { subscribeToNotifications, subscribeToBroadcastEvents } = useSubscriptions()
   const { data: meetingsWithPeersData, loading: loadingMeetingsWithPeers, error: errorMeetingsWithPeers, refetch: refetchMeetingsWithPeers } = useQuery(GET_MEETINGS_WITH_PEERS, {
     variables: { userId: currentUser?._id }
   })
@@ -91,6 +93,29 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
   })
   const futureMeetings = useMemo(() => futureMeetingsData?.getFutureMeetings || [], [futureMeetingsData])
 
+  const refetchMeetings = useCallback(async () => {
+    await refetchMeetingsWithPeers();
+    await refetchFutureMeetings();
+  }, [refetchMeetingsWithPeers, refetchFutureMeetings])
+
+  useEffect(() => {
+    const unsubscribe = subscribeToNotifications((event: NotificationEvent) => {
+      if (event.type.startsWith('MEETING_')) {
+        refetchMeetings();
+      }
+    })
+    
+    return unsubscribe
+  }, [subscribeToNotifications, refetchMeetings])
+
+  useEffect(() => {
+    const unsubscribe = subscribeToBroadcastEvents((event: BroadcastEvent) => {
+      refetchMeetings();
+    })
+    
+    return unsubscribe
+  }, [subscribeToBroadcastEvents, refetchMeetings])
+  
   return (
     <MeetingsContext.Provider
       value={{

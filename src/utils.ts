@@ -22,3 +22,25 @@ export function getCurrentLocale(req: NextRequest): string {
   const match = languages.find(lang => locales.includes(lang.code as any))
   return match ? match.code : defaultLocale
 }
+
+export async function* mergeAsyncIterators(iterators: AsyncIterable<any>[]) {
+  const readers = iterators.map(it => it[Symbol.asyncIterator]());
+  const results = readers.map(reader => reader.next());
+
+  while (readers.length > 0) {
+    const { value, index } = await Promise.race(
+      results.map((p, i) =>
+        p.then(value => ({ value, index: i }))
+      )
+    );
+
+    if (value.done) {
+      readers.splice(index, 1);
+      results.splice(index, 1);
+      continue;
+    }
+
+    results[index] = readers[index].next();
+    yield value.value;
+  }
+}

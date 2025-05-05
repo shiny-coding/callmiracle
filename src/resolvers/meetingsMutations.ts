@@ -2,8 +2,7 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { tryConnectMeetings } from './connectMeetings'
 import { pubsub } from './pubsub';
-import { MeetingStatus } from '@/generated/graphql';
-
+import { MeetingStatus, NotificationType } from '@/generated/graphql';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -13,29 +12,32 @@ interface UpdateMeetingStatusInput {
 }
 
 // Helper function to publish meeting disconnection notification
-export async function publishMeetingNotification(notificationType: string, db: any, peerMeeting: any, meeting: any) {
+export async function publishMeetingNotification(notificationType: NotificationType, db: any, peerMeeting: any, meeting: any) {
   
   // Get the peer user for notification
   const peerUser = await db.collection('users').findOne({ _id: peerMeeting.userId })
   
-  if (peerUser) {
-    // Create a notification in the database
-    await db.collection('notifications').insertOne({
-      userId: peerUser._id,
-      userName: peerUser.name,
-      type: notificationType,
-      seen: false,
-      meetingId: peerMeeting._id,
-      peerUserName: meeting.userName,
-      createdAt: new Date()
-    })
-    
-    // Publish notification event
-    const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
-    pubsub.publish(topic, { notificationEvent: { type: notificationType, meeting: peerMeeting, user: peerUser, peerUserName: meeting.userName } })
-    
-    console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId.toString() })
+  if (!peerUser) {
+    console.error('Peer user not found', { peerMeeting, meeting })
+    return
   }
+  
+  // Create a notification in the database
+  await db.collection('notifications').insertOne({
+    userId: peerUser._id,
+    userName: peerUser.name,
+    type: notificationType,
+    seen: false,
+    meetingId: peerMeeting._id,
+    peerUserName: meeting.userName,
+    createdAt: new Date()
+  })
+  
+  // Publish notification event
+  const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
+  pubsub.publish(topic, { notificationEvent: { type: notificationType, meeting: peerMeeting, user: peerUser, peerUserName: meeting.userName } })
+  
+  console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId.toString() })
 }
 
 const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {
@@ -95,10 +97,10 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
         console.log('Updated peer meeting:', _peerMeetingId.toString(), updateFields)
         
         if ( status === MeetingStatus.Finished ) {
-          await publishMeetingNotification('meeting-finished', db, peerMeeting, updatedMeeting)
+          await publishMeetingNotification(NotificationType.MeetingFinished, db, peerMeeting, updatedMeeting)
         } else if (disconnectPeer) {
           // Use the helper function to publish notification
-          await publishMeetingNotification('meeting-disconnected', db, peerMeeting, updatedMeeting)
+          await publishMeetingNotification(NotificationType.MeetingDisconnected, db, peerMeeting, updatedMeeting)
         }  
       }
     }
@@ -207,7 +209,7 @@ export const meetingsMutations = {
           )
 
           // Use the helper function to publish notification
-          await publishMeetingNotification('meeting-disconnected', db, peerMeeting, meeting)
+          await publishMeetingNotification(NotificationType.MeetingDisconnected, db, peerMeeting, meeting)
         }
       }
       

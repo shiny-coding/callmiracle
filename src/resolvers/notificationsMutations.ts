@@ -1,5 +1,14 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
+import { pubsub } from './pubsub'
+import { BroadcastType } from '@/generated/graphql'
+
+export function publishBroadcastEvent(broadcastType: BroadcastType) {
+  const topic = `SUBSCRIPTION_EVENT:ALL`
+  pubsub.publish(topic, { broadcastEvent: { type: broadcastType } })
+  
+  console.log(`Published ${broadcastType} event for all users`)
+}
 
 export const notificationsMutations = {
   setNotificationSeen: async (_: any, { id }: { id: string }, { db }: Context) => {

@@ -12,6 +12,16 @@ enum Interest {
   WANT_TO_GIVE_EMOTIONAL_SUPPORT
 }
 
+enum BroadcastType {
+  MEETING_UPDATED
+}
+
+enum NotificationType {
+  MEETING_CONNECTED
+  MEETING_DISCONNECTED
+  MEETING_FINISHED
+}
+
 type Block {
   userId: ID!
   all: Boolean!
@@ -72,6 +82,7 @@ type CallEvent {
   answer: String
   iceCandidate: String
   from: User!
+  userId: ID
   videoEnabled: Boolean
   audioEnabled: Boolean
   quality: String
@@ -81,9 +92,13 @@ type CallEvent {
 }
 
 type NotificationEvent {
-  type: String!
+  type: NotificationType!
   meeting: Meeting
   user: User
+}
+
+type BroadcastEvent {
+  type: BroadcastType!
 }
 
 type Notification {
@@ -100,6 +115,7 @@ type Notification {
 type SubscriptionEvent {
   callEvent: CallEvent
   notificationEvent: NotificationEvent
+  broadcastEvent: BroadcastEvent
 }
 
 type Call {

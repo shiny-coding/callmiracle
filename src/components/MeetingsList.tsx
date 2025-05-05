@@ -13,29 +13,17 @@ import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
-import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 import { useMeetings } from '@/contexts/MeetingsContext'
 
 export default function MeetingsList() {
 
   const t = useTranslations()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
-  const { subscribeToNotifications } = useSubscriptions()
   const { highlightedMeetingId, setHighlightedMeetingId, meetingsWithPeers, loadingMeetingsWithPeers, errorMeetingsWithPeers, refetchMeetingsWithPeers } = useMeetings()
   const meetingRefs = useRef<Record<string, HTMLElement>>({})
   const { currentUser } = useStore()
   const router = useRouter()
   const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const unsubscribe = subscribeToNotifications((event) => {
-      if (event.type.startsWith('meeting-')) {
-        refetchMeetingsWithPeers();
-      }
-    })
-    
-    return unsubscribe
-  }, [subscribeToNotifications, refetchMeetingsWithPeers])
 
   useEffect(() => {
     if (highlightedMeetingId && meetingRefs.current[highlightedMeetingId]) {
