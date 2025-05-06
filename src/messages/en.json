@@ -193,5 +193,7 @@
   "meetingsCount": "Meetings Count",
   "interests": "Interests",
   "tomorrow": "Tomorrow",
-  "count": "Count"
+  "count": "Count",
+  "joinMeeting": "Join Meeting",
+  "pleaseSelectAnEarlierTimeSlot": "Please select an earlier time slot for this meeting or change the minimum duration"
 } 

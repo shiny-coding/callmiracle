@@ -2,3 +2,4 @@
 - do not change the code which is not related to the main task
 - prefer omitting semicolons in js
 - prefer using .map, .filter instead of loops, but don't use forEach
+- don't use abbreviations

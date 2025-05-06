@@ -37,6 +37,8 @@ export default function MeetingsCalendar() {
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
 
+  const [minDuration, setMinDuration] = useState(SLOT_DURATION * 2)
+
   // Collect all meetingIds for quick lookup
   const myMeetingSlotToId: Record<number, string> = {}
   meetingsWithPeers.forEach(meetingWithPeer => {
@@ -87,7 +89,7 @@ export default function MeetingsCalendar() {
   if (errorFutureMeetings) return <Typography color="error">Error loading calendar</Typography>
 
   // Map: slotTime -> meetings
-  const slotMap: Record<number, Meeting[]> = {}
+  const slotMap: Record<number, { meeting: Meeting, joinable: boolean }[]> = {}
   for (let i = 0; i < slots.length; i++) {
     slotMap[slots[i].timestamp] = []
   }
@@ -95,11 +97,16 @@ export default function MeetingsCalendar() {
     const meeting = futureMeetings[i]
     for (let j = 0; j < meeting.timeSlots.length; j++) {
       const slot = meeting.timeSlots[j]
-      // Snap slot to our slot grid
-      const snapped = slots.find(s => Math.abs(s.timestamp - slot) < SLOT_DURATION / 2)
-      if (snapped) {
-        slotMap[snapped.timestamp].push(meeting)
+      if ( slot < slots[0].timestamp ) {
+        continue
       }
+
+      const isMine = meetingsWithPeers.some(meetingWithPeer => meetingWithPeer.meeting._id === meeting._id)
+      const nextSlot = meeting.timeSlots[j + 1]
+      const nextSlotContiguous = nextSlot && nextSlot - slot === SLOT_DURATION
+      const joinable = !isMine && (nextSlotContiguous || minDuration == SLOT_DURATION)
+      console.log(meeting._id, slot, joinable)
+      slotMap[slot].push({ meeting, joinable })
     }
   }
 
@@ -116,7 +123,7 @@ export default function MeetingsCalendar() {
   for (let i = 0; i < slots.length; i++) {
     const meetings = slotMap[slots[i].timestamp]
     for (let j = 0; j < meetings.length; j++) {
-      if (meetings[j].userId) userIdSet.add(meetings[j].userId)
+      if (meetings[j].meeting.userId) userIdSet.add(meetings[j].meeting.userId)
     }
   }
   const userIds = Array.from(userIdSet)
@@ -151,6 +158,7 @@ export default function MeetingsCalendar() {
           position: 'sticky',
           top: 0,
           zIndex: 1,
+          paddingRight: '0.8rem',
         }}
       >
         <div style={{ padding: CELL_PADDING, ...headerStyle }}>
@@ -198,39 +206,47 @@ export default function MeetingsCalendar() {
             )}
             {/* Slot rows */}
             {daySlots.map((slot, slotIdx) => {
-              const meetings = slotMap[slot.timestamp]
+              const meetingsWithJoinable = slotMap[slot.timestamp]
               // Count interests
-              const interestCounts: Record<string, number> = {}
+              const interestCountsWithJoinable: Record<string, { count: number, joinableMeeting: Meeting | null }> = {}
               const languageCounts: Record<string, number> = {}
-              for (let i = 0; i < meetings.length; i++) {
-                for (let j = 0; j < meetings[i].interests.length; j++) {
-                  const interest = meetings[i].interests[j]
-                  if (!interestCounts[interest]) interestCounts[interest] = 0
-                  interestCounts[interest]++
+
+              for (const { meeting, joinable } of meetingsWithJoinable) {
+                for (const interest of meeting.interests) {
+                  if (!interestCountsWithJoinable[interest]) interestCountsWithJoinable[interest] = { count: 0, joinableMeeting: null }
+                  interestCountsWithJoinable[interest].count++
+                  if (joinable) {
+                    // we select oldest joinable meeting for each interest
+                    if (!interestCountsWithJoinable[interest].joinableMeeting ||
+                      interestCountsWithJoinable[interest].joinableMeeting.createdAt < meeting.createdAt) {
+                      interestCountsWithJoinable[interest].joinableMeeting = meeting
+                    }
+                  }
                 }
-                for (let j = 0; j < meetings[i].languages.length; j++) {
-                  const lang = meetings[i].languages[j]
-                  if (!languageCounts[lang]) languageCounts[lang] = 0
-                  languageCounts[lang]++
+                for (const language of meeting.languages) {
+                  if (!languageCounts[language]) languageCounts[language] = 0
+                  languageCounts[language]++
                 }
               }
               const startLabel = slot.isNow ? t('now') : slot.startTime
 
               // Check if this slot belongs to one of my meetings
               const myMeetingId = myMeetingSlotToId[slot.timestamp]
-              const myMeeting = meetingsWithPeers.find(mwp => mwp.meeting._id === myMeetingId)?.meeting
+              const myMeeting = meetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === myMeetingId)?.meeting
               const meetingPassed = myMeeting && isMeetingPassed(myMeeting)
-              let slotLink = `/meeting?timeslot=${slot.timestamp}`
+              const slotLink = `/meeting?timeslot=${slot.timestamp}`
               let tooltipText = t('createMeeting')
               let meetingColorClass = FINDING_MEETING_COLOR
+              let timeSlotLink = slotLink;
 
               if (myMeeting && !meetingPassed) {
+                console.log(myMeeting)
                 meetingColorClass = getMeetingColorClass(myMeeting)
                 if ( canEditMeeting(myMeeting) ) {
-                  slotLink = `/meeting/${myMeetingId}`
+                  timeSlotLink = `/meeting/${myMeetingId}`
                   tooltipText = t('editMeeting')
                 } else {
-                  slotLink = `list?meetingId=${myMeetingId}`
+                  timeSlotLink = `list?meetingId=${myMeetingId}`
                   tooltipText = t('viewMeeting')
                 }
               }
@@ -254,7 +270,7 @@ export default function MeetingsCalendar() {
                   >
                     <Tooltip title={tooltipText} placement="left">
                       <Link
-                          href={slotLink}
+                          href={timeSlotLink}
                           style={{
                             color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
                             alignItems: 'center', justifyContent: 'center'
@@ -275,7 +291,7 @@ export default function MeetingsCalendar() {
                           -
                           <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
                         </div>
-                        <div className="count-badge w-full h-5">{meetings.length ? `(${meetings.length})` : null}</div>
+                        <div className="count-badge w-full h-5">{meetingsWithJoinable.length ? `(${meetingsWithJoinable.length})` : null}</div>
                       </Link>
                     </Tooltip>
                   </div>
@@ -288,14 +304,26 @@ export default function MeetingsCalendar() {
                       borderBottom: '1px solid var(--border-color)'
                     }}
                   >
-                    {Object.entries(interestCounts).map(([interest, count]) => (
-                      <Chip
-                        key={interest}
+                    {Object.entries(interestCountsWithJoinable).map(([interest, { count, joinableMeeting }]) => (() => {
+                      const chip = <Chip
                         label={`${t(`Interest.${interest}`)} (${count})`}
                         size="small"
                         style={{ marginRight: 2, marginBottom: 2 }}
+                        key={interest}
                       />
-                    ))}
+                      if (joinableMeeting) {
+                        return (
+                          <Tooltip title={t('joinMeeting')} placement="top" key={interest}>
+                            <Link href={`/meeting?joinMeeting=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
+                              {chip}
+                            </Link>
+                          </Tooltip>
+                        )
+                      }
+                      return <Tooltip title={t('pleaseSelectAnEarlierTimeSlot')} placement="top" key={interest}>
+                                {chip}
+                              </Tooltip>
+                    })())}
                   </div>
                   {/* Languages */}
                   <div
