@@ -23,24 +23,24 @@ export function getCurrentLocale(req: NextRequest): string {
   return match ? match.code : defaultLocale
 }
 
-export async function* mergeAsyncIterators(iterators: AsyncIterable<any>[]) {
-  const readers = iterators.map(it => it[Symbol.asyncIterator]());
-  const results = readers.map(reader => reader.next());
+export async function* mergeAsyncIterators(iterables: AsyncIterable<any>[]) {
+  const iterators = iterables.map(iterable => iterable[Symbol.asyncIterator]())
+  const nexts = iterators.map(iterator => iterator.next())
 
-  while (readers.length > 0) {
-    const { value, index } = await Promise.race(
-      results.map((p, i) =>
-        p.then(value => ({ value, index: i }))
-      )
-    );
+  while (nexts.length > 0) {
+    // Wait for the first iterator to yield a value
+    const { result, i } = await Promise.race(
+      nexts.map((p, i) => p.then(result => ({ result, i })))
+    )
 
-    if (value.done) {
-      readers.splice(index, 1);
-      results.splice(index, 1);
-      continue;
+    if (result.done) {
+      // Remove this iterator and its promise
+      iterators.splice(i, 1)
+      nexts.splice(i, 1)
+    } else {
+      // Queue up the next value for this iterator
+      nexts[i] = iterators[i].next()
+      yield result.value
     }
-
-    results[index] = readers[index].next();
-    yield value.value;
   }
 }

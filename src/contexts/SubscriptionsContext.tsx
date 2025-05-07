@@ -98,6 +98,7 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
       
       // Handle call events
       if (data.callEvent) {
+        console.log('Call event:', data.callEvent)
         callCallbacks.current.forEach(callback => {
           callback(data.callEvent)
         })
@@ -105,6 +106,7 @@ export function SubscriptionsProvider({ children }: { children: ReactNode }) {
 
       // Handle broadcast events
       if (data.broadcastEvent) {
+        console.log('Broadcast event:', data.broadcastEvent)
         broadcastCallbacks.current.forEach(callback => {
           callback(data.broadcastEvent)
         })

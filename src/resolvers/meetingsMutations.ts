@@ -2,7 +2,8 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { tryConnectMeetings } from './connectMeetings'
 import { pubsub } from './pubsub';
-import { MeetingStatus, NotificationType } from '@/generated/graphql';
+import { BroadcastType, MeetingStatus, NotificationType } from '@/generated/graphql';
+import { publishBroadcastEvent } from './notificationsMutations';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -170,9 +171,11 @@ export const meetingsMutations = {
       
       // If this meeting doesn't have a peer yet, try to find a match
       console.log('Trying to find match for meeting: ', result?._id)
-      result = await tryConnectMeetings(result, db, _userId);
-      
-      return result;
+      result = await tryConnectMeetings(result, db, _userId)
+
+      publishBroadcastEvent(BroadcastType.MeetingUpdated)
+
+      return result
     } catch (error) {
       console.error('Error creating/updating meeting:', error);
       throw new Error('Failed to create/update meeting');

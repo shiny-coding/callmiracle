@@ -105,7 +105,6 @@ export default function MeetingsCalendar() {
       const nextSlot = meeting.timeSlots[j + 1]
       const nextSlotContiguous = nextSlot && nextSlot - slot === SLOT_DURATION
       const joinable = !isMine && (nextSlotContiguous || minDuration == SLOT_DURATION)
-      console.log(meeting._id, slot, joinable)
       slotMap[slot].push({ meeting, joinable })
     }
   }

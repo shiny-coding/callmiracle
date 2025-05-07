@@ -7,7 +7,7 @@ export function publishBroadcastEvent(broadcastType: BroadcastType) {
   const topic = `SUBSCRIPTION_EVENT:ALL`
   pubsub.publish(topic, { broadcastEvent: { type: broadcastType } })
   
-  console.log(`Published ${broadcastType} event for all users`)
+  console.log(`Broadcasted ${broadcastType} event for all users`)
 }
 
 export const notificationsMutations = {

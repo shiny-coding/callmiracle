@@ -71,8 +71,14 @@ export const POST = async (request: Request) => {
       const body = await clone.json()
       const query = body.query?.substring(0, 100) // Truncate long queries
       const operationName = body.operationName || 'unnamed'
-      
-      console.log(`[${new Date().toLocaleTimeString()}] GraphQL Request: ${operationName}`)
+
+      // Get user session for logging
+      const session = await getServerSession(authOptions)
+      const userPart = session?.user ? `User: ${session.user.name} (${session.user.id})` : 'Unauthenticated'
+
+      console.log(
+        `[${new Date().toLocaleTimeString()}] GraphQL Request: ${operationName} | ${userPart}`
+      )
     } catch (e) {
       // Silently continue if we can't parse the body
     }

@@ -1,10 +1,11 @@
-import { CallEvent, Meeting, NotificationEvent } from '@/generated/graphql'
+import { BroadcastEvent, CallEvent, Meeting, NotificationEvent } from '@/generated/graphql'
 import { pubsub } from './pubsub'
 import { mergeAsyncIterators } from '@/utils'
 
 export type SubscriptionEventPayload = {
   callEvent: CallEvent
   notificationEvent: NotificationEvent
+  broadcastEvent: BroadcastEvent
 }
 
 export type PubSubEvents = {
@@ -38,6 +39,10 @@ export const subscriptions = {
           fromUser: payload.callEvent.from?.name,
           toUser: payload.callEvent.userId,
           callId: payload.callEvent.callId
+        })
+      } else if ( payload.broadcastEvent ) {
+        console.log('Resolving broadcast event:', {
+          type: payload.broadcastEvent.type
         })
       } else {
         console.log('Resolving unknown event:', payload)

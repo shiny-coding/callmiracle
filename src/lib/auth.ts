@@ -10,7 +10,7 @@ import { ObjectId } from 'mongodb'
 import NextAuth from "next-auth"
 
 export const authOptions: NextAuthOptions = {
-  debug: true,
+  debug: false,
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
