@@ -9,13 +9,14 @@ import { useState, useEffect, ChangeEvent, useRef } from 'react'
 import { Interest, Meeting } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes } from 'date-fns'
-import TimeSlotsGrid from './TimeSlotsGrid'
+import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
 import { isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
+import { SLOT_DURATION } from '@/resolvers/connectMeetings'
 
 function isSlotSelectable(slot: any) {
   return slot && !slot.isDummy && !slot.isDisabled
@@ -41,7 +42,7 @@ export default function MeetingForm() {
   } =  {}
   const [tempInterests, setTempInterests] = useState<Interest[]>(interests)
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<{timestamp: number, startTime: string, endTime: string, day: string, isPartial?: boolean, remainingMinutes?: number, isDummy?: boolean, isDisabled?: boolean}[]>([])
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
   const [minDuration, setMinDuration] = useState(60)
   const [preferEarlier, setPreferEarlier] = useState(true)
   const [tempAllowedMales, setTempAllowedMales] = useState(allowedMales)
@@ -120,7 +121,8 @@ export default function MeetingForm() {
         startTime: format(prevHalfHourTime, 'HH:mm'),
         endTime: format(nextHalfHourTime, 'HH:mm'),
         day: format(now, 'EEE'),
-        isPartial: true,
+        dayKey: format(now, 'yyyy-MM-dd'),
+        isNow: true,
         remainingMinutes: minutesUntilNextSlot,
         isDisabled: occupiedTimeSlots.includes(prevHalfHourTime.getTime())
       })
@@ -139,16 +141,14 @@ export default function MeetingForm() {
         startTime: format(slotTime, 'HH:mm'),
         endTime: format(endTime, 'HH:mm'),
         day: format(slotTime, 'EEE'),
-        isPartial: false,
-        remainingMinutes: undefined,
+        dayKey: format(slotTime, 'yyyy-MM-dd'),
+        isNow: false,
+        remainingMinutes: SLOT_DURATION,
         isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
       }
       
       slots.push(slot)
     }
-    
-    // Sort slots by timestamp to ensure they appear in chronological order
-    slots.sort((a, b) => a.timestamp - b.timestamp)
     
     // Group slots by day
     const slotsByDay = slots.reduce((acc, slot) => {
@@ -179,7 +179,8 @@ export default function MeetingForm() {
               startTime: format(hourStart, 'HH:mm'),
               endTime: slot.startTime,
               day: slot.day,
-              isDummy: true
+              isDummy: true,
+              dayKey: format(slot.timestamp, 'yyyy-MM-dd')
             })
           }
         }
@@ -217,7 +218,7 @@ export default function MeetingForm() {
       if (!slotInfo) continue // Skip if slot info not found
       
       // For partial slots (current time slot), use remaining minutes instead of full 30 minutes
-      const slotDuration = slotInfo.isPartial ? (slotInfo.remainingMinutes || 0) : 30
+      const slotDuration = slotInfo.isNow ? (slotInfo.remainingMinutes || 0) : 30
       
       if (i === 0 || sortedTimeSlots[i] - sortedTimeSlots[i-1] !== 30 * 60 * 1000) {
         // This is either the first valid slot or there's a gap

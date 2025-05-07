@@ -2,15 +2,16 @@ import { Button, Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { getDayLabel } from '@/utils/meetingUtils'
 
-interface TimeSlot {
+export interface TimeSlot {
   timestamp: number
   startTime: string
   endTime: string
   day: string
-  isPartial?: boolean
+  isNow?: boolean
   remainingMinutes?: number
   isDummy?: boolean
   isDisabled?: boolean
+  dayKey: string
 }
 
 interface TimeSlotsGridProps {
@@ -55,11 +56,11 @@ export default function TimeSlotsGrid({
                   size="small"
                   onClick={() => onToggleTimeSlot(slot.timestamp)}
                   disabled={slot.isDisabled}
-                  className={`text-xs ${slot.isPartial ? 'border-yellow-500' : ''} ${
+                  className={`text-xs ${slot.isNow ? 'border-yellow-500' : ''} ${
                     slot.isDisabled ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
-                  {slot.isPartial ? t('now') : slot.startTime} - {slot.endTime}
+                  {slot.isNow ? t('now') : slot.startTime} - {slot.endTime}
                 </Button>
               )
             ))}

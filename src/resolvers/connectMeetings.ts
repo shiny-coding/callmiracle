@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./meetingsMutations";
 import { getCompatibleInterests } from '@/utils/meetingUtils'
 
-const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 type TimeRange = {
   start: number;

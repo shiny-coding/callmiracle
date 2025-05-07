@@ -12,6 +12,7 @@ import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting,
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import { getTimeSlotsGrid } from './MeetingsCalendarUtils'
+import { SLOT_DURATION } from '@/resolvers/connectMeetings'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -29,9 +30,8 @@ export default function MeetingsCalendar() {
   } = useMeetings()
 
   const now = Date.now()
-  const SLOT_DURATION = 30 * 60 * 1000 // 30 minutes in ms
   const HOURS_AHEAD = 24 * 7
-  const slots = getTimeSlotsGrid(now, HOURS_AHEAD, SLOT_DURATION)
+  const slots = getTimeSlotsGrid(now, HOURS_AHEAD)
 
   const gridBodyRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
@@ -93,19 +93,22 @@ export default function MeetingsCalendar() {
   for (let i = 0; i < slots.length; i++) {
     slotMap[slots[i].timestamp] = []
   }
-  for (let i = 0; i < futureMeetings.length; i++) {
-    const meeting = futureMeetings[i]
-    for (let j = 0; j < meeting.timeSlots.length; j++) {
-      const slot = meeting.timeSlots[j]
+  for (const futureMeeting of futureMeetings) {
+    for (let j = 0; j < futureMeeting.timeSlots.length; j++) {
+      const slot = futureMeeting.timeSlots[j]
       if ( slot < slots[0].timestamp ) {
         continue
       }
 
-      const isMine = meetingsWithPeers.some(meetingWithPeer => meetingWithPeer.meeting._id === meeting._id)
-      const nextSlot = meeting.timeSlots[j + 1]
+      const isMine = meetingsWithPeers.some(meetingWithPeer => meetingWithPeer.meeting._id === futureMeeting._id)
+      const nextSlot = futureMeeting.timeSlots[j + 1]
       const nextSlotContiguous = nextSlot && nextSlot - slot === SLOT_DURATION
-      const joinable = !isMine && (nextSlotContiguous || minDuration == SLOT_DURATION)
-      slotMap[slot].push({ meeting, joinable })
+      const timeLeftInCurrentSlot = now > slot ? slot + SLOT_DURATION - now : SLOT_DURATION
+      const nextNextSlot = futureMeeting.timeSlots[j + 2]
+      const nextNextSlotContiguous = nextNextSlot && nextNextSlot - nextSlot === SLOT_DURATION
+      const contiguousTime = timeLeftInCurrentSlot + (nextSlotContiguous ? (SLOT_DURATION + (nextNextSlotContiguous ? SLOT_DURATION : 0)) : 0)
+      const joinable = !isMine && contiguousTime >= minDuration
+      slotMap[slot].push({ meeting: futureMeeting, joinable })
     }
   }
 
