@@ -16,7 +16,7 @@ export function isMeetingPassed(meeting: {
   startTime?: number | null
   lastCallTime?: number | null
   timeSlots: number[]
-  minDuration: number
+  minDurationM: number
   status?: MeetingStatus
 }): boolean {
   const now = new Date()
@@ -44,7 +44,7 @@ export function isMeetingPassed(meeting: {
   
   const lastSlot = Math.max(...meeting.timeSlots)
 
-  const bufferMinutes = meeting.minDuration === 30 ? 10 : 20
+  const bufferMinutes = meeting.minDurationM === 30 ? 10 : 20
   const cutoffTime = new Date(lastSlot + bufferMinutes * 60 * 1000)
 
   return now > cutoffTime

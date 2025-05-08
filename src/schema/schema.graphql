@@ -36,7 +36,7 @@ type Meeting {
   interests: [Interest!]!
   timeSlots: [Float!]!
   lastSlotEnd: Float!
-  minDuration: Int!
+  minDurationM: Int!
   preferEarlier: Boolean!
   allowedMales: Boolean!
   allowedFemales: Boolean!
@@ -46,7 +46,7 @@ type Meeting {
   peerMeetingId: String
   lastCallTime: Float
   lastMissedCallTime: Float
-  totalDuration: Int
+  totalDurationS: Int
   status: MeetingStatus!
   createdAt: Date
 }
@@ -124,7 +124,7 @@ type Call {
   targetUserId: ID!
   type: String!
   meetingId: ID
-  duration: Int!
+  durationS: Int!
 }
 
 input UserInput {
@@ -180,7 +180,7 @@ input MeetingInput {
 type CallHistoryEntry {
   user: User!
   lastCallAt: Float!
-  duration: Int!
+  durationS: Int!
   totalCalls: Int!
 }
 
@@ -224,5 +224,5 @@ input UpdateMeetingStatusInput {
   _id: ID!
   status: MeetingStatus
   lastCallTime: Float
-  totalDuration: Int
+  totalDurationS: Int
 } 

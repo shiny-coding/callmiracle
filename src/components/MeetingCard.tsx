@@ -297,7 +297,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
               />
               {!meetingPassed &&
                 <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
-                  {meeting.minDuration} {t('min')}
+                  {meeting.minDurationM} {t('min')}
                 </Typography>
               }
             </>
@@ -334,7 +334,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
                           })}
                           {isLastEntry && (
                             <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
-                              {meeting.minDuration} {t('min')}
+                              {meeting.minDurationM} {t('min')}
                             </Typography>
                           )}
                         </div>
@@ -345,9 +345,9 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
               </>
             ) : null
           }
-          {meetingPassed && meeting.totalDuration && meeting.totalDuration > 0 && (
+          {meetingPassed && meeting.totalDurationS && meeting.totalDurationS > 0 && (
             <Chip
-              label={`${t('callDuration')}: ${formatDuration(meeting.totalDuration)}`}
+              label={`${t('callDuration')}: ${formatDuration(meeting.totalDurationS)}`}
               size="small"
               className={`text-xs text-white bg-gray-500`}
             />
@@ -386,11 +386,11 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
         </div>
       )}
 
-      {meeting.totalDuration && (
+      {meeting.totalDurationS && (
         <div className="flex items-center gap-2">
           <TimerIcon className="text-blue-400" />
           <Typography variant="body2">
-            {t('totalDuration')}: {formatDuration(meeting.totalDuration)}
+            {t('totalDuration')}: {formatDuration(meeting.totalDurationS)}
           </Typography>
         </div>
       )}

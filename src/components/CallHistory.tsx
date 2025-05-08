@@ -1,7 +1,7 @@
 import { gql, useQuery } from '@apollo/client'
 import { Paper, List, ListItem, Typography, Chip } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { User } from '@/generated/graphql'
+import { CallHistoryEntry, User } from '@/generated/graphql'
 import UserCard from './UserCard'
 import { formatDuration } from '@/utils/formatDuration'
 import { useStore } from '@/store/useStore'
@@ -16,18 +16,11 @@ const CALL_HISTORY = gql`
         languages
       }
       lastCallAt
-      duration
+      durationS
       totalCalls
     }
   }
 `
-
-interface CallHistoryEntry {
-  user: User
-  lastCallAt: number
-  duration: number
-  totalCalls: number
-}
 
 export default function CallHistory() {
   const { currentUser } = useStore()
@@ -80,7 +73,7 @@ export default function CallHistory() {
                   className="text-xs text-white bg-gray-700"
                 />
                 <Chip
-                  label={`Total duration: ${formatDuration(entry.duration)}`}
+                  label={`Total duration: ${formatDuration(entry.durationS)}`}
                   size="small"
                   className="text-xs text-white bg-gray-700"
                 />

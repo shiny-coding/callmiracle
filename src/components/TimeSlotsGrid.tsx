@@ -7,11 +7,11 @@ export interface TimeSlot {
   startTime: string
   endTime: string
   day: string
+  dayKey: string
   isNow?: boolean
-  remainingMinutes?: number
+  remainingTime: number
   isDummy?: boolean
   isDisabled?: boolean
-  dayKey: string
 }
 
 interface TimeSlotsGridProps {

@@ -40,7 +40,7 @@ export enum BroadcastType {
 export type Call = {
   __typename?: 'Call';
   _id: Scalars['ID']['output'];
-  duration: Scalars['Int']['output'];
+  durationS: Scalars['Int']['output'];
   initiatorUserId: Scalars['ID']['output'];
   meetingId?: Maybe<Scalars['ID']['output']>;
   targetUserId: Scalars['ID']['output'];
@@ -65,7 +65,7 @@ export type CallEvent = {
 
 export type CallHistoryEntry = {
   __typename?: 'CallHistoryEntry';
-  duration: Scalars['Int']['output'];
+  durationS: Scalars['Int']['output'];
   lastCallAt: Scalars['Float']['output'];
   totalCalls: Scalars['Int']['output'];
   user: User;
@@ -116,13 +116,13 @@ export type Meeting = {
   lastCallTime?: Maybe<Scalars['Float']['output']>;
   lastMissedCallTime?: Maybe<Scalars['Float']['output']>;
   lastSlotEnd: Scalars['Float']['output'];
-  minDuration: Scalars['Int']['output'];
+  minDurationM: Scalars['Int']['output'];
   peerMeetingId?: Maybe<Scalars['String']['output']>;
   preferEarlier: Scalars['Boolean']['output'];
   startTime?: Maybe<Scalars['Float']['output']>;
   status: MeetingStatus;
   timeSlots: Array<Scalars['Float']['output']>;
-  totalDuration?: Maybe<Scalars['Int']['output']>;
+  totalDurationS?: Maybe<Scalars['Int']['output']>;
   userId: Scalars['ID']['output'];
   userName?: Maybe<Scalars['String']['output']>;
 };
@@ -135,7 +135,7 @@ export type MeetingInput = {
   allowedMinAge: Scalars['Int']['input'];
   interests: Array<Interest>;
   languages: Array<Scalars['String']['input']>;
-  minDuration: Scalars['Int']['input'];
+  minDurationM: Scalars['Int']['input'];
   peerMeetingId?: InputMaybe<Scalars['ID']['input']>;
   preferEarlier: Scalars['Boolean']['input'];
   startTime?: InputMaybe<Scalars['Float']['input']>;
@@ -305,7 +305,7 @@ export type UpdateMeetingStatusInput = {
   _id: Scalars['ID']['input'];
   lastCallTime?: InputMaybe<Scalars['Float']['input']>;
   status?: InputMaybe<MeetingStatus>;
-  totalDuration?: InputMaybe<Scalars['Int']['input']>;
+  totalDurationS?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type User = {

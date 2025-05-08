@@ -11,8 +11,9 @@ import Link from 'next/link'
 import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
-import { getTimeSlotsGrid } from './MeetingsCalendarUtils'
-import { SLOT_DURATION } from '@/resolvers/connectMeetings'
+import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
+
+export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -31,7 +32,7 @@ export default function MeetingsCalendar() {
 
   const now = Date.now()
   const HOURS_AHEAD = 24 * 7
-  const slots = getTimeSlotsGrid(now, HOURS_AHEAD)
+  const slots = getCalendarTimeSlots(now, HOURS_AHEAD)
 
   const gridBodyRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
@@ -89,28 +90,7 @@ export default function MeetingsCalendar() {
   if (errorFutureMeetings) return <Typography color="error">Error loading calendar</Typography>
 
   // Map: slotTime -> meetings
-  const slotMap: Record<number, { meeting: Meeting, joinable: boolean }[]> = {}
-  for (let i = 0; i < slots.length; i++) {
-    slotMap[slots[i].timestamp] = []
-  }
-  for (const futureMeeting of futureMeetings) {
-    for (let j = 0; j < futureMeeting.timeSlots.length; j++) {
-      const slot = futureMeeting.timeSlots[j]
-      if ( slot < slots[0].timestamp ) {
-        continue
-      }
-
-      const isMine = meetingsWithPeers.some(meetingWithPeer => meetingWithPeer.meeting._id === futureMeeting._id)
-      const nextSlot = futureMeeting.timeSlots[j + 1]
-      const nextSlotContiguous = nextSlot && nextSlot - slot === SLOT_DURATION
-      const timeLeftInCurrentSlot = now > slot ? slot + SLOT_DURATION - now : SLOT_DURATION
-      const nextNextSlot = futureMeeting.timeSlots[j + 2]
-      const nextNextSlotContiguous = nextNextSlot && nextNextSlot - nextSlot === SLOT_DURATION
-      const contiguousTime = timeLeftInCurrentSlot + (nextSlotContiguous ? (SLOT_DURATION + (nextNextSlotContiguous ? SLOT_DURATION : 0)) : 0)
-      const joinable = !isMine && contiguousTime >= minDuration
-      slotMap[slot].push({ meeting: futureMeeting, joinable })
-    }
-  }
+  const slot2meetingsWithInfos = prepareTimeSlotsInfos(futureMeetings, slots, meetingsWithPeers, minDuration)
 
   // Group slots by dayKey
   const slotsByDay: Record<string, typeof slots> = {}
@@ -121,13 +101,10 @@ export default function MeetingsCalendar() {
   }
 
   // Collect all unique user IDs from all meetings in all slots
-  const userIdSet = new Set<string>()
-  for (let i = 0; i < slots.length; i++) {
-    const meetings = slotMap[slots[i].timestamp]
-    for (let j = 0; j < meetings.length; j++) {
-      if (meetings[j].meeting.userId) userIdSet.add(meetings[j].meeting.userId)
-    }
-  }
+  const userIdSet = new Set<string>(
+    slots.map(slot => slot2meetingsWithInfos[slot.timestamp].map(meetingWithJoinable => meetingWithJoinable.meeting.userId)).flat()
+  )
+
   const userIds = Array.from(userIdSet)
   const userIdToX: Record<string, number> = {}
   for (let i = 0; i < userIds.length; i++) {
@@ -208,20 +185,26 @@ export default function MeetingsCalendar() {
             )}
             {/* Slot rows */}
             {daySlots.map((slot, slotIdx) => {
-              const meetingsWithJoinable = slotMap[slot.timestamp]
+              const meetingsWithInfos = slot2meetingsWithInfos[slot.timestamp]
               // Count interests
-              const interestCountsWithJoinable: Record<string, { count: number, joinableMeeting: Meeting | null }> = {}
+              type InterestInfo = { count: number, joinableMeeting: Meeting | null, hasMine: boolean }
+              const interest2Info: Record<string, InterestInfo> = {}
               const languageCounts: Record<string, number> = {}
 
-              for (const { meeting, joinable } of meetingsWithJoinable) {
+              for (const { meeting, joinable, isMine } of meetingsWithInfos) {
                 for (const interest of meeting.interests) {
-                  if (!interestCountsWithJoinable[interest]) interestCountsWithJoinable[interest] = { count: 0, joinableMeeting: null }
-                  interestCountsWithJoinable[interest].count++
+                  let interestInfo = interest2Info[interest]
+                  if ( !interestInfo ) {
+                    interestInfo = { count: 0, joinableMeeting: null, hasMine: false }
+                    interest2Info[interest] = interestInfo
+                  }
+                  interestInfo.count++
+                  interestInfo.hasMine ||= isMine
                   if (joinable) {
                     // we select oldest joinable meeting for each interest
-                    if (!interestCountsWithJoinable[interest].joinableMeeting ||
-                      interestCountsWithJoinable[interest].joinableMeeting.createdAt < meeting.createdAt) {
-                      interestCountsWithJoinable[interest].joinableMeeting = meeting
+                    if (!interestInfo.joinableMeeting ||
+                      interestInfo.joinableMeeting.createdAt < meeting.createdAt) {
+                      interestInfo.joinableMeeting = meeting
                     }
                   }
                 }
@@ -242,7 +225,6 @@ export default function MeetingsCalendar() {
               let timeSlotLink = slotLink;
 
               if (myMeeting && !meetingPassed) {
-                console.log(myMeeting)
                 meetingColorClass = getMeetingColorClass(myMeeting)
                 if ( canEditMeeting(myMeeting) ) {
                   timeSlotLink = `/meeting/${myMeetingId}`
@@ -293,7 +275,7 @@ export default function MeetingsCalendar() {
                           -
                           <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
                         </div>
-                        <div className="count-badge w-full h-5">{meetingsWithJoinable.length ? `(${meetingsWithJoinable.length})` : null}</div>
+                        <div className="count-badge w-full h-5">{meetingsWithInfos.length ? `(${meetingsWithInfos.length})` : null}</div>
                       </Link>
                     </Tooltip>
                   </div>
@@ -306,24 +288,27 @@ export default function MeetingsCalendar() {
                       borderBottom: '1px solid var(--border-color)'
                     }}
                   >
-                    {Object.entries(interestCountsWithJoinable).map(([interest, { count, joinableMeeting }]) => (() => {
+                    {Object.entries(interest2Info).map(([interest, { count, joinableMeeting, hasMine }]) => (() => {
                       const chip = <Chip
                         label={`${t(`Interest.${interest}`)} (${count})`}
                         size="small"
                         style={{ marginRight: 2, marginBottom: 2 }}
                         key={interest}
                       />
+                      let tooltipText;
                       if (joinableMeeting) {
-                        return (
-                          <Tooltip title={t('joinMeeting')} placement="top" key={interest}>
-                            <Link href={`/meeting?joinMeeting=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
-                              {chip}
-                            </Link>
-                          </Tooltip>
-                        )
+                        tooltipText = t('joinMeeting')
+                      } else if (hasMine) {
+                        tooltipText = t('myMeeting')
+                      } else {
+                        tooltipText = t('pleaseSelectAnEarlierTimeSlot')
                       }
-                      return <Tooltip title={t('pleaseSelectAnEarlierTimeSlot')} placement="top" key={interest}>
-                                {chip}
+                      return <Tooltip title={tooltipText} placement="top" key={interest}>
+                                {joinableMeeting ?
+                                  <Link href={`/meeting?joinMeeting=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
+                                    {chip}
+                                  </Link>
+                                  : chip}
                               </Tooltip>
                     })())}
                   </div>

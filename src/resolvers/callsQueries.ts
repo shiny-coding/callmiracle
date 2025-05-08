@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { Context } from './types'
+import { Call } from '@/generated/graphql'
 
 export const callsQueries = {
   getCalls: async (_: any, __: any, { db }: Context) => {
@@ -10,7 +11,7 @@ export const callsQueries = {
 
     const _userId = new ObjectId(userId)
 
-    const calls = await db.collection('calls').find({
+    const calls = await db.collection('calls').find<Call>({
       $or: [
         { initiatorUserId: _userId },
         { targetUserId: _userId }
@@ -22,21 +23,21 @@ export const callsQueries = {
     const callsByUser = new Map()
     
     for (const call of calls) {
-      const _otherUserId = call.initiatorUserId.equals(_userId) ? 
-        call.targetUserId : call.initiatorUserId
+      const _otherUserId = call.initiatorUserId.toString() == _userId.toString() ? 
+                          call.targetUserId : call.initiatorUserId
 
       if (!callsByUser.has(_otherUserId)) {
         callsByUser.set(_otherUserId, {
           calls: [],
-          totalDuration: 0,
+          totalDurationS: 0,
           lastCallAt: 0
         })
       }
       
       const userCalls = callsByUser.get(_otherUserId)
       userCalls.calls.push(call)
-      userCalls.totalDuration += call.duration
-      userCalls.lastCallAt = Math.max(userCalls.lastCallAt, call._id.getTimestamp().getTime())
+      userCalls.totalDurationS += call.durationS
+      userCalls.lastCallAt = Math.max(userCalls.lastCallAt, (call._id as any as ObjectId).getTimestamp().getTime())
     }
 
     // Get user details and format response
@@ -48,7 +49,7 @@ export const callsQueries = {
       result.push({
         user: user,
         lastCallAt: callData.lastCallAt,
-        duration: callData.totalDuration,
+        durationS: callData.totalDurationS,
         totalCalls: callData.calls.length
       })
     }

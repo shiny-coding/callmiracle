@@ -75,14 +75,14 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
 
   } else if (type === 'finished' || type == 'expired') {
     // Only set duration if the call was connected and is now finished
-    let callDuration = 0;
+    let callDurationS = 0;
     // currentCall?.type === 'connected' means that the expired is due to call timeout
     const updateFields = type === 'finished' || (type === 'expired' && call?.type === 'connected')
       ? { 
           type: 'finished',
-          duration: callDuration = Math.floor((Date.now() - _callId.getTimestamp().getTime()) / 1000)
+          durationS: callDurationS = Math.floor((Date.now() - _callId.getTimestamp().getTime()) / 1000)
         }
-      : { type: 'expired', duration: 0 }
+      : { type: 'expired', durationM: 0 }
 
     // Update call status
     call = await db.collection('calls').findOneAndUpdate(
@@ -96,12 +96,12 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     }
     
     // If this call was for a meeting and has a duration, update the meeting's total duration
-    if (_meetingId && (callDuration > 0 || type === 'expired')) {
+    if (_meetingId && (callDurationS > 0 || type === 'expired')) {
       try {
         const meeting = await db.collection('meetings').findOne({ _id: _meetingId });
         const updateFields: any = {}
-        if (callDuration > 0) {
-          updateFields.totalDuration = (meeting?.totalDuration || 0) + callDuration;
+        if (callDurationS > 0) {
+          updateFields.totalDurationS = (meeting?.totalDurationS || 0) + callDurationS;
         }
         if (type === 'expired') {
           updateFields.lastMissedCallTime = Date.now()
@@ -112,8 +112,8 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
           { $set: updateFields }
         );
         
-        if (callDuration > 0) {
-          console.log(`Updated meeting ${_meetingId.toString()} duration to ${updateFields.totalDuration}s`);
+        if (callDurationS > 0) {
+          console.log(`Updated meeting ${_meetingId.toString()} duration to ${updateFields.totalDurationS}s`);
         } else if (type === 'expired') {
           console.log(`Updated meeting ${_meetingId.toString()} last missed call time to ${updateFields.lastMissedCallTime}`);
         }

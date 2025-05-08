@@ -2,8 +2,7 @@ import { Interest, MeetingStatus, NotificationType } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./meetingsMutations";
 import { getCompatibleInterests } from '@/utils/meetingUtils'
-
-export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+import { SLOT_DURATION } from "@/components/MeetingsCalendar";
 
 type TimeRange = {
   start: number;

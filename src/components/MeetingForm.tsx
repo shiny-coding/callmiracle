@@ -8,7 +8,7 @@ import { useStore } from '@/store/useStore'
 import { useState, useEffect, ChangeEvent, useRef } from 'react'
 import { Interest, Meeting } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
-import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes } from 'date-fns'
+import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes, differenceInMilliseconds } from 'date-fns'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
 import { isMeetingPassed } from '@/utils/meetingUtils'
@@ -16,7 +16,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
-import { SLOT_DURATION } from '@/resolvers/connectMeetings'
+import { SLOT_DURATION } from './MeetingsCalendar'
 
 function isSlotSelectable(slot: any) {
   return slot && !slot.isDummy && !slot.isDisabled
@@ -43,7 +43,7 @@ export default function MeetingForm() {
   const [tempInterests, setTempInterests] = useState<Interest[]>(interests)
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
-  const [minDuration, setMinDuration] = useState(60)
+  const [minDurationM, setMinDurationM] = useState(60)
   const [preferEarlier, setPreferEarlier] = useState(true)
   const [tempAllowedMales, setTempAllowedMales] = useState(allowedMales)
   const [tempAllowedFemales, setTempAllowedFemales] = useState(allowedFemales)
@@ -60,7 +60,7 @@ export default function MeetingForm() {
     if (meeting) {
       setTempInterests(meeting.interests || [])
       setSelectedTimeSlots(meeting.timeSlots || [])
-      setMinDuration(meeting.minDuration || 60)
+      setMinDurationM(meeting.minDurationM || 60)
       setPreferEarlier(meeting.preferEarlier)
       setTempAllowedMales(meeting.allowedMales !== undefined ? meeting.allowedMales : true)
       setTempAllowedFemales(meeting.allowedFemales !== undefined ? meeting.allowedFemales : true)
@@ -73,7 +73,7 @@ export default function MeetingForm() {
       // Creating a new meeting
       setTempInterests([])
       setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
-      setMinDuration(60)
+      setMinDurationM(60)
       setPreferEarlier(true)
       setTempAllowedMales(true)
       setTempAllowedFemales(true)
@@ -100,33 +100,29 @@ export default function MeetingForm() {
     }
     
     // Calculate minutes until next half-hour
-    const minutesUntilNextSlot = differenceInMinutes(nextHalfHourTime, now)
-    
+    const remainingTime = differenceInMilliseconds(nextHalfHourTime, now)
     const slots = []
     
-    // Add the current partial slot but align it to the previous half-hour boundary
-    if (minutesUntilNextSlot > 0) {
-      // Find the previous half-hour boundary
-      const prevHalfHourTime = new Date(now)
-      if (minutes < 30) {
-        // If we're before :30, go back to the hour
-        prevHalfHourTime.setMinutes(0, 0, 0)
-      } else {
-        // If we're after :30, go back to the half hour
-        prevHalfHourTime.setMinutes(30, 0, 0)
-      }
-      
-      slots.push({
-        timestamp: prevHalfHourTime.getTime(),
-        startTime: format(prevHalfHourTime, 'HH:mm'),
-        endTime: format(nextHalfHourTime, 'HH:mm'),
-        day: format(now, 'EEE'),
-        dayKey: format(now, 'yyyy-MM-dd'),
-        isNow: true,
-        remainingMinutes: minutesUntilNextSlot,
-        isDisabled: occupiedTimeSlots.includes(prevHalfHourTime.getTime())
-      })
+    // Find the previous half-hour boundary
+    const prevHalfHourTime = new Date(now)
+    if (minutes < 30) {
+      // If we're before :30, go back to the hour
+      prevHalfHourTime.setMinutes(0, 0, 0)
+    } else {
+      // If we're after :30, go back to the half hour
+      prevHalfHourTime.setMinutes(30, 0, 0)
     }
+    
+    slots.push({
+      timestamp: prevHalfHourTime.getTime(),
+      startTime: format(prevHalfHourTime, 'HH:mm'),
+      endTime: format(nextHalfHourTime, 'HH:mm'),
+      day: format(now, 'EEE'),
+      dayKey: format(now, 'yyyy-MM-dd'),
+      isNow: true,
+      remainingTime,
+      isDisabled: occupiedTimeSlots.includes(prevHalfHourTime.getTime())
+    })
     
     // Generate slots for the next 7 days in 30-minute increments
     for (let i = 0; i < 7 * 24 * 2; i++) {
@@ -143,7 +139,7 @@ export default function MeetingForm() {
         day: format(slotTime, 'EEE'),
         dayKey: format(slotTime, 'yyyy-MM-dd'),
         isNow: false,
-        remainingMinutes: SLOT_DURATION,
+        remainingTime: SLOT_DURATION,
         isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
       }
       
@@ -180,6 +176,7 @@ export default function MeetingForm() {
               endTime: slot.startTime,
               day: slot.day,
               isDummy: true,
+              remainingTime: SLOT_DURATION,
               dayKey: format(slot.timestamp, 'yyyy-MM-dd')
             })
           }
@@ -218,9 +215,9 @@ export default function MeetingForm() {
       if (!slotInfo) continue // Skip if slot info not found
       
       // For partial slots (current time slot), use remaining minutes instead of full 30 minutes
-      const slotDuration = slotInfo.isNow ? (slotInfo.remainingMinutes || 0) : 30
+      const slotDuration = slotInfo.remainingTime
       
-      if (i === 0 || sortedTimeSlots[i] - sortedTimeSlots[i-1] !== 30 * 60 * 1000) {
+      if (i === 0 || sortedTimeSlots[i] - sortedTimeSlots[i-1] !== SLOT_DURATION) {
         // This is either the first valid slot or there's a gap
         // Reset the current duration counter
         longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
@@ -234,8 +231,8 @@ export default function MeetingForm() {
     // Check one last time after the loop finishes
     longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
     
-    setHasValidDuration(longestContinuousDuration >= minDuration)
-  }, [selectedTimeSlots, minDuration, availableTimeSlots])
+    setHasValidDuration(longestContinuousDuration >= minDurationM * 60 * 1000)
+  }, [selectedTimeSlots, minDurationM, availableTimeSlots])
 
   // Preselect timeslot(s) if timeslot param is present
   useEffect(() => {
@@ -311,14 +308,15 @@ export default function MeetingForm() {
       _id: meetingId as string,
       interests: tempInterests,
       timeSlots: selectedTimeSlots,
-      minDuration,
+      minDurationM,
       preferEarlier,
       allowedMales: tempAllowedMales,
       allowedFemales: tempAllowedFemales,
       allowedMinAge: tempAgeRange[0],
       allowedMaxAge: tempAgeRange[1],
       languages: tempLanguages,
-      peerMeetingId: meeting?.peerMeetingId || undefined
+      peerMeetingId: meeting?.peerMeetingId || undefined,
+      userId: currentUser?._id || ''
     })
     refetchFutureMeetings()
     router.back()
@@ -409,15 +407,15 @@ export default function MeetingForm() {
         </Typography>
         <div className="flex gap-4 justify-center">
           <Button 
-            variant={minDuration === 30 ? "contained" : "outlined"}
-            onClick={() => setMinDuration(30)}
+            variant={minDurationM === 30 ? "contained" : "outlined"}
+            onClick={() => setMinDurationM(30)}
             className="flex-1"
           >
             30 {t('minutes')}
           </Button>
           <Button 
-            variant={minDuration === 60 ? "contained" : "outlined"}
-            onClick={() => setMinDuration(60)}
+            variant={minDurationM === 60 ? "contained" : "outlined"}
+            onClick={() => setMinDurationM(60)}
             className="flex-1"
           >
             1 {t('hour')}
@@ -448,7 +446,7 @@ export default function MeetingForm() {
           )}
           {selectedTimeSlots.length > 0 && !hasValidDuration && (
             <Typography color="warning" className="text-sm">
-              {t('insufficientDuration', { minutes: minDuration })}
+              {t('insufficientDuration', { minutes: minDurationM })}
             </Typography>
           )}
         </div>
