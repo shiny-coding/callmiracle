@@ -46,7 +46,7 @@ export function getCalendarTimeSlots(now: number, hoursAhead: number): TimeSlot[
 
 
 
-export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot[], meetingsWithPeers: MeetingWithPeer[], minDuration: number) {
+export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot[], meetingsWithPeers: MeetingWithPeer[], minDurationM: number) {
   const slot2meetingInfos: Record<number, MeetingWithInfo[]> = {}
   for (let i = 0; i < slots.length; i++) {
     slot2meetingInfos[slots[i].timestamp] = []
@@ -66,7 +66,7 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
       const nextNextSlot = futureMeeting.timeSlots[j + 2]
       const nextNextSlotContiguous = nextNextSlot && nextNextSlot - nextSlot === SLOT_DURATION
       const contiguousTime = timeLeftInCurrentSlot + (nextSlotContiguous ? (SLOT_DURATION + (nextNextSlotContiguous ? SLOT_DURATION : 0)) : 0)
-      const joinable = !isMine && contiguousTime >= minDuration
+      const joinable = !isMine && contiguousTime >= minDurationM * 60 * 1000
       slot2meetingInfos[slot].push({ meeting: futureMeeting, joinable, isMine })
     }
   }

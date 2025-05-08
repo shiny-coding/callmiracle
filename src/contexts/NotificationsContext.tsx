@@ -20,7 +20,7 @@ const GET_NOTIFICATIONS = gql`
         languages
         interests
         timeSlots
-        minDuration
+        minDurationM
         startTime
         peerMeetingId
         status

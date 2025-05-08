@@ -5,6 +5,7 @@ import { CallHistoryEntry, User } from '@/generated/graphql'
 import UserCard from './UserCard'
 import { formatDuration } from '@/utils/formatDuration'
 import { useStore } from '@/store/useStore'
+import LoadingDialog from './LoadingDialog'
 
 const CALL_HISTORY = gql`
   query CallHistory($userId: ID!) {
@@ -30,8 +31,7 @@ export default function CallHistory() {
   })
   const t = useTranslations()
 
-  if (loading) return <Typography>Loading...</Typography>
-  if (error) return <Typography color="error">Error loading call history</Typography>
+  if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp)

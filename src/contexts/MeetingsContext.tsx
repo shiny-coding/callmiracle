@@ -13,7 +13,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
         languages
         interests
         timeSlots
-        minDuration
+        minDurationM
         preferEarlier
         allowedMales
         allowedFemales
@@ -23,7 +23,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
         peerMeetingId
         lastCallTime
         status
-        totalDuration
+        totalDurationS
       }
       peerMeeting {
         _id
@@ -48,7 +48,7 @@ export const GET_FUTURE_MEETINGS = gql`
       timeSlots
       interests
       languages
-      minDuration
+      minDurationM
       userId
     }
   }

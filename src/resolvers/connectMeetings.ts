@@ -50,10 +50,10 @@ export const combineAdjacentSlots = (slots: number[]): TimeRange[] => {
 }
 
 // Helper function to find overlapping time ranges
-export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[], minDuration: number): TimeRange[] => {
+export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[], minDurationM: number): TimeRange[] => {
   const overlaps: TimeRange[] = [];
 
-  const minDurationMs = minDuration * 60 * 1000;
+  const minDuration = minDurationM * 60 * 1000;
   
   for (const range1 of ranges1) {
     for (const range2 of ranges2) {
@@ -61,7 +61,7 @@ export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[]
       const overlapEnd = Math.min(range1.end, range2.end);
       const duration = overlapEnd - overlapStart;
       
-      if (duration >= minDurationMs) {
+      if (duration >= minDuration) {
         overlaps.push({ start: overlapStart, end: overlapEnd });
       }
     }
@@ -109,14 +109,14 @@ export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]) =
   if (interestOverlap.length === 0) return false;
   
   // Check time slot overlap
-  const minDuration = Math.max(meeting1.minDuration, meeting2.minDuration);
+  const minDurationM = Math.max(meeting1.minDurationM, meeting2.minDurationM);
   
   // Combine adjacent slots into time ranges
   const timeRanges1 = combineAdjacentSlots(meeting1.timeSlots);
   const timeRanges2 = combineAdjacentSlots(meeting2.timeSlots);
   
   // Find overlapping time ranges
-  const overlappingRanges = findOverlappingRanges(timeRanges1, timeRanges2, minDuration);
+  const overlappingRanges = findOverlappingRanges(timeRanges1, timeRanges2, minDurationM);
   
   return overlappingRanges.length > 0 ? overlappingRanges : false;
 }

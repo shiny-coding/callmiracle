@@ -10,7 +10,7 @@ const CREATE_OR_UPDATE_MEETING = gql`
       userName
       interests
       timeSlots
-      minDuration
+      minDurationM
       preferEarlier
       allowedMales
       allowedFemales

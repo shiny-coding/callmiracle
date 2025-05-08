@@ -14,7 +14,7 @@ import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useMeetings } from '@/contexts/MeetingsContext'
-
+import LoadingDialog from './LoadingDialog'
 export default function MeetingsList() {
 
   const t = useTranslations()
@@ -61,9 +61,9 @@ export default function MeetingsList() {
     }
   }, [searchParams, setHighlightedMeetingId])
 
-  if (loadingMeetingsWithPeers) return <Typography>Loading...</Typography>
-  if (errorMeetingsWithPeers) return <Typography color="error">Error loading meetings</Typography>
-
+  if (loadingMeetingsWithPeers || errorMeetingsWithPeers) {
+    return <LoadingDialog loading={loadingMeetingsWithPeers} error={errorMeetingsWithPeers} />
+  }
 
   return (
     <div className="w-full">

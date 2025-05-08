@@ -12,6 +12,7 @@ import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting,
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
+import LoadingDialog from './LoadingDialog'
 
 export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
@@ -38,7 +39,7 @@ export default function MeetingsCalendar() {
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
 
-  const [minDuration, setMinDuration] = useState(SLOT_DURATION * 2)
+  const [minDurationM, setMinDurationM] = useState(SLOT_DURATION * 2)
 
   // Collect all meetingIds for quick lookup
   const myMeetingSlotToId: Record<number, string> = {}
@@ -86,11 +87,10 @@ export default function MeetingsCalendar() {
     }
   }, [slots])
 
-  if (loadingFutureMeetings) return <Typography>Loading...</Typography>
-  if (errorFutureMeetings) return <Typography color="error">Error loading calendar</Typography>
+  if (loadingFutureMeetings || errorFutureMeetings) return <LoadingDialog loading={loadingFutureMeetings} error={errorFutureMeetings} />
 
   // Map: slotTime -> meetings
-  const slot2meetingsWithInfos = prepareTimeSlotsInfos(futureMeetings, slots, meetingsWithPeers, minDuration)
+  const slot2meetingsWithInfos = prepareTimeSlotsInfos(futureMeetings, slots, meetingsWithPeers, minDurationM)
 
   // Group slots by dayKey
   const slotsByDay: Record<string, typeof slots> = {}

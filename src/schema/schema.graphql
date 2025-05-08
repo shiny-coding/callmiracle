@@ -167,7 +167,7 @@ input MeetingInput {
   languages: [String!]!
   interests: [Interest!]!
   timeSlots: [Float!]!
-  minDuration: Int!
+  minDurationM: Int!
   preferEarlier: Boolean!
   allowedMales: Boolean!
   allowedFemales: Boolean!

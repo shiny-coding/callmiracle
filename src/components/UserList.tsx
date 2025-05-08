@@ -10,7 +10,7 @@ import UserCard from './UserCard'
 import { normalizeText } from '@/utils/textNormalization'
 import { useStore } from '@/store/useStore'
 import LanguageSelector from './LanguageSelector'
-
+import LoadingDialog from './LoadingDialog'
 export default function UserList() {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations()
@@ -29,8 +29,7 @@ export default function UserList() {
     )
   }
 
-  if (loading && !users) return <Typography>Loading...</Typography>
-  if (error) return <Typography color="error">Error loading users</Typography>
+  if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
   let filteredUsers = users || []
   filteredUsers = filteredUsers.filter(user => user._id !== currentUser?._id)

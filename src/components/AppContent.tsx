@@ -2,13 +2,13 @@
 
 import { ReactNode, useState } from 'react'
 import { useInitUser } from '@/hooks/useInitUser'
-import { Dialog, DialogContent, Typography } from '@mui/material'
 import { useEffect } from 'react'
 import { useStore } from '@/store/useStore'
 import { UsersProvider } from '@/store/UsersProvider'
 import { SubscriptionsProvider } from '@/contexts/SubscriptionsContext'
 import { NotificationsProvider } from '@/contexts/NotificationsContext'
 import { MeetingsProvider } from '@/contexts/MeetingsContext'
+import LoadingDialog from './LoadingDialog'
 
 interface AppContentProps {
   children: ReactNode
@@ -50,23 +50,4 @@ export function StoreInitializer({ children }: AppContentProps) {
   if (!isHydrated) return <LoadingDialog loading={true} error={null} />
 
   return children
-}
-
-function LoadingDialog({ loading, error }: { loading: boolean, error: any }) {
-    return (
-      <Dialog
-        open={true}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          className: 'bg-gray-900'
-        }}
-      >
-        <DialogContent className="flex items-center justify-center min-h-[120px]">
-          <Typography className="text-white text-center text-lg">
-            {loading ? 'Loading...' : 'Server is down. Please try again later'}
-          </Typography>
-        </DialogContent>
-      </Dialog>
-    )
 }
