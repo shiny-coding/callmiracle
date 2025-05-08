@@ -11,6 +11,7 @@ import { normalizeText } from '@/utils/textNormalization'
 import { useStore } from '@/store/useStore'
 import LanguageSelector from './LanguageSelector'
 import LoadingDialog from './LoadingDialog'
+
 export default function UserList() {
   const { users, loading, error, refetch } = useUsers()
   const t = useTranslations()

@@ -28,14 +28,12 @@ export function getCalendarTimeSlots(now: number, hoursAhead: number): TimeSlot[
     const slotStart = new Date(t)
     const slotEnd = new Date(t + SLOT_DURATION)
     const isNow = t <= now && now < t + SLOT_DURATION
-    const remainingTime = isNow ? SLOT_DURATION - (now - t) : SLOT_DURATION
     slots.push({
       timestamp: t,
       startTime: format(slotStart, 'HH:mm'),
       endTime: format(slotEnd, 'HH:mm'),
       dayKey: format(slotStart, 'yyyy-MM-dd'),
       isNow,
-      remainingTime,
       day: isToday(slotStart)
         ? `Today (${format(slotStart, 'EEE, yyyy-MM-dd')})`
         : format(slotStart, 'EEE, yyyy-MM-dd')

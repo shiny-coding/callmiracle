@@ -2,8 +2,9 @@ import { Block, Interest, Meeting, MeetingStatus } from "@/generated/graphql"
 import resolveConfig from "tailwindcss/resolveConfig"
 import tailwindConfig from "../../tailwind.config"
 import { ObjectId } from "mongodb"
-import { format, setMinutes, setSeconds, setMilliseconds, addMinutes, isToday, isTomorrow } from 'date-fns'
+import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes, differenceInMilliseconds, isTomorrow, isToday } from 'date-fns'
 import { enUS } from "date-fns/locale"
+import { SLOT_DURATION } from '@/components/MeetingsCalendar'
 
 /**
  * Determines if a meeting has passed based on various conditions
@@ -122,7 +123,7 @@ export function getCompatibleInterests(
   return meeting.interests.filter(interest => !block.interests.includes(interest))
 }
 
-export function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
+function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
   return meetings
     .filter(m => !currentMeetingId || m._id !== currentMeetingId)
     .filter(m => !isMeetingPassed(m))
@@ -187,3 +188,78 @@ export function meetingIsActiveNow(meeting: Meeting) {
   const now = new Date()
   return now >= new Date(meeting.startTime) && !isMeetingPassed(meeting)
 }
+
+export function getAvailableTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
+  const occupiedTimeSlots = getOccupiedTimeSlots(meetings, currentMeetingId)
+
+  const now = new Date()
+  
+  // Find the next half-hour boundary
+  const minutes = now.getMinutes()
+  const nextHalfHour = minutes < 30 ? 30 : 0
+  const nextHalfHourTime = setMilliseconds(setSeconds(setMinutes(new Date(now), nextHalfHour), 0), 0)
+  if (nextHalfHour === 0) {
+    nextHalfHourTime.setHours(nextHalfHourTime.getHours() + 1)
+  }
+  
+  // Calculate minutes until next half-hour
+  const slots = []
+  
+  // Find the previous half-hour boundary
+  const prevHalfHourTime = new Date(now)
+  if (minutes < 30) {
+    // If we're before :30, go back to the hour
+    prevHalfHourTime.setMinutes(0, 0, 0)
+  } else {
+    // If we're after :30, go back to the half hour
+    prevHalfHourTime.setMinutes(30, 0, 0)
+  }
+
+  const slotMinutes = getMinutes(prevHalfHourTime)
+  // If the slot doesn't start at :00, add a dummy slot
+  if (slotMinutes === 30) {
+    const hourStart = startOfHour(prevHalfHourTime)
+    slots.push({
+      timestamp: hourStart.getTime(),
+      startTime: format(hourStart, 'HH:mm'),
+      endTime: format(prevHalfHourTime, 'HH:mm'),
+      day: format(now, 'EEE'),
+      isDummy: true,
+      dayKey: format(now, 'yyyy-MM-dd')
+    })
+  }
+  
+  slots.push({
+    timestamp: prevHalfHourTime.getTime(),
+    startTime: format(prevHalfHourTime, 'HH:mm'),
+    endTime: format(nextHalfHourTime, 'HH:mm'),
+    day: format(now, 'EEE'),
+    dayKey: format(now, 'yyyy-MM-dd'),
+    isNow: true,
+    isDisabled: occupiedTimeSlots.includes(prevHalfHourTime.getTime())
+  })
+  
+  // Generate slots for the next 7 days in 30-minute increments
+  for (let i = 0; i < 7 * 24 * 2; i++) {
+    const slotTime = addMinutes(nextHalfHourTime, i * 30)
+    const endTime = addMinutes(slotTime, 30)
+    
+    // Skip slots that are in the past
+    if (slotTime.getTime() < now.getTime()) continue;
+    
+    const slot = {
+      timestamp: slotTime.getTime(),
+      startTime: format(slotTime, 'HH:mm'),
+      endTime: format(endTime, 'HH:mm'),
+      day: format(slotTime, 'EEE'),
+      dayKey: format(slotTime, 'yyyy-MM-dd'),
+      isNow: false,
+      isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
+    }
+    
+    slots.push(slot)
+  }
+  
+  return slots
+}
+

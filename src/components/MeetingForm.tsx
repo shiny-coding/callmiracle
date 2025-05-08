@@ -8,15 +8,14 @@ import { useStore } from '@/store/useStore'
 import { useState, useEffect, ChangeEvent, useRef } from 'react'
 import { Interest, Meeting } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
-import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes, differenceInMilliseconds } from 'date-fns'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
-import { isMeetingPassed } from '@/utils/meetingUtils'
+import { getAvailableTimeSlots, isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import { getOccupiedTimeSlots } from '@/utils/meetingUtils'
 import { SLOT_DURATION } from './MeetingsCalendar'
+import LoadingDialog from './LoadingDialog'
 
 function isSlotSelectable(slot: any) {
   return slot && !slot.isDummy && !slot.isDisabled
@@ -26,6 +25,7 @@ export default function MeetingForm() {
   const t = useTranslations()
 
   const { meetingsWithPeers, loadingMeetingsWithPeers, errorMeetingsWithPeers } = useMeetings()
+
   const { id: meetingId } = useParams()
   const meeting = meetingsWithPeers.find(m => m.meeting._id === meetingId)?.meeting
 
@@ -33,27 +33,24 @@ export default function MeetingForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const timeslotParam = searchParams?.get('timeslot')
-  const { 
-    interests = [], 
-    allowedMales = true, 
-    allowedFemales = true, 
-    allowedMinAge = 10, 
-    allowedMaxAge = 100 
-  } =  {}
-  const [tempInterests, setTempInterests] = useState<Interest[]>(interests)
+  const [tempInterests, setTempInterests] = useState<Interest[]>([])
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
   const [minDurationM, setMinDurationM] = useState(60)
   const [preferEarlier, setPreferEarlier] = useState(true)
-  const [tempAllowedMales, setTempAllowedMales] = useState(allowedMales)
-  const [tempAllowedFemales, setTempAllowedFemales] = useState(allowedFemales)
-  const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([allowedMinAge, allowedMaxAge])
-  const [tempLanguages, setTempLanguages] = useState<string[]>([])
+  const [tempAllowedMales, setTempAllowedMales] = useState(true)
+  const [tempAllowedFemales, setTempAllowedFemales] = useState(true)
+  const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([10, 100])
+  const [tempLanguages, setTempLanguages] = useState<string[]>(currentUser?.languages || [])
   const { updateMeeting, loading } = useUpdateMeeting()
-  const [occupiedTimeSlots, setOccupiedTimeSlots] = useState<number[]>([])
   const [hasValidDuration, setHasValidDuration] = useState(true)
   const { refetchFutureMeetings } = useMeetings()
   const formContentRef = useRef<HTMLDivElement>(null)
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
+
+  useEffect(() => {
+    const availableTimeSlots = getAvailableTimeSlots(meetingsWithPeers.map(m => m.meeting), meeting?._id)
+    setAvailableTimeSlots(availableTimeSlots)
+  }, [meetingsWithPeers, meeting])
 
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
@@ -68,126 +65,10 @@ export default function MeetingForm() {
         meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
         meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
       ])
-      setTempLanguages(meeting.languages || (currentUser?.languages || []))
-    } else {
-      // Creating a new meeting
-      setTempInterests([])
-      setSelectedTimeSlots([]) // Explicitly clear selected time slots for new meetings
-      setMinDurationM(60)
-      setPreferEarlier(true)
-      setTempAllowedMales(true)
-      setTempAllowedFemales(true)
-      setTempAgeRange([10, 100])
-      setTempLanguages(currentUser?.languages || [])
+      setTempLanguages(meeting.languages)
     }
-    
-    // Collect all time slots from other meetings that haven't passed
-    if (meeting || meetingsWithPeers.length > 0) {
-      setOccupiedTimeSlots(getOccupiedTimeSlots(meetingsWithPeers.map(m => m.meeting), meeting?._id))
-    }
-  }, [meeting, currentUser?.languages, meetingsWithPeers])
+  }, [meeting])
 
-  // Generate available time slots
-  useEffect(() => {
-    const now = new Date()
-    
-    // Find the next half-hour boundary
-    const minutes = now.getMinutes()
-    const nextHalfHour = minutes < 30 ? 30 : 0
-    const nextHalfHourTime = setMilliseconds(setSeconds(setMinutes(new Date(now), nextHalfHour), 0), 0)
-    if (nextHalfHour === 0) {
-      nextHalfHourTime.setHours(nextHalfHourTime.getHours() + 1)
-    }
-    
-    // Calculate minutes until next half-hour
-    const remainingTime = differenceInMilliseconds(nextHalfHourTime, now)
-    const slots = []
-    
-    // Find the previous half-hour boundary
-    const prevHalfHourTime = new Date(now)
-    if (minutes < 30) {
-      // If we're before :30, go back to the hour
-      prevHalfHourTime.setMinutes(0, 0, 0)
-    } else {
-      // If we're after :30, go back to the half hour
-      prevHalfHourTime.setMinutes(30, 0, 0)
-    }
-    
-    slots.push({
-      timestamp: prevHalfHourTime.getTime(),
-      startTime: format(prevHalfHourTime, 'HH:mm'),
-      endTime: format(nextHalfHourTime, 'HH:mm'),
-      day: format(now, 'EEE'),
-      dayKey: format(now, 'yyyy-MM-dd'),
-      isNow: true,
-      remainingTime,
-      isDisabled: occupiedTimeSlots.includes(prevHalfHourTime.getTime())
-    })
-    
-    // Generate slots for the next 7 days in 30-minute increments
-    for (let i = 0; i < 7 * 24 * 2; i++) {
-      const slotTime = addMinutes(nextHalfHourTime, i * 30)
-      const endTime = addMinutes(slotTime, 30)
-      
-      // Skip slots that are in the past
-      if (slotTime.getTime() < now.getTime()) continue;
-      
-      const slot = {
-        timestamp: slotTime.getTime(),
-        startTime: format(slotTime, 'HH:mm'),
-        endTime: format(endTime, 'HH:mm'),
-        day: format(slotTime, 'EEE'),
-        dayKey: format(slotTime, 'yyyy-MM-dd'),
-        isNow: false,
-        remainingTime: SLOT_DURATION,
-        isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
-      }
-      
-      slots.push(slot)
-    }
-    
-    // Group slots by day
-    const slotsByDay = slots.reduce((acc, slot) => {
-      const day = slot.day
-      if (!acc[day]) acc[day] = []
-      acc[day].push(slot)
-      return acc
-    }, {} as Record<string, typeof slots>)
-    
-    // For each day, ensure each hour starts with a slot
-    const processedSlots = []
-    
-    for (const day in slotsByDay) {
-      const daySlots = slotsByDay[day]
-      
-      // Process each slot
-      for (let i = 0; i < daySlots.length; i++) {
-        const slot = daySlots[i]
-        const slotMinutes = getMinutes(new Date(slot.timestamp))
-        
-        // If this is the first slot of the day or the previous slot was at a different hour
-        if (i === 0 || Math.floor(daySlots[i-1].timestamp / 3600000) !== Math.floor(slot.timestamp / 3600000)) {
-          // If the slot doesn't start at :00, add a dummy slot
-          if (slotMinutes === 30) {
-            const hourStart = startOfHour(new Date(slot.timestamp))
-            processedSlots.push({
-              timestamp: hourStart.getTime() - 1, // Use timestamp-1 for dummy slots
-              startTime: format(hourStart, 'HH:mm'),
-              endTime: slot.startTime,
-              day: slot.day,
-              isDummy: true,
-              remainingTime: SLOT_DURATION,
-              dayKey: format(slot.timestamp, 'yyyy-MM-dd')
-            })
-          }
-        }
-        
-        processedSlots.push(slot)
-      }
-    }
-    
-    setAvailableTimeSlots(processedSlots)
-  }, [open, occupiedTimeSlots])
 
   // Add new useEffect to validate time slot durations
   useEffect(() => {
@@ -195,31 +76,19 @@ export default function MeetingForm() {
       setHasValidDuration(true)
       return
     }
-
-    // Check if selected time slots can form a continuous period meeting the minimum duration
-    const sortedTimeSlots = [...selectedTimeSlots].sort((a, b) => a - b)
     
     const now = new Date().getTime()
     let longestContinuousDuration = 0
     let currentContinuousDuration = 0
     
-    for (let i = 0; i < sortedTimeSlots.length; i++) {
+    for (let i = 0; i < selectedTimeSlots.length; i++) {
+      const selectedTimeSlot = selectedTimeSlots[i]
       // Skip slots that are in the past
-      if (sortedTimeSlots[i] < now) {
-        continue
-      }
+      if (now > selectedTimeSlot + SLOT_DURATION) continue
+      const slotDuration = now > selectedTimeSlot ? SLOT_DURATION - (now - selectedTimeSlot) : SLOT_DURATION
       
-      // Find the slot in availableTimeSlots to check if it's partial
-      const slotInfo = availableTimeSlots.find(slot => slot.timestamp === sortedTimeSlots[i])
-      
-      if (!slotInfo) continue // Skip if slot info not found
-      
-      // For partial slots (current time slot), use remaining minutes instead of full 30 minutes
-      const slotDuration = slotInfo.remainingTime
-      
-      if (i === 0 || sortedTimeSlots[i] - sortedTimeSlots[i-1] !== SLOT_DURATION) {
-        // This is either the first valid slot or there's a gap
-        // Reset the current duration counter
+      if (i === 0 || selectedTimeSlot - selectedTimeSlots[i-1] !== SLOT_DURATION) {
+        // This is either the first valid slot or there's a gap reset the current duration counter
         longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
         currentContinuousDuration = slotDuration
       } else {
@@ -230,13 +99,14 @@ export default function MeetingForm() {
     
     // Check one last time after the loop finishes
     longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
+    console.log('longestContinuousDuration', longestContinuousDuration / 60000)
     
     setHasValidDuration(longestContinuousDuration >= minDurationM * 60 * 1000)
   }, [selectedTimeSlots, minDurationM, availableTimeSlots])
 
   // Preselect timeslot(s) if timeslot param is present
   useEffect(() => {
-    if (!meeting && timeslotParam && availableTimeSlots.length > 0) {
+    if (timeslotParam && availableTimeSlots.length > 0) {
       const ts = parseInt(timeslotParam, 10)
       const slotIdx = availableTimeSlots.findIndex(slot => slot.timestamp === ts)
       const slot = availableTimeSlots[slotIdx]
@@ -265,10 +135,9 @@ export default function MeetingForm() {
         }, 200)
       }
     }
-  }, [availableTimeSlots, timeslotParam, meeting])
+  }, [timeslotParam, meeting, availableTimeSlots])
 
-  if (loadingMeetingsWithPeers) return <div>{t('loading')}</div>
-  if (errorMeetingsWithPeers) return <div>{t('errorLoadingMeeting')}</div>
+  if (loadingMeetingsWithPeers || errorMeetingsWithPeers) return <LoadingDialog loading={loadingMeetingsWithPeers} error={errorMeetingsWithPeers} />
 
   const toggleTimeSlot = (timestamp: number) => {
     // Don't allow toggling disabled slots
@@ -280,7 +149,7 @@ export default function MeetingForm() {
       if (prev.includes(timestamp)) {
         return prev.filter(t => t !== timestamp)
       } else {
-        return [...prev, timestamp]
+        return [...prev, timestamp].sort((a, b) => a - b)
       }
     })
   }

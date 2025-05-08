@@ -9,7 +9,6 @@ export interface TimeSlot {
   day: string
   dayKey: string
   isNow?: boolean
-  remainingTime: number
   isDummy?: boolean
   isDisabled?: boolean
 }
@@ -67,11 +66,6 @@ export default function TimeSlotsGrid({
           </div>
         </div>
       ))}
-      {timeSlots.length === 0 && (
-        <Typography className="text-gray-400 text-center py-4">
-          {t('noTimeSlotsAvailable')}
-        </Typography>
-      )}
     </div>
   )
 } 
