@@ -1,53 +1,7 @@
 import { Interest, MeetingStatus, NotificationType } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./meetingsMutations";
-import { getCompatibleInterests } from '@/utils/meetingUtils'
-import { SLOT_DURATION } from "@/components/MeetingsCalendar";
-
-type TimeRange = {
-  start: number;
-  end: number;
-}
-
-// Helper function to combine adjacent time slots into time ranges
-export const combineAdjacentSlots = (slots: number[]): TimeRange[] => {
-  if (slots.length === 0) return [];
-  
-  // Sort slots chronologically
-  const sortedSlots = [...slots].sort((a, b) => a - b);
-  
-  const now = new Date().getTime();
-  const combinedSlots: TimeRange[] = [];
-  let currentStart, currentEnd;
-  
-  for (let i = 0; i < sortedSlots.length; i++) {
-    let slotStart = sortedSlots[i];
-    const slotEnd = slotStart + SLOT_DURATION;
-    if (now >= slotEnd) continue;
-    if (now > slotStart) {
-      slotStart = now;
-    }
-      
-    // If this slot starts exactly when the previous ends, combine them
-    if (slotStart === currentEnd) {
-      // Extend the current slot
-      currentEnd = slotEnd;
-    } else {
-      // This slot is not adjacent, so save the current combined slot and start a new one
-      if (currentStart) {
-        combinedSlots.push({ start: currentStart, end: currentEnd as number });
-      }
-      currentStart = slotStart;
-      currentEnd = slotEnd;
-    }
-  }
-  
-  // Add the last range
-  if (currentStart) {
-    combinedSlots.push({ start: currentStart, end: currentEnd as number });
-  }
-  return combinedSlots;
-}
+import { combineAdjacentSlots, getCompatibleInterests, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
 
 // Helper function to find overlapping time ranges
 export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[], minDurationM: number): TimeRange[] => {

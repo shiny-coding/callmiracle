@@ -2,7 +2,7 @@
 import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { TimeSlot } from './TimeSlotsGrid'
-import { SLOT_DURATION } from './MeetingsCalendar'
+import { SLOT_DURATION, getSlotDuration } from '@/utils/meetingUtils'
 
 export type MeetingWithInfo = {
   meeting: Meeting,
@@ -51,6 +51,7 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
   }
   const now = Date.now()
   for (const futureMeeting of futureMeetings) {
+    let foundFirstJoinable = false
     for (let j = 0; j < futureMeeting.timeSlots.length; j++) {
       const slot = futureMeeting.timeSlots[j]
       if ( slot < slots[0].timestamp ) {
@@ -60,12 +61,18 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
       const isMine = meetingsWithPeers.some(meetingWithPeer => meetingWithPeer.meeting._id === futureMeeting._id)
       const nextSlot = futureMeeting.timeSlots[j + 1]
       const nextSlotContiguous = nextSlot && nextSlot - slot === SLOT_DURATION
-      const timeLeftInCurrentSlot = now > slot ? slot + SLOT_DURATION - now : SLOT_DURATION
+      const timeLeftInCurrentSlot = getSlotDuration(slot)
       const nextNextSlot = futureMeeting.timeSlots[j + 2]
       const nextNextSlotContiguous = nextNextSlot && nextNextSlot - nextSlot === SLOT_DURATION
       const contiguousTime = timeLeftInCurrentSlot + (nextSlotContiguous ? (SLOT_DURATION + (nextNextSlotContiguous ? SLOT_DURATION : 0)) : 0)
       const joinable = !isMine && contiguousTime >= minDurationM * 60 * 1000
-      slot2meetingInfos[slot].push({ meeting: futureMeeting, joinable, isMine })
+
+      if (foundFirstJoinable || joinable || isMine) {
+        slot2meetingInfos[slot].push({ meeting: futureMeeting, joinable, isMine })
+      }
+      if (joinable) {
+        foundFirstJoinable = true
+      }
     }
   }
   return slot2meetingInfos

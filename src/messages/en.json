@@ -195,5 +195,6 @@
   "tomorrow": "Tomorrow",
   "count": "Count",
   "joinMeeting": "Join Meeting",
-  "pleaseSelectAnEarlierTimeSlot": "Please select an earlier time slot for this meeting or change the minimum duration"
+  "pleaseSelectAnEarlierTimeSlot": "Please select an earlier time slot for this meeting or change the minimum duration",
+  "myMeeting": "My Meeting"
 } 

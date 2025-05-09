@@ -8,13 +8,11 @@ import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-f
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import Link from 'next/link'
-import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed } from '@/utils/meetingUtils'
+import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed, SLOT_DURATION } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
 import LoadingDialog from './LoadingDialog'
-
-export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -116,12 +114,8 @@ export default function MeetingsCalendar() {
   }
 
 
-  // Define grid columns: timeSlot (3), meetingsCount, timeline, interests, languages
-  const gridTemplateColumns = `
-    80px
-    10fr
-    80px
-  `
+  // Define grid columns: timeSlot, interests, languages
+  const gridTemplateColumns = `80px 10fr 80px`
 
   return (
     <Paper className="flex flex-col h-full" sx={{ padding: 'var(--16sp)' }}>

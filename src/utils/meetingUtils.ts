@@ -4,7 +4,57 @@ import tailwindConfig from "../../tailwind.config"
 import { ObjectId } from "mongodb"
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes, differenceInMilliseconds, isTomorrow, isToday } from 'date-fns'
 import { enUS } from "date-fns/locale"
-import { SLOT_DURATION } from '@/components/MeetingsCalendar'
+import { TimeSlot } from "@/components/TimeSlotsGrid"
+
+export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+export const EXPIRATION_TIME_FOR_HOUR_MEETING = 10 * 60 * 1000; // 10 minutes in milliseconds
+export const EXPIRATION_TIME_FOR_HALF_HOUR_MEETING = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+
+export type TimeRange = {
+  start: number;
+  end: number;
+}
+
+// Helper function to combine adjacent time slots into time ranges
+export const combineAdjacentSlots = (slots: number[]): TimeRange[] => {
+  if (slots.length === 0) return [];
+  
+  // Sort slots chronologically
+  const sortedSlots = [...slots].sort((a, b) => a - b);
+  
+  const now = new Date().getTime();
+  const combinedSlots: TimeRange[] = [];
+  let currentStart, currentEnd;
+  
+  for (let i = 0; i < sortedSlots.length; i++) {
+    let slotStart = sortedSlots[i];
+    const slotEnd = slotStart + SLOT_DURATION;
+    if (now >= slotEnd) continue;
+    if (now > slotStart) {
+      slotStart = now;
+    }
+      
+    // If this slot starts exactly when the previous ends, combine them
+    if (slotStart === currentEnd) {
+      // Extend the current slot
+      currentEnd = slotEnd;
+    } else {
+      // This slot is not adjacent, so save the current combined slot and start a new one
+      if (currentStart) {
+        combinedSlots.push({ start: currentStart, end: currentEnd as number });
+      }
+      currentStart = slotStart;
+      currentEnd = slotEnd;
+    }
+  }
+  
+  // Add the last range
+  if (currentStart) {
+    combinedSlots.push({ start: currentStart, end: currentEnd as number });
+  }
+  return combinedSlots;
+}
 
 /**
  * Determines if a meeting has passed based on various conditions
@@ -43,12 +93,17 @@ export function isMeetingPassed(meeting: {
   
   // If meeting doesn't have startTime, check if all time slots are in the past
   
-  const lastSlot = Math.max(...meeting.timeSlots)
+  const lastSlot = meeting.timeSlots[meeting.timeSlots.length - 1]
 
-  const bufferMinutes = meeting.minDurationM === 30 ? 10 : 20
-  const cutoffTime = new Date(lastSlot + bufferMinutes * 60 * 1000)
+  const nowTime = now.getTime()
+  if (nowTime > lastSlot + SLOT_DURATION) return true
 
-  return now > cutoffTime
+  const combinedRanges = combineAdjacentSlots(meeting.timeSlots)
+  const expirationTime = nowTime + (meeting.minDurationM === 30 ? EXPIRATION_TIME_FOR_HALF_HOUR_MEETING : EXPIRATION_TIME_FOR_HOUR_MEETING)
+  const minDuration = meeting.minDurationM * 60 * 1000
+  if ( combinedRanges.every(range => nowTime > range.end - minDuration - expirationTime) ) return true
+
+  return false
 }
 
 /**
@@ -263,3 +318,35 @@ export function getAvailableTimeSlots(meetings: Meeting[], currentMeetingId?: st
   return slots
 }
 
+export function getSlotDuration(timestamp: number) {
+  const now = new Date().getTime()
+  if (now > timestamp + SLOT_DURATION) return 0; // slot is over
+  const slotDuration = now > timestamp ? SLOT_DURATION - (now - timestamp) : SLOT_DURATION
+  return slotDuration
+}
+
+
+export function trySelectHourSlots(timeslot: number, availableTimeSlots: TimeSlot[]) {
+  const slotIndex = availableTimeSlots.findIndex(slot => slot.timestamp === timeslot)
+  const slot = availableTimeSlots[slotIndex]
+  const slotsToSelect: number[] = []
+  const HOUR_DURATION = 60 * 60 * 1000
+  let slotsToSelectDuration = 0
+  if ( slot && !slot.isDisabled ) {
+    slotsToSelect.push(slot.timestamp)
+    slotsToSelectDuration += getSlotDuration(slot.timestamp)
+    const nextSlot = availableTimeSlots[slotIndex + 1]
+    if (nextSlot && !nextSlot.isDisabled) {
+      slotsToSelect.push(nextSlot.timestamp)
+      slotsToSelectDuration += getSlotDuration(nextSlot.timestamp)
+      if (slotsToSelectDuration < HOUR_DURATION) {
+        const nextNextSlot = availableTimeSlots[slotIndex + 2]
+        if (nextNextSlot && !nextNextSlot.isDisabled) {
+          slotsToSelect.push(nextNextSlot.timestamp)
+          slotsToSelectDuration += getSlotDuration(nextNextSlot.timestamp)
+        }
+      }
+    }
+  }
+  return slotsToSelect
+}

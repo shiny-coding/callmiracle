@@ -82,38 +82,7 @@ export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor:
     return groups
   }
 
-  // Combine adjacent time slots
-  const combineAdjacentSlots = (slots: number[]): [number, number][] => {
-    if (slots.length === 0) return []
-    
-    // Sort slots chronologically
-    const sortedSlots = [...slots].sort((a, b) => a - b)
-    
-    const combinedSlots: [number, number][] = []
-    let currentStart = sortedSlots[0]
-    let currentEnd = currentStart + 30 * 60 * 1000 // 30 minutes in milliseconds
-    
-    for (let i = 1; i < sortedSlots.length; i++) {
-      const slotTime = sortedSlots[i]
-      
-      // If this slot starts exactly when the previous ends, combine them
-      if (slotTime === currentEnd) {
-        // Extend the current slot
-        currentEnd = slotTime + 30 * 60 * 1000
-      } else {
-        // This slot is not adjacent, so save the current combined slot and start a new one
-        combinedSlots.push([currentStart, currentEnd])
-        currentStart = slotTime
-        currentEnd = slotTime + 30 * 60 * 1000
-      }
-    }
-    
-    // Add the last slot or combined slot
-    combinedSlots.push([currentStart, currentEnd])
-    
-    return combinedSlots
-  }
-  
+ 
   const getPartnerIcon = () => {
     if (meeting.peerMeetingId) {
       if (currentUser?.sex === meetingWithPeer.peerUser?.sex) {
@@ -167,7 +136,6 @@ export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor:
     formatDateForDisplay,
     getFirstSlotDay,
     groupTimeSlotsByDay,
-    combineAdjacentSlots,
     MeetingLanguagesChips,
     GenderChip,
     getPartnerIcon

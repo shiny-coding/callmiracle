@@ -1,7 +1,5 @@
 import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
 import { useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
@@ -14,12 +12,9 @@ import { getAvailableTimeSlots, isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import { SLOT_DURATION } from './MeetingsCalendar'
+import { getSlotDuration, trySelectHourSlots } from '@/utils/meetingUtils'
 import LoadingDialog from './LoadingDialog'
-
-function isSlotSelectable(slot: any) {
-  return slot && !slot.isDummy && !slot.isDisabled
-}
+import { SLOT_DURATION } from './MeetingsCalendar'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -33,6 +28,7 @@ export default function MeetingForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const timeslotParam = searchParams?.get('timeslot')
+  const [preselectedTimeSlots, setPreselectedTimeSlots] = useState<boolean>(false)
   const [tempInterests, setTempInterests] = useState<Interest[]>([])
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
   const [minDurationM, setMinDurationM] = useState(60)
@@ -85,7 +81,7 @@ export default function MeetingForm() {
       const selectedTimeSlot = selectedTimeSlots[i]
       // Skip slots that are in the past
       if (now > selectedTimeSlot + SLOT_DURATION) continue
-      const slotDuration = now > selectedTimeSlot ? SLOT_DURATION - (now - selectedTimeSlot) : SLOT_DURATION
+      const slotDuration = getSlotDuration(selectedTimeSlot)
       
       if (i === 0 || selectedTimeSlot - selectedTimeSlots[i-1] !== SLOT_DURATION) {
         // This is either the first valid slot or there's a gap reset the current duration counter
@@ -106,26 +102,16 @@ export default function MeetingForm() {
 
   // Preselect timeslot(s) if timeslot param is present
   useEffect(() => {
-    if (timeslotParam && availableTimeSlots.length > 0) {
-      const ts = parseInt(timeslotParam, 10)
-      const slotIdx = availableTimeSlots.findIndex(slot => slot.timestamp === ts)
-      const slot = availableTimeSlots[slotIdx]
-      if (
-        slotIdx !== -1 &&
-        isSlotSelectable(slot)
-      ) {
-        const slotsToSelect = [slot.timestamp]
-        const nextSlot = availableTimeSlots[slotIdx + 1]
-        if (isSlotSelectable(nextSlot)) {
-          slotsToSelect.push(nextSlot.timestamp)
-        }
+    if (timeslotParam && availableTimeSlots.length > 0 && !preselectedTimeSlots) {
+      setPreselectedTimeSlots(true)
+      const timeslot = parseInt(timeslotParam, 10)
+      const slotsToSelect = trySelectHourSlots(timeslot, availableTimeSlots)
+      if (slotsToSelect.length > 0) {
         setSelectedTimeSlots(slotsToSelect)
         setTimeout(() => {
           // Scroll so that the next slot (if selected) is at the bottom
-          const scrollToSlot = nextSlot && slotsToSelect.includes(nextSlot.timestamp)
-            ? nextSlot
-            : slot
-          const slotEl = document.querySelector(`[data-timeslot="${scrollToSlot?.timestamp}"]`)
+          const scrollToSlot = slotsToSelect[slotsToSelect.length - 1]
+          const slotEl = document.querySelector(`[data-timeslot="${scrollToSlot}"]`)
           if (slotEl && formContentRef.current) {
             const formRect = formContentRef.current.getBoundingClientRect()
             const slotRect = slotEl.getBoundingClientRect()
@@ -135,7 +121,7 @@ export default function MeetingForm() {
         }, 200)
       }
     }
-  }, [timeslotParam, meeting, availableTimeSlots])
+  }, [timeslotParam, meeting, availableTimeSlots, preselectedTimeSlots])
 
   if (loadingMeetingsWithPeers || errorMeetingsWithPeers) return <LoadingDialog loading={loadingMeetingsWithPeers} error={errorMeetingsWithPeers} />
 

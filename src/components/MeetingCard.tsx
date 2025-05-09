@@ -20,6 +20,7 @@ import { differenceInSeconds, isWithinInterval } from 'date-fns'
 import { differenceInHours } from 'date-fns'
 import ConfirmDialog from './ConfirmDialog'
 import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
+import { combineAdjacentSlots } from '@/utils/meetingUtils'
 
 interface MeetingCardProps {
   meetingWithPeer: MeetingWithPeer
@@ -44,7 +45,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
   const textColor = meetingPassed ? "text-gray-400" : "text-gray-300";
   const { deleteMeeting } = useDeleteMeeting()
 
-  const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, combineAdjacentSlots, MeetingLanguagesChips, GenderChip,
+  const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, MeetingLanguagesChips, GenderChip,
           getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, now, t)
 
   const meetingColor = getMeetingColorClass(meeting);
@@ -316,16 +317,16 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
                           {day}
                         </Typography>
                         <div className="grid grid-cols-[repeat(auto-fill,90px)] gap-1">
-                          {combinedSlots.map(([startSlot, endSlot], index) => {
+                          {combinedSlots.map(({start, end}, index) => {
                             const isActive = isWithinInterval(now, {
-                              start: new Date(startSlot),
-                              end: new Date(endSlot)
+                              start: new Date(start),
+                              end: new Date(end)
                             }) && !!meeting.peerMeetingId
                             
                             return (
                               <Chip
-                                key={`${startSlot}-${endSlot}`}
-                                label={formatTimeSlot(startSlot, endSlot)}
+                                key={`${start}-${end}`}
+                                label={formatTimeSlot(start, end)}
                                 size="small"
                                 className="text-xs"
                                 sx={getChipSx(isActive)}
