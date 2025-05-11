@@ -101,7 +101,7 @@ export function isMeetingPassed(meeting: {
   const combinedRanges = combineAdjacentSlots(meeting.timeSlots)
   const expirationTime = nowTime + (meeting.minDurationM === 30 ? EXPIRATION_TIME_FOR_HALF_HOUR_MEETING : EXPIRATION_TIME_FOR_HOUR_MEETING)
   const minDuration = meeting.minDurationM * 60 * 1000
-  if ( combinedRanges.every(range => nowTime > range.end - minDuration - expirationTime) ) return true
+  if ( combinedRanges.every(range => nowTime > range.end - minDuration + expirationTime) ) return true
 
   return false
 }

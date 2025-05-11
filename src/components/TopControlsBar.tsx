@@ -1,7 +1,7 @@
 import { IconButton, Badge, Avatar } from '@mui/material'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import NotificationsIcon from '@mui/icons-material/Notifications'
-import { useState } from 'react'
+import { useState, useRef, useEffect, MutableRefObject } from 'react'
 import NotificationsPopup from './NotificationsPopup'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
@@ -37,6 +37,29 @@ export default function TopControlsBar() {
     sendWantedMediaState
   } = useWebRTCContext()
 
+  const barRef = useRef<HTMLDivElement>(null)
+  const videoSelectorDropdownRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      if (
+        barRef.current &&
+        !barRef.current.contains(event.target as Node)
+        && (!videoSelectorDropdownRef.current || !videoSelectorDropdownRef.current.contains(event.target as Node))
+      ) {
+        setIsHoveringOverVideoControls(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('touchstart', handlePointerDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('touchstart', handlePointerDown)
+    }
+  }, [])
+
   const handleAudioToggle = () => {
     setLocalAudioEnabled(!localAudioEnabled)
     sendWantedMediaState()
@@ -52,8 +75,14 @@ export default function TopControlsBar() {
     setIsVideoDeviceSelectorOpen(isOpen)
   }  
 
+  console.log('isHoveringOverVideoControls', isHoveringOverVideoControls)
+  console.log('isVideoDeviceSelectorOpen', isVideoDeviceSelectorOpen)
+
   return (
-    <div className="p-3 w-full flex justify-between items-center gap-4 bg-gradient-to-t from-transparent to-white/30">
+    <div
+      ref={barRef}
+      className="p-3 w-full flex justify-between items-center gap-4 bg-gradient-to-t from-transparent to-white/30"
+    >
       <IconButton
         className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
         onClick={() => setNotificationsOpen(true)}
@@ -104,7 +133,10 @@ export default function TopControlsBar() {
           >
             <LocalVideo />
           </div>
-          <VideoDeviceSelector onOpenChange={handleVideoDeviceSelectorOpen} />
+          <VideoDeviceSelector
+            dropdownRef={videoSelectorDropdownRef}
+            onOpenChange={handleVideoDeviceSelectorOpen}
+          />
         </div>
       </div>
 

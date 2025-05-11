@@ -1,5 +1,5 @@
 import { FormControl, Select, MenuItem } from '@mui/material'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, MutableRefObject } from 'react'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 
 interface DeviceSelectorProps {
@@ -10,6 +10,7 @@ interface DeviceSelectorProps {
   setStream: (stream: MediaStream | undefined) => void
   getLabel?: (device: MediaDeviceInfo) => Promise<string | null>
   onOpenChange?: (isOpen: boolean) => void
+  dropdownRef?: MutableRefObject<HTMLDivElement | null>
 }
 
 export default function DeviceSelector({ 
@@ -19,7 +20,8 @@ export default function DeviceSelector({
   isEnabled,
   setStream,
   getLabel,
-  onOpenChange
+  onOpenChange,
+  dropdownRef
 }: DeviceSelectorProps) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [deviceLabels, setDeviceLabels] = useState<Record<string, string>>({})
@@ -91,27 +93,29 @@ export default function DeviceSelector({
             <div className="w-0 h-0 border-[6px] border-transparent border-t-gray-500 transform rotate-180 -mt-1" />
           </div>
         )}
-        <Select
-          value={selectedDevice}
-          onChange={(e) => handleChange(e.target.value)}
-          variant="standard"
-          className={`dark:text-gray-100 ${!isOpen ? 'opacity-0' : 'dark:bg-gray-700'}`}
-          open={isOpen}
-          onOpen={() => setIsOpen(true)}
-          onClose={() => setIsOpen(false)}
-          IconComponent={() => null}
-          renderValue={() => ''}
-        >
-          {devices.map(device => (
-            <MenuItem 
-              key={device.deviceId} 
-              value={device.deviceId}
-              className="dark:text-gray-100 dark:hover:bg-gray-600"
-            >
-              {getLabel ? deviceLabels[device.deviceId] : device.label || `Device ${device.deviceId.slice(0, 5)}...`}
-            </MenuItem>
-          ))}
-        </Select>
+        <div className="dropdown-root" ref={dropdownRef}>
+          <Select
+            value={selectedDevice}
+            onChange={(e) => handleChange(e.target.value)}
+            variant="standard"
+            className={`dark:text-gray-100 ${!isOpen ? 'opacity-0' : 'dark:bg-gray-700'}`}
+            open={isOpen}
+            onOpen={() => setIsOpen(true)}
+            onClose={() => setIsOpen(false)}
+            IconComponent={() => null}
+            renderValue={() => ''}
+          >
+            {devices.map(device => (
+              <MenuItem 
+                key={device.deviceId} 
+                value={device.deviceId}
+                className="dark:text-gray-100 dark:hover:bg-gray-600"
+              >
+                {getLabel ? deviceLabels[device.deviceId] : device.label || `Device ${device.deviceId.slice(0, 5)}...`}
+              </MenuItem>
+            ))}
+          </Select>
+        </div>
       </div>
     </FormControl>
   )

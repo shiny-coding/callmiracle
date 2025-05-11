@@ -63,6 +63,15 @@ const theme = createTheme({
           color: '#fff'
         }
       }
+    },
+    MuiInput: {
+      styleOverrides: {
+        underline: {
+          '&:after': {
+            borderBottomColor: 'var(--border-color)'
+          }
+        }
+      }
     }
   }
 })

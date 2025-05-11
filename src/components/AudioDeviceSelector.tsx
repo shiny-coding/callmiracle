@@ -1,8 +1,10 @@
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import DeviceSelector from './DeviceSelector'
+import { useStore } from '@/store/useStore'
 
 export default function AudioDeviceSelector() {
-  const { localAudioEnabled, setLocalStream } = useWebRTCContext()
+  const { setLocalStream } = useWebRTCContext()
+  const { localAudioEnabled } = useStore()
 
   const getStream = async (deviceId: string) => {
     return navigator.mediaDevices.getUserMedia({

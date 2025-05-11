@@ -12,9 +12,8 @@ import { getAvailableTimeSlots, isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import { getSlotDuration, trySelectHourSlots } from '@/utils/meetingUtils'
+import { getSlotDuration, trySelectHourSlots, SLOT_DURATION } from '@/utils/meetingUtils'
 import LoadingDialog from './LoadingDialog'
-import { SLOT_DURATION } from './MeetingsCalendar'
 
 export default function MeetingForm() {
   const t = useTranslations()
