@@ -8,69 +8,27 @@ import { LANGUAGES } from '@/config/languages'
 
 export default function LocalVideo() {
   const t = useTranslations()
-  const { currentUser, setCurrentUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
+  const { currentUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
   const { name = '', languages = [] } = currentUser || {}
-  const { 
-    localStream, 
-    setLocalStream, 
-  } = useWebRTCContext()
+  const { localStream } = useWebRTCContext()
   const [profileOpen, setProfileOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [hasPermission, setHasPermission] = useState(false)
   const [error, setError] = useState<string>('')
 
-  // Stream management and video element updates
+  // Attach localStream to video element
   useEffect(() => {
-    let mounted = true
-    async function setupStream() {
-      try {
-        if (!videoRef.current) return
-
-        // Stop any existing tracks
-        if (videoRef.current.srcObject instanceof MediaStream) {
-          videoRef.current.srcObject.getTracks().forEach(track => track.stop())
-          videoRef.current.srcObject = null
-        }
-
-        // Always create stream with both video and audio tracks
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true
-        })
-        if (!mounted) return
-        // Set initial track states based on preferences
-        stream.getVideoTracks().forEach(track => {
-          track.enabled = localVideoEnabled
-        })
-        stream.getAudioTracks().forEach(track => {
-          track.enabled = localAudioEnabled
-        })
-
-        // Update the stream in WebRTC context
-        setLocalStream(stream)
-        setHasPermission(true)
+    if (videoRef.current) {
+      if (localStream && localVideoEnabled) {
+        videoRef.current.srcObject = localStream
         setError('')
-
-        // Update video source with new stream if video is enabled
-        if (localVideoEnabled) {
-          videoRef.current.srcObject = stream
-        }
-      } catch (err) {
-        console.error('Error accessing media devices:', err)
-        setError('Error accessing camera/microphone')
-        setHasPermission(false)
-        setLocalStream(undefined)
-        if (videoRef.current?.srcObject instanceof MediaStream) {
-          videoRef.current.srcObject.getTracks().forEach(track => track.stop())
-          videoRef.current.srcObject = null
+      } else {
+        videoRef.current.srcObject = null
+        if (!localStream) {
+          setError('Error accessing camera/microphone')
         }
       }
     }
-    setupStream()
-    return () => {
-      mounted = false
-    }
-  }, [localVideoEnabled, localAudioEnabled])
+  }, [localStream, localVideoEnabled])
 
   return (
     <div className="relative w-full max-w-[400px] mx-auto">

@@ -75,9 +75,6 @@ export default function TopControlsBar() {
     setIsVideoDeviceSelectorOpen(isOpen)
   }  
 
-  console.log('isHoveringOverVideoControls', isHoveringOverVideoControls)
-  console.log('isVideoDeviceSelectorOpen', isVideoDeviceSelectorOpen)
-
   return (
     <div
       ref={barRef}

@@ -48,7 +48,7 @@ export interface IncomingRequest {
 export function useWebRTCCommon(callUser: any) {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
   const { setConnectionStatus, currentUser } = useStore()
-  const { refetch : refetchMeetings } = useMeetings()
+  const { refetchMeetingsWithPeers } = useMeetings()
 
   const handleConnectionStateChange = (pc: RTCPeerConnection, peerConnection: React.MutableRefObject<RTCPeerConnection | null>, active: boolean, attemptReconnect: () => Promise<void>) => {
     if (pc.connectionState === 'connected') {
@@ -336,7 +336,7 @@ export function useWebRTCCommon(callUser: any) {
             }
           })
           console.log('refetching meetings')
-          refetchMeetings()
+          refetchMeetingsWithPeers()
         } catch (err) {
           console.error('Failed to send finished signal:', err)
         }

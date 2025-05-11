@@ -42,6 +42,38 @@ export function useWebRTCContext() {
   return context
 }
 
+function useInitializeLocalStream(setLocalStream: (stream: MediaStream | undefined) => void) {
+  useEffect(() => {
+    let activeStream: MediaStream | undefined
+
+    async function setupInitialStream() {
+      try {
+        const selectedDeviceId = typeof window !== 'undefined'
+          ? localStorage.getItem('selectedVideoDevice')
+          : null
+
+        const constraints = selectedDeviceId
+          ? { video: { deviceId: selectedDeviceId }, audio: true }
+          : { video: true, audio: true }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        setLocalStream(stream)
+        activeStream = stream
+      } catch (error) {
+        setLocalStream(undefined)
+      }
+    }
+
+    setupInitialStream()
+
+    return () => {
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [setLocalStream])
+}
+
 export function WebRTCProvider({ 
   children, 
 }: WebRTCProviderProps) {
@@ -110,6 +142,9 @@ export function WebRTCProvider({
     attemptReconnect()
   }, [connectionStatus, localStream])
 
+  // Initialize localStream from selected video device on mount
+  useInitializeLocalStream(setLocalStream)
+
   useEffect(() => {
     const unsubscribe = subscribeToCallEvents(async (callEvent) => {
       if (callEvent.type !== 'initiate' && callEvent.callId !== callId) {
@@ -136,7 +171,7 @@ export function WebRTCProvider({
         } else {
           // Set up for receiving call
           console.log('WebRTC: Received initiate request')
-          setCallId(callEvent.callId)
+          setCallId(callEvent.callId ?? null)
           setTargetUser(callEvent.from)
           setRole('callee')
           setConnectionStatus('receiving-call')
@@ -175,25 +210,25 @@ export function WebRTCProvider({
           })
         } else {
           console.log('WebRTC: Processing answer')
-          const answer = JSON.parse(callEvent.answer)
-          setRemoteVideoEnabled(callEvent.videoEnabled)
-          setRemoteAudioEnabled(callEvent.audioEnabled)
-          await caller.handleAnswer(caller.peerConnection.current, callEvent.quality, answer)
+          const answer = JSON.parse(callEvent.answer as string)
+          setRemoteVideoEnabled(callEvent.videoEnabled as boolean)
+          setRemoteAudioEnabled(callEvent.audioEnabled as boolean)
+          await caller.handleAnswer(caller.peerConnection.current, callEvent.quality as VideoQuality, answer)
         }
       }
       // Handle offer
       else if (callEvent.type === 'offer') {
-        setRemoteVideoEnabled(callEvent.videoEnabled)
-        setRemoteAudioEnabled(callEvent.audioEnabled)
-        callee.setIncomingRequest(callEvent)
+        setRemoteVideoEnabled(callEvent.videoEnabled as boolean)
+        setRemoteAudioEnabled(callEvent.audioEnabled as boolean)
+        callee.setIncomingRequest(callEvent as IncomingRequest)
         if ( connectionStatus === 'reconnecting' || connectionStatus === 'connected' ) {
           console.log('WebRTC: Reconnecting, automatically accepting call')
-          callee.handleAcceptCall(callEvent)
+          callee.handleAcceptCall(callEvent as IncomingRequest)
         }
       }
       // Handle ICE candidates
       else if (callEvent.type === 'ice-candidate') {
-        const candidate = JSON.parse(callEvent.iceCandidate)
+        const candidate = JSON.parse(callEvent.iceCandidate as string)
         if (caller.active) {
           await caller.handleIceCandidate(caller.peerConnection.current!, candidate)
         } else { // we're not checking calee.active because we can receive candidates before callee becomes active after accepting the call
