@@ -37,7 +37,7 @@ export default function MeetingsCalendar() {
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
 
-  const [minDurationM, setMinDurationM] = useState(SLOT_DURATION * 2)
+  const [minDurationM, setMinDurationM] = useState(60)
 
   // Collect all meetingIds for quick lookup
   const myMeetingSlotToId: Record<number, string> = {}
@@ -186,7 +186,12 @@ export default function MeetingsCalendar() {
               const languageCounts: Record<string, number> = {}
 
               for (const { meeting, joinable, isMine } of meetingsWithInfos) {
-                for (const interest of meeting.interests) {
+                let interests = meeting.interests
+                if ( isMine && meeting.peerMeetingId ) {
+                  const peerMeeting = meetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === meeting.peerMeetingId)?.meeting
+                  // interests = 
+                }
+                for (const interest of interests) {
                   let interestInfo = interest2Info[interest]
                   if ( !interestInfo ) {
                     interestInfo = { count: 0, joinableMeeting: null, hasMine: false }

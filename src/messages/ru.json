@@ -31,15 +31,16 @@
     "deleteAccountConfirmTitle": "Удалить аккаунт"
   },
   "Interest": {
-    "MEET_NEW_PEOPLE": "Познакомиться",
     "CHAT": "Поболтать",
-    "WANT_TO_SPEAK_OUT": "Хочу высказаться",
-    "WANT_TO_LISTEN": "Хочу выслушать",
-    "NEED_HELP_WITH_SITUATION": "Хочу помощь в разборе ситуации",
-    "WANT_TO_HELP_WITH_SITUATION": "Хочу помочь в разборе ситуации",
-    "SIT_TOGETHER_IN_SILENCE": "Посидеть вместе в тишине",
-    "NEED_EMOTIONAL_SUPPORT": "Хочу эмоциональной поддержки",
-    "WANT_TO_GIVE_EMOTIONAL_SUPPORT": "Хочу эмоционально поддержать"
+    "MEET_NEW_PEOPLE": "Познакомиться",
+    "NEED_SPEAKING_OUT": "Хочу выговориться",
+    "PROVIDE_LISTENING": "Слушать",
+    "MEDITATE_TOGETHER": "Медитировать вместе",
+    "PRAY_TOGETHER": "Молиться вместе",
+    "NEED_EMOTIONAL_SUPPORT": "Нужна эмоциональная поддержка",
+    "PROVIDE_EMOTIONAL_SUPPORT": "Хочу помочь эмоционально",
+    "NEED_MENTAL_SUPPORT": "Нужна ментальная поддержка",
+    "PROVIDE_MENTAL_SUPPORT": "Хочу помочь ментально"
   },
   "connect": "Найти собеседника",
   "filterByLanguages": "Фильтр по языкам",

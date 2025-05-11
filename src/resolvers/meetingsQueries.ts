@@ -134,8 +134,20 @@ export const meetingsQueries = {
 
       // 1. Fetch meetings as before
       const meetings: Meeting[] = await db.collection('meetings').find<Meeting>({
-        status: MeetingStatus.Seeking,
-        lastSlotEnd: { $gt: now }
+        $and: [
+          {
+            $or: [
+              { status: MeetingStatus.Seeking },
+              {
+                $and: [
+                  { userId: _userId },
+                  { status: { $in: [MeetingStatus.Called, MeetingStatus.Found] } }
+                ]
+              }
+            ]
+          },
+          { lastSlotEnd: { $gt: now } }
+        ]
       }).toArray()
 
       // 2. Collect unique userIds from meetings

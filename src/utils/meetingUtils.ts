@@ -7,9 +7,15 @@ import { enUS } from "date-fns/locale"
 import { TimeSlot } from "@/components/TimeSlotsGrid"
 
 export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-export const EXPIRATION_TIME_FOR_HOUR_MEETING = 10 * 60 * 1000; // 10 minutes in milliseconds
-export const EXPIRATION_TIME_FOR_HALF_HOUR_MEETING = 5 * 60 * 1000; // 5 minutes in milliseconds
+export const LATE_ALLOWANCE_FOR_HALF_HOUR_MEETING = 5 * 60 * 1000; // 5 minutes in milliseconds
+export const LATE_ALLOWANCE_FOR_HOUR_MEETING = 10 * 60 * 1000; // 10 minutes in milliseconds
 
+export function getLateAllowance(minDurationM: number) {
+  if (minDurationM === 30) {
+    return LATE_ALLOWANCE_FOR_HALF_HOUR_MEETING
+  }
+  return LATE_ALLOWANCE_FOR_HOUR_MEETING
+}
 
 export type TimeRange = {
   start: number;
@@ -99,9 +105,9 @@ export function isMeetingPassed(meeting: {
   if (nowTime > lastSlot + SLOT_DURATION) return true
 
   const combinedRanges = combineAdjacentSlots(meeting.timeSlots)
-  const expirationTime = nowTime + (meeting.minDurationM === 30 ? EXPIRATION_TIME_FOR_HALF_HOUR_MEETING : EXPIRATION_TIME_FOR_HOUR_MEETING)
+  const lateAllowance = getLateAllowance(meeting.minDurationM)
   const minDuration = meeting.minDurationM * 60 * 1000
-  if ( combinedRanges.every(range => nowTime > range.end - minDuration + expirationTime) ) return true
+  if ( combinedRanges.every(range => nowTime > range.end - minDuration + lateAllowance) ) return true
 
   return false
 }
@@ -349,4 +355,29 @@ export function trySelectHourSlots(timeslot: number, availableTimeSlots: TimeSlo
     }
   }
   return slotsToSelect
+}
+
+export function getInterestsOverlap(interests1: Interest[], interests2: Interest[]) {
+  return interests1.filter((interest: Interest) => {
+    return interests2.includes(getMatchingInterest(interest))
+  })
+}
+
+export function getMatchingInterest(interest: Interest) {
+  switch (interest) {
+    case Interest.Chat: return Interest.Chat
+    case Interest.MeetNewPeople: return Interest.MeetNewPeople
+    case Interest.NeedEmotionalSupport: return Interest.ProvideEmotionalSupport
+    case Interest.NeedMentalSupport: return Interest.ProvideMentalSupport
+    case Interest.ProvideEmotionalSupport: return Interest.NeedEmotionalSupport
+    case Interest.ProvideMentalSupport: return Interest.NeedMentalSupport
+    case Interest.ProvideListening: return Interest.NeedSpeakingOut
+    case Interest.NeedSpeakingOut: return Interest.ProvideListening
+    case Interest.PrayTogether: return Interest.PrayTogether
+    case Interest.MeditateTogether: return Interest.MeditateTogether
+    default: {
+      const _exhaustiveCheck: never = interest
+      return _exhaustiveCheck
+    }
+  }
 }

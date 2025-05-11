@@ -4,6 +4,7 @@ import { tryConnectMeetings } from './connectMeetings'
 import { pubsub } from './pubsub';
 import { BroadcastType, MeetingStatus, NotificationType } from '@/generated/graphql';
 import { publishBroadcastEvent } from './notificationsMutations';
+import { SLOT_DURATION } from '@/utils/meetingUtils';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -136,7 +137,7 @@ export const meetingsMutations = {
 
     try {
 
-      const lastSlotEnd = Math.max( ...timeSlots ) + 30 * 60 * 1000
+      const lastSlotEnd = timeSlots[timeSlots.length - 1] + SLOT_DURATION
 
       // Use upsert to either update existing or create new
       let result = await db.collection('meetings').findOneAndUpdate(

@@ -95,12 +95,13 @@ export enum Interest {
   Chat = 'CHAT',
   MeetNewPeople = 'MEET_NEW_PEOPLE',
   NeedEmotionalSupport = 'NEED_EMOTIONAL_SUPPORT',
-  NeedHelpWithSituation = 'NEED_HELP_WITH_SITUATION',
-  SitTogetherInSilence = 'SIT_TOGETHER_IN_SILENCE',
-  WantToGiveEmotionalSupport = 'WANT_TO_GIVE_EMOTIONAL_SUPPORT',
-  WantToHelpWithSituation = 'WANT_TO_HELP_WITH_SITUATION',
-  WantToListen = 'WANT_TO_LISTEN',
-  WantToSpeakOut = 'WANT_TO_SPEAK_OUT'
+  NeedMentalSupport = 'NEED_MENTAL_SUPPORT',
+  ProvideEmotionalSupport = 'PROVIDE_EMOTIONAL_SUPPORT',
+  ProvideMentalSupport = 'PROVIDE_MENTAL_SUPPORT',
+  ProvideListening = 'PROVIDE_LISTENING',
+  NeedSpeakingOut = 'NEED_SPEAKING_OUT',
+  PrayTogether = 'PRAY_TOGETHER',
+  MeditateTogether = 'MEDITATE_TOGETHER'
 }
 
 export type Meeting = {

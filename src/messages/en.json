@@ -35,15 +35,16 @@
     "deleteAccountConfirmTitle": "Delete Account"
   },
   "Interest": {
-    "MEET_NEW_PEOPLE": "Meet New People",
     "CHAT": "Chat",
-    "WANT_TO_SPEAK_OUT": "Want to Speak Out",
-    "WANT_TO_LISTEN": "Want to Listen",
-    "NEED_HELP_WITH_SITUATION": "Need Help with Situation",
-    "WANT_TO_HELP_WITH_SITUATION": "Want to Help with Situation",
-    "SIT_TOGETHER_IN_SILENCE": "Sit together in Silence",
+    "MEET_NEW_PEOPLE": "Meet New People",
+    "NEED_SPEAKING_OUT": "Need Speaking Out",
+    "PROVIDE_LISTENING": "Provide Listening",
+    "MEDITATE_TOGETHER": "Meditate Together",
+    "PRAY_TOGETHER": "Pray Together",
     "NEED_EMOTIONAL_SUPPORT": "Need Emotional Support",
-    "WANT_TO_GIVE_EMOTIONAL_SUPPORT": "Want to Give Emotional Support"
+    "PROVIDE_EMOTIONAL_SUPPORT": "Provide Emotional Support",
+    "NEED_MENTAL_SUPPORT": "Need Mental Support",
+    "PROVIDE_MENTAL_SUPPORT": "Provide Mental Support"
   },
   "connect": "Find Partner",
   "filterByLanguages": "Filter by languages",

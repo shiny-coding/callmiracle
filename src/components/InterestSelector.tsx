@@ -4,6 +4,7 @@ import React from 'react'
 import { Button } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Interest } from '@/generated/graphql'
+import { getMatchingInterest } from '@/utils/meetingUtils'
 
 interface InterestSelectorProps {
   value: Interest[]
@@ -12,12 +13,13 @@ interface InterestSelectorProps {
 
 // Define the status relationships map
 export const interestRelationships = new Map<Interest, Interest>([
-  [Interest.Chat, Interest.Chat],
-  [Interest.MeetNewPeople, Interest.MeetNewPeople],
-  [Interest.SitTogetherInSilence, Interest.SitTogetherInSilence],
-  [Interest.NeedHelpWithSituation, Interest.WantToHelpWithSituation],
-  [Interest.WantToSpeakOut, Interest.WantToListen],
-  [Interest.NeedEmotionalSupport, Interest.WantToGiveEmotionalSupport],
+  [Interest.Chat, getMatchingInterest(Interest.Chat)],
+  [Interest.MeetNewPeople, getMatchingInterest(Interest.MeetNewPeople)],
+  [Interest.NeedEmotionalSupport, getMatchingInterest(Interest.NeedEmotionalSupport)],
+  [Interest.NeedMentalSupport, getMatchingInterest(Interest.NeedMentalSupport)],
+  [Interest.NeedSpeakingOut, getMatchingInterest(Interest.NeedSpeakingOut)],
+  [Interest.PrayTogether, getMatchingInterest(Interest.PrayTogether)],
+  [Interest.MeditateTogether, getMatchingInterest(Interest.MeditateTogether)],
 ])
 
 export default function InterestSelector({ value, onChange }: InterestSelectorProps) {
