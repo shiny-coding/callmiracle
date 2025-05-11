@@ -22,6 +22,7 @@ export default function TopControlsBar() {
   const { currentUser } = useStore()
   const [isHoveringOverVideoControls, setIsHoveringOverVideoControls] = useState(false)
   const [isVideoDeviceSelectorOpen, setIsVideoDeviceSelectorOpen] = useState(false)
+  const [videoOpenedByTouch, setVideoOpenedByTouch] = useState(false)
   const { exists: imageExists } = useCheckImage(currentUser?._id)
   const router = useRouter()
 
@@ -38,16 +39,26 @@ export default function TopControlsBar() {
   } = useWebRTCContext()
 
   const barRef = useRef<HTMLDivElement>(null)
-  const videoSelectorDropdownRef = useRef<HTMLDivElement | null>(null)
+  const videoIconButtonRef = useRef<HTMLButtonElement>(null)
+  const isTouchOnlyDevice = window.matchMedia('(pointer: coarse) and (hover: none)').matches
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent | TouchEvent) {
+      // Only proceed if event.target is a Node and is in the document
       if (
-        barRef.current &&
-        !barRef.current.contains(event.target as Node)
-        && (!videoSelectorDropdownRef.current || !videoSelectorDropdownRef.current.contains(event.target as Node))
+        !(event.target instanceof Node) ||
+        !document.contains(event.target)
       ) {
-        setIsHoveringOverVideoControls(false)
+        return
+      }
+
+      if (
+        isTouchOnlyDevice &&
+        barRef.current &&
+        !barRef.current.contains(event.target)
+      ) {
+        setVideoOpenedByTouch(false)
+        console.log('handlePointerDown setVideoOpenedByTouch to false')
       }
     }
 
@@ -68,12 +79,20 @@ export default function TopControlsBar() {
   const handleVideoToggle = () => {
     setLocalVideoEnabled(!localVideoEnabled)
     sendWantedMediaState()
+    if (isTouchOnlyDevice) {
+      setVideoOpenedByTouch(!localVideoEnabled)
+    }
   }
 
   // Handle video device selector open state
   const handleVideoDeviceSelectorOpen = (isOpen: boolean) => {
     setIsVideoDeviceSelectorOpen(isOpen)
-  }  
+    if (isVideoDeviceSelectorOpen && !isOpen && isTouchOnlyDevice) {
+      // if closing the video device selector, set isHoveringOverVideoControls to true (needed for touch devices)
+      console.log('setVideoOpenedByTouch true')
+      setVideoOpenedByTouch(true)
+    }
+  }
 
   return (
     <div
@@ -88,7 +107,6 @@ export default function TopControlsBar() {
           <NotificationsIcon className="text-white" />
         </Badge>
       </IconButton>
-
 
       <div className="flex items-center gap-4">
         <div className="flex gap-2 items-center">
@@ -107,12 +125,23 @@ export default function TopControlsBar() {
 
         <div 
           className="flex gap-2 items-center"
-          onMouseEnter={() => setIsHoveringOverVideoControls(true)}
-          onMouseLeave={() => setIsHoveringOverVideoControls(false)}
+          onMouseEnter={() => {
+            if (!isTouchOnlyDevice) {
+              setIsHoveringOverVideoControls(true)
+              console.log('setting isHoveringOverVideoControls to true')
+            }
+          }}
+          onMouseLeave={() => {
+            if (!isTouchOnlyDevice) {
+              setIsHoveringOverVideoControls(false)
+              console.log('setting isHoveringOverVideoControls to false')
+            }
+          }}
         >
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
             onClick={handleVideoToggle}
+            ref={videoIconButtonRef}
           >
             {localVideoEnabled ? (
               <VideocamIcon className="text-white" />
@@ -126,12 +155,11 @@ export default function TopControlsBar() {
               ? 'fixed z-50 right-0 bottom-16 m-0 transition-all duration-300'
               : 'fixed z-50 left-1/2 top-[64px] -translate-x-1/2 transition-all duration-300'
             }
-            style={{ visibility: isHoveringOverVideoControls || isVideoDeviceSelectorOpen ? 'visible' : 'hidden' }}
+            style={{ visibility: isHoveringOverVideoControls || isVideoDeviceSelectorOpen || videoOpenedByTouch ? 'visible' : 'hidden' }}
           >
             <LocalVideo />
           </div>
           <VideoDeviceSelector
-            dropdownRef={videoSelectorDropdownRef}
             onOpenChange={handleVideoDeviceSelectorOpen}
           />
         </div>

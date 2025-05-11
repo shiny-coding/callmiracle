@@ -10,7 +10,6 @@ interface DeviceSelectorProps {
   setStream: (stream: MediaStream | undefined) => void
   getLabel?: (device: MediaDeviceInfo) => Promise<string | null>
   onOpenChange?: (isOpen: boolean) => void
-  dropdownRef?: MutableRefObject<HTMLDivElement | null>
 }
 
 export default function DeviceSelector({ 
@@ -21,7 +20,6 @@ export default function DeviceSelector({
   setStream,
   getLabel,
   onOpenChange,
-  dropdownRef
 }: DeviceSelectorProps) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [deviceLabels, setDeviceLabels] = useState<Record<string, string>>({})
@@ -93,7 +91,7 @@ export default function DeviceSelector({
             <div className="w-0 h-0 border-[6px] border-transparent border-t-gray-500 transform rotate-180 -mt-1" />
           </div>
         )}
-        <div className="dropdown-root" ref={dropdownRef}>
+        <div className="dropdown-root">
           <Select
             value={selectedDevice}
             onChange={(e) => handleChange(e.target.value)}
