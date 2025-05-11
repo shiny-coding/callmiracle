@@ -1,7 +1,7 @@
 import { Interest, MeetingStatus, NotificationType } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./meetingsMutations";
-import { combineAdjacentSlots, getCompatibleInterests, getInterestsOverlap, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
+import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
 
 // Helper function to find overlapping time ranges
 export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[], minDurationM: number): TimeRange[] => {
@@ -56,9 +56,9 @@ export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]) =
   );
   if (languageOverlap.length === 0) return false;
   
-  // Use getCompatibleInterests for both meetings
-  const interests1 = getCompatibleInterests(meeting1, user1, user2);
-  const interests2 = getCompatibleInterests(meeting2, user2, user1);
+  // Use getNonBlockedInterests for both meetings
+  const interests1 = getNonBlockedInterests(meeting1, user1, user2);
+  const interests2 = getNonBlockedInterests(meeting2, user2, user1);
   const interestOverlap = getInterestsOverlap(interests1, interests2);
   if (interestOverlap.length === 0) return false;
   

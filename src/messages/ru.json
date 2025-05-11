@@ -178,7 +178,17 @@
     "socialAccountExists": "Аккаунт с этим email уже существует. Пожалуйста, войдите с помощью {provider}.",
     "invalidEmail": "Пожалуйста, введите корректный email",
     "signingOut": "Выход...",
-    "registrationSuccess": "Регистрация прошла успешно"
+    "registrationSuccess": "Регистрация прошла успешно",
+    "forgotPassword": "Забыли пароль?",
+    "sendResetCode": "Отправить код для сброса пароля",
+    "resetCode": "Код для сброса пароля",
+    "newPassword": "Новый пароль",
+    "confirmNewPassword": "Подтвердите новый пароль",
+    "setNewPassword": "Установить новый пароль",
+    "resetTooFrequently": "Вы можете запрашивать код сброса не чаще одного раза в минуту.",
+    "resetError": "Не удалось отправить код сброса. Пожалуйста, попробуйте еще раз.",
+    "resetInvalidOrExpired": "Неверный или просроченный код сброса.",
+    "backToSignIn": "Назад ко входу"
   },
   "meetingCall": "Звонок по встрече",
   "confirmFinishTitle": "Завершить встречу",

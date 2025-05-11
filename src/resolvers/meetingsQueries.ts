@@ -1,6 +1,6 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { isMeetingPassed, getCompatibleInterests } from '@/utils/meetingUtils'
+import { isMeetingPassed, getNonBlockedInterests } from '@/utils/meetingUtils'
 import { Meeting, MeetingStatus, User } from '@/generated/graphql'
 import { subDays } from 'date-fns'
 
@@ -172,14 +172,14 @@ export const meetingsQueries = {
           if (!meetingUser) return null
 
           // Filter interests blocked by meetingUser for currentUser
-          const compatibleInterests = getCompatibleInterests(
+          const compatibleInterests = getNonBlockedInterests(
             meeting,
             meetingUser,
             { _id: _userId }
           )
 
           // Filter interests blocked by currentUser for meetingUser
-          const compatibleForCurrentUser = getCompatibleInterests(
+          const compatibleForCurrentUser = getNonBlockedInterests(
             { interests: compatibleInterests },
             currentUser,
             { _id: new ObjectId(meetingUserId) }

@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import Cookies from 'js-cookie'
 import { 
   Button, TextField, Typography, Card, CardContent, Divider, Box, 
@@ -15,6 +15,7 @@ import InfoIcon from '@mui/icons-material/Info'
 import { getBrowserLanguage } from '@/utils/language'
 import LocaleSelector from '@/components/LocaleSelector'
 import { useTranslations } from 'next-intl'
+import PasswordResetTab from '@/components/PasswordResetTab'
 
 export default function SignInContent() {
   const router = useRouter()
@@ -26,7 +27,7 @@ export default function SignInContent() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
-  const [mode, setMode] = useState<'signin' | 'register'>('signin')
+  const [mode, setMode] = useState<'signin' | 'register' | 'password-reset'>('signin')
   const t = useTranslations('Auth')
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -129,22 +130,39 @@ export default function SignInContent() {
     >
       <Card className="w-full max-w-md p-4">
         <CardContent>
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-between mb-4">
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => {
+                setMode('password-reset')
+                setError('')
+                setValidationErrors({})
+              }}
+              sx={{ minWidth: 0, padding: 0, textTransform: 'none' }}
+              disabled={mode === 'password-reset'}
+            >
+              {t('forgotPassword')}
+            </Button>
             <LocaleSelector />
           </div>
-          <Tabs 
-            value={mode} 
-            onChange={(_, newValue) => {
-              setMode(newValue)
-              setError('')
-              setValidationErrors({})
-            }}
-            variant="fullWidth"
-            className="mb-6"
-          >
-            <Tab value="signin" label={t('signIn')} />
-            <Tab value="register" label={t('register')} />
-          </Tabs>
+          {mode !== 'password-reset' && (
+            <>
+              <Tabs 
+                value={mode} 
+                onChange={(_, newValue) => {
+                  setMode(newValue)
+                  setError('')
+                  setValidationErrors({})
+                }}
+                variant="fullWidth"
+                className="mb-6"
+              >
+                <Tab value="signin" label={t('signIn')} />
+                <Tab value="register" label={t('register')} />
+              </Tabs>
+            </>
+          )}
           
           {error && (
             <Typography color="error" className="text-center" sx={{ mb: 1 }}>
@@ -152,123 +170,136 @@ export default function SignInContent() {
             </Typography>
           )}
           
-          <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4" autoComplete="off" noValidate>
-            {mode === 'register' && (
-              <>
-                <TextField
-                  label={t('nameNickname')}
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value)
-                    if (validationErrors.name) {
-                      setValidationErrors({...validationErrors, name: ''})
-                    }
-                  }}
-                  fullWidth
-                  required
-                  autoComplete="name"
-                  inputProps={{ name: "name" }}
-                  error={!!validationErrors.name}
-                  helperText={validationErrors.name}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </>
-            )}
-            
-            <TextField
-              label={t('email')}
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                if (validationErrors.email) {
-                  setValidationErrors({...validationErrors, email: ''})
-                }
+          {mode === 'password-reset' ? (
+            <PasswordResetTab
+              onBack={() => {
+                setMode('signin')
+                setError('')
+                setValidationErrors({})
               }}
-              fullWidth
-              required
-              autoComplete="email"
-              inputProps={{ name: "email" }}
-              error={!!validationErrors.email}
-              helperText={validationErrors.email}
-              InputLabelProps={{ shrink: true }}
             />
-            
-            <TextField
-              label={t('password')}
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                if (validationErrors.password) {
-                  setValidationErrors({...validationErrors, password: ''})
-                }
-              }}
-              fullWidth
-              required
-              autoComplete={mode === 'register' ? "new-password" : "current-password"}
-              inputProps={{ name: mode === 'register' ? "new-password" : "current-password" }}
-              error={!!validationErrors.password}
-              helperText={validationErrors.password}
-              InputLabelProps={{ shrink: true }}
-            />
-            
-            {mode === 'register' && (
+          ) : (
+            <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4" autoComplete="off" noValidate>
+              {mode === 'register' && (
+                <>
+                  <TextField
+                    label={t('nameNickname')}
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value)
+                      if (validationErrors.name) {
+                        setValidationErrors({...validationErrors, name: ''})
+                      }
+                    }}
+                    fullWidth
+                    required
+                    autoComplete="name"
+                    inputProps={{ name: "name" }}
+                    error={!!validationErrors.name}
+                    helperText={validationErrors.name}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </>
+              )}
+              
               <TextField
-                label={t('confirmPassword')}
-                type="password"
-                value={confirmPassword}
+                label={t('email')}
+                type="email"
+                value={email}
                 onChange={(e) => {
-                  setConfirmPassword(e.target.value)
-                  if (validationErrors.confirmPassword) {
-                    setValidationErrors({...validationErrors, confirmPassword: ''})
+                  setEmail(e.target.value)
+                  if (validationErrors.email) {
+                    setValidationErrors({...validationErrors, email: ''})
                   }
                 }}
                 fullWidth
                 required
-                autoComplete="new-password"
-                inputProps={{ name: "new-password-confirm" }}
-                error={!!validationErrors.confirmPassword}
-                helperText={validationErrors.confirmPassword}
+                autoComplete="email"
+                inputProps={{ name: "email" }}
+                error={!!validationErrors.email}
+                helperText={validationErrors.email}
                 InputLabelProps={{ shrink: true }}
               />
-            )}
-            
-            <Button 
-              type="submit" 
-              variant="contained" 
-              color="primary" 
-              fullWidth
-              className="mt-4"
-            >
-              {mode === 'signin' ? t('signIn') : t('register')}
-            </Button>
-          </form>
+              
+              <TextField
+                label={t('password')}
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (validationErrors.password) {
+                    setValidationErrors({...validationErrors, password: ''})
+                  }
+                }}
+                fullWidth
+                required
+                autoComplete={mode === 'register' ? "new-password" : "current-password"}
+                inputProps={{ name: mode === 'register' ? "new-password" : "current-password" }}
+                error={!!validationErrors.password}
+                helperText={validationErrors.password}
+                InputLabelProps={{ shrink: true }}
+              />
+              
+              {mode === 'register' && (
+                <TextField
+                  label={t('confirmPassword')}
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value)
+                    if (validationErrors.confirmPassword) {
+                      setValidationErrors({...validationErrors, confirmPassword: ''})
+                    }
+                  }}
+                  fullWidth
+                  required
+                  autoComplete="new-password"
+                  inputProps={{ name: "new-password-confirm" }}
+                  error={!!validationErrors.confirmPassword}
+                  helperText={validationErrors.confirmPassword}
+                  InputLabelProps={{ shrink: true }}
+                />
+              )}
+              
+              <Button 
+                type="submit" 
+                variant="contained" 
+                color="primary" 
+                fullWidth
+                className="mt-4"
+              >
+                {mode === 'signin' ? t('signIn') : t('register')}
+              </Button>
+            </form>
+          )}
           
-          <Divider className="" sx={{ my: 2 }}>
-            <Typography variant="body2" color="textSecondary">
-              {t('or')}
-            </Typography>
-          </Divider>
-          
-          <Box className="flex flex-col gap-3">
-            <Button
-              variant="outlined"
-              startIcon={<GoogleIcon />}
-              onClick={() => handleSignIn('google')}
-              fullWidth
-            >
-              {mode === 'signin' ? t('signInWithGoogle') : t('registerWithGoogle')}
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<AppleIcon />}
-              onClick={() => handleSignIn('apple')}
-              fullWidth
-            >
-              {mode === 'signin' ? t('signInWithApple') : t('registerWithApple')}
-            </Button>
-          </Box>
+          {mode !== 'password-reset' && (
+            <>
+              <Divider className="" sx={{ my: 2 }}>
+                <Typography variant="body2" color="textSecondary">
+                  {t('or')}
+                </Typography>
+              </Divider>
+              <Box className="flex flex-col gap-3">
+                <Button
+                  variant="outlined"
+                  startIcon={<GoogleIcon />}
+                  onClick={() => handleSignIn('google')}
+                  fullWidth
+                >
+                  {mode === 'signin' ? t('signInWithGoogle') : t('registerWithGoogle')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<AppleIcon />}
+                  onClick={() => handleSignIn('apple')}
+                  fullWidth
+                >
+                  {mode === 'signin' ? t('signInWithApple') : t('registerWithApple')}
+                </Button>
+              </Box>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

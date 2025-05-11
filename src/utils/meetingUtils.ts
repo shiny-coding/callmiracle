@@ -169,7 +169,7 @@ export function class2Hex(tailwindColor: string) {
  * @param otherUser The user to check blocks against (must have ._id)
  * @returns Array of compatible interests
  */
-export function getCompatibleInterests(
+export function getNonBlockedInterests(
   meeting: { interests: Interest[] },
   meetingUser: { blocks?: Block[] },
   otherUser: { _id: ObjectId }

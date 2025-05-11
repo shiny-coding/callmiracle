@@ -187,7 +187,17 @@
     "socialAccountExists": "An account already exists with this email address. Please log in using {provider} instead.",
     "invalidEmail": "Please enter a valid email address",
     "signingOut": "Signing out...",
-    "registrationSuccess": "Registration successful"
+    "registrationSuccess": "Registration successful",
+    "forgotPassword": "Forgot password?",
+    "sendResetCode": "Send password reset code",
+    "resetCode": "Password reset code",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "setNewPassword": "Set new password",
+    "resetTooFrequently": "You can request a reset code only once per minute.",
+    "resetError": "Could not send reset code. Please try again.",
+    "resetInvalidOrExpired": "Invalid or expired reset code.",
+    "backToSignIn": "Back to sign in"
   },
   "upcomingMeetings": "Upcoming Meetings",
   "timeSlot": "Time Slot",

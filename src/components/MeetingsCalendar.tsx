@@ -3,12 +3,12 @@
 import { useStore } from '@/store/useStore'
 import { Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Chip } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { Meeting } from '@/generated/graphql'
+import { Interest, Meeting } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import Link from 'next/link'
-import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed, SLOT_DURATION } from '@/utils/meetingUtils'
+import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed, SLOT_DURATION, getNonBlockedInterests, getInterestsOverlap } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
@@ -189,7 +189,7 @@ export default function MeetingsCalendar() {
                 let interests = meeting.interests
                 if ( isMine && meeting.peerMeetingId ) {
                   const peerMeeting = meetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === meeting.peerMeetingId)?.meeting
-                  // interests = 
+                  interests = getInterestsOverlap(meeting.interests, peerMeeting?.interests as Interest[])
                 }
                 for (const interest of interests) {
                   let interestInfo = interest2Info[interest]
