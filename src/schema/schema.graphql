@@ -191,9 +191,9 @@ type Query {
   getCalls: [Call!]!
   getCallHistory(userId: ID!): [CallHistoryEntry!]!
   getDetailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
-  getMeetingsWithPeers(userId: ID!): [MeetingWithPeer!]!
+  getMyMeetingsWithPeers(userId: ID!): [MeetingWithPeer!]!
   getNotifications(userId: ID!): [Notification!]!
-  getFutureMeetings(userId: ID!): [Meeting!]!
+  getFutureMeetingsWithPeers(userId: ID!): [MeetingWithPeer!]!
 }
 
 type Mutation {

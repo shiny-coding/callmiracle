@@ -5,8 +5,8 @@ import React, { createContext, useContext, useState, ReactNode, useMemo, useEffe
 import { useSubscriptions } from './SubscriptionsContext'
 
 export const GET_MEETINGS_WITH_PEERS = gql`
-  query GetMeetingsWithPeers($userId: ID!) {
-    getMeetingsWithPeers(userId: $userId) {
+  query GetMyMeetingsWithPeers($userId: ID!) {
+    getMyMeetingsWithPeers(userId: $userId) {
       meeting {
         _id
         userId
@@ -41,15 +41,20 @@ export const GET_MEETINGS_WITH_PEERS = gql`
   }
 `
 
-export const GET_FUTURE_MEETINGS = gql`
-  query GetFutureMeetings($userId: ID!) {
-    getFutureMeetings(userId: $userId) {
-      _id
-      timeSlots
-      interests
-      languages
-      minDurationM
-      userId
+export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
+  query GetFutureMeetingsWithPeers($userId: ID!) {
+    getFutureMeetingsWithPeers(userId: $userId) {
+      meeting {
+        _id
+        timeSlots
+        interests
+        languages
+        minDurationM
+        userId
+      }
+      peerUser {
+        sex
+      }
     }
   }
 `
@@ -57,14 +62,14 @@ export const GET_FUTURE_MEETINGS = gql`
 interface MeetingsContextType {
   highlightedMeetingId: string | null
   setHighlightedMeetingId: (meetingId: string | null) => void
-  meetingsWithPeers: MeetingWithPeer[]
-  loadingMeetingsWithPeers: boolean
-  errorMeetingsWithPeers: ApolloError | undefined
-  refetchMeetingsWithPeers: () => void
-  futureMeetings: Meeting[]
-  loadingFutureMeetings: boolean
-  errorFutureMeetings: ApolloError | undefined
-  refetchFutureMeetings: () => void
+  myMeetingsWithPeers: MeetingWithPeer[]
+  loadingMyMeetingsWithPeers: boolean
+  errorMyMeetingsWithPeers: ApolloError | undefined
+  refetchMyMeetingsWithPeers: () => void
+  futureMeetingsWithPeers: MeetingWithPeer[]
+  loadingFutureMeetingsWithPeers: boolean
+  errorFutureMeetingsWithPeers: ApolloError | undefined
+  refetchFutureMeetingsWithPeers: () => void
 }
 
 const MeetingsContext = createContext<MeetingsContextType | undefined>(undefined)
@@ -77,26 +82,32 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
   const [highlightedMeetingId, setHighlightedMeetingId] = useState<string | null>(null)
   const { currentUser } = useStore()
   const { subscribeToNotifications, subscribeToBroadcastEvents } = useSubscriptions()
-  const { data: meetingsWithPeersData, loading: loadingMeetingsWithPeers, error: errorMeetingsWithPeers, refetch: refetchMeetingsWithPeers } = useQuery(GET_MEETINGS_WITH_PEERS, {
-    variables: { userId: currentUser?._id }
-  })
-  const meetingsWithPeers = useMemo(() => meetingsWithPeersData?.getMeetingsWithPeers || [], [meetingsWithPeersData])
+  const {
+    data: myMeetingsWithPeersData,
+    loading: loadingMyMeetingsWithPeers,
+    error: errorMyMeetingsWithPeers,
+    refetch: refetchMyMeetingsWithPeers }
+    = useQuery(GET_MEETINGS_WITH_PEERS, {
+      variables: { userId: currentUser?._id }
+    })
+
+  const myMeetingsWithPeers = useMemo(() => myMeetingsWithPeersData?.getMyMeetingsWithPeers || [], [myMeetingsWithPeersData])
 
   const {
     data: futureMeetingsData,
-    loading: loadingFutureMeetings,
-    error: errorFutureMeetings,
-    refetch: refetchFutureMeetings
-  } = useQuery(GET_FUTURE_MEETINGS, {
+    loading: loadingFutureMeetingsWithPeers,
+    error: errorFutureMeetingsWithPeers,
+    refetch: refetchFutureMeetingsWithPeers
+  } = useQuery(GET_FUTURE_MEETINGS_WITH_PEERS, {
     variables: { userId: currentUser?._id },
     skip: !currentUser?._id
   })
-  const futureMeetings = useMemo(() => futureMeetingsData?.getFutureMeetings || [], [futureMeetingsData])
+  const futureMeetingsWithPeers = useMemo(() => futureMeetingsData?.getFutureMeetingsWithPeers || [], [futureMeetingsData])
 
   const refetchMeetings = useCallback(async () => {
-    await refetchMeetingsWithPeers();
-    await refetchFutureMeetings();
-  }, [refetchMeetingsWithPeers, refetchFutureMeetings])
+    await refetchMyMeetingsWithPeers();
+    await refetchFutureMeetingsWithPeers();
+  }, [refetchMyMeetingsWithPeers, refetchFutureMeetingsWithPeers])
 
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event: NotificationEvent) => {
@@ -121,14 +132,14 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
       value={{
         highlightedMeetingId,
         setHighlightedMeetingId,
-        meetingsWithPeers,
-        loadingMeetingsWithPeers,
-        errorMeetingsWithPeers,
-        refetchMeetingsWithPeers,
-        futureMeetings,
-        loadingFutureMeetings,
-        errorFutureMeetings,
-        refetchFutureMeetings
+        myMeetingsWithPeers,
+        loadingMyMeetingsWithPeers,
+        errorMyMeetingsWithPeers,
+        refetchMyMeetingsWithPeers,
+        futureMeetingsWithPeers,
+        loadingFutureMeetingsWithPeers,
+        errorFutureMeetingsWithPeers,
+        refetchFutureMeetingsWithPeers
       }}
     >
       {children}

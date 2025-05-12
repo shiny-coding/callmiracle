@@ -8,7 +8,7 @@ import { Interest, Meeting } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
-import { getAvailableTimeSlots, isMeetingPassed } from '@/utils/meetingUtils'
+import { getAvailableTimeSlots, isMeetingPassed, getMatchingInterest } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
@@ -18,15 +18,21 @@ import LoadingDialog from './LoadingDialog'
 export default function MeetingForm() {
   const t = useTranslations()
 
-  const { meetingsWithPeers, loadingMeetingsWithPeers, errorMeetingsWithPeers } = useMeetings()
+  const { myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, futureMeetingsWithPeers, loadingFutureMeetingsWithPeers, errorFutureMeetingsWithPeers } = useMeetings()
 
   const { id: meetingId } = useParams()
-  const meeting = meetingsWithPeers.find(m => m.meeting._id === meetingId)?.meeting
+  const meeting = myMeetingsWithPeers.find(m => m.meeting._id === meetingId)?.meeting
 
   const { currentUser } = useStore()
   const router = useRouter()
+
   const searchParams = useSearchParams()
   const timeslotParam = searchParams?.get('timeslot')
+  const meetingToJoinId = searchParams?.get('meetingToJoinId')
+  const meetingWithPeerToJoin = futureMeetingsWithPeers.find(m => m.meeting._id === meetingToJoinId)
+  const meetingToJoin = meetingWithPeerToJoin?.meeting
+  const interestToMatch = searchParams?.get('interest')
+
   const [preselectedTimeSlots, setPreselectedTimeSlots] = useState<boolean>(false)
   const [tempInterests, setTempInterests] = useState<Interest[]>([])
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
@@ -38,14 +44,24 @@ export default function MeetingForm() {
   const [tempLanguages, setTempLanguages] = useState<string[]>(currentUser?.languages || [])
   const { updateMeeting, loading } = useUpdateMeeting()
   const [hasValidDuration, setHasValidDuration] = useState(true)
-  const { refetchFutureMeetings } = useMeetings()
+  const { refetchFutureMeetingsWithPeers } = useMeetings()
   const formContentRef = useRef<HTMLDivElement>(null)
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
 
+  // Add these derived values
+  const preselectedInterest = (
+    meetingToJoin && interestToMatch
+      ? Object.values(Interest).find(interest => getMatchingInterest(interest) === interestToMatch)
+      : undefined
+  )
+
+  // Determine if we are joining and which sex to allow
+  const joiningSex = meetingWithPeerToJoin?.peerUser?.sex
+
   useEffect(() => {
-    const availableTimeSlots = getAvailableTimeSlots(meetingsWithPeers.map(m => m.meeting), meeting?._id)
+    const availableTimeSlots = getAvailableTimeSlots(myMeetingsWithPeers.map(m => m.meeting), meeting?._id)
     setAvailableTimeSlots(availableTimeSlots)
-  }, [meetingsWithPeers, meeting])
+  }, [myMeetingsWithPeers, meeting])
 
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
@@ -61,9 +77,10 @@ export default function MeetingForm() {
         meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
       ])
       setTempLanguages(meeting.languages)
+    } else if (preselectedInterest) {
+      setTempInterests([preselectedInterest])
     }
-  }, [meeting])
-
+  }, [meeting, preselectedInterest])
 
   // Add new useEffect to validate time slot durations
   useEffect(() => {
@@ -94,7 +111,6 @@ export default function MeetingForm() {
     
     // Check one last time after the loop finishes
     longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
-    console.log('longestContinuousDuration', longestContinuousDuration / 60000)
     
     setHasValidDuration(longestContinuousDuration >= minDurationM * 60 * 1000)
   }, [selectedTimeSlots, minDurationM, availableTimeSlots])
@@ -122,7 +138,12 @@ export default function MeetingForm() {
     }
   }, [timeslotParam, meeting, availableTimeSlots, preselectedTimeSlots])
 
-  if (loadingMeetingsWithPeers || errorMeetingsWithPeers) return <LoadingDialog loading={loadingMeetingsWithPeers} error={errorMeetingsWithPeers} />
+  
+
+  if (loadingMyMeetingsWithPeers || errorMyMeetingsWithPeers || 
+    (meetingToJoinId && (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers))) {
+    return <LoadingDialog loading={loadingMyMeetingsWithPeers || loadingFutureMeetingsWithPeers} error={errorMyMeetingsWithPeers || errorFutureMeetingsWithPeers} />
+  }
 
   const toggleTimeSlot = (timestamp: number) => {
     // Don't allow toggling disabled slots
@@ -172,7 +193,7 @@ export default function MeetingForm() {
       peerMeetingId: meeting?.peerMeetingId || undefined,
       userId: currentUser?._id || ''
     })
-    refetchFutureMeetings()
+    refetchFutureMeetingsWithPeers()
     router.back()
   }
 
@@ -189,7 +210,7 @@ export default function MeetingForm() {
       {/* Header */}
       <div className="flex justify-between items-center px-4 py-3 border-b panel-border sticky top-0 bg-inherit z-10">
         <div className="flex-grow font-semibold text-lg">
-          {meeting ? t('editMeeting') : t('createMeeting')}
+          { meetingToJoinId ? t('joinMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
         </div>
         <IconButton onClick={handleCancel} size="small" aria-label={t('close')}>
           <CloseIcon />
@@ -197,7 +218,11 @@ export default function MeetingForm() {
       </div>
       {/* Scrollable Content */}
       <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
-        <InterestSelector value={tempInterests} onChange={setTempInterests} />
+        <InterestSelector
+          value={tempInterests}
+          onChange={setTempInterests}
+          interestsToMatch={meetingToJoin?.interests}
+        />
         <Typography variant="subtitle1" className="mt-4">
           {t('languages')}
         </Typography>
@@ -205,6 +230,7 @@ export default function MeetingForm() {
           value={tempLanguages}
           onChange={setTempLanguages}
           label={t('Profile.iSpeak')}
+          availableLanguages={meetingToJoin?.languages}
         />
         {tempLanguages.length === 0 && (
           <Typography color="error" className="text-sm">
@@ -215,38 +241,62 @@ export default function MeetingForm() {
           {t('preferences')}
         </Typography>
         <FormGroup>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={tempAllowedMales}
-                onChange={(e) => handleMalesChange(e.target.checked)}
+          {meetingToJoin ? (
+            joiningSex === 'male' ? (
+              <FormControlLabel
+                control={
+                  <Checkbox checked disabled />
+                }
+                label={t('allowMales')}
               />
-            }
-            label={t('allowMales')}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={tempAllowedFemales}
-                onChange={(e) => handleFemalesChange(e.target.checked)}
+            ) : joiningSex === 'female' ? (
+              <FormControlLabel
+                control={
+                  <Checkbox checked disabled />
+                }
+                label={t('allowFemales')}
               />
-            }
-            label={t('allowFemales')}
-          />
+            ) : null
+          ) : (
+            <>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={tempAllowedMales}
+                    onChange={e => handleMalesChange(e.target.checked)}
+                  />
+                }
+                label={t('allowMales')}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={tempAllowedFemales}
+                    onChange={e => handleFemalesChange(e.target.checked)}
+                  />
+                }
+                label={t('allowFemales')}
+              />
+            </>
+          )}
         </FormGroup>
-        <Typography>
-          {t('ageRange')}: {tempAgeRange[0]} - {tempAgeRange[1]}
-        </Typography>
-        <div className="w-full px-2">
-          <Slider
-            value={tempAgeRange}
-            onChange={(_, newValue) => setTempAgeRange(newValue as [number, number])}
-            min={10}
-            max={100}
-            valueLabelDisplay="auto"
-            sx={{ touchAction: 'pan-y', width: '100%', maxWidth: '100%' }}
-          />
-        </div>
+        {!meetingToJoin &&
+          <>
+            <Typography>
+              {t('ageRange')}: {tempAgeRange[0]} - {tempAgeRange[1]}
+            </Typography>
+            <div className="w-full px-2">
+              <Slider
+                value={tempAgeRange}
+                onChange={(_, newValue) => setTempAgeRange(newValue as [number, number])}
+                min={10}
+                max={100}
+                valueLabelDisplay="auto"
+                sx={{ touchAction: 'pan-y', width: '100%', maxWidth: '100%' }}
+              />
+            </div>
+          </>
+        }
         <FormControlLabel
           control={
             <Checkbox

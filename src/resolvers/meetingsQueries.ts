@@ -5,7 +5,7 @@ import { Meeting, MeetingStatus, User } from '@/generated/graphql'
 import { subDays } from 'date-fns'
 
 export const meetingsQueries = {
-  getMeetingsWithPeers: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+  getMyMeetingsWithPeers: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
       const _userId = new ObjectId(userId)
 
@@ -124,7 +124,7 @@ export const meetingsQueries = {
       throw new Error('Failed to fetch meetings')
     }
   },
-  getFutureMeetings: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+  getFutureMeetingsWithPeers: async (_: any, { userId }: { userId: string }, { db }: Context) => {
     try {
       const _userId = new ObjectId(userId)
       const currentUser: User | null = await db.collection('users').findOne<User>({ _id: _userId })
@@ -165,7 +165,7 @@ export const meetingsQueries = {
         usersById[usersArr[i]._id.toString()] = usersArr[i]
       }
 
-      const filteredMeetings = meetings
+      const meetingsWithPeers = meetings
         .map(meeting => {
           const meetingUserId = meeting.userId?.toString()
           const meetingUser = usersById[meetingUserId]
@@ -184,15 +184,22 @@ export const meetingsQueries = {
             currentUser,
             { _id: new ObjectId(meetingUserId) }
           )
+          if (compatibleForCurrentUser.length === 0) return null
 
           return {
-            ...meeting,
-            interests: compatibleForCurrentUser
+            meeting: {
+              ...meeting,
+              interests: compatibleForCurrentUser,
+              peerSex: meetingUser.sex
+            },
+            peerUser: {
+              sex: meetingUser.sex
+            }
           }
         })
-        .filter(meeting => meeting && meeting.interests.length > 0)
+        .filter(meeting => meeting)
 
-      return filteredMeetings
+      return meetingsWithPeers
     } catch (error) {
       console.error('Error fetching future meetings:', error)
       throw new Error('Failed to fetch future meetings')

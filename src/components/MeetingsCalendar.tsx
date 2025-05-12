@@ -21,13 +21,7 @@ const MIN_CELL_HEIGHT = '4rem'
 
 export default function MeetingsCalendar() {
   const t = useTranslations()
-  const {
-    futureMeetings,
-    loadingFutureMeetings,
-    errorFutureMeetings,
-    refetchFutureMeetings,
-    meetingsWithPeers
-  } = useMeetings()
+  const { futureMeetingsWithPeers, loadingFutureMeetingsWithPeers, errorFutureMeetingsWithPeers, refetchFutureMeetingsWithPeers, myMeetingsWithPeers } = useMeetings()
 
   const now = Date.now()
   const HOURS_AHEAD = 24 * 7
@@ -41,11 +35,11 @@ export default function MeetingsCalendar() {
 
   // Collect all meetingIds for quick lookup
   const myMeetingSlotToId: Record<number, string> = {}
-  meetingsWithPeers.forEach(meetingWithPeer => {
+  myMeetingsWithPeers.forEach(meetingWithPeer => {
     const meeting = meetingWithPeer.meeting
     const isPassed = isMeetingPassed(meeting)
     if (isPassed) return
-    if ( meeting.startTime ) {
+    if (meeting.startTime) {
       // if meeting is scheduled, it occupies two slots (an hour)
       myMeetingSlotToId[meeting.startTime] = meeting._id
       myMeetingSlotToId[meeting.startTime + SLOT_DURATION] = meeting._id
@@ -85,10 +79,17 @@ export default function MeetingsCalendar() {
     }
   }, [slots])
 
-  if (loadingFutureMeetings || errorFutureMeetings) return <LoadingDialog loading={loadingFutureMeetings} error={errorFutureMeetings} />
+  if (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers) {
+    return <LoadingDialog loading={loadingFutureMeetingsWithPeers} error={errorFutureMeetingsWithPeers} />
+  }
 
   // Map: slotTime -> meetings
-  const slot2meetingsWithInfos = prepareTimeSlotsInfos(futureMeetings, slots, meetingsWithPeers, minDurationM)
+  const slot2meetingsWithInfos = prepareTimeSlotsInfos(
+    futureMeetingsWithPeers.map(meetingWithPeer => meetingWithPeer.meeting),
+    slots,
+    myMeetingsWithPeers,
+    minDurationM
+  )
 
   // Group slots by dayKey
   const slotsByDay: Record<string, typeof slots> = {}
@@ -188,7 +189,7 @@ export default function MeetingsCalendar() {
               for (const { meeting, joinable, isMine } of meetingsWithInfos) {
                 let interests = meeting.interests
                 if ( isMine && meeting.peerMeetingId ) {
-                  const peerMeeting = meetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === meeting.peerMeetingId)?.meeting
+                  const peerMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === meeting.peerMeetingId)?.meeting
                   interests = getInterestsOverlap(meeting.interests, peerMeeting?.interests as Interest[])
                 }
                 for (const interest of interests) {
@@ -216,7 +217,7 @@ export default function MeetingsCalendar() {
 
               // Check if this slot belongs to one of my meetings
               const myMeetingId = myMeetingSlotToId[slot.timestamp]
-              const myMeeting = meetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === myMeetingId)?.meeting
+              const myMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === myMeetingId)?.meeting
               const meetingPassed = myMeeting && isMeetingPassed(myMeeting)
               const slotLink = `/meeting?timeslot=${slot.timestamp}`
               let tooltipText = t('createMeeting')
@@ -304,7 +305,7 @@ export default function MeetingsCalendar() {
                       }
                       return <Tooltip title={tooltipText} placement="top" key={interest}>
                                 {joinableMeeting ?
-                                  <Link href={`/meeting?joinMeeting=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
+                                  <Link href={`/meeting?meetingToJoinId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
                                     {chip}
                                   </Link>
                                   : chip}

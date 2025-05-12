@@ -58,7 +58,6 @@ export default function TopControlsBar() {
         !barRef.current.contains(event.target)
       ) {
         setVideoOpenedByTouch(false)
-        console.log('handlePointerDown setVideoOpenedByTouch to false')
       }
     }
 
@@ -89,7 +88,6 @@ export default function TopControlsBar() {
     setIsVideoDeviceSelectorOpen(isOpen)
     if (isVideoDeviceSelectorOpen && !isOpen && isTouchOnlyDevice) {
       // if closing the video device selector, set isHoveringOverVideoControls to true (needed for touch devices)
-      console.log('setVideoOpenedByTouch true')
       setVideoOpenedByTouch(true)
     }
   }
@@ -128,13 +126,11 @@ export default function TopControlsBar() {
           onMouseEnter={() => {
             if (!isTouchOnlyDevice) {
               setIsHoveringOverVideoControls(true)
-              console.log('setting isHoveringOverVideoControls to true')
             }
           }}
           onMouseLeave={() => {
             if (!isTouchOnlyDevice) {
               setIsHoveringOverVideoControls(false)
-              console.log('setting isHoveringOverVideoControls to false')
             }
           }}
         >
