@@ -131,7 +131,7 @@ export const meetingsMutations = {
 
     const _meetingId = input._id ? new ObjectId(input._id) : new ObjectId()
     const _userId = new ObjectId(input.userId)
-    if ( input.peerMeetingId ) {
+    if (input.peerMeetingId && input._id) {
       throw new Error('Meeting needs to be cancelled to be updated')
     }
 

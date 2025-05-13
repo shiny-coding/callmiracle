@@ -8,7 +8,7 @@ import { Interest, Meeting } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
-import { getAvailableTimeSlots, isMeetingPassed, getMatchingInterest } from '@/utils/meetingUtils'
+import { getAvailableTimeSlots, isMeetingPassed, getMatchingInterest, getLateAllowance, getTimeSlotsFromMeeting } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
@@ -59,9 +59,13 @@ export default function MeetingForm() {
   const joiningSex = meetingWithPeerToJoin?.peerUser?.sex
 
   useEffect(() => {
-    const availableTimeSlots = getAvailableTimeSlots(myMeetingsWithPeers.map(m => m.meeting), meeting?._id)
+    const myMeetings = myMeetingsWithPeers.map(m => m.meeting)
+    const availableTimeSlots = meetingToJoin
+      ? getTimeSlotsFromMeeting(myMeetings, meetingToJoin.timeSlots)
+      : getAvailableTimeSlots(myMeetings, meeting?._id)
+
     setAvailableTimeSlots(availableTimeSlots)
-  }, [myMeetingsWithPeers, meeting])
+  }, [myMeetingsWithPeers, meeting, meetingToJoin])
 
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
@@ -77,10 +81,11 @@ export default function MeetingForm() {
         meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
       ])
       setTempLanguages(meeting.languages)
-    } else if (preselectedInterest) {
-      setTempInterests([preselectedInterest])
+    } else if (meetingToJoin) {
+      setMinDurationM(meetingToJoin.minDurationM || 60)
+      setTempInterests([preselectedInterest as Interest])
     }
-  }, [meeting, preselectedInterest])
+  }, [meeting, preselectedInterest, meetingToJoin])
 
   // Add new useEffect to validate time slot durations
   useEffect(() => {
@@ -111,8 +116,8 @@ export default function MeetingForm() {
     
     // Check one last time after the loop finishes
     longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
-    
-    setHasValidDuration(longestContinuousDuration >= minDurationM * 60 * 1000)
+    const allowance = getLateAllowance(minDurationM)
+    setHasValidDuration(longestContinuousDuration >= minDurationM * 60 * 1000 - allowance)
   }, [selectedTimeSlots, minDurationM, availableTimeSlots])
 
   // Preselect timeslot(s) if timeslot param is present
@@ -295,32 +300,36 @@ export default function MeetingForm() {
                 sx={{ touchAction: 'pan-y', width: '100%', maxWidth: '100%' }}
               />
             </div>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={preferEarlier}
+                  onChange={(e) => setPreferEarlier(e.target.checked)}
+                />
+              }
+              label={t('preferEarlier')}
+            />
           </>
         }
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={preferEarlier}
-              onChange={(e) => setPreferEarlier(e.target.checked)}
-            />
-          }
-          label={t('preferEarlier')}
-        />
         <Typography variant="subtitle1" className="mt-4">
           {t('minDuration')}
         </Typography>
-        <div className="flex gap-4 justify-center">
-          <Button 
-            variant={minDurationM === 30 ? "contained" : "outlined"}
-            onClick={() => setMinDurationM(30)}
-            className="flex-1"
+        <div className="flex gap-4 justify-start">
+          <Button
+            variant={minDurationM === 30 ? 'contained' : 'outlined'}
+            onClick={() => !meetingToJoin && setMinDurationM(30)}
+            className="flex-0 basis-1/2"
+            disabled={!!meetingToJoin && minDurationM !== 30}
+            style={{ display: meetingToJoin && minDurationM !== 30 ? 'none' : undefined }}
           >
             30 {t('minutes')}
           </Button>
-          <Button 
-            variant={minDurationM === 60 ? "contained" : "outlined"}
-            onClick={() => setMinDurationM(60)}
-            className="flex-1"
+          <Button
+            variant={minDurationM === 60 ? 'contained' : 'outlined'}
+            onClick={() => !meetingToJoin && setMinDurationM(60)}
+            className="flex-0 basis-1/2"
+            disabled={!!meetingToJoin && minDurationM !== 60}
+            style={{ display: meetingToJoin && minDurationM !== 60 ? 'none' : undefined }}
           >
             1 {t('hour')}
           </Button>

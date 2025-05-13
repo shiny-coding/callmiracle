@@ -284,7 +284,7 @@ export default function MeetingsCalendar() {
                     style={{
                       padding: `0.3rem ${HORIZONTAL_CELL_PADDING}`,
                       flexWrap: 'wrap',
-                      gap: '0.1rem',
+                      gap: '0.2rem',
                       borderBottom: '1px solid var(--border-color)'
                     }}
                   >
@@ -292,7 +292,7 @@ export default function MeetingsCalendar() {
                       const chip = <Chip
                         label={`${t(`Interest.${interest}`)} (${count})`}
                         size="small"
-                        style={{ marginRight: 2, marginBottom: 2 }}
+                        style={{  }}
                         key={interest}
                       />
                       let tooltipText;
@@ -324,7 +324,7 @@ export default function MeetingsCalendar() {
                         key={lang}
                         label={`${lang} (${count})`}
                         size="small"
-                        style={{ marginRight: 2, marginBottom: 2 }}
+                        style={{ }}
                       />
                     ))}
                   </div>

@@ -19,7 +19,7 @@ export default function MeetingsList() {
 
   const t = useTranslations()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
-  const { highlightedMeetingId, setHighlightedMeetingId, meetingsWithPeers, loadingMeetingsWithPeers, errorMeetingsWithPeers, refetchMeetingsWithPeers } = useMeetings()
+  const { highlightedMeetingId, setHighlightedMeetingId, myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, refetchMyMeetingsWithPeers } = useMeetings()
   const meetingRefs = useRef<Record<string, HTMLElement>>({})
   const { currentUser } = useStore()
   const router = useRouter()
@@ -61,8 +61,8 @@ export default function MeetingsList() {
     }
   }, [searchParams, setHighlightedMeetingId])
 
-  if (loadingMeetingsWithPeers || errorMeetingsWithPeers) {
-    return <LoadingDialog loading={loadingMeetingsWithPeers} error={errorMeetingsWithPeers} />
+  if (loadingMyMeetingsWithPeers || errorMyMeetingsWithPeers) {
+    return <LoadingDialog loading={loadingMyMeetingsWithPeers} error={errorMyMeetingsWithPeers} />
   }
 
   return (
@@ -90,7 +90,7 @@ export default function MeetingsList() {
               <AddIcon className="text-white" />
             </IconButton>
             <IconButton 
-              onClick={() => refetchMeetingsWithPeers()} 
+              onClick={() => refetchMyMeetingsWithPeers()} 
               size="small"
               className="hover:bg-gray-700 text-white"
             >
@@ -99,7 +99,7 @@ export default function MeetingsList() {
           </div>
         </div>
         <List className="space-y-4">
-          {meetingsWithPeers.map((meetingWithPeer: MeetingWithPeer) => (
+          {myMeetingsWithPeers.map((meetingWithPeer: MeetingWithPeer) => (
             <ListItem 
               key={meetingWithPeer.meeting._id}
               ref={(el: any) => el && (meetingRefs.current[meetingWithPeer.meeting._id] = el)}
@@ -113,11 +113,11 @@ export default function MeetingsList() {
                   e?.stopPropagation()
                   router.push(`/meeting/${meetingWithPeer.meeting._id}`)
                 }}
-                refetch={refetchMeetingsWithPeers}
+                refetch={refetchMyMeetingsWithPeers}
               />
             </ListItem>
           ))}
-          {meetingsWithPeers.length === 0 && (
+          {myMeetingsWithPeers.length === 0 && (
             <Typography className="text-gray-400 text-center py-4">
               {t('noMeetings')}
             </Typography>

@@ -250,9 +250,65 @@ export function meetingIsActiveNow(meeting: Meeting) {
   return now >= new Date(meeting.startTime) && !isMeetingPassed(meeting)
 }
 
+export function getTimeSlotsFromMeeting(meetings: Meeting[], meetingToJoinTimeSlots: number[]) {
+  const occupiedTimeSlots = getOccupiedTimeSlots(meetings)
+  const now = new Date().getTime()
+  const slots: TimeSlot[] = []
+
+  // Group meetingToJoinTimeSlots by dayKey
+  const slotsByDay: { [dayKey: string]: number[] } = {}
+  meetingToJoinTimeSlots.forEach(timestamp => {
+    const date = new Date(timestamp)
+    const dayKey = format(date, 'yyyy-MM-dd')
+    if (!slotsByDay[dayKey]) slotsByDay[dayKey] = []
+    slotsByDay[dayKey].push(timestamp)
+  })
+
+  Object.entries(slotsByDay).forEach(([dayKey, timestamps]) => {
+    let prevTimestamp: number | null = null
+    timestamps.forEach(timestamp => {
+      const slotTime = new Date(timestamp)
+      const endTime = addMinutes(slotTime, 30)
+      // Only include if not completely in the past
+      if (now > slotTime.getTime() + SLOT_DURATION) return
+
+      // Insert dummy slot if there is a gap from the previous slot
+      if (
+        prevTimestamp !== null &&
+        timestamp - prevTimestamp !== SLOT_DURATION
+      ) {
+        const prevEnd = new Date(prevTimestamp + SLOT_DURATION)
+        slots.push({
+          timestamp: prevEnd.getTime(),
+          startTime: format(prevEnd, 'HH:mm'),
+          endTime: format(slotTime, 'HH:mm'),
+          day: format(slotTime, 'EEE'),
+          dayKey,
+          isDummy: true,
+          isNow: false,
+          isDisabled: true
+        })
+      }
+
+      slots.push({
+        timestamp,
+        startTime: format(slotTime, 'HH:mm'),
+        endTime: format(endTime, 'HH:mm'),
+        day: format(slotTime, 'EEE'),
+        dayKey,
+        isNow: false,
+        isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
+      })
+      prevTimestamp = timestamp
+    })
+  })
+
+  return slots
+}
+
+
 export function getAvailableTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
   const occupiedTimeSlots = getOccupiedTimeSlots(meetings, currentMeetingId)
-
   const now = new Date()
   
   // Find the next half-hour boundary
@@ -263,21 +319,18 @@ export function getAvailableTimeSlots(meetings: Meeting[], currentMeetingId?: st
     nextHalfHourTime.setHours(nextHalfHourTime.getHours() + 1)
   }
   
-  // Calculate minutes until next half-hour
-  const slots = []
-  
   // Find the previous half-hour boundary
   const prevHalfHourTime = new Date(now)
   if (minutes < 30) {
-    // If we're before :30, go back to the hour
     prevHalfHourTime.setMinutes(0, 0, 0)
   } else {
-    // If we're after :30, go back to the half hour
     prevHalfHourTime.setMinutes(30, 0, 0)
   }
 
+  const slots: TimeSlot[] = []
+
+  // Default behavior: generate all slots for the next 7 days
   const slotMinutes = getMinutes(prevHalfHourTime)
-  // If the slot doesn't start at :00, add a dummy slot
   if (slotMinutes === 30) {
     const hourStart = startOfHour(prevHalfHourTime)
     slots.push({
@@ -300,13 +353,10 @@ export function getAvailableTimeSlots(meetings: Meeting[], currentMeetingId?: st
     isDisabled: occupiedTimeSlots.includes(prevHalfHourTime.getTime())
   })
   
-  // Generate slots for the next 7 days in 30-minute increments
   for (let i = 0; i < 7 * 24 * 2; i++) {
     const slotTime = addMinutes(nextHalfHourTime, i * 30)
     const endTime = addMinutes(slotTime, 30)
-    
-    // Skip slots that are in the past
-    if (slotTime.getTime() < now.getTime()) continue;
+    if (slotTime.getTime() < now.getTime()) continue
     
     const slot = {
       timestamp: slotTime.getTime(),
@@ -317,7 +367,6 @@ export function getAvailableTimeSlots(meetings: Meeting[], currentMeetingId?: st
       isNow: false,
       isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
     }
-    
     slots.push(slot)
   }
   

@@ -61,6 +61,10 @@ export const meetingsQueries = {
       // 7. Sort meetings by earliest time slot or start time
       const now = new Date().getTime()
 
+      console.log('meetingsWithPeers', meetingsWithPeers.map( mwp => mwp.meeting).map(
+        m=> ({ id: m._id.toString(), interests: m.interests, status: m.status, timeSlots: m.timeSlots.map((t: number) => new Date(t))}))
+      )
+
       meetingsWithPeers.sort((a, b) => {
         const aEnded = isMeetingPassed(a.meeting as any);
         const bEnded = isMeetingPassed(b.meeting as any);
@@ -68,16 +72,6 @@ export const meetingsQueries = {
         // Ended meetings go to the bottom
         if (aEnded && !bEnded) return 1;
         if (!aEnded && bEnded) return -1;
-        if (aEnded && bEnded) {
-          // Both ended, sort by most recent end time (startTime or latest slot)
-          if (a.meeting.startTime && b.meeting.startTime) {
-            return b.meeting.startTime - a.meeting.startTime; // Most recent first
-          } else if (a.meeting.startTime) {
-            return -1; // Meeting with startTime comes first
-          } else if (b.meeting.startTime) {
-            return 1; // Meeting with startTime comes first
-          }
-        }
         
         // If meeting has a start time, use that for sorting
         if (!aEnded && !bEnded && a.meeting.startTime && b.meeting.startTime) {
@@ -87,30 +81,29 @@ export const meetingsQueries = {
         } else if (!aEnded && b.meeting.startTime) {
           return 1 // b has start time, a doesn't, so b comes first
         }
+
+        const aSlots = a.meeting.timeSlots
+        const bSlots = b.meeting.timeSlots
         
         // Otherwise, find the earliest future time slot for each meeting
-        const aFutureSlots = a.meeting.timeSlots.filter((slot: number) => slot >= now)
-        const bFutureSlots = b.meeting.timeSlots.filter((slot: number) => slot >= now)
+        const aFutureSlot = aSlots.find((slot: number) => slot >= now)
+        const bFutureSlot = bSlots.find((slot: number) => slot >= now)
         
         // If both have future slots, compare the earliest ones
-        if (aFutureSlots.length > 0 && bFutureSlots.length > 0) {
-          return Math.min(...aFutureSlots) - Math.min(...bFutureSlots)
-        } else if (aFutureSlots.length > 0) {
+        if (aFutureSlot && bFutureSlot) {
+          return aFutureSlot - bFutureSlot
+        } else if (aFutureSlot) {
           return -1 // a has future slots, b doesn't, so a comes first
-        } else if (bFutureSlots.length > 0) {
+        } else if (bFutureSlot) {
           return 1 // b has future slots, a doesn't, so b comes first
         }
         
         // If neither has future slots, compare the latest past slots
-        if (a.meeting.timeSlots.length > 0 && b.meeting.timeSlots.length > 0) {
-          const aIsCancelled = a.meeting.status === MeetingStatus.Cancelled;
-          const bIsCancelled = b.meeting.status === MeetingStatus.Cancelled;
-          if (aIsCancelled && !bIsCancelled) return -1;
-          if (!aIsCancelled && bIsCancelled) return +1;
-          return Math.max(...a.meeting.timeSlots) - Math.max(...b.meeting.timeSlots)
-        } else if (a.meeting.timeSlots.length > 0) {
+        if (aSlots.length > 0 && bSlots.length > 0) {
+          return bSlots[bSlots.length - 1] - aSlots[aSlots.length - 1]
+        } else if (aSlots.length > 0) {
           return -1
-        } else if (b.meeting.timeSlots.length > 0) {
+        } else if (bSlots.length > 0) {
           return 1
         }
         

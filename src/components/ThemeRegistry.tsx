@@ -12,7 +12,9 @@ const theme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          // backgroundColor: '#f0f0f0' // your desired color
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'var(--hover-border-color)',
+          },
         },
         notchedOutline: {
           borderColor: '#444c62' // <-- your desired border color
