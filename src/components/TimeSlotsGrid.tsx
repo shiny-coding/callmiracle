@@ -28,9 +28,9 @@ export default function TimeSlotsGrid({
   
   // Group time slots by day
   const timeSlotsByDay = timeSlots.reduce((acc, slot) => {
-    const day = slot.day
-    if (!acc[day]) acc[day] = []
-    acc[day].push(slot)
+    const dayKey = slot.dayKey
+    if (!acc[dayKey]) acc[dayKey] = []
+    acc[dayKey].push(slot)
     return acc
   }, {} as Record<string, TimeSlot[]>)
 

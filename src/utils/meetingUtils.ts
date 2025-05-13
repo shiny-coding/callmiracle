@@ -310,66 +310,55 @@ export function getTimeSlotsFromMeeting(meetings: Meeting[], meetingToJoinTimeSl
 export function getAvailableTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
   const occupiedTimeSlots = getOccupiedTimeSlots(meetings, currentMeetingId)
   const now = new Date()
-  
-  // Find the next half-hour boundary
-  const minutes = now.getMinutes()
-  const nextHalfHour = minutes < 30 ? 30 : 0
-  const nextHalfHourTime = setMilliseconds(setSeconds(setMinutes(new Date(now), nextHalfHour), 0), 0)
-  if (nextHalfHour === 0) {
-    nextHalfHourTime.setHours(nextHalfHourTime.getHours() + 1)
-  }
-  
-  // Find the previous half-hour boundary
-  const prevHalfHourTime = new Date(now)
-  if (minutes < 30) {
-    prevHalfHourTime.setMinutes(0, 0, 0)
-  } else {
-    prevHalfHourTime.setMinutes(30, 0, 0)
-  }
-
   const slots: TimeSlot[] = []
 
-  // Default behavior: generate all slots for the next 7 days
-  const slotMinutes = getMinutes(prevHalfHourTime)
-  if (slotMinutes === 30) {
-    const hourStart = startOfHour(prevHalfHourTime)
-    slots.push({
-      timestamp: hourStart.getTime(),
-      startTime: format(hourStart, 'HH:mm'),
-      endTime: format(prevHalfHourTime, 'HH:mm'),
-      day: format(now, 'EEE'),
-      isDummy: true,
-      dayKey: format(now, 'yyyy-MM-dd')
-    })
+  // Find the next half-hour boundary after now
+  const minutes = now.getMinutes()
+  const nextHalfHour = minutes < 30 ? 30 : 0
+  const firstSlotTime = setMilliseconds(setSeconds(setMinutes(new Date(now), nextHalfHour), 0), 0)
+  if (nextHalfHour === 0) {
+    firstSlotTime.setHours(firstSlotTime.getHours() + 1)
   }
-  
-  slots.push({
-    timestamp: prevHalfHourTime.getTime(),
-    startTime: format(prevHalfHourTime, 'HH:mm'),
-    endTime: format(nextHalfHourTime, 'HH:mm'),
-    day: format(now, 'EEE'),
-    dayKey: format(now, 'yyyy-MM-dd'),
-    isNow: true,
-    isDisabled: occupiedTimeSlots.includes(prevHalfHourTime.getTime())
-  })
-  
-  for (let i = 0; i < 7 * 24 * 2; i++) {
-    const slotTime = addMinutes(nextHalfHourTime, i * 30)
+
+  // Today: only slots from firstSlotTime to end of today
+  const endOfToday = new Date(now)
+  endOfToday.setHours(23, 59, 59, 999)
+  let slotTime = new Date(firstSlotTime)
+  while (slotTime <= endOfToday) {
     const endTime = addMinutes(slotTime, 30)
-    if (slotTime.getTime() < now.getTime()) continue
-    
-    const slot = {
+    slots.push({
       timestamp: slotTime.getTime(),
       startTime: format(slotTime, 'HH:mm'),
       endTime: format(endTime, 'HH:mm'),
       day: format(slotTime, 'EEE'),
       dayKey: format(slotTime, 'yyyy-MM-dd'),
-      isNow: false,
+      isNow: slotTime.getTime() === firstSlotTime.getTime(),
       isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
-    }
-    slots.push(slot)
+    })
+    slotTime = addMinutes(slotTime, 30)
   }
-  
+
+  // Next 6 days: full days (00:00 to 23:30)
+  for (let dayOffset = 1; dayOffset <= 6; dayOffset++) {
+    const day = addMinutes(startOfHour(now), (24 * 60) * dayOffset)
+    const dayKey = format(day, 'yyyy-MM-dd')
+    for (let halfHour = 0; halfHour < 48; halfHour++) {
+      const slot = new Date(day)
+      slot.setHours(0, 0, 0, 0)
+      slot.setMinutes(halfHour * 30)
+      const endTime = addMinutes(slot, 30)
+      slots.push({
+        timestamp: slot.getTime(),
+        startTime: format(slot, 'HH:mm'),
+        endTime: format(endTime, 'HH:mm'),
+        day: format(slot, 'EEE'),
+        dayKey,
+        isNow: false,
+        isDisabled: occupiedTimeSlots.includes(slot.getTime())
+      })
+    }
+  }
+
   return slots
 }
 
