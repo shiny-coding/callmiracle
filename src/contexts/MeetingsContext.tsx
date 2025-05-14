@@ -70,6 +70,7 @@ interface MeetingsContextType {
   loadingFutureMeetingsWithPeers: boolean
   errorFutureMeetingsWithPeers: ApolloError | undefined
   refetchFutureMeetingsWithPeers: () => void
+  refetchMeetings: () => void
 }
 
 const MeetingsContext = createContext<MeetingsContextType | undefined>(undefined)
@@ -139,7 +140,8 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
         futureMeetingsWithPeers,
         loadingFutureMeetingsWithPeers,
         errorFutureMeetingsWithPeers,
-        refetchFutureMeetingsWithPeers
+        refetchFutureMeetingsWithPeers,
+        refetchMeetings
       }}
     >
       {children}

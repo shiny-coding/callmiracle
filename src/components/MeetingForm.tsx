@@ -44,7 +44,7 @@ export default function MeetingForm() {
   const [tempLanguages, setTempLanguages] = useState<string[]>(currentUser?.languages || [])
   const { updateMeeting, loading } = useUpdateMeeting()
   const [hasValidDuration, setHasValidDuration] = useState(true)
-  const { refetchFutureMeetingsWithPeers } = useMeetings()
+  const { refetchMeetings } = useMeetings()
   const formContentRef = useRef<HTMLDivElement>(null)
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
 
@@ -198,7 +198,7 @@ export default function MeetingForm() {
       peerMeetingId: meeting?.peerMeetingId || undefined,
       userId: currentUser?._id || ''
     })
-    refetchFutureMeetingsWithPeers()
+    refetchMeetings()
     router.back()
   }
 

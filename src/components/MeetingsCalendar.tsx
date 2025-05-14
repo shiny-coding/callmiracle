@@ -21,7 +21,7 @@ const MIN_CELL_HEIGHT = '4rem'
 
 export default function MeetingsCalendar() {
   const t = useTranslations()
-  const { futureMeetingsWithPeers, loadingFutureMeetingsWithPeers, errorFutureMeetingsWithPeers, refetchFutureMeetingsWithPeers, myMeetingsWithPeers } = useMeetings()
+  const { futureMeetingsWithPeers, loadingFutureMeetingsWithPeers, errorFutureMeetingsWithPeers, myMeetingsWithPeers } = useMeetings()
 
   const now = Date.now()
   const HOURS_AHEAD = 24 * 7

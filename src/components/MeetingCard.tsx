@@ -21,15 +21,15 @@ import { differenceInHours } from 'date-fns'
 import ConfirmDialog from './ConfirmDialog'
 import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
 import { combineAdjacentSlots } from '@/utils/meetingUtils'
+import { useMeetings } from '@/contexts/MeetingsContext'
 
 interface MeetingCardProps {
   meetingWithPeer: MeetingWithPeer
   onEdit?: (e?: React.MouseEvent) => void
-  refetch: () => void
 }
 
 
-export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: MeetingCardProps) {
+export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProps) {
   const t = useTranslations()
   const tInterest = useTranslations('Interest')
   const now = new Date()
@@ -38,6 +38,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
   const meeting = meetingWithPeer.meeting
   const [updateMeetingStatus] = useMutation(UPDATE_MEETING_LAST_CALL)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const { refetchMeetings } = useMeetings()
   const [confirmAction, setConfirmAction] = useState<'finish' | 'cancel' | 'delete' | null>(null)
 
   // Check if meeting has passed using the utility function
@@ -194,7 +195,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit, refetch }: Meetin
         })
       }
       closeConfirmDialog()
-      refetch()
+      refetchMeetings()
     } catch (error) {
       console.error(`Error ${confirmAction}ing meeting:`, error)
       closeConfirmDialog()

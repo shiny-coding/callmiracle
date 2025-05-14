@@ -312,13 +312,10 @@ export function getAvailableTimeSlots(meetings: Meeting[], currentMeetingId?: st
   const now = new Date()
   const slots: TimeSlot[] = []
 
-  // Find the next half-hour boundary after now
+  // Find the most recent half-hour boundary (rounded down)
   const minutes = now.getMinutes()
-  const nextHalfHour = minutes < 30 ? 30 : 0
-  const firstSlotTime = setMilliseconds(setSeconds(setMinutes(new Date(now), nextHalfHour), 0), 0)
-  if (nextHalfHour === 0) {
-    firstSlotTime.setHours(firstSlotTime.getHours() + 1)
-  }
+  const roundedMinutes = minutes < 30 ? 0 : 30
+  const firstSlotTime = setMilliseconds(setSeconds(setMinutes(new Date(now), roundedMinutes), 0), 0)
 
   // Today: only slots from firstSlotTime to end of today
   const endOfToday = new Date(now)

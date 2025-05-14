@@ -113,7 +113,6 @@ export default function MeetingsList() {
                   e?.stopPropagation()
                   router.push(`/meeting/${meetingWithPeer.meeting._id}`)
                 }}
-                refetch={refetchMyMeetingsWithPeers}
               />
             </ListItem>
           ))}
