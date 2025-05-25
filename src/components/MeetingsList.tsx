@@ -15,6 +15,7 @@ import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import LoadingDialog from './LoadingDialog'
+
 export default function MeetingsList() {
 
   const t = useTranslations()

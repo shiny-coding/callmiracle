@@ -72,7 +72,7 @@ export default function MeetingForm() {
     if (meetingToConnect) {
       const hasValidDuration = calculateHasValidDuration(meetingToConnect.timeSlots, minDurationM)
       if (!hasValidDuration) {
-        showSnackbar(t('meetingPassedCannotJoin'), 'error')
+        showSnackbar(t('meetingPassedCannotConnect'), 'error')
         router.back()
       }
     }
@@ -202,7 +202,7 @@ export default function MeetingForm() {
       {/* Header */}
       <div className="flex justify-between items-center px-4 py-3 border-b panel-border sticky top-0 bg-inherit z-10">
         <div className="flex-grow font-semibold text-lg">
-          { meetingToConnectId ? t('joinMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
+          { meetingToConnectId ? t('connectWithMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
         </div>
         <IconButton onClick={handleCancel} size="small" aria-label={t('close')}>
           <CloseIcon />

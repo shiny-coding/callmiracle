@@ -114,7 +114,7 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
         return meetingOutput
       }
     }
-    console.error(`Failed to join meeting after ${maxRetries} retries`)
+    console.error(`Failed to connect meeting after ${maxRetries} retries`)
     return {
       error: MeetingError.CannotConnectMeetingInternalError
     }

@@ -297,7 +297,7 @@ export default function MeetingsCalendar() {
                       />
                       let tooltipText;
                       if (joinableMeeting) {
-                        tooltipText = t('joinMeeting')
+                        tooltipText = t('connectWithMeeting')
                       } else if (hasMine) {
                         tooltipText = t('myMeeting')
                       } else {

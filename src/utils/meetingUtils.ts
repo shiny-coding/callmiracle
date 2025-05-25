@@ -296,7 +296,7 @@ export function getTimeSlotsFromMeeting(meetings: Meeting[], meetingToConnectTim
         endTime: format(endTime, 'HH:mm'),
         day: format(slotTime, 'EEE'),
         dayKey,
-        isNow: false,
+        isNow: now > timestamp,
         isDisabled: occupiedTimeSlots.includes(slotTime.getTime())
       })
       prevTimestamp = timestamp

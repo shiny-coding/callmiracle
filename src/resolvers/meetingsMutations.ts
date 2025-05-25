@@ -29,7 +29,6 @@ export async function publishMeetingNotification(notificationType: NotificationT
     type: notificationType,
     seen: false,
     meetingId: peerMeeting._id,
-    peerUserName: meeting.userName,
     createdAt: new Date()
   })
   

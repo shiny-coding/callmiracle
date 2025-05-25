@@ -7,7 +7,7 @@ import CheckIcon from '@mui/icons-material/Check'
 import { formatRelativeTime } from '@/utils/formatRelativeTime'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
-
+import { NotificationType } from '@/generated/graphql'
 interface NotificationsListProps {
   onClose?: () => void
 }
@@ -31,15 +31,14 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
 
   const getNotificationMessage = (notification: any) => {
     switch (notification.type) {
-      case 'meeting-connected':
+      case NotificationType.MeetingConnected:
         return t('notificationMessages.meetingConnected')
-      case 'meeting-disconnected':
+      case NotificationType.MeetingDisconnected:
         return t('notificationMessages.meetingDisconnected')
-      case 'meeting-peer-changed':
-        return t('notificationMessages.meetingPartnerUpdated')
-      case 'meeting-finished':
+      case NotificationType.MeetingFinished:
         return t('notificationMessages.meetingWithFinished', { name: notification.peerUserName })
       default:
+        console.log('Unknown notification type:', notification.type)
         return t('notificationMessages.newNotification')
     }
   }
@@ -108,7 +107,7 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
                     </Button>
                   )}
                   
-                  {(notification.type === 'meeting-connected' || notification.type === 'meeting-disconnected') && 
+                  {(notification.type === NotificationType.MeetingConnected || notification.type === NotificationType.MeetingDisconnected) && 
                     notification.meeting && (
                     <Button 
                       size="small" 

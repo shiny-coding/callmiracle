@@ -205,13 +205,13 @@
   "interests": "Interests",
   "tomorrow": "Tomorrow",
   "count": "Count",
-  "joinMeeting": "Join Meeting",
+  "connectWithMeeting": "Connect with Meeting",
   "pleaseSelectAnEarlierTimeSlot": "Please select an earlier time slot for this meeting or change the minimum duration",
   "myMeeting": "My Meeting",
   "MeetingErrors": {
     "CannotCreateMeetingInternalError": "Could not create the meeting due to an internal error. Please try again.",
     "CannotUpdateMeetingInternalError": "Could not update the meeting due to an internal error. Please try again.",
-    "CannotJoinMeetingInternalError": "Could not join the meeting due to an internal error. Please try again.",
+    "CannotConnectMeetingInternalError": "Could not connect to the meeting due to an internal error. Please try again.",
     "MeetingAlreadyConnectedError": "This meeting is already connected with another user. Please try finding a different meeting.",
     "MeetingDoNotSufficientlyOverlapError": "Your availability does not sufficiently overlap with this meeting's time slots.",
     "MeetingNotCancelledError": "Cannot update a meeting that is already matched. Please cancel it first if you need to make changes."
@@ -222,5 +222,5 @@
   "meetingCreated": "Meeting created, searching for a partner...",
   "meetingUpdatedAndConnected": "Meeting updated, partner found",
   "meetingCreatedAndConnected": "Meeting created, partner found",
-  "meetingPassedCannotJoin": "Meeting passed, cannot join"
+  "meetingPassedCannotConnect": "Meeting passed, cannot connect"
 } 
