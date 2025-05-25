@@ -143,7 +143,13 @@ export type MeetingInput = {
   timeSlots: Array<Scalars['Float']['input']>;
   userId: Scalars['ID']['input'];
   userName?: InputMaybe<Scalars['String']['input']>;
+  meetingToJoinId?: InputMaybe<Scalars['ID']['input']>;
 };
+
+export type MeetingOutput = {
+  meeting?: Meeting
+  error?: string
+}
 
 export enum MeetingStatus {
   Called = 'CALLED',
@@ -163,7 +169,7 @@ export type MeetingWithPeer = {
 export type Mutation = {
   __typename?: 'Mutation';
   callUser?: Maybe<CallEvent>;
-  createOrUpdateMeeting?: Maybe<Meeting>;
+  createOrUpdateMeeting?: Maybe<MeetingOutput>;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   deleteUser: Scalars['Boolean']['output'];
   setAllNotificationsSeen: Scalars['Boolean']['output'];

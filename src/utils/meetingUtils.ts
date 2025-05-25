@@ -368,7 +368,7 @@ export function getSlotDuration(timestamp: number) {
 
 
 export function trySelectHourSlots(timeslot: number, availableTimeSlots: TimeSlot[]) {
-  const slotIndex = availableTimeSlots.findIndex(slot => slot.timestamp === timeslot)
+  const slotIndex = Math.max(availableTimeSlots.findIndex(slot => slot.timestamp === timeslot), 0)
   const slot = availableTimeSlots[slotIndex]
   const slotsToSelect: number[] = []
   const HOUR_DURATION = 60 * 60 * 1000

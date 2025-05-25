@@ -1,4 +1,4 @@
-import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider } from '@mui/material'
+import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider, Snackbar, Alert } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
@@ -14,6 +14,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { getSlotDuration, trySelectHourSlots, SLOT_DURATION } from '@/utils/meetingUtils'
 import LoadingDialog from './LoadingDialog'
+import { useSnackbar } from '@/contexts/SnackContext'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -47,6 +48,8 @@ export default function MeetingForm() {
   const { refetchMeetings } = useMeetings()
   const formContentRef = useRef<HTMLDivElement>(null)
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
+
+  const { showSnackbar } = useSnackbar()
 
   // Add these derived values
   const preselectedInterest = (
@@ -184,7 +187,7 @@ export default function MeetingForm() {
   }
 
   const handleSave = async () => {
-    await updateMeeting({
+    const meetingInput = {
       _id: meetingId as string,
       interests: tempInterests,
       timeSlots: selectedTimeSlots,
@@ -196,10 +199,24 @@ export default function MeetingForm() {
       allowedMaxAge: tempAgeRange[1],
       languages: tempLanguages,
       peerMeetingId: meeting?.peerMeetingId || undefined,
-      userId: currentUser?._id || ''
-    })
-    refetchMeetings()
-    router.back()
+      userId: currentUser?._id || '',
+      meetingToJoinId
+    }
+
+    // We assume updateMeeting returns a Promise resolving to:
+    // { meeting?: MeetingType; error?: string }
+    // where `error` is a user-friendly message string if an error occurred.
+    const result = await updateMeeting(meetingInput)
+
+    if (result && result.error) {
+      // Use t() to translate the error key
+      const errorMessage = t(`MeetingErrors.${result.error}`)
+      showSnackbar(errorMessage, 'error')
+    } else {
+      // No error reported, or result implies success
+      refetchMeetings()
+      router.back()
+    }
   }
 
   return (

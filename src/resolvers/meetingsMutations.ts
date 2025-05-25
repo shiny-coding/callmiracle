@@ -1,10 +1,8 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { tryConnectMeetings } from './connectMeetings'
+import { MeetingStatus, NotificationType } from '@/generated/graphql';
+import { createOrUpdateMeeting } from './createOrUpdateMeeting';
 import { pubsub } from './pubsub';
-import { BroadcastType, MeetingStatus, NotificationType } from '@/generated/graphql';
-import { publishBroadcastEvent } from './notificationsMutations';
-import { SLOT_DURATION } from '@/utils/meetingUtils';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -115,73 +113,8 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
 }
 
 export const meetingsMutations = {
-  createOrUpdateMeeting: async (_: any, { input }: { input: any }, { db }: Context) => {
-    const { 
-      userName,
-      interests, 
-      timeSlots, 
-      minDurationM, 
-      preferEarlier,
-      allowedMales,
-      allowedFemales,
-      allowedMinAge,
-      allowedMaxAge,
-      languages,
-    } = input
+  createOrUpdateMeeting: createOrUpdateMeeting,
 
-    const _meetingId = input._id ? new ObjectId(input._id) : new ObjectId()
-    const _userId = new ObjectId(input.userId)
-    if (input.peerMeetingId && input._id) {
-      throw new Error('Meeting needs to be cancelled to be updated')
-    }
-
-    try {
-
-      const lastSlotEnd = timeSlots[timeSlots.length - 1] + SLOT_DURATION
-
-      // Use upsert to either update existing or create new
-      let result = await db.collection('meetings').findOneAndUpdate(
-        { _id: _meetingId },
-        {
-          $set: {
-            userId: _userId,
-            userName,
-            interests,
-            timeSlots,
-            lastSlotEnd,
-            minDurationM,
-            preferEarlier,
-            allowedMales,
-            allowedFemales,
-            allowedMinAge,
-            allowedMaxAge,
-            languages,
-            startTime: null,
-            peerMeetingId : null,
-            status: MeetingStatus.Seeking
-          },
-          $setOnInsert: {
-            createdAt: new Date()
-          }
-        },
-        {
-          upsert: true,
-          returnDocument: 'after'
-        }
-      );
-      
-      // If this meeting doesn't have a peer yet, try to find a match
-      console.log('Trying to find match for meeting: ', result?._id)
-      result = await tryConnectMeetings(result, db, _userId)
-
-      publishBroadcastEvent(BroadcastType.MeetingUpdated)
-
-      return result
-    } catch (error) {
-      console.error('Error creating/updating meeting:', error);
-      throw new Error('Failed to create/update meeting');
-    }
-  },
   deleteMeeting: async (_: any, { id }: { id: string }, context: any) => {
     try {
       const { db } = context
@@ -228,3 +161,4 @@ export const meetingsMutations = {
   },
   updateMeetingStatus
 }
+

@@ -5,20 +5,23 @@ import { Interest, MeetingInput } from '@/generated/graphql'
 const CREATE_OR_UPDATE_MEETING = gql`
   mutation CreateOrUpdateMeeting($input: MeetingInput!) {
     createOrUpdateMeeting(input: $input) {
-      _id
-      userId
-      userName
-      interests
-      timeSlots
-      minDurationM
-      preferEarlier
-      allowedMales
-      allowedFemales
-      allowedMinAge
-      allowedMaxAge
-      languages
-      startTime
-      peerMeetingId
+      meeting {
+        _id
+        userId
+        userName
+        interests
+        timeSlots
+        minDurationM
+        preferEarlier
+        allowedMales
+        allowedFemales
+        allowedMinAge
+        allowedMaxAge
+        languages
+        startTime
+        peerMeetingId
+      }
+      error
     }
   }
 `

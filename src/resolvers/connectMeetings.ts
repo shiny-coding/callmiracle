@@ -1,4 +1,4 @@
-import { Interest, MeetingStatus, NotificationType } from "@/generated/graphql";
+import { Interest, Meeting, MeetingStatus, NotificationType, User } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./meetingsMutations";
 import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
@@ -25,7 +25,7 @@ export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[]
 }
 
 // Helper function to check if two meetings can be connected
-export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]) => {
+export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]): TimeRange[]|false => {
   // Check if meetings are from different users
   if (meeting1.userId.equals(meeting2.userId)) return false;
   
@@ -118,17 +118,17 @@ export const determineBestStartTime = (overlappingRanges: TimeRange[], meeting1:
 }
 
 // Define error symbols
-const MeetingAlreadyConnected = Symbol('MeetingAlreadyConnected');
-const PeerAlreadyConnected = Symbol('PeerAlreadyConnected');
+export const MeetingAlreadyConnected = Symbol('MeetingAlreadyConnected');
+export const PeerAlreadyConnected = Symbol('PeerAlreadyConnected');
 
 export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectId) {
   // Try to find a matching meeting
   const now = new Date().getTime();
   const potentialPeers = await db.collection('meetings').find({
-    userId: { $ne: _userId },
-    peerMeetingId: null,
-    timeSlots: { $elemMatch: { $gte: now } }
-  }).toArray();
+      userId: { $ne: _userId },
+      peerMeetingId: null,
+      timeSlots: { $elemMatch: { $gte: now } }
+    }).toArray();
 
   if (potentialPeers.length === 0) return meeting;
 
@@ -181,57 +181,8 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
     try {
       await session.withTransaction(async () => {
 
-        const { peer: peerMeeting, overlap, user: peerUser } = peersToChooseFrom[randomIndex];
-
-        // Determine the best start time
-        const bestStartTime = determineBestStartTime(overlap, meeting, peerMeeting);
-        
-        // Update this meeting with the peer meeting ID and start time
-        const result = await db.collection('meetings').updateOne(
-          { _id: meeting._id, peerMeetingId: null },
-          { $set: { 
-              peerMeetingId: peerMeeting._id,
-              startTime: bestStartTime,
-              status: MeetingStatus.Found
-            }
-          },
-          { session }
-        );
-        
-        if (result.modifiedCount === 0) {
-          // This meeting was connected by another process
-          throw MeetingAlreadyConnected;
-        }
-        
-        // Update the peer meeting with this meeting's ID and the same start time
-        const peerResult = await db.collection('meetings').updateOne(
-          { _id: peerMeeting._id, peerMeetingId: null },
-          { $set: { 
-              peerMeetingId: meeting._id,
-              startTime: bestStartTime,
-              status: MeetingStatus.Found
-            }
-          },
-          { session }
-        );
-        
-        if (peerResult.modifiedCount === 0) {
-          // Peer was connected by another process
-          throw PeerAlreadyConnected;
-        }
-        
-
-        // Successfully connected
-        updatedMeeting = await db.collection('meetings').findOne(
-          { _id: meeting._id },
-          { session }
-        );
-
-        // If we get here, transaction was successful
-        console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
-
-        await publishMeetingNotification(NotificationType.MeetingConnected, db, peerMeeting, updatedMeeting)
-        await publishMeetingNotification(NotificationType.MeetingConnected, db, updatedMeeting, peerMeeting)
+        const { peer: peerMeeting, overlap } = peersToChooseFrom[randomIndex];
+        updatedMeeting = await tryConnectTwoMeetings(updatedMeeting, peerMeeting, overlap, db, session)
       });
       break;
     } catch (err) {
@@ -266,4 +217,60 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
   }
 
   return updatedMeeting;
+}
+
+// throws MeetingAlreadyConnected or PeerAlreadyConnected
+export async function tryConnectTwoMeetings(meeting: Meeting, peerMeeting: Meeting, overlap: TimeRange[], db: any, session: any) {
+
+  // Determine the best start time
+  const bestStartTime = determineBestStartTime(overlap, meeting, peerMeeting);
+  
+  // Update this meeting with the peer meeting ID and start time
+  const result = await db.collection('meetings').updateOne(
+    { _id: meeting._id, peerMeetingId: null },
+    { $set: { 
+        peerMeetingId: peerMeeting._id,
+        startTime: bestStartTime,
+        status: MeetingStatus.Found
+      }
+    },
+    { session }
+  );
+  
+  if (result.modifiedCount === 0) {
+    // This meeting was connected by another process
+    throw MeetingAlreadyConnected;
+  }
+  
+  // Update the peer meeting with this meeting's ID and the same start time
+  const peerResult = await db.collection('meetings').updateOne(
+    { _id: peerMeeting._id, peerMeetingId: null },
+    { $set: { 
+        peerMeetingId: meeting._id,
+        startTime: bestStartTime,
+        status: MeetingStatus.Found
+      }
+    },
+    { session }
+  );
+  
+  if (peerResult.modifiedCount === 0) {
+    // Peer was connected by another process
+    throw PeerAlreadyConnected;
+  }
+  
+
+  // Successfully connected
+  const updatedMeeting = await db.collection('meetings').findOne(
+    { _id: meeting._id },
+    { session }
+  );
+
+  // If we get here, transaction was successful
+  console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
+
+  await publishMeetingNotification(NotificationType.MeetingConnected, db, peerMeeting, updatedMeeting)
+  await publishMeetingNotification(NotificationType.MeetingConnected, db, updatedMeeting, peerMeeting)
+
+  return updatedMeeting
 }
