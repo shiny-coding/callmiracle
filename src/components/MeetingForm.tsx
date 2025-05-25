@@ -1,6 +1,6 @@
 import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider, Snackbar, Alert } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect, ChangeEvent, useRef } from 'react'
@@ -8,13 +8,13 @@ import { Interest, Meeting } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
-import { getAvailableTimeSlots, isMeetingPassed, getMatchingInterest, getLateAllowance, getTimeSlotsFromMeeting } from '@/utils/meetingUtils'
+import { getAvailableTimeSlots, getMatchingInterest, getTimeSlotsFromMeeting } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import { getSlotDuration, trySelectHourSlots, SLOT_DURATION } from '@/utils/meetingUtils'
 import LoadingDialog from './LoadingDialog'
 import { useSnackbar } from '@/contexts/SnackContext'
+import { handleMeetingSaveResult, calculateHasValidDuration, trySelectHourSlots } from './MeetingFormUtils'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -29,9 +29,9 @@ export default function MeetingForm() {
 
   const searchParams = useSearchParams()
   const timeslotParam = searchParams?.get('timeslot')
-  const meetingToJoinId = searchParams?.get('meetingToJoinId')
-  const meetingWithPeerToJoin = futureMeetingsWithPeers.find(m => m.meeting._id === meetingToJoinId)
-  const meetingToJoin = meetingWithPeerToJoin?.meeting
+  const meetingToConnectId = searchParams?.get('meetingToConnectId')
+  const meetingWithPeerToConnect = futureMeetingsWithPeers.find(m => m.meeting._id === meetingToConnectId)
+  const meetingToConnect = meetingWithPeerToConnect?.meeting
   const interestToMatch = searchParams?.get('interest')
 
   const [preselectedTimeSlots, setPreselectedTimeSlots] = useState<boolean>(false)
@@ -48,27 +48,37 @@ export default function MeetingForm() {
   const { refetchMeetings } = useMeetings()
   const formContentRef = useRef<HTMLDivElement>(null)
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
+  const locale = useLocale()
 
   const { showSnackbar } = useSnackbar()
 
   // Add these derived values
   const preselectedInterest = (
-    meetingToJoin && interestToMatch
+    meetingToConnect && interestToMatch
       ? Object.values(Interest).find(interest => getMatchingInterest(interest) === interestToMatch)
       : undefined
   )
 
   // Determine if we are joining and which sex to allow
-  const joiningSex = meetingWithPeerToJoin?.peerUser?.sex
+  const joiningSex = meetingWithPeerToConnect?.peerUser?.sex
 
   useEffect(() => {
+    if (loadingMyMeetingsWithPeers || loadingFutureMeetingsWithPeers) return
     const myMeetings = myMeetingsWithPeers.map(m => m.meeting)
-    const availableTimeSlots = meetingToJoin
-      ? getTimeSlotsFromMeeting(myMeetings, meetingToJoin.timeSlots)
+    const availableTimeSlots = meetingToConnect
+      ? getTimeSlotsFromMeeting(myMeetings, meetingToConnect.timeSlots)
       : getAvailableTimeSlots(myMeetings, meeting?._id)
 
+    if (meetingToConnect) {
+      const hasValidDuration = calculateHasValidDuration(meetingToConnect.timeSlots, minDurationM)
+      if (!hasValidDuration) {
+        showSnackbar(t('meetingPassedCannotJoin'), 'error')
+        router.back()
+      }
+    }
+
     setAvailableTimeSlots(availableTimeSlots)
-  }, [myMeetingsWithPeers, meeting, meetingToJoin])
+  }, [myMeetingsWithPeers, meeting, meetingToConnect, loadingMyMeetingsWithPeers, loadingFutureMeetingsWithPeers])
 
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
@@ -84,44 +94,16 @@ export default function MeetingForm() {
         meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
       ])
       setTempLanguages(meeting.languages)
-    } else if (meetingToJoin) {
-      setMinDurationM(meetingToJoin.minDurationM || 60)
+    } else if (meetingToConnect) {
+      setMinDurationM(meetingToConnect.minDurationM || 60)
       setTempInterests([preselectedInterest as Interest])
     }
-  }, [meeting, preselectedInterest, meetingToJoin])
+  }, [meeting, preselectedInterest, meetingToConnect])
 
   // Add new useEffect to validate time slot durations
   useEffect(() => {
-    if (selectedTimeSlots.length === 0) {
-      setHasValidDuration(true)
-      return
-    }
-    
-    const now = new Date().getTime()
-    let longestContinuousDuration = 0
-    let currentContinuousDuration = 0
-    
-    for (let i = 0; i < selectedTimeSlots.length; i++) {
-      const selectedTimeSlot = selectedTimeSlots[i]
-      // Skip slots that are in the past
-      if (now > selectedTimeSlot + SLOT_DURATION) continue
-      const slotDuration = getSlotDuration(selectedTimeSlot)
-      
-      if (i === 0 || selectedTimeSlot - selectedTimeSlots[i-1] !== SLOT_DURATION) {
-        // This is either the first valid slot or there's a gap reset the current duration counter
-        longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
-        currentContinuousDuration = slotDuration
-      } else {
-        // This slot is continuous with the previous one
-        currentContinuousDuration += slotDuration
-      }
-    }
-    
-    // Check one last time after the loop finishes
-    longestContinuousDuration = Math.max(longestContinuousDuration, currentContinuousDuration)
-    const allowance = getLateAllowance(minDurationM)
-    setHasValidDuration(longestContinuousDuration >= minDurationM * 60 * 1000 - allowance)
-  }, [selectedTimeSlots, minDurationM, availableTimeSlots])
+    setHasValidDuration(calculateHasValidDuration(selectedTimeSlots, minDurationM))
+  }, [selectedTimeSlots, minDurationM])
 
   // Preselect timeslot(s) if timeslot param is present
   useEffect(() => {
@@ -129,6 +111,7 @@ export default function MeetingForm() {
       setPreselectedTimeSlots(true)
       const timeslot = parseInt(timeslotParam, 10)
       const slotsToSelect = trySelectHourSlots(timeslot, availableTimeSlots)
+      
       if (slotsToSelect.length > 0) {
         setSelectedTimeSlots(slotsToSelect)
         setTimeout(() => {
@@ -149,7 +132,7 @@ export default function MeetingForm() {
   
 
   if (loadingMyMeetingsWithPeers || errorMyMeetingsWithPeers || 
-    (meetingToJoinId && (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers))) {
+    (meetingToConnectId && (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers))) {
     return <LoadingDialog loading={loadingMyMeetingsWithPeers || loadingFutureMeetingsWithPeers} error={errorMyMeetingsWithPeers || errorFutureMeetingsWithPeers} />
   }
 
@@ -200,23 +183,10 @@ export default function MeetingForm() {
       languages: tempLanguages,
       peerMeetingId: meeting?.peerMeetingId || undefined,
       userId: currentUser?._id || '',
-      meetingToJoinId
+      meetingToConnectId
     }
-
-    // We assume updateMeeting returns a Promise resolving to:
-    // { meeting?: MeetingType; error?: string }
-    // where `error` is a user-friendly message string if an error occurred.
     const result = await updateMeeting(meetingInput)
-
-    if (result && result.error) {
-      // Use t() to translate the error key
-      const errorMessage = t(`MeetingErrors.${result.error}`)
-      showSnackbar(errorMessage, 'error')
-    } else {
-      // No error reported, or result implies success
-      refetchMeetings()
-      router.back()
-    }
+    handleMeetingSaveResult(result, t, refetchMeetings, meetingToConnectId, meetingId, router, locale, showSnackbar)
   }
 
   return (
@@ -232,7 +202,7 @@ export default function MeetingForm() {
       {/* Header */}
       <div className="flex justify-between items-center px-4 py-3 border-b panel-border sticky top-0 bg-inherit z-10">
         <div className="flex-grow font-semibold text-lg">
-          { meetingToJoinId ? t('joinMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
+          { meetingToConnectId ? t('joinMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
         </div>
         <IconButton onClick={handleCancel} size="small" aria-label={t('close')}>
           <CloseIcon />
@@ -243,7 +213,7 @@ export default function MeetingForm() {
         <InterestSelector
           value={tempInterests}
           onChange={setTempInterests}
-          interestsToMatch={meetingToJoin?.interests}
+          interestsToMatch={meetingToConnect?.interests}
         />
         <Typography variant="subtitle1" className="mt-4">
           {t('languages')}
@@ -252,7 +222,7 @@ export default function MeetingForm() {
           value={tempLanguages}
           onChange={setTempLanguages}
           label={t('Profile.iSpeak')}
-          availableLanguages={meetingToJoin?.languages}
+          availableLanguages={meetingToConnect?.languages}
         />
         {tempLanguages.length === 0 && (
           <Typography color="error" className="text-sm">
@@ -263,7 +233,7 @@ export default function MeetingForm() {
           {t('preferences')}
         </Typography>
         <FormGroup>
-          {meetingToJoin ? (
+          {meetingToConnect ? (
             joiningSex === 'male' ? (
               <FormControlLabel
                 control={
@@ -302,7 +272,7 @@ export default function MeetingForm() {
             </>
           )}
         </FormGroup>
-        {!meetingToJoin &&
+        {!meetingToConnect &&
           <>
             <Typography>
               {t('ageRange')}: {tempAgeRange[0]} - {tempAgeRange[1]}
@@ -334,19 +304,19 @@ export default function MeetingForm() {
         <div className="flex gap-4 justify-start">
           <Button
             variant={minDurationM === 30 ? 'contained' : 'outlined'}
-            onClick={() => !meetingToJoin && setMinDurationM(30)}
+            onClick={() => !meetingToConnect && setMinDurationM(30)}
             className="flex-0 basis-1/2"
-            disabled={!!meetingToJoin && minDurationM !== 30}
-            style={{ display: meetingToJoin && minDurationM !== 30 ? 'none' : undefined }}
+            disabled={!!meetingToConnect && minDurationM !== 30}
+            style={{ display: meetingToConnect && minDurationM !== 30 ? 'none' : undefined }}
           >
             30 {t('minutes')}
           </Button>
           <Button
             variant={minDurationM === 60 ? 'contained' : 'outlined'}
-            onClick={() => !meetingToJoin && setMinDurationM(60)}
+            onClick={() => !meetingToConnect && setMinDurationM(60)}
             className="flex-0 basis-1/2"
-            disabled={!!meetingToJoin && minDurationM !== 60}
-            style={{ display: meetingToJoin && minDurationM !== 60 ? 'none' : undefined }}
+            disabled={!!meetingToConnect && minDurationM !== 60}
+            style={{ display: meetingToConnect && minDurationM !== 60 ? 'none' : undefined }}
           >
             1 {t('hour')}
           </Button>

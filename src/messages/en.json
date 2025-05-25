@@ -216,5 +216,11 @@
     "MeetingDoNotSufficientlyOverlapError": "Your availability does not sufficiently overlap with this meeting's time slots.",
     "MeetingNotCancelledError": "Cannot update a meeting that is already matched. Please cancel it first if you need to make changes."
   },
-  "internalError": "An internal error occurred. Please try again later."
+  "internalError": "An internal error occurred. Please try again later.",
+  "meetingConnected": "Meeting successfully connected",
+  "meetingUpdated": "Meeting updated, searching for a partner...",
+  "meetingCreated": "Meeting created, searching for a partner...",
+  "meetingUpdatedAndConnected": "Meeting updated, partner found",
+  "meetingCreatedAndConnected": "Meeting created, partner found",
+  "meetingPassedCannotJoin": "Meeting passed, cannot join"
 } 

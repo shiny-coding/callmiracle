@@ -176,7 +176,7 @@ input MeetingInput {
   allowedMaxAge: Int!
   startTime: Float
   peerMeetingId: ID
-  meetingToJoinId: ID
+  meetingToConnectId: ID
 }
 
 type MeetingOutput {

@@ -9,7 +9,7 @@ import { tryConnectMeetings } from "./connectMeetings"
 export enum MeetingError {
   CannotCreateMeetingInternalError = 'CannotCreateMeetingInternalError',
   CannotUpdateMeetingInternalError = 'CannotUpdateMeetingInternalError',
-  CannotJoinMeetingInternalError = 'CannotJoinMeetingInternalError',
+  CannotConnectMeetingInternalError = 'CannotConnectMeetingInternalError',
   MeetingAlreadyConnectedError = 'MeetingAlreadyConnectedError',
   MeetingDoNotSufficientlyOverlapError = 'MeetingDoNotSufficientlyOverlapError',
   MeetingNotCancelledError = 'MeetingNotCancelledError'
@@ -27,11 +27,11 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
     allowedMinAge,
     allowedMaxAge,
     languages,
-    meetingToJoinId
+    meetingToConnectId
   } = input
 
   const _meetingId = input._id ? new ObjectId(input._id) : new ObjectId()
-  const _meetingToJoinId = meetingToJoinId ? new ObjectId(meetingToJoinId) : undefined
+  const _meetingToConnectId = meetingToConnectId ? new ObjectId(meetingToConnectId) : undefined
   const _userId = new ObjectId(input.userId)
   if (input.peerMeetingId && input._id) {
     return {
@@ -58,8 +58,8 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
     status: MeetingStatus.Seeking
   }
 
-  if ( _meetingToJoinId ) {
-    return await tryJoinMeeting(_meetingToJoinId, _userId, $set, db)
+  if ( _meetingToConnectId ) {
+    return await tryCreateMeetingAndConnect(_meetingToConnectId, _userId, $set, db)
   } else {
     return await createOrUpdateMeetingAndTryJoin(_meetingId, _userId, $set, db)
   }
@@ -101,7 +101,7 @@ async function createOrUpdateMeetingAndTryJoin(_meetingId: ObjectId, _userId: Ob
   }
 }
 
-async function tryJoinMeeting(_meetingToJoinId: ObjectId, _userId: ObjectId, $set: any, db: any): Promise<MeetingOutput> {
+async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId: ObjectId, $set: any, db: any): Promise<MeetingOutput> {
   const session = db.client.startSession();
   const maxRetries = 5
   try {
@@ -116,7 +116,7 @@ async function tryJoinMeeting(_meetingToJoinId: ObjectId, _userId: ObjectId, $se
     }
     console.error(`Failed to join meeting after ${maxRetries} retries`)
     return {
-      error: MeetingError.CannotJoinMeetingInternalError
+      error: MeetingError.CannotConnectMeetingInternalError
     }
   } finally {
     await session.endSession();
@@ -127,13 +127,18 @@ async function tryJoinMeeting(_meetingToJoinId: ObjectId, _userId: ObjectId, $se
     try {
       let myMeeting: any
       await session.withTransaction(async () => {
-        const peerMeeting = await db.collection('meetings').findOne({ _id: _meetingToJoinId })
+        const peerMeeting = await db.collection('meetings').findOne({ _id: _meetingToConnectId })
         if (!peerMeeting) throw new Error('Peer meeting not found')
 
-        myMeeting = await db.collection('meetings').insertOne({
+        const insertResult = await db.collection('meetings').insertOne({
           ...$set,
           createdAt: new Date()
         });
+        myMeeting = await db.collection('meetings').findOne({ _id: insertResult.insertedId });
+        if (!myMeeting) {
+          // This case should ideally not happen if insertOne succeeded
+          throw new Error('Failed to retrieve the newly created meeting');
+        }
 
         const _userIds = [_userId, peerMeeting.userId];
         const users = await db.collection('users').find({
@@ -148,7 +153,7 @@ async function tryJoinMeeting(_meetingToJoinId: ObjectId, _userId: ObjectId, $se
         myMeeting = await tryConnectTwoMeetings(myMeeting, peerMeeting, overlap, db, session)
       });
 
-      return myMeeting
+      return { meeting: myMeeting }
 
     } catch (err) {
       if (err === MeetingAlreadyConnected) {
@@ -159,8 +164,8 @@ async function tryJoinMeeting(_meetingToJoinId: ObjectId, _userId: ObjectId, $se
         console.info('Peer meeting is already connected by someone else')
         return { error: MeetingError.MeetingAlreadyConnectedError }
       } else {
-        console.error('Error joining meeting:', err)
-        return { error: MeetingError.CannotJoinMeetingInternalError }
+        console.error('Error connecting meeting:', err)
+        return { error: MeetingError.CannotConnectMeetingInternalError }
       }
     }
   }

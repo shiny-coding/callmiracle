@@ -305,7 +305,7 @@ export default function MeetingsCalendar() {
                       }
                       return <Tooltip title={tooltipText} placement="top" key={interest}>
                                 {joinableMeeting ?
-                                  <Link href={`/meeting?meetingToJoinId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
+                                  <Link href={`/meeting?meetingToConnectId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
                                     {chip}
                                   </Link>
                                   : chip}

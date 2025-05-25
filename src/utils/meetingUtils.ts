@@ -250,14 +250,14 @@ export function meetingIsActiveNow(meeting: Meeting) {
   return now >= new Date(meeting.startTime) && !isMeetingPassed(meeting)
 }
 
-export function getTimeSlotsFromMeeting(meetings: Meeting[], meetingToJoinTimeSlots: number[]) {
+export function getTimeSlotsFromMeeting(meetings: Meeting[], meetingToConnectTimeSlots: number[]) {
   const occupiedTimeSlots = getOccupiedTimeSlots(meetings)
   const now = new Date().getTime()
   const slots: TimeSlot[] = []
 
-  // Group meetingToJoinTimeSlots by dayKey
+  // Group meetingToConnectTimeSlots by dayKey
   const slotsByDay: { [dayKey: string]: number[] } = {}
-  meetingToJoinTimeSlots.forEach(timestamp => {
+  meetingToConnectTimeSlots.forEach(timestamp => {
     const date = new Date(timestamp)
     const dayKey = format(date, 'yyyy-MM-dd')
     if (!slotsByDay[dayKey]) slotsByDay[dayKey] = []
@@ -364,32 +364,6 @@ export function getSlotDuration(timestamp: number) {
   if (now > timestamp + SLOT_DURATION) return 0; // slot is over
   const slotDuration = now > timestamp ? SLOT_DURATION - (now - timestamp) : SLOT_DURATION
   return slotDuration
-}
-
-
-export function trySelectHourSlots(timeslot: number, availableTimeSlots: TimeSlot[]) {
-  const slotIndex = Math.max(availableTimeSlots.findIndex(slot => slot.timestamp === timeslot), 0)
-  const slot = availableTimeSlots[slotIndex]
-  const slotsToSelect: number[] = []
-  const HOUR_DURATION = 60 * 60 * 1000
-  let slotsToSelectDuration = 0
-  if ( slot && !slot.isDisabled ) {
-    slotsToSelect.push(slot.timestamp)
-    slotsToSelectDuration += getSlotDuration(slot.timestamp)
-    const nextSlot = availableTimeSlots[slotIndex + 1]
-    if (nextSlot && !nextSlot.isDisabled) {
-      slotsToSelect.push(nextSlot.timestamp)
-      slotsToSelectDuration += getSlotDuration(nextSlot.timestamp)
-      if (slotsToSelectDuration < HOUR_DURATION) {
-        const nextNextSlot = availableTimeSlots[slotIndex + 2]
-        if (nextNextSlot && !nextNextSlot.isDisabled) {
-          slotsToSelect.push(nextNextSlot.timestamp)
-          slotsToSelectDuration += getSlotDuration(nextNextSlot.timestamp)
-        }
-      }
-    }
-  }
-  return slotsToSelect
 }
 
 export function getInterestsOverlap(interests1: Interest[], interests2: Interest[]) {

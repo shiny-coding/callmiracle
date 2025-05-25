@@ -143,7 +143,7 @@ export type MeetingInput = {
   timeSlots: Array<Scalars['Float']['input']>;
   userId: Scalars['ID']['input'];
   userName?: InputMaybe<Scalars['String']['input']>;
-  meetingToJoinId?: InputMaybe<Scalars['ID']['input']>;
+  meetingToConnectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type MeetingOutput = {
