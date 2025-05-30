@@ -1,10 +1,20 @@
-import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { createStore } from 'zustand/vanilla'
+import { useStoreWithEqualityFn } from 'zustand/traditional'
+import { persist, createJSONStorage, PersistOptions } from 'zustand/middleware'
 import { Interest, User } from '@/generated/graphql'
 import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
+import { shallow } from 'zustand/shallow'
 
-interface AppState {
+// Define default filter values
+const DEFAULT_FILTER_INTERESTS: Interest[] = []
+const DEFAULT_FILTER_LANGUAGES: string[] = [] // Will be overridden by user's languages on init
+const DEFAULT_FILTER_ALLOWED_MALES = true
+const DEFAULT_FILTER_ALLOWED_FEMALES = true
+const DEFAULT_FILTER_AGE_RANGE: [number, number] = [10, 100]
+const DEFAULT_FILTER_MIN_DURATION_M = 60
+
+export interface AppState {
   currentUser: User | null // non-persisted
   currentUserId: string | null // persisted
   // Call state
@@ -36,19 +46,58 @@ interface AppState {
   setQualityRemoteWantsFromUs: (quality: VideoQuality) => void
   setMeetingId: (id: string | null) => void
   setMeetingLastCallTime: (time: number | null) => void
+
+  // Meeting Filters (these are the applied filters)
+  filterInterests: Interest[]
+  filterLanguages: string[]
+  filterAllowedMales: boolean
+  filterAllowedFemales: boolean
+  filterAgeRange: [number, number]
+  filterMinDurationM: number
+
+  // Filter setters (directly update the applied filters)
+  setFilterInterests: (interests: Interest[]) => void
+  setFilterLanguages: (languages: string[]) => void
+  setFilterAllowedMales: (allowed: boolean) => void
+  setFilterAllowedFemales: (allowed: boolean) => void
+  setFilterAgeRange: (range: [number, number]) => void
+  setFilterMinDurationM: (duration: number) => void
+
+  initializeFilters: (userLanguages: string[]) => void
 }
 
-const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
+// Define which parts of AppState are persisted
+type PersistedAppState = Pick<
+  AppState,
+  | 'currentUserId'
+  | 'callId'
+  | 'connectionStatus'
+  | 'targetUser'
+  | 'role'
+  | 'lastConnectedTime'
+  | 'localAudioEnabled'
+  | 'localVideoEnabled'
+  | 'qualityWeWantFromRemote'
+  | 'qualityRemoteWantsFromUs'
+  | 'meetingId'
+  | 'meetingLastCallTime'
+  | 'filterInterests'
+  | 'filterLanguages'
+  | 'filterAllowedMales'
+  | 'filterAllowedFemales'
+  | 'filterAgeRange'
+  | 'filterMinDurationM'
+>;
 
+const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
 let rehydrated = false
 
-// Split into two parts: persisted and non-persisted
-const useStore = create<AppState>()(
-  persist(
-    (set, get) => ({
-      // Non-persisted state (initialized from server)
+// Type for persist options
+type AppPersistOptions = PersistOptions<AppState, PersistedAppState>
+
+const storeInitializer = persist<AppState, [], [], PersistedAppState>(
+    (set, get): AppState => ({
       currentUser: null,
-      // Persisted state  
       currentUserId: null,
       callId: null,
       connectionStatus: 'disconnected',
@@ -57,19 +106,30 @@ const useStore = create<AppState>()(
       lastConnectedTime: null,
       meetingId: null,
       meetingLastCallTime: null,
-      // Media settings (persisted)
       localAudioEnabled: true,
       localVideoEnabled: true,
       qualityWeWantFromRemote: '720p',
       qualityRemoteWantsFromUs: '720p',
-      setCurrentUser: (currentUser) => set({ currentUser }),
+      filterInterests: DEFAULT_FILTER_INTERESTS,
+      filterLanguages: DEFAULT_FILTER_LANGUAGES,
+      filterAllowedMales: DEFAULT_FILTER_ALLOWED_MALES,
+      filterAllowedFemales: DEFAULT_FILTER_ALLOWED_FEMALES,
+      filterAgeRange: DEFAULT_FILTER_AGE_RANGE,
+      filterMinDurationM: DEFAULT_FILTER_MIN_DURATION_M,
+      setCurrentUser: (currentUser) => {
+        set({ currentUser })
+        if (currentUser) {
+          get().initializeFilters(currentUser.languages || [])
+        } else {
+          get().initializeFilters([])
+        }
+      },
       setCurrentUserId: (currentUserId: string | null) => set({ currentUserId }),
       setCallId: (callId) => { 
         set({ callId })
       },
       setConnectionStatus: (connectionStatus) => {
         set({ connectionStatus })
-        // Update lastConnectedTime when status changes to connected
         if (connectionStatus === 'connected') {
           set({ lastConnectedTime: Date.now() })
         }
@@ -82,7 +142,6 @@ const useStore = create<AppState>()(
         role: null,
         lastConnectedTime: null,
       }),
-      // Media settings setters
       setLocalAudioEnabled: (enabled) => {
         set({ localAudioEnabled: enabled })
       },
@@ -97,11 +156,28 @@ const useStore = create<AppState>()(
       },
       setMeetingId: (id) => set({ meetingId: id }),
       setMeetingLastCallTime: (time) => set({ meetingLastCallTime: time }),
+      setFilterInterests: (interests) => set({ filterInterests: interests }),
+      setFilterLanguages: (languages) => set({ filterLanguages: languages }),
+      setFilterAllowedMales: (allowed) => set({ filterAllowedMales: allowed }),
+      setFilterAllowedFemales: (allowed) => set({ filterAllowedFemales: allowed }),
+      setFilterAgeRange: (range) => set({ filterAgeRange: range }),
+      setFilterMinDurationM: (duration) => set({ filterMinDurationM: duration }),
+      initializeFilters: (userLanguages: string[]) => {
+        const initialLanguages = userLanguages.length > 0 ? [...userLanguages] : DEFAULT_FILTER_LANGUAGES
+        set({
+          filterInterests: DEFAULT_FILTER_INTERESTS,
+          filterLanguages: initialLanguages,
+          filterAllowedMales: DEFAULT_FILTER_ALLOWED_MALES,
+          filterAllowedFemales: DEFAULT_FILTER_ALLOWED_FEMALES,
+          filterAgeRange: DEFAULT_FILTER_AGE_RANGE,
+          filterMinDurationM: DEFAULT_FILTER_MIN_DURATION_M,
+        })
+      },
     }),
     {
       name: 'app-storage',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
+      partialize: (state: AppState): PersistedAppState => ({
         currentUserId: state.currentUserId,
         callId: state.callId,
         connectionStatus: state.connectionStatus,
@@ -114,18 +190,21 @@ const useStore = create<AppState>()(
         qualityRemoteWantsFromUs: state.qualityRemoteWantsFromUs,
         meetingId: state.meetingId,
         meetingLastCallTime: state.meetingLastCallTime,
+        filterInterests: state.filterInterests,
+        filterLanguages: state.filterLanguages,
+        filterAllowedMales: state.filterAllowedMales,
+        filterAllowedFemales: state.filterAllowedFemales,
+        filterAgeRange: state.filterAgeRange,
+        filterMinDurationM: state.filterMinDurationM,
       }),
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state?: AppState, error?: Error) => {
         if (state && !rehydrated) {
           rehydrated = true
-          // Check if we need to handle reconnection
           if ( state.connectionStatus === 'connected' ) {
             const timeSinceLastConnection = Date.now() - (state.lastConnectedTime ?? 0)
             if (timeSinceLastConnection < TWO_MINUTES) {
-              // Within 2 minutes, set to reconnecting
               state.setConnectionStatus('need-reconnect')
             } else {
-              // More than 2 minutes, set to disconnected
               state.setConnectionStatus('disconnected')
               state.clearCallState()
             }
@@ -135,8 +214,15 @@ const useStore = create<AppState>()(
           }
         }
       }
-    }
-  )
-)
+    } as AppPersistOptions
+  );
 
-export { useStore } 
+const vanillaStore = createStore(storeInitializer);
+export { vanillaStore }
+
+export function useStore<TStateSlice>(
+  selector: (state: AppState) => TStateSlice,
+  equalityFn: (a: TStateSlice, b: TStateSlice) => boolean = shallow
+) {
+  return useStoreWithEqualityFn(vanillaStore, selector, equalityFn);
+} 

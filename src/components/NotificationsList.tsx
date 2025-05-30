@@ -8,6 +8,7 @@ import { formatRelativeTime } from '@/utils/formatRelativeTime'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import { NotificationType } from '@/generated/graphql'
+import { useRouter } from 'next/navigation'
 interface NotificationsListProps {
   onClose?: () => void
 }
@@ -25,6 +26,7 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
   
   const t = useTranslations()
   const { setHighlightedMeetingId } = useMeetings()
+  const router = useRouter()
   
   if (loading && notifications.length === 0) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading notifications</Typography>
@@ -47,10 +49,11 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
     setNotificationSeen(notification._id)
     setHighlightedMeetingId(notification.meetingId)
     onClose?.()
+    router.push(`/list`)
   }
 
   return (
-    <Paper className="p-4 bg-gray-800">
+    <Paper className="px-1sp py-1 bg-gray-800">
       {notifications.length > 0 && (
         <Box className="flex justify-end mb-3">
           <Button

@@ -74,6 +74,15 @@ const theme = createTheme({
           }
         }
       }
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          width: 'calc(100% - (var(--ai-scale) * 64px))',
+          margin: 'var(--32sp)',
+          maxWidth: '700px'
+        }
+      }
     }
   }
 })

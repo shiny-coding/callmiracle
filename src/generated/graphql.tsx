@@ -93,15 +93,15 @@ export type DeleteMeetingResponse = {
 
 export enum Interest {
   Chat = 'CHAT',
+  MeditateTogether = 'MEDITATE_TOGETHER',
   MeetNewPeople = 'MEET_NEW_PEOPLE',
   NeedEmotionalSupport = 'NEED_EMOTIONAL_SUPPORT',
   NeedMentalSupport = 'NEED_MENTAL_SUPPORT',
-  ProvideEmotionalSupport = 'PROVIDE_EMOTIONAL_SUPPORT',
-  ProvideMentalSupport = 'PROVIDE_MENTAL_SUPPORT',
-  ProvideListening = 'PROVIDE_LISTENING',
   NeedSpeakingOut = 'NEED_SPEAKING_OUT',
   PrayTogether = 'PRAY_TOGETHER',
-  MeditateTogether = 'MEDITATE_TOGETHER'
+  ProvideEmotionalSupport = 'PROVIDE_EMOTIONAL_SUPPORT',
+  ProvideListening = 'PROVIDE_LISTENING',
+  ProvideMentalSupport = 'PROVIDE_MENTAL_SUPPORT'
 }
 
 export type Meeting = {
@@ -136,6 +136,7 @@ export type MeetingInput = {
   allowedMinAge: Scalars['Int']['input'];
   interests: Array<Interest>;
   languages: Array<Scalars['String']['input']>;
+  meetingToConnectId?: InputMaybe<Scalars['ID']['input']>;
   minDurationM: Scalars['Int']['input'];
   peerMeetingId?: InputMaybe<Scalars['ID']['input']>;
   preferEarlier: Scalars['Boolean']['input'];
@@ -143,13 +144,13 @@ export type MeetingInput = {
   timeSlots: Array<Scalars['Float']['input']>;
   userId: Scalars['ID']['input'];
   userName?: InputMaybe<Scalars['String']['input']>;
-  meetingToConnectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type MeetingOutput = {
-  meeting?: Meeting
-  error?: string
-}
+  __typename?: 'MeetingOutput';
+  error?: Maybe<Scalars['String']['output']>;
+  meeting?: Maybe<Meeting>;
+};
 
 export enum MeetingStatus {
   Called = 'CALLED',
@@ -169,7 +170,7 @@ export type MeetingWithPeer = {
 export type Mutation = {
   __typename?: 'Mutation';
   callUser?: Maybe<CallEvent>;
-  createOrUpdateMeeting?: Maybe<MeetingOutput>;
+  createOrUpdateMeeting: MeetingOutput;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   deleteUser: Scalars['Boolean']['output'];
   setAllNotificationsSeen: Scalars['Boolean']['output'];
@@ -268,6 +269,13 @@ export type QueryGetDetailedCallHistoryArgs = {
 
 
 export type QueryGetFutureMeetingsWithPeersArgs = {
+  filterAllowedFemales?: InputMaybe<Scalars['Boolean']['input']>;
+  filterAllowedMales?: InputMaybe<Scalars['Boolean']['input']>;
+  filterInterests?: InputMaybe<Array<Interest>>;
+  filterLanguages?: InputMaybe<Array<Scalars['String']['input']>>;
+  filterMaxAge?: InputMaybe<Scalars['Int']['input']>;
+  filterMinAge?: InputMaybe<Scalars['Int']['input']>;
+  filterMinDurationM?: InputMaybe<Scalars['Int']['input']>;
   userId: Scalars['ID']['input'];
 };
 
@@ -277,7 +285,7 @@ export type QueryGetMyMeetingsWithPeersArgs = {
 };
 
 
-export type QueryNotificationsArgs = {
+export type QueryGetNotificationsArgs = {
   userId: Scalars['ID']['input'];
 };
 

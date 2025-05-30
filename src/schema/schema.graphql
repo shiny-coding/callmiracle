@@ -199,7 +199,16 @@ type Query {
   getDetailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
   getMyMeetingsWithPeers(userId: ID!): [MeetingWithPeer!]!
   getNotifications(userId: ID!): [Notification!]!
-  getFutureMeetingsWithPeers(userId: ID!): [MeetingWithPeer!]!
+  getFutureMeetingsWithPeers(
+    userId: ID!
+    filterInterests: [Interest!]
+    filterLanguages: [String!]
+    filterAllowedMales: Boolean
+    filterAllowedFemales: Boolean
+    filterMinAge: Int
+    filterMaxAge: Int
+    filterMinDurationM: Int
+  ): [MeetingWithPeer!]!
 }
 
 type Mutation {

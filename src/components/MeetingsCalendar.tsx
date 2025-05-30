@@ -1,9 +1,9 @@
 'use client'
 
-import { useStore } from '@/store/useStore'
-import { Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Chip } from '@mui/material'
+import { useStore, type AppState } from '@/store/useStore'
+import { Paper, Typography, Chip } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { Interest, Meeting } from '@/generated/graphql'
+import { Interest, Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
 import { useMeetings } from '@/contexts/MeetingsContext'
@@ -13,15 +13,41 @@ import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
 import LoadingDialog from './LoadingDialog'
+import MeetingsFilters from './MeetingsFilters'
+import { shallow } from 'zustand/shallow'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
 const CELL_PADDING = `${VERTICAL_CELL_PADDING} ${HORIZONTAL_CELL_PADDING}`
 const MIN_CELL_HEIGHT = '4rem'
 
+// Define props for the new Row component
+interface MeetingsCalendarRowProps {
+  slot: ReturnType<typeof getCalendarTimeSlots>[0];
+  meetingsWithInfos: ReturnType<typeof prepareTimeSlotsInfos>[number];
+  myMeetingSlotToId: Record<number, string>;
+  myMeetingsWithPeers: MeetingWithPeer[];
+  t: (key: string, values?: Record<string, any>) => string; // Adjust type based on your i18n setup
+  slotRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+}
+
 export default function MeetingsCalendar() {
   const t = useTranslations()
-  const { futureMeetingsWithPeers, loadingFutureMeetingsWithPeers, errorFutureMeetingsWithPeers, myMeetingsWithPeers } = useMeetings()
+  const { 
+    currentUser,
+    appliedFilterMinDurationM,
+  } = useStore((state: AppState) => ({
+    currentUser: state.currentUser,
+    appliedFilterMinDurationM: state.filterMinDurationM,
+  }), shallow)
+
+  const { 
+    futureMeetingsWithPeers, 
+    loadingFutureMeetingsWithPeers, 
+    errorFutureMeetingsWithPeers, 
+    myMeetingsWithPeers,
+    refetchFutureMeetingsWithPeers
+  } = useMeetings()
 
   const now = Date.now()
   const HOURS_AHEAD = 24 * 7
@@ -30,8 +56,7 @@ export default function MeetingsCalendar() {
   const gridBodyRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
-
-  const [minDurationM, setMinDurationM] = useState(60)
+  const [filtersHaveChanged, setFiltersHaveChanged] = useState<boolean>(false)
 
   // Collect all meetingIds for quick lookup
   const myMeetingSlotToId: Record<number, string> = {}
@@ -88,7 +113,7 @@ export default function MeetingsCalendar() {
     futureMeetingsWithPeers.map(meetingWithPeer => meetingWithPeer.meeting),
     slots,
     myMeetingsWithPeers,
-    minDurationM
+    appliedFilterMinDurationM
   )
 
   // Group slots by dayKey
@@ -114,226 +139,263 @@ export default function MeetingsCalendar() {
     fontSize: '0.8rem',
   }
 
-
-  // Define grid columns: timeSlot, interests, languages
-  const gridTemplateColumns = `80px 10fr 80px`
-
   return (
-    <Paper className="flex flex-col h-full" sx={{ padding: 'var(--16sp)' }}>
+    <Paper className="flex flex-col h-full relative" sx={{ padding: 'var(--16sp)' }}>
       <Typography variant="h6" sx={{ marginBottom: '0.5rem' }}>{t('upcomingMeetings')}</Typography>
-      {/* Header grid */}
-      <div
-        className="calendar-grid-header input-bg"
-        style={{
-          display: 'grid',
-          gridTemplateColumns,
-          alignItems: 'stretch',
-          width: '100%',
-          position: 'sticky',
-          top: 0,
-          zIndex: 1,
-          paddingRight: '0.8rem',
+
+      <MeetingsFilters 
+        onApplyFilters={() => {
+          if (refetchFutureMeetingsWithPeers) {
+            refetchFutureMeetingsWithPeers()
+          }
         }}
-      >
-        <div style={{ padding: CELL_PADDING, ...headerStyle }}>
-          {t('timeSlot')}
-        </div>
-        <div style={{ padding: CELL_PADDING, ...headerStyle }}>
-          {t('interests')}
-        </div>
-        <div style={{ padding: CELL_PADDING, ...headerStyle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-          {t('languages')}
-        </div>
-      </div>
-      {/* Body grid (scrollable) */}
-      <div
-        className="calendar-grid-body"
-        ref={gridBodyRef}
-        style={{
-          display: 'grid',
-          gridTemplateColumns,
-          alignItems: 'stretch',
-          width: '100%',
-          overflowY: 'auto',
-          flex: 1,
-          position: 'relative'
-        }}
-      >
-        {/* Absolutely positioned sticky day label */}
-        {topDayKey && (
-          <div className="panel-bg panel-border"
+        onFiltersChangedState={setFiltersHaveChanged}
+      />
+
+      {/* Conditional Grid Display */}
+      {!filtersHaveChanged && !loadingFutureMeetingsWithPeers && !errorFutureMeetingsWithPeers && (
+        <>
+          {/* Header grid */}
+          <div
+            className="calendar-grid-header input-bg"
             style={{
-              position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
-              gridColumn: `1 / span 3`, padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
+              display: 'grid',
+              gridTemplateColumns: '80px 10fr 80px',
+              alignItems: 'stretch',
+              width: '100%',
+              position: 'sticky',
+              top: 0,
+              zIndex: 1,
+              paddingRight: '0.8rem',
             }}
           >
-            {getDayLabel(new Date(topDayKey), t)}
+            <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('timeSlot')}</div>
+            <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('interests')}</div>
+            <div style={{ padding: CELL_PADDING, ...headerStyle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              {t('languages')}
+            </div>
           </div>
-        )}
-        {Object.entries(slotsByDay).map(([dayKey, daySlots]) => (
-          <Fragment key={dayKey}>
-            {/* Day label row (skip for today) */}
-            {!isToday(new Date(dayKey)) && (
-              <div style={{ gridColumn: `1 / span 3`, padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
-                {getDayLabel(new Date(dayKey), t)}
+          {/* Body grid (scrollable) */}
+          <div
+            className="calendar-grid-body"
+            ref={gridBodyRef}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '80px 10fr 80px',
+              alignItems: 'stretch',
+              width: '100%',
+              overflowY: 'auto',
+              flex: 1,
+              position: 'relative'
+            }}
+          >
+            {/* Absolutely positioned sticky day label */}
+            {topDayKey && (
+              <div className="panel-bg panel-border"
+                style={{
+                  position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
+                  gridColumn: '1 / span 3', padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
+                }}
+              >
+                {getDayLabel(new Date(topDayKey), t)}
               </div>
             )}
-            {/* Slot rows */}
-            {daySlots.map((slot, slotIdx) => {
-              const meetingsWithInfos = slot2meetingsWithInfos[slot.timestamp]
-              // Count interests
-              type InterestInfo = { count: number, joinableMeeting: Meeting | null, hasMine: boolean }
-              const interest2Info: Record<string, InterestInfo> = {}
-              const languageCounts: Record<string, number> = {}
-
-              for (const { meeting, joinable, isMine } of meetingsWithInfos) {
-                let interests = meeting.interests
-                if ( isMine && meeting.peerMeetingId ) {
-                  const peerMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === meeting.peerMeetingId)?.meeting
-                  interests = getInterestsOverlap(meeting.interests, peerMeeting?.interests as Interest[])
-                }
-                for (const interest of interests) {
-                  let interestInfo = interest2Info[interest]
-                  if ( !interestInfo ) {
-                    interestInfo = { count: 0, joinableMeeting: null, hasMine: false }
-                    interest2Info[interest] = interestInfo
-                  }
-                  interestInfo.count++
-                  interestInfo.hasMine ||= isMine
-                  if (joinable) {
-                    // we select oldest joinable meeting for each interest
-                    if (!interestInfo.joinableMeeting ||
-                      interestInfo.joinableMeeting.createdAt < meeting.createdAt) {
-                      interestInfo.joinableMeeting = meeting
-                    }
-                  }
-                }
-                for (const language of meeting.languages) {
-                  if (!languageCounts[language]) languageCounts[language] = 0
-                  languageCounts[language]++
-                }
-              }
-              const startLabel = slot.isNow ? t('now') : slot.startTime
-
-              // Check if this slot belongs to one of my meetings
-              const myMeetingId = myMeetingSlotToId[slot.timestamp]
-              const myMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === myMeetingId)?.meeting
-              const meetingPassed = myMeeting && isMeetingPassed(myMeeting)
-              const slotLink = `/meeting?timeslot=${slot.timestamp}`
-              let tooltipText = t('createMeeting')
-              let meetingColorClass = FINDING_MEETING_COLOR
-              let timeSlotLink = slotLink;
-
-              if (myMeeting && !meetingPassed) {
-                meetingColorClass = getMeetingColorClass(myMeeting)
-                if ( canEditMeeting(myMeeting) ) {
-                  timeSlotLink = `/meeting/${myMeetingId}`
-                  tooltipText = t('editMeeting')
-                } else {
-                  timeSlotLink = `list?meetingId=${myMeetingId}`
-                  tooltipText = t('viewMeeting')
-                }
-              }
-              const meetingColor = class2Hex(meetingColorClass)
-
-              return (
-                <Fragment key={slot.timestamp}>
-                  {/* Attach ref to the first cell of each slot row */}
-                  <div
-                    ref={el => { slotRefs.current[slot.timestamp] = el }}
-                    style={{
-                      minHeight: MIN_CELL_HEIGHT,
-                      textAlign: 'center',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative',
-                      borderBottom: '1px solid var(--border-color)'
-                    }}
-                    className="calendar-timeslot-cell"
-                  >
-                    <Tooltip title={tooltipText} placement="left">
-                      <Link
-                          href={timeSlotLink}
-                          style={{
-                            color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', justifyContent: 'center'
-                          }}
-                        >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, }}>
-                          {myMeeting && !meetingPassed ? (
-                            <span className={meetingColorClass}
-                              style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s' }} />
-                          ) : (
-                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                              <AddIcon className="calendar-plus" sx={{ width: 20, height: 20, color: '#1976d2', opacity: 0, transition: 'opacity 0.15s' }} />
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'center' }}>
-                          <div className="min-w-8 px-4sp text-center">{startLabel}</div>
-                          -
-                          <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
-                        </div>
-                        <div className="count-badge w-full h-5">{meetingsWithInfos.length ? `(${meetingsWithInfos.length})` : null}</div>
-                      </Link>
-                    </Tooltip>
+            {Object.entries(slotsByDay).map(([dayKey, daySlots]) => (
+              <Fragment key={dayKey}>
+                {/* Day label row (skip for today) */}
+                {!isToday(new Date(dayKey)) && (
+                  <div style={{ gridColumn: '1 / span 3', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
+                    {getDayLabel(new Date(dayKey), t)}
                   </div>
-                  {/* Interests */}
-                  <div
-                    style={{
-                      padding: `0.3rem ${HORIZONTAL_CELL_PADDING}`,
-                      flexWrap: 'wrap',
-                      gap: '0.2rem',
-                      borderBottom: '1px solid var(--border-color)'
-                    }}
-                  >
-                    {Object.entries(interest2Info).map(([interest, { count, joinableMeeting, hasMine }]) => (() => {
-                      const chip = <Chip
-                        label={`${t(`Interest.${interest}`)} (${count})`}
-                        size="small"
-                        style={{  }}
-                        key={interest}
-                      />
-                      let tooltipText;
-                      if (joinableMeeting) {
-                        tooltipText = t('connectWithMeeting')
-                      } else if (hasMine) {
-                        tooltipText = t('myMeeting')
-                      } else {
-                        tooltipText = t('pleaseSelectAnEarlierTimeSlot')
-                      }
-                      return <Tooltip title={tooltipText} placement="top" key={interest}>
-                                {joinableMeeting ?
-                                  <Link href={`/meeting?meetingToConnectId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
-                                    {chip}
-                                  </Link>
-                                  : chip}
-                              </Tooltip>
-                    })())}
-                  </div>
-                  {/* Languages */}
-                  <div
-                    style={{
-                      padding: CELL_PADDING,
-                      borderBottom: '1px solid var(--border-color)'
-                    }}
-                  >
-                    {Object.entries(languageCounts).map(([lang, count]) => (
-                      <Chip
-                        key={lang}
-                        label={`${lang} (${count})`}
-                        size="small"
-                        style={{ }}
-                      />
-                    ))}
-                  </div>
-                </Fragment>
-              )
-            })}
-          </Fragment>
-        ))}
-      </div>
+                )}
+                {/* Slot rows */}
+                {daySlots.map((slot) => {
+                  const meetingsWithInfos = slot2meetingsWithInfos[slot.timestamp]
+                  return (
+                    <MeetingsCalendarRow
+                      key={slot.timestamp}
+                      slot={slot}
+                      meetingsWithInfos={meetingsWithInfos}
+                      myMeetingSlotToId={myMeetingSlotToId}
+                      myMeetingsWithPeers={myMeetingsWithPeers}
+                      t={t}
+                      slotRefs={slotRefs}
+                    />
+                  )
+                })}
+              </Fragment>
+            ))}
+          </div>
+        </>
+      )}
+      
+      {/* Loading/Error state for the grid area, shown when not applying new filters */}
+      {!filtersHaveChanged && (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers) && (
+        <div style={{flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+            <LoadingDialog loading={loadingFutureMeetingsWithPeers} error={errorFutureMeetingsWithPeers} />
+        </div>
+      )}
     </Paper>
   )
 } 
+
+function MeetingsCalendarRow({
+  slot,
+  meetingsWithInfos,
+  myMeetingSlotToId,
+  myMeetingsWithPeers,
+  t,
+  slotRefs
+}: MeetingsCalendarRowProps) {
+  // Count interests
+  type InterestInfo = { count: number, joinableMeeting: Meeting | null, hasMine: boolean }
+  const interest2Info: Record<string, InterestInfo> = {}
+  const languageCounts: Record<string, number> = {}
+
+  for (const { meeting, joinable, isMine } of meetingsWithInfos) {
+    let interests = meeting.interests
+    if ( isMine && meeting.peerMeetingId ) {
+      const peerMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === meeting.peerMeetingId)?.meeting
+      interests = getInterestsOverlap(meeting.interests, peerMeeting?.interests as Interest[])
+    }
+    for (const interest of interests) {
+      let interestInfo = interest2Info[interest]
+      if ( !interestInfo ) {
+        interestInfo = { count: 0, joinableMeeting: null, hasMine: false }
+        interest2Info[interest] = interestInfo
+      }
+      interestInfo.count++
+      interestInfo.hasMine ||= isMine
+      if (joinable) {
+        // we select oldest joinable meeting for each interest
+        if (!interestInfo.joinableMeeting ||
+          interestInfo.joinableMeeting.createdAt < meeting.createdAt) {
+          interestInfo.joinableMeeting = meeting
+        }
+      }
+    }
+    for (const language of meeting.languages) {
+      if (!languageCounts[language]) languageCounts[language] = 0
+      languageCounts[language]++
+    }
+  }
+  const startLabel = slot.isNow ? t('now') : slot.startTime
+
+  // Check if this slot belongs to one of my meetings
+  const myMeetingId = myMeetingSlotToId[slot.timestamp]
+  const myMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === myMeetingId)?.meeting
+  const meetingPassed = myMeeting && isMeetingPassed(myMeeting)
+  const slotLink = `/meeting?timeslot=${slot.timestamp}`
+  let tooltipText = t('createMeeting')
+  let meetingColorClass = FINDING_MEETING_COLOR
+  let timeSlotLink = slotLink;
+
+  if (myMeeting && !meetingPassed) {
+    meetingColorClass = getMeetingColorClass(myMeeting)
+    if ( canEditMeeting(myMeeting) ) {
+      timeSlotLink = `/meeting/${myMeetingId}`
+      tooltipText = t('editMeeting')
+    } else {
+      timeSlotLink = `list?meetingId=${myMeetingId}`
+      tooltipText = t('viewMeeting')
+    }
+  }
+  const meetingColor = class2Hex(meetingColorClass)
+
+  return (
+    <Fragment>
+      {/* Attach ref to the first cell of each slot row */}
+      <div
+        ref={el => { slotRefs.current[slot.timestamp] = el }}
+        style={{
+          minHeight: MIN_CELL_HEIGHT,
+          textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          borderBottom: '1px solid var(--border-color)'
+        }}
+        className="calendar-timeslot-cell"
+      >
+        <Tooltip title={tooltipText} placement="left">
+          <Link
+              href={timeSlotLink}
+              style={{
+                color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, }}>
+              {myMeeting && !meetingPassed ? (
+                <span className={meetingColorClass}
+                  style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s' }} />
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  <AddIcon className="calendar-plus" sx={{ width: 20, height: 20, color: '#1976d2', opacity: 0, transition: 'opacity 0.15s' }} />
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'center' }}>
+              <div className="min-w-8 px-4sp text-center">{startLabel}</div>
+              -
+              <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
+            </div>
+            <div className="count-badge w-full h-5">{meetingsWithInfos.length ? `(${meetingsWithInfos.length})` : null}</div>
+          </Link>
+        </Tooltip>
+      </div>
+      {/* Interests */}
+      <div
+        style={{
+          padding: `0.3rem ${HORIZONTAL_CELL_PADDING}`,
+          flexWrap: 'wrap',
+          gap: '0.2rem',
+          borderBottom: '1px solid var(--border-color)'
+        }}
+      >
+        {Object.entries(interest2Info).map(([interest, { count, joinableMeeting, hasMine }]) => {
+          const chip = <Chip
+            label={`${t(`Interest.${interest}`)} (${count})`}
+            size="small"
+            key={interest}
+          />;
+          let chipTooltipText;
+          if (joinableMeeting) {
+            chipTooltipText = t('connectWithMeeting');
+          } else if (hasMine) {
+            chipTooltipText = t('myMeeting');
+          } else {
+            chipTooltipText = t('pleaseSelectAnEarlierTimeSlot');
+          }
+          return (
+            <Tooltip title={chipTooltipText} placement="top" key={interest + '-tooltip'}>
+              {joinableMeeting ? (
+                <Link href={`/meeting?meetingToConnectId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
+                  {chip}
+                </Link>
+              ) : (
+                chip
+              )}
+            </Tooltip>
+          );
+        })}
+      </div>
+      {/* Languages */}
+      <div
+        style={{
+          padding: CELL_PADDING,
+          borderBottom: '1px solid var(--border-color)'
+        }}
+      >
+        {Object.entries(languageCounts).map(([lang, count]) => (
+          <Chip
+            key={lang}
+            label={`${lang} (${count})`}
+            size="small"
+          />
+        ))}
+      </div>
+    </Fragment>
+  )
+}

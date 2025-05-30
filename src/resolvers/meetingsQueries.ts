@@ -1,8 +1,8 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { isMeetingPassed, getNonBlockedInterests } from '@/utils/meetingUtils'
-import { Meeting, MeetingStatus, User } from '@/generated/graphql'
-import { subDays } from 'date-fns'
+import { Meeting, MeetingStatus, User, Interest } from '@/generated/graphql'
+import { subDays, getYear, subYears } from 'date-fns'
 
 export const meetingsQueries = {
   getMyMeetingsWithPeers: async (_: any, { userId }: { userId: string }, { db }: Context) => {
@@ -117,16 +117,35 @@ export const meetingsQueries = {
       throw new Error('Failed to fetch meetings')
     }
   },
-  getFutureMeetingsWithPeers: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+  getFutureMeetingsWithPeers: async (_: any, { 
+    userId,
+    filterInterests,
+    filterLanguages,
+    filterAllowedMales,
+    filterAllowedFemales,
+    filterMinAge,
+    filterMaxAge,
+    filterMinDurationM
+  }: { 
+    userId: string,
+    filterInterests?: Interest[],
+    filterLanguages?: string[],
+    filterAllowedMales?: boolean,
+    filterAllowedFemales?: boolean,
+    filterMinAge?: number,
+    filterMaxAge?: number,
+    filterMinDurationM?: number
+  }, { db }: Context) => {
     try {
       const _userId = new ObjectId(userId)
       const currentUser: User | null = await db.collection('users').findOne<User>({ _id: _userId })
       if (!currentUser) throw new Error('Current user not found')
 
       const now = Date.now()
+      const currentYear = getYear(new Date())
 
       // 1. Fetch meetings as before
-      const meetings: Meeting[] = await db.collection('meetings').find<Meeting>({
+      const meetingsQuery: any = {
         $and: [
           {
             $or: [
@@ -141,7 +160,13 @@ export const meetingsQueries = {
           },
           { lastSlotEnd: { $gt: now } }
         ]
-      }).toArray()
+      }
+
+      if (filterMinDurationM) {
+        meetingsQuery.$and.push({ minDurationM: { $gte: filterMinDurationM } })
+      }
+
+      const meetings: Meeting[] = await db.collection('meetings').find<Meeting>(meetingsQuery).toArray()
 
       // 2. Collect unique userIds from meetings
       const userIdsSet = new Set<string>( meetings.map(m => m.userId?.toString()) )
@@ -154,9 +179,9 @@ export const meetingsQueries = {
 
       // 4. Map userId string to user object for quick lookup
       const usersById: { [key: string]: User } = {}
-      for (let i = 0; i < usersArr.length; i++) {
-        usersById[usersArr[i]._id.toString()] = usersArr[i]
-      }
+      usersArr.forEach(user => {
+        usersById[user._id.toString()] = user
+      })
 
       const meetingsWithPeers = meetings
         .map(meeting => {
@@ -164,6 +189,43 @@ export const meetingsQueries = {
           const meetingUser = usersById[meetingUserId]
           if (!meetingUser) return null
 
+          // Apply filters
+          if (filterInterests && filterInterests.length > 0) {
+            if (!meeting.interests.some(interest => filterInterests.includes(interest))) {
+              return null
+            }
+          }
+
+          if (filterLanguages && filterLanguages.length > 0) {
+            if (!meeting.languages.some(lang => filterLanguages.includes(lang))) {
+              return null
+            }
+          }
+
+          if (filterAllowedMales === false && meetingUser.sex === 'male') {
+            return null
+          }
+          if (filterAllowedFemales === false && meetingUser.sex === 'female') {
+            return null
+          }
+
+          if (meetingUser.birthYear) {
+            const age = currentYear - meetingUser.birthYear
+            if (filterMinAge && age < filterMinAge) {
+              return null
+            }
+            if (filterMaxAge && age > filterMaxAge) {
+              return null
+            }
+          } else {
+            // If user has no birthYear, they might be excluded if age filters are strict
+            if (filterMinAge || filterMaxAge) {
+                // Decide how to handle users without birthYear when age filters are active
+                // For now, let's exclude them if any age filter is set
+                return null
+            }
+          }
+          
           // Filter interests blocked by meetingUser for currentUser
           const compatibleInterests = getNonBlockedInterests(
             meeting,
@@ -183,14 +245,13 @@ export const meetingsQueries = {
             meeting: {
               ...meeting,
               interests: compatibleForCurrentUser,
-              peerSex: meetingUser.sex
             },
             peerUser: {
               sex: meetingUser.sex
             }
           }
         })
-        .filter(meeting => meeting)
+        .filter(Boolean) // Type assertion after filter(Boolean)
 
       return meetingsWithPeers
     } catch (error) {

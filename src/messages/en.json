@@ -222,5 +222,10 @@
   "meetingCreated": "Meeting created, searching for a partner...",
   "meetingUpdatedAndConnected": "Meeting updated, partner found",
   "meetingCreatedAndConnected": "Meeting created, partner found",
-  "meetingPassedCannotConnect": "Meeting passed, cannot connect"
+  "meetingPassedCannotConnect": "Meeting passed, cannot connect",
+  "filterMeetings": "Filter Meetings",
+  "filterByLanguage": "Filter by language",
+  "filterByInterest": "Filter by interest",
+  "applyFilters": "Apply Filters",
+  "cancelChanges": "Cancel Changes"
 } 

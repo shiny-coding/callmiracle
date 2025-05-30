@@ -33,7 +33,7 @@ export default function NotificationsPopup({ open, onClose }: NotificationsPopup
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent className="px-32sp">
           <NotificationsList onClose={onClose} />
         </DialogContent>
       </Dialog>

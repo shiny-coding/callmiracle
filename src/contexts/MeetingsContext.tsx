@@ -3,6 +3,8 @@ import { useStore } from '@/store/useStore'
 import { ApolloError, gql, useQuery } from '@apollo/client'
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react'
 import { useSubscriptions } from './SubscriptionsContext'
+import { Interest } from '@/generated/graphql'
+import { shallow } from 'zustand/shallow'
 
 export const GET_MEETINGS_WITH_PEERS = gql`
   query GetMyMeetingsWithPeers($userId: ID!) {
@@ -42,8 +44,26 @@ export const GET_MEETINGS_WITH_PEERS = gql`
 `
 
 export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
-  query GetFutureMeetingsWithPeers($userId: ID!) {
-    getFutureMeetingsWithPeers(userId: $userId) {
+  query GetFutureMeetingsWithPeers(
+    $userId: ID!
+    $filterInterests: [Interest!]
+    $filterLanguages: [String!]
+    $filterAllowedMales: Boolean
+    $filterAllowedFemales: Boolean
+    $filterMinAge: Int
+    $filterMaxAge: Int
+    $filterMinDurationM: Int
+  ) {
+    getFutureMeetingsWithPeers(
+      userId: $userId
+      filterInterests: $filterInterests
+      filterLanguages: $filterLanguages
+      filterAllowedMales: $filterAllowedMales
+      filterAllowedFemales: $filterAllowedFemales
+      filterMinAge: $filterMinAge
+      filterMaxAge: $filterMaxAge
+      filterMinDurationM: $filterMinDurationM
+    ) {
       meeting {
         _id
         timeSlots
@@ -69,7 +89,7 @@ interface MeetingsContextType {
   futureMeetingsWithPeers: MeetingWithPeer[]
   loadingFutureMeetingsWithPeers: boolean
   errorFutureMeetingsWithPeers: ApolloError | undefined
-  refetchFutureMeetingsWithPeers: () => void
+  refetchFutureMeetingsWithPeers: (variables?: any) => void
   refetchMeetings: () => void
 }
 
@@ -81,8 +101,33 @@ interface MeetingsProviderProps {
 
 export function MeetingsProvider({ children }: MeetingsProviderProps) {
   const [highlightedMeetingId, setHighlightedMeetingId] = useState<string | null>(null)
-  const { currentUser } = useStore()
+  const { 
+    currentUser,
+    filterInterests,
+    filterLanguages,
+    filterAllowedMales,
+    filterAllowedFemales,
+    filterAgeRange,
+    filterMinDurationM,
+    // initializeFilters
+  } = useStore(state => ({
+    currentUser: state.currentUser,
+    filterInterests: state.filterInterests,
+    filterLanguages: state.filterLanguages,
+    filterAllowedMales: state.filterAllowedMales,
+    filterAllowedFemales: state.filterAllowedFemales,
+    filterAgeRange: state.filterAgeRange,
+    filterMinDurationM: state.filterMinDurationM,
+    // initializeFilters: state.initializeFilters,
+  }), shallow)
   const { subscribeToNotifications, subscribeToBroadcastEvents } = useSubscriptions()
+
+  // useEffect(() => {
+  //   if (currentUser) {
+  //     initializeFilters(currentUser.languages || [])
+  //   }
+  // }, [currentUser, initializeFilters])
+
   const {
     data: myMeetingsWithPeersData,
     loading: loadingMyMeetingsWithPeers,
@@ -98,17 +143,31 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     data: futureMeetingsData,
     loading: loadingFutureMeetingsWithPeers,
     error: errorFutureMeetingsWithPeers,
-    refetch: refetchFutureMeetingsWithPeers
+    refetch: refetchFutureMeetingsWithPeersQuery
   } = useQuery(GET_FUTURE_MEETINGS_WITH_PEERS, {
-    variables: { userId: currentUser?._id },
-    skip: !currentUser?._id
+    variables: {
+      userId: currentUser?._id,
+      filterInterests: filterInterests,
+      filterLanguages: filterLanguages,
+      filterAllowedMales: filterAllowedMales,
+      filterAllowedFemales: filterAllowedFemales,
+      filterMinAge: filterAgeRange[0],
+      filterMaxAge: filterAgeRange[1],
+      filterMinDurationM: filterMinDurationM,
+    },
+    skip: !currentUser?._id,
+    fetchPolicy: 'network-only',
   })
   const futureMeetingsWithPeers = useMemo(() => futureMeetingsData?.getFutureMeetingsWithPeers || [], [futureMeetingsData])
 
+  const refetchFutureMeetings = useCallback((variables?: any) => {
+    refetchFutureMeetingsWithPeersQuery(variables)
+  }, [refetchFutureMeetingsWithPeersQuery])
+
   const refetchMeetings = useCallback(async () => {
     await refetchMyMeetingsWithPeers();
-    await refetchFutureMeetingsWithPeers();
-  }, [refetchMyMeetingsWithPeers, refetchFutureMeetingsWithPeers])
+    await refetchFutureMeetingsWithPeersQuery();
+  }, [refetchMyMeetingsWithPeers, refetchFutureMeetingsWithPeersQuery])
 
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event: NotificationEvent) => {
@@ -140,7 +199,7 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
         futureMeetingsWithPeers,
         loadingFutureMeetingsWithPeers,
         errorFutureMeetingsWithPeers,
-        refetchFutureMeetingsWithPeers,
+        refetchFutureMeetingsWithPeers: refetchFutureMeetings,
         refetchMeetings
       }}
     >

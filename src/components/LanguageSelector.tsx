@@ -44,6 +44,7 @@ function getStyles(name: string, selectedLangs: string[], theme: Theme) {
 export default function LanguageSelector({ value, onChange, label, availableLanguages }: LanguageSelectorProps) {
   const theme = useTheme();
   const t = useTranslations('Profile');
+  const tRoot = useTranslations();
 
   const handleChange = (event: SelectChangeEvent<typeof value>) => {
     const {
@@ -57,23 +58,25 @@ export default function LanguageSelector({ value, onChange, label, availableLang
     ? LANGUAGES.filter(lang => availableLanguages.includes(lang.code))
     : LANGUAGES;
 
+  const displayLabel = label || t('iSpeak');
+
   return (
     <FormGroup className="mb-4">
-      {label && (
+      {displayLabel && (
         <Typography variant="subtitle2" className="mb-2">
-          {label}
+          {displayLabel}
         </Typography>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <FormControl sx={{ m: 1, width: 300 }}>
-          <InputLabel id="language-select-label">{label}</InputLabel>
+          <InputLabel id="language-select-label">{displayLabel}</InputLabel>
           <Select
             labelId="language-select-label"
             id="language-select"
             multiple
             value={value}
             onChange={handleChange}
-            input={<OutlinedInput label={label} />}
+            input={<OutlinedInput label={displayLabel} />}
             renderValue={(selected) => (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {selected.map((langCode) => (
