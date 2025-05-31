@@ -9,7 +9,8 @@ import { getMatchingInterest } from '@/utils/meetingUtils'
 interface InterestSelectorProps {
   value: Interest[]
   onChange: (interests: Interest[]) => void
-  interestsToMatch?: Interest[]
+  interestsToMatch?: Interest[],
+  label?: string
 }
 
 // Define the status relationships map
@@ -23,7 +24,7 @@ export const interestRelationships = new Map<Interest, Interest>([
   [Interest.MeditateTogether, getMatchingInterest(Interest.MeditateTogether)],
 ])
 
-export default function InterestSelector({ value, onChange, interestsToMatch }: InterestSelectorProps) {
+export default function InterestSelector({ value, onChange, interestsToMatch, label }: InterestSelectorProps) {
   const t = useTranslations('Interest')
   const tRoot = useTranslations()
 
@@ -51,7 +52,7 @@ export default function InterestSelector({ value, onChange, interestsToMatch }: 
 
   return (
     <fieldset>
-      <legend className="text-sm font-medium mb-4">{tRoot('selectInterest')}</legend>
+      <legend className="font-medium mb-4">{label || tRoot('selectInterest')}</legend>
       <div className="grid grid-cols-2 gap-4">
         {leftColumnInterests.map((leftInterest, index) => {
           const rightInterest = rightColumnInterests[index]
@@ -62,24 +63,24 @@ export default function InterestSelector({ value, onChange, interestsToMatch }: 
           }
           return (
             <React.Fragment key={leftInterest}>
-                <Button
-                  fullWidth
-                  variant={value.includes(leftInterest) ? "contained" : "outlined"}
-                  onClick={() => toggleInterest(leftInterest)}
-                  className="h-full"
-                  disabled={isInterestDisabled(leftInterest)}
-                >
-                  {t(leftInterest)}
-                </Button>
-                <Button
-                  fullWidth
-                  variant={value.includes(rightInterest) ? "contained" : "outlined"}
-                  onClick={() => toggleInterest(rightInterest)}
-                  className="h-full"
-                  disabled={isInterestDisabled(rightInterest)}
-                >
-                  {t(rightInterest)}
-                </Button>
+              <Button
+                fullWidth
+                variant={value.includes(leftInterest) ? "contained" : "outlined"}
+                onClick={() => toggleInterest(leftInterest)}
+                className="h-full"
+                disabled={isInterestDisabled(leftInterest)}
+              >
+                {t(leftInterest)}
+              </Button>
+              <Button
+                fullWidth
+                variant={value.includes(rightInterest) ? "contained" : "outlined"}
+                onClick={() => toggleInterest(rightInterest)}
+                className="h-full"
+                disabled={isInterestDisabled(rightInterest)}
+              >
+                {t(rightInterest)}
+              </Button>
             </React.Fragment>
           )
         })}

@@ -222,5 +222,10 @@
   "meetingCreated": "Встреча создана, ищем партнера...",
   "meetingUpdatedAndConnected": "Встреча обновлена, партнер найден",
   "meetingCreatedAndConnected": "Встреча создана, партнер найден",
-  "meetingPassedCannotConnect": "Встреча прошла, невозможно присоединиться"
+  "meetingPassedCannotConnect": "Встреча прошла, невозможно присоединиться",
+  "filterMeetings": "Фильтры встреч",
+  "filterByLanguage": "Фильтр по языку",
+  "filterByInterests": "Фильтр по интересам",
+  "applyFilters": "Применить фильтры",
+  "cancelChanges": "Отменить изменения"
 } 

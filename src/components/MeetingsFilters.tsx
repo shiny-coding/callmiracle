@@ -1,19 +1,22 @@
 'use client'
 
-import { Button, Checkbox, FormControlLabel, FormGroup, Slider, Typography } from '@mui/material'
+import { Button, Checkbox, FormControlLabel, FormGroup, Slider, Typography, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Interest } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import InterestSelector from './InterestSelector'
 import LanguageSelector from './LanguageSelector'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 interface MeetingsFiltersProps {
   onApplyFilters: () => void // Callback to trigger refetch in context
   onFiltersChangedState: (changed: boolean) => void // Callback to inform parent about changes
+  onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
 }
 
-export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState }: MeetingsFiltersProps) {
+export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState, onToggleFilters }: MeetingsFiltersProps) {
   const t = useTranslations()
 
   // Applied filters from the store
@@ -56,6 +59,12 @@ export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState 
   const [changedFilterMinDurationM, setChangedFilterMinDurationM] = useState<number>(filterMinDurationM)
 
   const [hasChanges, setHasChanges] = useState<boolean>(false)
+  const [isExpanded, setIsExpanded] = useState<boolean>(false)
+
+  // Refs for scroll restoration
+  const scrollableContainerRef = useRef<HTMLDivElement>(null)
+  const scrollPositionToRestoreRef = useRef<number | null>(null)
+  const bottomBarRef = useRef<HTMLDivElement>(null) // Ref for the bottom bar
 
   // Sync local state when store's applied filters change (e.g., on init or external update)
   useEffect(() => {
@@ -83,14 +92,48 @@ export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState 
       changedFilterAllowedFemales !== filterAllowedFemales ||
       changedFilterAgeRange.join(',') !== filterAgeRange.join(',') ||
       changedFilterMinDurationM !== filterMinDurationM
+
+    if (!hasChanges && changed && isExpanded && scrollableContainerRef.current) {
+      // Capturing scroll position just BEFORE `hasChanges` becomes true
+      scrollPositionToRestoreRef.current = scrollableContainerRef.current.scrollTop
+    }
+
     setHasChanges(changed)
     onFiltersChangedState(changed) // Inform parent
   }, [
     changedFilterInterests, changedFilterLanguages, changedFilterAllowedMales, changedFilterAllowedFemales, changedFilterAgeRange, changedFilterMinDurationM,
     filterInterests, filterLanguages, filterAllowedMales, filterAllowedFemales, filterAgeRange, filterMinDurationM,
-    onFiltersChangedState
+    onFiltersChangedState,
+    isExpanded, // Added dependency
+    hasChanges  // Added dependency for the !hasChanges check
   ])
 
+  // Effect to restore scroll position when hasChanges becomes true
+  useEffect(() => {
+    if (hasChanges && isExpanded && scrollableContainerRef.current && scrollPositionToRestoreRef.current !== null) {
+      const oldScrollTop = scrollPositionToRestoreRef.current
+      const barHeight = bottomBarRef.current?.offsetHeight || 0
+      
+      // Adjust scrollTop to keep the bottom of the visible content in the same place
+      const newScrollTop = oldScrollTop + barHeight
+
+      requestAnimationFrame(() => {
+        if (scrollableContainerRef.current) {
+          scrollableContainerRef.current.scrollTop = newScrollTop
+        }
+      })
+      // Consume the value after attempting to restore
+      scrollPositionToRestoreRef.current = null
+    } else if (!hasChanges) {
+      // If changes are applied or cancelled, reset the stored scroll position
+      scrollPositionToRestoreRef.current = null
+    }
+  }, [hasChanges, isExpanded])
+
+  const handleToggleExpand = () => {
+    setIsExpanded(!isExpanded)
+    onToggleFilters(!isExpanded)
+  }
 
   const handleChangedFilterMalesChange = (checked: boolean) => {
     if (!checked && !changedFilterAllowedFemales) {
@@ -134,80 +177,97 @@ export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState 
 
   return (
     <>
-      <div className="p-4 border-b panel-border mb-4 flex flex-col gap-4">
-        <Typography variant="subtitle1">{t('filterMeetings')}</Typography>
-        <InterestSelector
-          value={changedFilterInterests}
-          onChange={setChangedFilterInterests}
-        />
-        <LanguageSelector
-          value={changedFilterLanguages}
-          onChange={setChangedFilterLanguages}
-          label={t('filterByLanguage')}
-          availableLanguages={currentUser?.languages || []}
-        />
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={changedFilterAllowedMales}
-                onChange={e => handleChangedFilterMalesChange(e.target.checked)}
-              />
-            }
-            label={t('allowMales')}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={changedFilterAllowedFemales}
-                onChange={e => handleChangedFilterFemalesChange(e.target.checked)}
-              />
-            }
-            label={t('allowFemales')}
-          />
-        </FormGroup>
-        <div>
-          <Typography>
-            {t('ageRange')}: {changedFilterAgeRange[0]} - {changedFilterAgeRange[1]}
+      <div className="flex flex-col overflow-hidden">
+        <div className="flex items-center mb-4 cursor-pointer" onClick={handleToggleExpand} style={{ userSelect: 'none' }}>
+          <IconButton size="small">
+            {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
+          </IconButton>
+          <Typography variant="subtitle1" component="span">
+            {t('filterMeetings')}
           </Typography>
-          <div className="w-full px-2">
-            <Slider
-              value={changedFilterAgeRange}
-              onChange={(_, newValue) => setChangedFilterAgeRange(newValue as [number, number])}
-              min={10}
-              max={100}
-              valueLabelDisplay="auto"
-              sx={{ touchAction: 'pan-y', width: '100%', maxWidth: '100%' }}
+        </div>
+
+        {isExpanded && (
+          <div 
+            ref={scrollableContainerRef} 
+            className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4"
+          >
+            <InterestSelector
+              value={changedFilterInterests}
+              onChange={setChangedFilterInterests}
+              label={t('filterByInterests')}
             />
+            <LanguageSelector
+              value={changedFilterLanguages}
+              onChange={setChangedFilterLanguages}
+              label={t('filterByLanguage')}
+              availableLanguages={currentUser?.languages || []}
+            />
+            <FormGroup>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={changedFilterAllowedMales}
+                    onChange={e => handleChangedFilterMalesChange(e.target.checked)}
+                  />
+                }
+                label={t('allowMales')}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={changedFilterAllowedFemales}
+                    onChange={e => handleChangedFilterFemalesChange(e.target.checked)}
+                  />
+                }
+                label={t('allowFemales')}
+              />
+            </FormGroup>
+            <div>
+              <Typography>
+                {t('ageRange')}: {changedFilterAgeRange[0]} - {changedFilterAgeRange[1]}
+              </Typography>
+              <div className="w-full px-4">
+                <Slider
+                  value={changedFilterAgeRange}
+                  onChange={(_, newValue) => setChangedFilterAgeRange(newValue as [number, number])}
+                  min={10}
+                  max={100}
+                  valueLabelDisplay="auto"
+                  sx={{ touchAction: 'pan-y', width: '100%', maxWidth: '100%' }}
+                />
+              </div>
+            </div>
+            <div>
+              <Typography variant="subtitle1" sx={{ marginBottom: '0.5rem' }}>
+                {t('minDuration')}
+              </Typography>
+              <div className="flex gap-4 justify-start">
+                <Button
+                  variant={changedFilterMinDurationM === 30 ? 'contained' : 'outlined'}
+                  onClick={() => setChangedFilterMinDurationM(30)}
+                  className="flex-0 basis-1/2"
+                >
+                  30 {t('minutes')}
+                </Button>
+                <Button
+                  variant={changedFilterMinDurationM === 60 ? 'contained' : 'outlined'}
+                  onClick={() => setChangedFilterMinDurationM(60)}
+                  className="flex-0 basis-1/2"
+                >
+                  1 {t('hour')}
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div>
-          <Typography variant="subtitle1" className="mb-2">
-            {t('minDuration')}
-          </Typography>
-          <div className="flex gap-4 justify-start">
-            <Button
-              variant={changedFilterMinDurationM === 30 ? 'contained' : 'outlined'}
-              onClick={() => setChangedFilterMinDurationM(30)}
-              className="flex-0 basis-1/2"
-            >
-              30 {t('minutes')}
-            </Button>
-            <Button
-              variant={changedFilterMinDurationM === 60 ? 'contained' : 'outlined'}
-              onClick={() => setChangedFilterMinDurationM(60)}
-              className="flex-0 basis-1/2"
-            >
-              1 {t('hour')}
-            </Button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Apply/Cancel Filter Buttons, shown if local state differs from store */}
       {hasChanges && (
         <div
-          className="absolute bottom-4 right-4 left-4 p-3 panel-bg border-t panel-border flex justify-end gap-2 z-20 shadow-lg rounded-md"
+          ref={bottomBarRef} // Assign ref to the bottom bar
+          className="p-3 panel-bg border-t panel-border flex justify-end gap-2 z-20 shadow-lg rounded-md"
           style={{ backgroundColor: 'var(--mui-palette-background-paper)' }}
         >
           <Button onClick={handleCancelClick} variant="outlined">

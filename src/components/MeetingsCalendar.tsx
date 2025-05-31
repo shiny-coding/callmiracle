@@ -49,6 +49,8 @@ export default function MeetingsCalendar() {
     refetchFutureMeetingsWithPeers
   } = useMeetings()
 
+  const [filtersVisible, setFiltersVisible] = useState<boolean>(false)
+
   const now = Date.now()
   const HOURS_AHEAD = 24 * 7
   const slots = getCalendarTimeSlots(now, HOURS_AHEAD)
@@ -140,8 +142,8 @@ export default function MeetingsCalendar() {
   }
 
   return (
-    <Paper className="flex flex-col h-full relative" sx={{ padding: 'var(--16sp)' }}>
-      <Typography variant="h6" sx={{ marginBottom: '0.5rem' }}>{t('upcomingMeetings')}</Typography>
+    <Paper className="flex flex-col relative h-full" sx={{ paddingTop: '0.5rem' }}>
+      <Typography variant="h6" sx={{ marginBottom: '0.5rem', paddingLeft: 'var(--16sp)' }}>{t('upcomingMeetings')}</Typography>
 
       <MeetingsFilters 
         onApplyFilters={() => {
@@ -150,14 +152,15 @@ export default function MeetingsCalendar() {
           }
         }}
         onFiltersChangedState={setFiltersHaveChanged}
-      />
+        onToggleFilters={setFiltersVisible}
+        />
 
-      {/* Conditional Grid Display */}
-      {!filtersHaveChanged && !loadingFutureMeetingsWithPeers && !errorFutureMeetingsWithPeers && (
+      {/* Conditional Grid Display: Only show if filters have NOT changed */}
+      {!filtersVisible && (
         <>
           {/* Header grid */}
           <div
-            className="calendar-grid-header input-bg"
+            className="calendar-grid-header input-bg px-2"
             style={{
               display: 'grid',
               gridTemplateColumns: '80px 10fr 80px',
@@ -177,7 +180,7 @@ export default function MeetingsCalendar() {
           </div>
           {/* Body grid (scrollable) */}
           <div
-            className="calendar-grid-body"
+            className="calendar-grid-body px-2"
             ref={gridBodyRef}
             style={{
               display: 'grid',
@@ -229,7 +232,7 @@ export default function MeetingsCalendar() {
         </>
       )}
       
-      {/* Loading/Error state for the grid area, shown when not applying new filters */}
+      {/* Loading/Error state for the grid area, shown when not applying new filters AND grid is supposed to be visible */}
       {!filtersHaveChanged && (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers) && (
         <div style={{flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
             <LoadingDialog loading={loadingFutureMeetingsWithPeers} error={errorFutureMeetingsWithPeers} />

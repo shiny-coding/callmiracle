@@ -24,7 +24,7 @@ export default function MeetingForm() {
   const { id: meetingId } = useParams()
   const meeting = myMeetingsWithPeers.find(m => m.meeting._id === meetingId)?.meeting
 
-  const { currentUser } = useStore()
+  const { currentUser } = useStore(state => ({ currentUser: state.currentUser }))
   const router = useRouter()
 
   const searchParams = useSearchParams()
@@ -221,7 +221,6 @@ export default function MeetingForm() {
         <LanguageSelector
           value={tempLanguages}
           onChange={setTempLanguages}
-          label={t('Profile.iSpeak')}
           availableLanguages={meetingToConnect?.languages}
         />
         {tempLanguages.length === 0 && (

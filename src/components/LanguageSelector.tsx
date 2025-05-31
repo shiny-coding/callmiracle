@@ -3,7 +3,6 @@
 import { Theme, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import OutlinedInput from '@mui/material/OutlinedInput';
-import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
@@ -42,9 +41,7 @@ function getStyles(name: string, selectedLangs: string[], theme: Theme) {
 }
 
 export default function LanguageSelector({ value, onChange, label, availableLanguages }: LanguageSelectorProps) {
-  const theme = useTheme();
   const t = useTranslations('Profile');
-  const tRoot = useTranslations();
 
   const handleChange = (event: SelectChangeEvent<typeof value>) => {
     const {
@@ -58,37 +55,29 @@ export default function LanguageSelector({ value, onChange, label, availableLang
     ? LANGUAGES.filter(lang => availableLanguages.includes(lang.code))
     : LANGUAGES;
 
-  const displayLabel = label || t('iSpeak');
-
   return (
-    <FormGroup className="mb-4">
-      {displayLabel && (
-        <Typography variant="subtitle2" className="mb-2">
-          {displayLabel}
+    <FormGroup className="">
+      {label && (
+        <Typography variant="subtitle1" className="mb-2">
+          {label}
         </Typography>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <FormControl sx={{ m: 1, width: 300 }}>
-          <InputLabel id="language-select-label">{displayLabel}</InputLabel>
           <Select
-            labelId="language-select-label"
             id="language-select"
             multiple
             value={value}
             onChange={handleChange}
-            input={<OutlinedInput label={displayLabel} />}
+            input={<OutlinedInput />}
             renderValue={(selected) => (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {selected.map((langCode) => (
                   <Chip 
                     key={langCode} 
                     label={LANGUAGES.find(lang => lang.code === langCode)?.name}
-                    onDelete={() => {
-                      onChange(selected.filter(code => code !== langCode));
-                    }}
-                    onMouseDown={(event) => {
-                      event.stopPropagation();
-                    }}
+                    onDelete={() => { onChange(selected.filter(code => code !== langCode)); }}
+                    onMouseDown={(event) => { event.stopPropagation(); }}
                   />
                 ))}
               </Box>

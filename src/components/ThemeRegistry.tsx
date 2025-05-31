@@ -83,7 +83,25 @@ const theme = createTheme({
           maxWidth: '700px'
         }
       }
-    }
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          boxSizing: 'border-box',
+        },
+        contained: {
+          // Assuming the outlined border is 1px. Adjust if it's different.
+          border: '1px solid transparent',
+          padding: '0.35rem',
+        },
+        outlined: {
+          // Explicitly define border for consistency if needed,
+          // or ensure it matches the transparent border width of contained.
+          border: '1px solid', // Color will be from palette or specific overrides,
+          padding: '0.35rem',
+        },
+      }
+    },
   }
 })
 

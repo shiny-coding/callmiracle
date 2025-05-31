@@ -225,7 +225,7 @@
   "meetingPassedCannotConnect": "Meeting passed, cannot connect",
   "filterMeetings": "Filter Meetings",
   "filterByLanguage": "Filter by language",
-  "filterByInterest": "Filter by interest",
+  "filterByInterests": "Filter by interests",
   "applyFilters": "Apply Filters",
   "cancelChanges": "Cancel Changes"
 } 
