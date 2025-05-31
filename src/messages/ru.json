@@ -227,5 +227,7 @@
   "filterByLanguage": "Фильтр по языку",
   "filterByInterests": "Фильтр по интересам",
   "applyFilters": "Применить фильтры",
-  "cancelChanges": "Отменить изменения"
+  "cancelChanges": "Отменить изменения",
+  "males": "мужчины",
+  "females": "женщины"
 } 

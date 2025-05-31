@@ -12,7 +12,7 @@ const DEFAULT_FILTER_LANGUAGES: string[] = [] // Will be overridden by user's la
 const DEFAULT_FILTER_ALLOWED_MALES = true
 const DEFAULT_FILTER_ALLOWED_FEMALES = true
 const DEFAULT_FILTER_AGE_RANGE: [number, number] = [10, 100]
-const DEFAULT_FILTER_MIN_DURATION_M = 60
+const DEFAULT_FILTER_MIN_DURATION_M = 30
 
 export interface AppState {
   currentUser: User | null // non-persisted
@@ -62,8 +62,6 @@ export interface AppState {
   setFilterAllowedFemales: (allowed: boolean) => void
   setFilterAgeRange: (range: [number, number]) => void
   setFilterMinDurationM: (duration: number) => void
-
-  initializeFilters: (userLanguages: string[]) => void
 }
 
 // Define which parts of AppState are persisted
@@ -118,11 +116,6 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       filterMinDurationM: DEFAULT_FILTER_MIN_DURATION_M,
       setCurrentUser: (currentUser) => {
         set({ currentUser })
-        if (currentUser) {
-          get().initializeFilters(currentUser.languages || [])
-        } else {
-          get().initializeFilters([])
-        }
       },
       setCurrentUserId: (currentUserId: string | null) => set({ currentUserId }),
       setCallId: (callId) => { 
@@ -162,17 +155,6 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       setFilterAllowedFemales: (allowed) => set({ filterAllowedFemales: allowed }),
       setFilterAgeRange: (range) => set({ filterAgeRange: range }),
       setFilterMinDurationM: (duration) => set({ filterMinDurationM: duration }),
-      initializeFilters: (userLanguages: string[]) => {
-        const initialLanguages = userLanguages.length > 0 ? [...userLanguages] : DEFAULT_FILTER_LANGUAGES
-        set({
-          filterInterests: DEFAULT_FILTER_INTERESTS,
-          filterLanguages: initialLanguages,
-          filterAllowedMales: DEFAULT_FILTER_ALLOWED_MALES,
-          filterAllowedFemales: DEFAULT_FILTER_ALLOWED_FEMALES,
-          filterAgeRange: DEFAULT_FILTER_AGE_RANGE,
-          filterMinDurationM: DEFAULT_FILTER_MIN_DURATION_M,
-        })
-      },
     }),
     {
       name: 'app-storage',

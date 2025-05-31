@@ -227,5 +227,7 @@
   "filterByLanguage": "Filter by language",
   "filterByInterests": "Filter by interests",
   "applyFilters": "Apply Filters",
-  "cancelChanges": "Cancel Changes"
+  "cancelChanges": "Cancel Changes",
+  "males": "males",
+  "females": "females"
 } 

@@ -9,7 +9,7 @@ import MoodIcon from '@mui/icons-material/Mood'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { Interest, MeetingWithPeer, User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
-import { isMeetingPassed, getSharedInterests, class2Hex, ACTIVE_MEETING_COLOR, PASSED_MEETING_COLOR, SCHEDULED_MEETING_COLOR, FINDING_MEETING_COLOR, getMeetingColorClass, canEditMeeting, meetingIsActiveNow } from '@/utils/meetingUtils'
+import { isMeetingPassed, getSharedInterests, class2Hex, ACTIVE_MEETING_COLOR, PASSED_MEETING_COLOR, SCHEDULED_MEETING_COLOR, FINDING_MEETING_COLOR, getMeetingColorClass, canEditMeeting, meetingIsActiveNow, getLateAllowance } from '@/utils/meetingUtils'
 import React, { useEffect, useState } from 'react'
 import DoneIcon from '@mui/icons-material/Done'
 import CancelIcon from '@mui/icons-material/Cancel'
@@ -47,7 +47,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
   const { deleteMeeting } = useDeleteMeeting()
 
   const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, MeetingLanguagesChips, GenderChip,
-          getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, now, t)
+          getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, t)
 
   const meetingColor = getMeetingColorClass(meeting);
 
@@ -311,6 +311,30 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                     const combinedSlots = combineAdjacentSlots(slots)
                     
                     if (combinedSlots.length === 0) return null;
+
+                    const minDurationMs = meeting.minDurationM * 60 * 1000;
+                    const allowanceMs = getLateAllowance(meeting.minDurationM);
+                    const displayableSlots = combinedSlots.filter(slot => 
+                      now.getTime() <= slot.end - minDurationMs + allowanceMs
+                    );
+
+                    if (displayableSlots.length === 0 && index === Object.entries(timeSlotsByDay).length - 1) {
+                      // If all slots for the last day are filtered out, but we need to show duration
+                      return (
+                        <React.Fragment key={`${day}-duration-only`}>
+                          <Typography variant="body2" className={`${textColor} whitespace-nowrap flex items-center h-6`}>
+                            {day}
+                          </Typography>
+                          <div className="grid grid-cols-[repeat(auto-fill,90px)] gap-1">
+                            <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
+                                {meeting.minDurationM} {t('min')}
+                              </Typography>
+                          </div>
+                        </React.Fragment>
+                      )
+                    }
+                    if (displayableSlots.length === 0) return null;
+
                     const isLastEntry = index === Object.entries(timeSlotsByDay).length - 1
                     return (
                       <React.Fragment key={day}>
@@ -318,7 +342,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                           {day}
                         </Typography>
                         <div className="grid grid-cols-[repeat(auto-fill,90px)] gap-1">
-                          {combinedSlots.map(({start, end}, index) => {
+                          {displayableSlots.map(({start, end}, slotIndex) => {
                             const isActive = isWithinInterval(now, {
                               start: new Date(start),
                               end: new Date(end)

@@ -6,6 +6,7 @@ import { gql } from "@apollo/client";
 import LanguageIcon from '@mui/icons-material/Language'
 import { Chip, SxProps, Typography } from "@mui/material";
 import { format, addMinutes, differenceInMinutes, isWithinInterval, isSameDay, isToday, isPast, formatDistance, differenceInHours, differenceInSeconds } from 'date-fns'
+import { now } from "next-auth/client/_utils";
 import { useTranslations } from 'next-intl'; // Import useTranslations to get its return type
 // Define the type for the t function
 type TFunction = ReturnType<typeof useTranslations>;
@@ -19,14 +20,15 @@ export const UPDATE_MEETING_LAST_CALL = gql`
   }
 `
 
-export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor: string, now: Date, t: TFunction) => {
+export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor: string, t: TFunction) => {
   const meeting = meetingWithPeer.meeting
-  const { currentUser } = useStore()
+  const { currentUser } = useStore(state => ({ currentUser: state.currentUser }))
 
   const formatTimeSlot = (startTimestamp: number, endTimestamp: number) => {
     const startDate = new Date(startTimestamp)
     const endDate = new Date(endTimestamp)
     
+    const now = new Date()
     // Check if this is a partial slot (close to current time)
     const isCurrentSlot = isWithinInterval(now, { start: startDate, end: endDate })
     
@@ -61,7 +63,8 @@ export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor:
   // Group time slots by day
   const groupTimeSlotsByDay = () => {
     const groups: Record<string, number[]> = {}
-    
+    const now = new Date()
+
     // Sort time slots chronologically
     const sortedSlots = [...meeting.timeSlots].sort((a, b) => a - b)
     
@@ -82,7 +85,7 @@ export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor:
     return groups
   }
 
- 
+
   const getPartnerIcon = () => {
     if (meeting.peerMeetingId) {
       if (currentUser?.sex === meetingWithPeer.peerUser?.sex) {

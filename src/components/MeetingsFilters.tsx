@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Interest } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import InterestSelector from './InterestSelector'
+import { interestRelationships } from './InterestSelector'
 import LanguageSelector from './LanguageSelector'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -12,11 +13,10 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 interface MeetingsFiltersProps {
   onApplyFilters: () => void // Callback to trigger refetch in context
-  onFiltersChangedState: (changed: boolean) => void // Callback to inform parent about changes
   onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
 }
 
-export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState, onToggleFilters }: MeetingsFiltersProps) {
+export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: MeetingsFiltersProps) {
   const t = useTranslations()
 
   // Applied filters from the store
@@ -60,6 +60,7 @@ export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState,
 
   const [hasChanges, setHasChanges] = useState<boolean>(false)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
+  const [activeFiltersSummary, setActiveFiltersSummary] = useState<string>('')
 
   // Refs for scroll restoration
   const scrollableContainerRef = useRef<HTMLDivElement>(null)
@@ -99,13 +100,57 @@ export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState,
     }
 
     setHasChanges(changed)
-    onFiltersChangedState(changed) // Inform parent
   }, [
     changedFilterInterests, changedFilterLanguages, changedFilterAllowedMales, changedFilterAllowedFemales, changedFilterAgeRange, changedFilterMinDurationM,
     filterInterests, filterLanguages, filterAllowedMales, filterAllowedFemales, filterAgeRange, filterMinDurationM,
-    onFiltersChangedState,
-    isExpanded, // Added dependency
-    hasChanges  // Added dependency for the !hasChanges check
+    isExpanded,
+    hasChanges
+  ])
+
+  useEffect(() => {
+    const summaryParts: string[] = []
+
+    // Minimum Duration
+    if (changedFilterMinDurationM === 60) {
+      summaryParts.push('60min') // As per user request
+    }
+
+    // Languages
+    const userLanguages = currentUser?.languages || []
+    if (userLanguages.length > 1) {
+      if (changedFilterLanguages.length > 0 && changedFilterLanguages.length < userLanguages.length) {
+        summaryParts.push(changedFilterLanguages.join(', '))
+      }
+    }
+
+    // Interests
+    const allAvailableInterests = Array.from(interestRelationships.keys())
+    if (changedFilterInterests.length > 0 && changedFilterInterests.length < allAvailableInterests.length) {
+      summaryParts.push(changedFilterInterests.map(interest => t(`Interest.${interest}`)).join(', '))
+    }
+
+    // Age Range
+    if (changedFilterAgeRange[0] !== 10 || changedFilterAgeRange[1] !== 100) {
+      summaryParts.push(`${changedFilterAgeRange[0]}-${changedFilterAgeRange[1]}`)
+    }
+
+    // Allowed Genders
+    if (!changedFilterAllowedMales && changedFilterAllowedFemales) { // Only females allowed
+      summaryParts.push(t('females')) // Assuming t('females') is a concise translation key
+    } else if (changedFilterAllowedMales && !changedFilterAllowedFemales) { // Only males allowed
+      summaryParts.push(t('males')) // Assuming t('males') is a concise translation key
+    }
+
+    setActiveFiltersSummary(summaryParts.join(', '))
+  }, [
+    changedFilterMinDurationM,
+    changedFilterLanguages,
+    changedFilterInterests,
+    changedFilterAgeRange,
+    changedFilterAllowedMales,
+    changedFilterAllowedFemales,
+    currentUser?.languages,
+    t
   ])
 
   // Effect to restore scroll position when hasChanges becomes true
@@ -160,7 +205,7 @@ export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState,
     
     onApplyFilters() // This will trigger the refetch in MeetingsContext
     setHasChanges(false) // Reset after applying
-    onFiltersChangedState(false)
+    onToggleFilters(false)
   }
 
   const handleCancelClick = () => {
@@ -172,7 +217,7 @@ export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState,
     setChangedFilterAgeRange([...filterAgeRange] as [number, number])
     setChangedFilterMinDurationM(filterMinDurationM)
     setHasChanges(false)
-    onFiltersChangedState(false)
+    onToggleFilters(false)
   }
 
   return (
@@ -185,6 +230,11 @@ export default function MeetingsFilters({ onApplyFilters, onFiltersChangedState,
           <Typography variant="subtitle1" component="span">
             {t('filterMeetings')}
           </Typography>
+          {!isExpanded && activeFiltersSummary && (
+            <Typography variant="caption" component="span" sx={{ ml: 1, color: 'text.secondary', flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'wrap' }}>
+              ({activeFiltersSummary})
+            </Typography>
+          )}
         </div>
 
         {isExpanded && (

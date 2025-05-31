@@ -58,7 +58,6 @@ export default function MeetingsCalendar() {
   const gridBodyRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
-  const [filtersHaveChanged, setFiltersHaveChanged] = useState<boolean>(false)
 
   // Collect all meetingIds for quick lookup
   const myMeetingSlotToId: Record<number, string> = {}
@@ -151,7 +150,6 @@ export default function MeetingsCalendar() {
             refetchFutureMeetingsWithPeers()
           }
         }}
-        onFiltersChangedState={setFiltersHaveChanged}
         onToggleFilters={setFiltersVisible}
         />
 
@@ -230,13 +228,6 @@ export default function MeetingsCalendar() {
             ))}
           </div>
         </>
-      )}
-      
-      {/* Loading/Error state for the grid area, shown when not applying new filters AND grid is supposed to be visible */}
-      {!filtersHaveChanged && (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers) && (
-        <div style={{flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            <LoadingDialog loading={loadingFutureMeetingsWithPeers} error={errorFutureMeetingsWithPeers} />
-        </div>
       )}
     </Paper>
   )
