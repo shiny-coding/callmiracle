@@ -15,14 +15,15 @@ import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import LoadingDialog from './LoadingDialog'
+import { NetworkStatus } from '@apollo/client'
 
 export default function MeetingsList() {
 
   const t = useTranslations()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
-  const { highlightedMeetingId, setHighlightedMeetingId, myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, refetchMyMeetingsWithPeers } = useMeetings()
+  const { highlightedMeetingId, setHighlightedMeetingId, myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, refetchMyMeetingsWithPeers, networkStatusMyMeetings } = useMeetings()
   const meetingRefs = useRef<Record<string, HTMLElement>>({})
-  const { currentUser } = useStore()
+  const { currentUser } = useStore(state => ({ currentUser: state.currentUser, }))
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -62,8 +63,10 @@ export default function MeetingsList() {
     }
   }, [searchParams, setHighlightedMeetingId])
 
-  if (loadingMyMeetingsWithPeers || errorMyMeetingsWithPeers) {
-    return <LoadingDialog loading={loadingMyMeetingsWithPeers} error={errorMyMeetingsWithPeers} />
+  const isLoading = loadingMyMeetingsWithPeers || networkStatusMyMeetings === NetworkStatus.refetch
+
+  if (isLoading || errorMyMeetingsWithPeers) {
+    return <LoadingDialog loading={isLoading} error={errorMyMeetingsWithPeers} />
   }
 
   return (

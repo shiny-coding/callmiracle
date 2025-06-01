@@ -7,16 +7,15 @@ import { useStore } from '@/store/useStore'
 import InterestSelector from './InterestSelector'
 import { interestRelationships } from './InterestSelector'
 import LanguageSelector from './LanguageSelector'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 
 interface MeetingsFiltersProps {
-  onApplyFilters: () => void // Callback to trigger refetch in context
   onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
 }
 
-export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: MeetingsFiltersProps) {
+export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProps) {
   const t = useTranslations()
 
   // Applied filters from the store
@@ -62,10 +61,7 @@ export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: Mee
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [activeFiltersSummary, setActiveFiltersSummary] = useState<string>('')
 
-  // Refs for scroll restoration
   const scrollableContainerRef = useRef<HTMLDivElement>(null)
-  const scrollPositionToRestoreRef = useRef<number | null>(null)
-  const bottomBarRef = useRef<HTMLDivElement>(null) // Ref for the bottom bar
 
   // Sync local state when store's applied filters change (e.g., on init or external update)
   useEffect(() => {
@@ -94,17 +90,10 @@ export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: Mee
       changedFilterAgeRange.join(',') !== filterAgeRange.join(',') ||
       changedFilterMinDurationM !== filterMinDurationM
 
-    if (!hasChanges && changed && isExpanded && scrollableContainerRef.current) {
-      // Capturing scroll position just BEFORE `hasChanges` becomes true
-      scrollPositionToRestoreRef.current = scrollableContainerRef.current.scrollTop
-    }
-
     setHasChanges(changed)
   }, [
     changedFilterInterests, changedFilterLanguages, changedFilterAllowedMales, changedFilterAllowedFemales, changedFilterAgeRange, changedFilterMinDurationM,
-    filterInterests, filterLanguages, filterAllowedMales, filterAllowedFemales, filterAgeRange, filterMinDurationM,
-    isExpanded,
-    hasChanges
+    filterInterests, filterLanguages, filterAllowedMales, filterAllowedFemales, filterAgeRange, filterMinDurationM
   ])
 
   useEffect(() => {
@@ -112,7 +101,7 @@ export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: Mee
 
     // Minimum Duration
     if (changedFilterMinDurationM === 60) {
-      summaryParts.push('60min') // As per user request
+      summaryParts.push('60min')
     }
 
     // Languages
@@ -136,9 +125,9 @@ export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: Mee
 
     // Allowed Genders
     if (!changedFilterAllowedMales && changedFilterAllowedFemales) { // Only females allowed
-      summaryParts.push(t('females')) // Assuming t('females') is a concise translation key
+      summaryParts.push(t('females'))
     } else if (changedFilterAllowedMales && !changedFilterAllowedFemales) { // Only males allowed
-      summaryParts.push(t('males')) // Assuming t('males') is a concise translation key
+      summaryParts.push(t('males'))
     }
 
     setActiveFiltersSummary(summaryParts.join(', '))
@@ -152,28 +141,6 @@ export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: Mee
     currentUser?.languages,
     t
   ])
-
-  // Effect to restore scroll position when hasChanges becomes true
-  useEffect(() => {
-    if (hasChanges && isExpanded && scrollableContainerRef.current && scrollPositionToRestoreRef.current !== null) {
-      const oldScrollTop = scrollPositionToRestoreRef.current
-      const barHeight = bottomBarRef.current?.offsetHeight || 0
-      
-      // Adjust scrollTop to keep the bottom of the visible content in the same place
-      const newScrollTop = oldScrollTop + barHeight
-
-      requestAnimationFrame(() => {
-        if (scrollableContainerRef.current) {
-          scrollableContainerRef.current.scrollTop = newScrollTop
-        }
-      })
-      // Consume the value after attempting to restore
-      scrollPositionToRestoreRef.current = null
-    } else if (!hasChanges) {
-      // If changes are applied or cancelled, reset the stored scroll position
-      scrollPositionToRestoreRef.current = null
-    }
-  }, [hasChanges, isExpanded])
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded)
@@ -203,9 +170,9 @@ export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: Mee
     setFilterAgeRange([...changedFilterAgeRange] as [number, number])
     setFilterMinDurationM(changedFilterMinDurationM)
     
-    onApplyFilters() // This will trigger the refetch in MeetingsContext
     setHasChanges(false) // Reset after applying
-    onToggleFilters(false)
+    setIsExpanded(false) // Collapse the filter section
+    onToggleFilters(false) // Inform parent about visibility change
   }
 
   const handleCancelClick = () => {
@@ -217,17 +184,23 @@ export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: Mee
     setChangedFilterAgeRange([...filterAgeRange] as [number, number])
     setChangedFilterMinDurationM(filterMinDurationM)
     setHasChanges(false)
-    onToggleFilters(false)
+    setIsExpanded(false) // Collapse the filter section
+    onToggleFilters(false) // Inform parent about visibility change
+  }
+
+  const handleBackClick = () => {
+    setIsExpanded(false)
+    onToggleFilters(false) // Inform parent about visibility change
   }
 
   return (
     <>
       <div className="flex flex-col overflow-hidden">
-        <div className="flex items-center mb-4 cursor-pointer" onClick={handleToggleExpand} style={{ userSelect: 'none' }}>
-          <IconButton size="small">
+        <div className="flex items-center mb-4" style={{ userSelect: 'none' }}>
+          <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
             {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
           </IconButton>
-          <Typography variant="subtitle1" component="span">
+          <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
             {t('filterMeetings')}
           </Typography>
           {!isExpanded && activeFiltersSummary && (
@@ -313,19 +286,26 @@ export default function MeetingsFilters({ onApplyFilters, onToggleFilters }: Mee
         )}
       </div>
 
-      {/* Apply/Cancel Filter Buttons, shown if local state differs from store */}
-      {hasChanges && (
+      {/* Buttons bar, always shown when filters are expanded */}
+      {isExpanded && (
         <div
-          ref={bottomBarRef} // Assign ref to the bottom bar
           className="p-3 panel-bg border-t panel-border flex justify-end gap-2 z-20 shadow-lg rounded-md"
           style={{ backgroundColor: 'var(--mui-palette-background-paper)' }}
         >
-          <Button onClick={handleCancelClick} variant="outlined">
-            {t('cancelChanges')}
-          </Button>
-          <Button onClick={handleApplyClick} variant="contained" color="primary">
-            {t('applyFilters')}
-          </Button>
+          {hasChanges ? (
+            <>
+              <Button onClick={handleCancelClick} variant="outlined">
+                {t('cancelChanges')}
+              </Button>
+              <Button onClick={handleApplyClick} variant="contained" color="primary">
+                {t('applyFilters')}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handleBackClick} variant="outlined">
+              {t('back')}
+            </Button>
+          )}
         </div>
       )}
     </>

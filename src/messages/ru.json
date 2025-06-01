@@ -229,5 +229,9 @@
   "applyFilters": "Применить фильтры",
   "cancelChanges": "Отменить изменения",
   "males": "мужчины",
-  "females": "женщины"
+  "females": "женщины",
+  "expandFilters": "Развернуть фильтры",
+  "collapseFilters": "Свернуть фильтры",
+  "refreshMeetings": "Обновить встречи",
+  "createNewMeeting": "Создать новую встречу"
 } 

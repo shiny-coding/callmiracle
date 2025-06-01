@@ -1,7 +1,7 @@
 'use client'
 
 import { useStore, type AppState } from '@/store/useStore'
-import { Paper, Typography, Chip } from '@mui/material'
+import { Paper, Typography, Chip, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Interest, Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
@@ -15,6 +15,11 @@ import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarU
 import LoadingDialog from './LoadingDialog'
 import MeetingsFilters from './MeetingsFilters'
 import { shallow } from 'zustand/shallow'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import { useRouter } from 'next/navigation'
+import { isProfileComplete } from '@/utils/userUtils'
+import ProfileIncompleteDialog from './ProfileIncompleteDialog'
+import { NetworkStatus } from '@apollo/client'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -41,12 +46,16 @@ export default function MeetingsCalendar() {
     appliedFilterMinDurationM: state.filterMinDurationM,
   }), shallow)
 
+  const router = useRouter()
+  const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
+
   const { 
     futureMeetingsWithPeers, 
     loadingFutureMeetingsWithPeers, 
     errorFutureMeetingsWithPeers, 
     myMeetingsWithPeers,
-    refetchFutureMeetingsWithPeers
+    refetchFutureMeetingsWithPeers,
+    networkStatusFutureMeetings
   } = useMeetings()
 
   const [filtersVisible, setFiltersVisible] = useState<boolean>(false)
@@ -105,8 +114,10 @@ export default function MeetingsCalendar() {
     }
   }, [slots])
 
-  if (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers) {
-    return <LoadingDialog loading={loadingFutureMeetingsWithPeers} error={errorFutureMeetingsWithPeers} />
+  const isLoading = loadingFutureMeetingsWithPeers || networkStatusFutureMeetings === NetworkStatus.refetch
+
+  if (isLoading || errorFutureMeetingsWithPeers) {
+    return <LoadingDialog loading={isLoading} error={errorFutureMeetingsWithPeers} />
   }
 
   // Map: slotTime -> meetings
@@ -142,14 +153,28 @@ export default function MeetingsCalendar() {
 
   return (
     <Paper className="flex flex-col relative h-full" sx={{ paddingTop: '0.5rem' }}>
-      <Typography variant="h6" sx={{ marginBottom: '0.5rem', paddingLeft: 'var(--16sp)' }}>{t('upcomingMeetings')}</Typography>
+      <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 'var(--16sp)', paddingRight: '0.5rem', marginBottom: '0.5rem' }}>
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>{t('upcomingMeetings')}</Typography>
+        <IconButton
+          onClick={() => {
+            if (!currentUser || !isProfileComplete(currentUser)) {
+              setProfileIncompleteDialogOpen(true)
+              return
+            }
+            router.push('/meeting')
+          }}
+          aria-label={t('createNewMeeting')}
+          size="small"
+          sx={{ ml: 1 }}
+        >
+          <AddIcon />
+        </IconButton>
+        <IconButton onClick={() => { if (refetchFutureMeetingsWithPeers) refetchFutureMeetingsWithPeers() }} aria-label={t('refreshMeetings')} sx={{ ml: 1 }}>
+          <RefreshIcon />
+        </IconButton>
+      </div>
 
       <MeetingsFilters 
-        onApplyFilters={() => {
-          if (refetchFutureMeetingsWithPeers) {
-            refetchFutureMeetingsWithPeers()
-          }
-        }}
         onToggleFilters={setFiltersVisible}
         />
 
@@ -229,6 +254,10 @@ export default function MeetingsCalendar() {
           </div>
         </>
       )}
+      <ProfileIncompleteDialog
+        open={profileIncompleteDialogOpen}
+        onClose={() => setProfileIncompleteDialogOpen(false)}
+      />
     </Paper>
   )
 } 

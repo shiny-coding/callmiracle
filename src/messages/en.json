@@ -223,11 +223,15 @@
   "meetingUpdatedAndConnected": "Meeting updated, partner found",
   "meetingCreatedAndConnected": "Meeting created, partner found",
   "meetingPassedCannotConnect": "Meeting passed, cannot connect",
-  "filterMeetings": "Filter Meetings",
   "filterByLanguage": "Filter by language",
   "filterByInterests": "Filter by interests",
   "applyFilters": "Apply Filters",
   "cancelChanges": "Cancel Changes",
   "males": "males",
-  "females": "females"
+  "females": "females",
+  "expandFilters": "Expand Filters",
+  "collapseFilters": "Collapse Filters",
+  "refreshMeetings": "Refresh Meetings",
+  "filterMeetings": "Filter Meetings",
+  "createNewMeeting": "Create New Meeting"
 } 

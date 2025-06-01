@@ -1,6 +1,6 @@
 import { MeetingWithPeer, Meeting, NotificationEvent, BroadcastEvent } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
-import { ApolloError, gql, useQuery } from '@apollo/client'
+import { ApolloError, gql, useQuery, NetworkStatus } from '@apollo/client'
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react'
 import { useSubscriptions } from './SubscriptionsContext'
 import { Interest } from '@/generated/graphql'
@@ -85,10 +85,12 @@ interface MeetingsContextType {
   myMeetingsWithPeers: MeetingWithPeer[]
   loadingMyMeetingsWithPeers: boolean
   errorMyMeetingsWithPeers: ApolloError | undefined
+  networkStatusMyMeetings?: NetworkStatus
   refetchMyMeetingsWithPeers: () => void
   futureMeetingsWithPeers: MeetingWithPeer[]
   loadingFutureMeetingsWithPeers: boolean
   errorFutureMeetingsWithPeers: ApolloError | undefined
+  networkStatusFutureMeetings?: NetworkStatus
   refetchFutureMeetingsWithPeers: (variables?: any) => void
   refetchMeetings: () => void
 }
@@ -132,10 +134,12 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     data: myMeetingsWithPeersData,
     loading: loadingMyMeetingsWithPeers,
     error: errorMyMeetingsWithPeers,
-    refetch: refetchMyMeetingsWithPeers }
-    = useQuery(GET_MEETINGS_WITH_PEERS, {
-      variables: { userId: currentUser?._id }
-    })
+    refetch: refetchMyMeetingsWithPeers,
+    networkStatus: networkStatusMyMeetings
+  } = useQuery(GET_MEETINGS_WITH_PEERS, {
+    variables: { userId: currentUser?._id },
+    notifyOnNetworkStatusChange: true,
+  })
 
   const myMeetingsWithPeers = useMemo(() => myMeetingsWithPeersData?.getMyMeetingsWithPeers || [], [myMeetingsWithPeersData])
 
@@ -143,7 +147,8 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     data: futureMeetingsData,
     loading: loadingFutureMeetingsWithPeers,
     error: errorFutureMeetingsWithPeers,
-    refetch: refetchFutureMeetingsWithPeersQuery
+    refetch: refetchFutureMeetingsWithPeersQuery,
+    networkStatus: networkStatusFutureMeetings
   } = useQuery(GET_FUTURE_MEETINGS_WITH_PEERS, {
     variables: {
       userId: currentUser?._id,
@@ -157,6 +162,7 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     },
     skip: !currentUser?._id,
     fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
   })
   const futureMeetingsWithPeers = useMemo(() => futureMeetingsData?.getFutureMeetingsWithPeers || [], [futureMeetingsData])
 
@@ -195,10 +201,12 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
         myMeetingsWithPeers,
         loadingMyMeetingsWithPeers,
         errorMyMeetingsWithPeers,
+        networkStatusMyMeetings,
         refetchMyMeetingsWithPeers,
         futureMeetingsWithPeers,
         loadingFutureMeetingsWithPeers,
         errorFutureMeetingsWithPeers,
+        networkStatusFutureMeetings,
         refetchFutureMeetingsWithPeers: refetchFutureMeetings,
         refetchMeetings
       }}
