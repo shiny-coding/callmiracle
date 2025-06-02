@@ -19,6 +19,7 @@ import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import LoadingDialog from './LoadingDialog'
 import { NetworkStatus } from '@apollo/client'
+import PageHeader from './PageHeader'
 
 export default function MeetingsList() {
 
@@ -87,32 +88,28 @@ export default function MeetingsList() {
   return (
     <>
       <Paper className="bg-gray-800 flex flex-col h-full">
-        <div className="flex justify-between items-center p-4">
-          <div className="flex items-center gap-2">
-            <ViewListIcon className="text-blue-400" />
-            <Typography variant="h6">
-              {t('myMeetings')}
-            </Typography>
-          </div>
-          <div className="flex gap-2">
-            <IconButton
-              onClick={handleAddNewMeetingClick}
-              size="small"
-              className="hover:bg-gray-700 text-white"
-              title={t('createNewMeeting')}
-            >
-              <AddIcon className="text-white" />
-            </IconButton>
-            <IconButton 
-              onClick={() => refetchMyMeetingsWithPeers()} 
-              size="small"
-              className="hover:bg-gray-700 text-white"
-              title={t('refreshMeetings')}
-            >
-              <RefreshIcon className="text-white" />
-            </IconButton>
-          </div>
-        </div>
+        <PageHeader 
+          icon={<ViewListIcon className="text-blue-400" />}
+          title={t('myMeetings')}
+        >
+          <IconButton
+            onClick={handleAddNewMeetingClick}
+            size="small"
+            className="hover:bg-gray-700 text-white"
+            title={t('createNewMeeting')}
+          >
+            <AddIcon className="text-white" />
+          </IconButton>
+          <IconButton 
+            onClick={() => refetchMyMeetingsWithPeers()} 
+            size="small"
+            className="hover:bg-gray-700 text-white"
+            title={t('refreshMeetings')}
+          >
+            <RefreshIcon className="text-white" />
+          </IconButton>
+        </PageHeader>
+        
         <div className="flex-grow overflow-y-auto px-4">
           <List className="space-y-4">
             {allMeetingsPassedOrNoneExist && (

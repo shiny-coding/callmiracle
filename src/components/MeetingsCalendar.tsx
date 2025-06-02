@@ -15,6 +15,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
 import LoadingDialog from './LoadingDialog'
 import MeetingsFilters from './MeetingsFilters'
+import PageHeader from './PageHeader'
 import { shallow } from 'zustand/shallow'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useRouter } from 'next/navigation'
@@ -154,9 +155,10 @@ export default function MeetingsCalendar() {
 
   return (
     <Paper className="flex flex-col relative h-full">
-      <div className="flex justify-between items-center p-4">
-        <CalendarTodayIcon sx={{ marginRight: '0.5rem' }} />
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>{t('upcomingMeetings')}</Typography>
+      <PageHeader
+        icon={<CalendarTodayIcon />}
+        title={t('upcomingMeetings')}
+      >
         <IconButton
           onClick={() => {
             if (!currentUser || !isProfileComplete(currentUser)) {
@@ -166,15 +168,20 @@ export default function MeetingsCalendar() {
             router.push('/meeting')
           }}
           aria-label={t('createNewMeeting')}
+          title={t('createNewMeeting')}
           size="small"
-          sx={{ ml: 1 }}
         >
           <AddIcon />
         </IconButton>
-        <IconButton onClick={() => { if (refetchFutureMeetingsWithPeers) refetchFutureMeetingsWithPeers() }} aria-label={t('refreshMeetings')} sx={{ ml: 1 }}>
+        <IconButton 
+            onClick={() => { if (refetchFutureMeetingsWithPeers) refetchFutureMeetingsWithPeers() }} 
+            aria-label={t('refreshMeetings')} 
+            title={t('refreshMeetings')} 
+            size="small"
+        >
           <RefreshIcon />
         </IconButton>
-      </div>
+      </PageHeader>
 
       <MeetingsFilters 
         onToggleFilters={setFiltersVisible}

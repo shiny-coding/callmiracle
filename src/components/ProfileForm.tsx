@@ -19,6 +19,8 @@ import { signOut } from 'next-auth/react'
 import { gql, useMutation } from '@apollo/client'
 import { useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress'
+import PageHeader from './PageHeader'
+
 const DELETE_USER = gql`
   mutation DeleteUser($userId: ID!) {
     deleteUser(userId: $userId)
@@ -187,27 +189,25 @@ export default function ProfileForm() {
         </div>
       )}
       {/* Header */}
-      <div className="flex justify-between items-center px-4 py-3 border-b panel-border">
-        <div className="flex-grow font-semibold text-lg">{t('title')}</div>
-        <div className="flex items-center gap-2">
-          <IconButton 
-            onClick={handleLogout} 
-            size="small" 
-            color="primary"
-            title={t('logout')}
-            aria-label={t('logout')}
-          >
-            <LogoutIcon />
-          </IconButton>
-          <IconButton 
-            onClick={handleCancel} 
-            size="small"
-            aria-label={t('close')}
-          >
-            <CloseIcon />
-          </IconButton>
-        </div>
-      </div>
+      <PageHeader title={t('title')}>
+        <IconButton 
+          onClick={handleLogout} 
+          size="small" 
+          color="primary"
+          title={t('logout')}
+          aria-label={t('logout')}
+        >
+          <LogoutIcon />
+        </IconButton>
+        <IconButton 
+          onClick={handleCancel} 
+          size="small"
+          aria-label={t('close')}
+          title={t('close')}
+        >
+          <CloseIcon />
+        </IconButton>
+      </PageHeader>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-4">

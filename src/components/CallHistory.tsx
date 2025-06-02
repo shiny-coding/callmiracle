@@ -9,6 +9,7 @@ import LoadingDialog from './LoadingDialog'
 import HistoryIcon from '@mui/icons-material/History'
 import CloseIcon from '@mui/icons-material/Close'
 import { useRouter } from 'next/navigation'
+import PageHeader from './PageHeader'
 
 const CALL_HISTORY = gql`
   query CallHistory($userId: ID!) {
@@ -47,20 +48,22 @@ export default function CallHistory() {
   }
 
   return (
-    <Paper className="p-4 bg-gray-800 flex flex-col h-full">
-      <div style={{ display: 'flex', alignItems: 'center', paddingBottom: '0.5rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-        <HistoryIcon sx={{ marginRight: '0.5rem' }} />
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>{t('callHistory')}</Typography>
+    <Paper className="bg-gray-800 flex flex-col h-full">
+      <PageHeader 
+        icon={<HistoryIcon />}
+        title={t('callHistory')}
+      >
         <IconButton 
           onClick={() => router.back()} 
           aria-label={t('close')}
+          title={t('close')}
           size="small"
         >
           <CloseIcon />
         </IconButton>
-      </div>
+      </PageHeader>
 
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto px-4">
         <List>
           {data?.getCallHistory.map((entry: CallHistoryEntry) => (
             <ListItem 

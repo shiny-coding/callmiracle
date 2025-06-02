@@ -196,7 +196,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
   return (
     <>
       <div className="flex flex-col overflow-hidden">
-        <div className="flex items-center mb-4" style={{ userSelect: 'none' }}>
+        <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
           <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
             {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
           </IconButton>

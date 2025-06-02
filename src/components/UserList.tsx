@@ -14,6 +14,7 @@ import { useStore } from '@/store/useStore'
 import LanguageSelector from './LanguageSelector'
 import LoadingDialog from './LoadingDialog'
 import { useRouter } from 'next/navigation'
+import PageHeader from './PageHeader'
 
 export default function UserList() {
   const { users, loading, error, refetch } = useUsers()
@@ -71,21 +72,23 @@ export default function UserList() {
   }
 
   return (
-    <Paper className="p-4 h-full flex flex-col">
-      <div style={{ display: 'flex', alignItems: 'center', paddingBottom: '0.5rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-        <PeopleIcon sx={{ marginRight: '0.5rem' }} />
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>{t('users')}</Typography>
+    <Paper className="h-full flex flex-col">
+      <PageHeader
+        icon={<PeopleIcon />}
+        title={t('users')}
+      >
         <IconButton 
           onClick={() => router.back()} 
           aria-label={t('close')}
+          title={t('close')}
           size="small"
         >
           <CloseIcon />
         </IconButton>
-      </div>
+      </PageHeader>
 
-      <div className="flex-grow overflow-y-auto">
-        <div className="user-filters mb-4">
+      <div className="flex-grow overflow-y-auto px-4">
+        <div className="user-filters my-4">
           <TextField
             fullWidth
             placeholder={t('searchByName')}
