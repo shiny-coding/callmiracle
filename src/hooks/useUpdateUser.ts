@@ -1,5 +1,5 @@
 import { gql, useMutation } from '@apollo/client'
-import { useStore, vanillaStore } from '@/store/useStore'
+import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { UserInput } from '@/generated/graphql'
 
 const UPDATE_USER = gql`
@@ -38,7 +38,7 @@ export const useUpdateUser = () => {
 
   const updateUserData = async () => {
 
-    const currentUser = vanillaStore.getState().currentUser
+    const currentUser = syncStore().currentUser
     if (!currentUser) {
       return
     }

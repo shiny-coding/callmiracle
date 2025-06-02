@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import { useWebRTCCommon, CALL_USER } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
-import { useStore, vanillaStore } from '@/store/useStore'
+import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { MeetingStatus, User } from '@/generated/graphql'
 import { gql } from '@apollo/client'
 
@@ -186,12 +186,12 @@ export function useWebRTCCaller({
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,
             quality: qualityWeWantFromRemote,
-            callId: vanillaStore.getState().callId // Use current callId for both reconnect and new calls
+            callId: syncStore().callId // Use current callId for both reconnect and new calls
           }
         }
       })
 
-      console.log('Offer sent with callId:', vanillaStore.getState().callId)
+      console.log('Offer sent with callId:', syncStore().callId)
     } catch (error) {
       console.error('WebRTC setup error:', error)
       setConnectionStatus('failed')

@@ -208,3 +208,8 @@ export function useStore<TStateSlice>(
 ) {
   return useStoreWithEqualityFn(vanillaStore, selector, equalityFn);
 } 
+
+
+export function syncStore(): AppState {
+  return vanillaStore.getState()
+}

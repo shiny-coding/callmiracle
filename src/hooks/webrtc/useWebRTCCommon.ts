@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { gql } from '@apollo/client'
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
-import { useStore, vanillaStore } from '@/store/useStore'
+import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 import { useMeetings } from '@/contexts/MeetingsContext'
 
@@ -195,7 +195,7 @@ export function useWebRTCCommon(callUser: any) {
         console.log('Received first remote track: ' + event.track.kind)
         // Apply saved remote quality preference if it exists
         if (event.track.kind === 'video') {
-          const qualityRemoteWantsFromUs = vanillaStore.getState().qualityRemoteWantsFromUs
+          const qualityRemoteWantsFromUs = syncStore().qualityRemoteWantsFromUs
           applyLocalQuality(peerConnection, qualityRemoteWantsFromUs).catch(err => 
             console.error('Failed to apply initial remote quality settings:', err)
           )
@@ -221,7 +221,7 @@ export function useWebRTCCommon(callUser: any) {
   }
 
   const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string) => {
-    const { callId } = vanillaStore.getState()
+    const { callId } = syncStore()
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
         try {
@@ -320,7 +320,7 @@ export function useWebRTCCommon(callUser: any) {
     cleanup: () => void,
   ) => {
     return async () => {
-      const { targetUser, callId } = vanillaStore.getState()
+      const { targetUser, callId } = syncStore()
       console.log('WebRTC: Hanging up call')
       cleanup()
       setConnectionStatus('disconnected')

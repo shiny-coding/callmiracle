@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import UserCard from './UserCard'
-import { useStore, vanillaStore } from '@/store/useStore'
+import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
 
@@ -25,7 +25,7 @@ export default function CallerDialog() {
   const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
 
   const sendExpired = useCallback(async () => {
-    const { targetUser, callId } = vanillaStore.getState()
+    const { targetUser, callId } = syncStore()
     if (callId && targetUser) {
       console.log('Sending expired', callId)
       await callUser({
