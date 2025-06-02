@@ -10,6 +10,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
 import ViewListIcon from '@mui/icons-material/ViewList'
+import CloseIcon from '@mui/icons-material/Close'
 import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
@@ -84,9 +85,9 @@ export default function MeetingsList() {
     myMeetingsWithPeers.every(mwp => isMeetingPassed(mwp.meeting))
 
   return (
-    <div className="w-full">
-      <Paper className="p-4 bg-gray-800">
-        <div className="flex justify-between items-center mb-4">
+    <>
+      <Paper className="bg-gray-800 flex flex-col h-full">
+        <div className="flex justify-between items-center p-4">
           <div className="flex items-center gap-2">
             <ViewListIcon className="text-blue-400" />
             <Typography variant="h6">
@@ -98,6 +99,7 @@ export default function MeetingsList() {
               onClick={handleAddNewMeetingClick}
               size="small"
               className="hover:bg-gray-700 text-white"
+              title={t('createNewMeeting')}
             >
               <AddIcon className="text-white" />
             </IconButton>
@@ -105,49 +107,52 @@ export default function MeetingsList() {
               onClick={() => refetchMyMeetingsWithPeers()} 
               size="small"
               className="hover:bg-gray-700 text-white"
+              title={t('refreshMeetings')}
             >
               <RefreshIcon className="text-white" />
             </IconButton>
           </div>
         </div>
-        <List className="space-y-4">
-          {allMeetingsPassedOrNoneExist && (
-            <ListItem 
-              onClick={handleAddNewMeetingClick}
-              className="p-8 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer shadow-lg"
-              sx={{ minHeight: '178px' }}
-            >
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                <AddIcon sx={{ fontSize: 30, color: 'white' }} />
-                <Typography variant="h6" className="mt-2 text-white">
-                  {t('addNewMeetingPrompt')}
-                </Typography>
-              </Box>
-            </ListItem>
-          )}
-          {myMeetingsWithPeers.map((meetingWithPeer: MeetingWithPeer) => (
-            <ListItem 
-              key={meetingWithPeer.meeting._id}
-              ref={(el: any) => el && (meetingRefs.current[meetingWithPeer.meeting._id] = el)}
-              className={`flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative mb-4 transition-all duration-500
-                ${highlightedMeetingId === meetingWithPeer.meeting._id ? 'highlight-animation' : ''}`}
-              disablePadding
-            >
-              <MeetingCard 
-                meetingWithPeer={meetingWithPeer} 
-                onEdit={e => {
-                  e?.stopPropagation()
-                  router.push(`/meeting/${meetingWithPeer.meeting._id}`)
-                }}
-              />
-            </ListItem>
-          ))}
-        </List>
+        <div className="flex-grow overflow-y-auto px-4">
+          <List className="space-y-4">
+            {allMeetingsPassedOrNoneExist && (
+              <ListItem 
+                onClick={handleAddNewMeetingClick}
+                className="p-8 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer shadow-lg"
+                sx={{ minHeight: '178px' }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                  <AddIcon sx={{ fontSize: 30, color: 'white' }} />
+                  <Typography variant="h6" className="mt-2 text-white">
+                    {t('addNewMeetingPrompt')}
+                  </Typography>
+                </Box>
+              </ListItem>
+            )}
+            {myMeetingsWithPeers.map((meetingWithPeer: MeetingWithPeer) => (
+              <ListItem 
+                key={meetingWithPeer.meeting._id}
+                ref={(el: any) => el && (meetingRefs.current[meetingWithPeer.meeting._id] = el)}
+                className={`flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative mb-4 transition-all duration-500
+                  ${highlightedMeetingId === meetingWithPeer.meeting._id ? 'highlight-animation' : ''}`}
+                disablePadding
+              >
+                <MeetingCard 
+                  meetingWithPeer={meetingWithPeer} 
+                  onEdit={e => {
+                    e?.stopPropagation()
+                    router.push(`/meeting/${meetingWithPeer.meeting._id}`)
+                  }}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </div>
       </Paper>
       <ProfileIncompleteDialog
         open={profileIncompleteDialogOpen}
         onClose={() => setProfileIncompleteDialogOpen(false)}
       />
-    </div>
+    </>
   )
 } 

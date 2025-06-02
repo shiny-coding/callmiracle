@@ -153,8 +153,8 @@ export default function MeetingsCalendar() {
   }
 
   return (
-    <Paper className="flex flex-col relative h-full" sx={{ paddingTop: '0.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 'var(--16sp)', paddingRight: '0.5rem', marginBottom: '0.5rem' }}>
+    <Paper className="flex flex-col relative h-full">
+      <div className="flex justify-between items-center p-4">
         <CalendarTodayIcon sx={{ marginRight: '0.5rem' }} />
         <Typography variant="h6" sx={{ flexGrow: 1 }}>{t('upcomingMeetings')}</Typography>
         <IconButton

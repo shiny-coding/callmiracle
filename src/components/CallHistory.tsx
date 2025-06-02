@@ -27,7 +27,7 @@ const CALL_HISTORY = gql`
 `
 
 export default function CallHistory() {
-  const { currentUser } = useStore()
+  const { currentUser } = useStore((state: any) => ({ currentUser: state.currentUser }))
   const router = useRouter()
 
   const { data, loading, error } = useQuery(CALL_HISTORY, {
