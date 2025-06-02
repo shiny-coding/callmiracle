@@ -233,5 +233,7 @@
   "expandFilters": "Развернуть фильтры",
   "collapseFilters": "Свернуть фильтры",
   "refreshMeetings": "Обновить встречи",
-  "createNewMeeting": "Создать новую встречу"
+  "createNewMeeting": "Создать новую встречу",
+  "back": "Назад",
+  "addNewMeetingPrompt": "Создать новую встречу"
 } 

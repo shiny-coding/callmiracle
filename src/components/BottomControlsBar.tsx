@@ -36,11 +36,11 @@ export default function BottomControlsBar() {
       <div className="mt-auto p-3 w-full flex justify-center items-center gap-4 bg-gradient-to-b from-transparent to-white/30">
         {connectionStatus !== 'connected' && (
           <>
-            <IconButton onClick={() => router.push(listPath)} style={{ color: pathname === listPath ? selectedColor : undefined, }} >
-              <ListIcon />
-            </IconButton>
             <IconButton onClick={() => router.push(calendarPath)} style={{ color: pathname === calendarPath ? selectedColor : undefined, }} >
               <CalendarMonthIcon />
+            </IconButton>
+            <IconButton onClick={() => router.push(listPath)} style={{ color: pathname === listPath ? selectedColor : undefined, }} >
+              <ListIcon />
             </IconButton>
 
             <IconButton onClick={() => router.push(usersPath)} style={{ color: pathname === usersPath ? selectedColor : undefined, }} >

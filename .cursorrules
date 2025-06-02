@@ -1,7 +1,0 @@
-- use yarn, not npm
-- do not change the code which is not related to the task given
-- prefer omitting semicolons in js
-- prefer using .map, .filter instead of loops, but don't use forEach
-- do not use abbreviations
-- do not remove comments
-- if you add translation strings, put them to src/messages/ru.json and src/messages/en.json

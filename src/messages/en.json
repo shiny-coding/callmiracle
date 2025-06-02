@@ -233,5 +233,7 @@
   "collapseFilters": "Collapse Filters",
   "refreshMeetings": "Refresh Meetings",
   "filterMeetings": "Filter Meetings",
-  "createNewMeeting": "Create New Meeting"
+  "createNewMeeting": "Create New Meeting",
+  "back": "Back",
+  "addNewMeetingPrompt": "Add new meeting"
 } 

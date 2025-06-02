@@ -1,6 +1,6 @@
 'use client'
 
-import { Paper, List, ListItem, Typography, IconButton } from '@mui/material'
+import { Paper, List, ListItem, Typography, IconButton, Box } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useTranslations } from 'next-intl'
 import MeetingCard from './MeetingCard'
@@ -12,6 +12,7 @@ import EventIcon from '@mui/icons-material/Event'
 import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
+import { isMeetingPassed } from '@/utils/meetingUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import LoadingDialog from './LoadingDialog'
@@ -69,6 +70,18 @@ export default function MeetingsList() {
     return <LoadingDialog loading={isLoading} error={errorMyMeetingsWithPeers} />
   }
 
+  const handleAddNewMeetingClick = () => {
+    if (!isProfileComplete(currentUser)) {
+      setProfileIncompleteDialogOpen(true)
+      return
+    }
+    router.push('/meeting')
+  }
+
+  const allMeetingsPassedOrNoneExist = 
+    myMeetingsWithPeers.length === 0 || 
+    myMeetingsWithPeers.every(mwp => isMeetingPassed(mwp.meeting))
+
   return (
     <div className="w-full">
       <Paper className="p-4 bg-gray-800">
@@ -81,13 +94,7 @@ export default function MeetingsList() {
           </div>
           <div className="flex gap-2">
             <IconButton
-              onClick={() => {
-                if (!isProfileComplete(currentUser)) {
-                  setProfileIncompleteDialogOpen(true)
-                  return
-                }
-                router.push('/meeting')
-              }}
+              onClick={handleAddNewMeetingClick}
               size="small"
               className="hover:bg-gray-700 text-white"
             >
@@ -103,6 +110,20 @@ export default function MeetingsList() {
           </div>
         </div>
         <List className="space-y-4">
+          {allMeetingsPassedOrNoneExist && (
+            <ListItem 
+              onClick={handleAddNewMeetingClick}
+              className="p-8 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer shadow-lg"
+              sx={{ minHeight: '178px' }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                <AddIcon sx={{ fontSize: 30, color: 'white' }} />
+                <Typography variant="h6" className="mt-2 text-white">
+                  {t('addNewMeetingPrompt')}
+                </Typography>
+              </Box>
+            </ListItem>
+          )}
           {myMeetingsWithPeers.map((meetingWithPeer: MeetingWithPeer) => (
             <ListItem 
               key={meetingWithPeer.meeting._id}
@@ -120,11 +141,6 @@ export default function MeetingsList() {
               />
             </ListItem>
           ))}
-          {myMeetingsWithPeers.length === 0 && (
-            <Typography className="text-gray-400 text-center py-4">
-              {t('noMeetings')}
-            </Typography>
-          )}
         </List>
       </Paper>
       <ProfileIncompleteDialog
