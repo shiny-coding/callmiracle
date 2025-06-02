@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import UserCard from './UserCard'
-import { useStore } from '@/store/useStore'
+import { useStore, vanillaStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
 
@@ -11,15 +11,21 @@ const MAX_CALLING_TIME_MS = 10000
 
 export default function CallerDialog() {
   const t = useTranslations()
-  const { connectionStatus, setConnectionStatus, targetUser, meetingId, meetingLastCallTime } = useStore()
+  const { connectionStatus, setConnectionStatus, targetUser, meetingId, meetingLastCallTime, currentUser } = useStore( (state: any) => ({
+    connectionStatus: state.connectionStatus,
+    setConnectionStatus: state.setConnectionStatus,
+    targetUser: state.targetUser,
+    meetingId: state.meetingId,
+    meetingLastCallTime: state.meetingLastCallTime,
+    currentUser: state.currentUser
+  }))
   const tStatus = useTranslations('ConnectionStatus')
   const { doCall, callUser, caller } = useWebRTCContext()
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
-  const { currentUser } = useStore()
   const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
 
   const sendExpired = useCallback(async () => {
-    const { targetUser, callId } = useStore.getState()
+    const { targetUser, callId } = vanillaStore.getState()
     if (callId && targetUser) {
       console.log('Sending expired', callId)
       await callUser({

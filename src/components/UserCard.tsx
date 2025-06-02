@@ -32,11 +32,14 @@ export default function UserCard({
   const { doCall } = useWebRTCContext()
   const { setSelectedUser } = useDetailedCallHistory()
   const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
-  const { currentUser, setCurrentUser } = useStore()
+  const { currentUser, setCurrentUser } = useStore( (state: any) => ({
+    currentUser: state.currentUser,
+    setCurrentUser: state.setCurrentUser
+  }))
   const { updateUserData, loading: updateLoading } = useUpdateUser()
   const { exists: imageExists } = useCheckImage(user._id)
   
-  const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
+  const existingBlock = currentUser?.blocks.find((b:any) => b.userId === user._id)
   const isBlocked = existingBlock?.all || (existingBlock?.interests.length ?? 0) > 0
   
   // Check if this user is a friend
@@ -64,7 +67,6 @@ export default function UserCard({
       // Add friend
       updatedFriends.push(user._id)
     }
-    
     // Update the user with the new friends list
     setCurrentUser({
       ...currentUser,

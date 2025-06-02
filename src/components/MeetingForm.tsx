@@ -17,6 +17,7 @@ import LoadingDialog from './LoadingDialog'
 import ConfirmDialog from './ConfirmDialog'
 import { useSnackbar } from '@/contexts/SnackContext'
 import { handleMeetingSaveResult, calculateHasValidDuration, trySelectHourSlots, useCancelMeeting } from './MeetingFormUtils'
+import PageHeader from './PageHeader'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -209,15 +210,14 @@ export default function MeetingForm() {
           <CircularProgress color="inherit" />
         </div>
       )}
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-3 border-b panel-border sticky top-0 bg-inherit z-10">
-        <div className="flex-grow font-semibold text-lg">
-          { meetingToConnectId ? t('connectWithMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
-        </div>
-        <IconButton onClick={handleCancel} size="small" aria-label={t('close')}>
+      <PageHeader 
+        title={meetingToConnectId ? t('connectWithMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
+        className="sticky top-0 bg-inherit z-10"
+      >
+        <IconButton onClick={handleCancel} size="small" aria-label={t('close')} title={t('close')}>
           <CloseIcon />
         </IconButton>
-      </div>
+      </PageHeader>
       {/* Scrollable Content */}
       <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
         <InterestSelector

@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import { useWebRTCCommon, CALL_USER } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
-import { useStore } from '@/store/useStore'
+import { useStore, vanillaStore } from '@/store/useStore'
 import { MeetingStatus, User } from '@/generated/graphql'
 import { gql } from '@apollo/client'
 
@@ -58,7 +58,23 @@ export function useWebRTCCaller({
     connectionStatus,
     setMeetingId,
     setMeetingLastCallTime,
-  } = useStore()
+  } = useStore( (state: any) => ({
+    currentUser: state.currentUser,
+    setCallId: state.setCallId,
+    setConnectionStatus: state.setConnectionStatus,
+    targetUser: state.targetUser,
+    meetingId: state.meetingId,
+    setTargetUser: state.setTargetUser,
+    qualityWeWantFromRemote: state.qualityWeWantFromRemote,
+    setQualityRemoteWantsFromUs: state.setQualityRemoteWantsFromUs,
+    qualityRemoteWantsFromUs: state.qualityRemoteWantsFromUs,
+    localVideoEnabled: state.localVideoEnabled,
+    localAudioEnabled: state.localAudioEnabled,
+    setRole: state.setRole,
+    connectionStatus: state.connectionStatus,
+    setMeetingId: state.setMeetingId,
+    setMeetingLastCallTime: state.setMeetingLastCallTime,
+  })) 
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
@@ -170,12 +186,12 @@ export function useWebRTCCaller({
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,
             quality: qualityWeWantFromRemote,
-            callId: useStore.getState().callId // Use current callId for both reconnect and new calls
+            callId: vanillaStore.getState().callId // Use current callId for both reconnect and new calls
           }
         }
       })
 
-      console.log('Offer sent with callId:', useStore.getState().callId)
+      console.log('Offer sent with callId:', vanillaStore.getState().callId)
     } catch (error) {
       console.error('WebRTC setup error:', error)
       setConnectionStatus('failed')

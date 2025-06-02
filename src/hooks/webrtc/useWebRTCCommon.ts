@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { gql } from '@apollo/client'
 import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySelector'
-import { useStore } from '@/store/useStore'
+import { useStore, vanillaStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 import { useMeetings } from '@/contexts/MeetingsContext'
 
@@ -47,8 +47,11 @@ export interface IncomingRequest {
 
 export function useWebRTCCommon(callUser: any) {
   const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([])
-  const { setConnectionStatus, currentUser } = useStore()
-  const { refetchMeetingsWithPeers } = useMeetings()
+  const { setConnectionStatus, currentUser } = useStore( (state: any) => ({
+    setConnectionStatus: state.setConnectionStatus,
+    currentUser: state.currentUser
+  }))
+  const { refetchMyMeetingsWithPeers } = useMeetings()
 
   const handleConnectionStateChange = (pc: RTCPeerConnection, peerConnection: React.MutableRefObject<RTCPeerConnection | null>, active: boolean, attemptReconnect: () => Promise<void>) => {
     if (pc.connectionState === 'connected') {
@@ -192,7 +195,7 @@ export function useWebRTCCommon(callUser: any) {
         console.log('Received first remote track: ' + event.track.kind)
         // Apply saved remote quality preference if it exists
         if (event.track.kind === 'video') {
-          const qualityRemoteWantsFromUs = useStore.getState().qualityRemoteWantsFromUs
+          const qualityRemoteWantsFromUs = vanillaStore.getState().qualityRemoteWantsFromUs
           applyLocalQuality(peerConnection, qualityRemoteWantsFromUs).catch(err => 
             console.error('Failed to apply initial remote quality settings:', err)
           )
@@ -218,7 +221,7 @@ export function useWebRTCCommon(callUser: any) {
   }
 
   const setupIceCandidateHandler = (pc: RTCPeerConnection, targetUserId: string) => {
-    const { callId } = useStore.getState()
+    const { callId } = vanillaStore.getState()
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
         try {
@@ -317,7 +320,7 @@ export function useWebRTCCommon(callUser: any) {
     cleanup: () => void,
   ) => {
     return async () => {
-      const { targetUser, callId } = useStore.getState()
+      const { targetUser, callId } = vanillaStore.getState()
       console.log('WebRTC: Hanging up call')
       cleanup()
       setConnectionStatus('disconnected')
@@ -336,7 +339,7 @@ export function useWebRTCCommon(callUser: any) {
             }
           })
           console.log('refetching meetings')
-          refetchMeetingsWithPeers()
+          refetchMyMeetingsWithPeers()
         } catch (err) {
           console.error('Failed to send finished signal:', err)
         }
