@@ -28,7 +28,10 @@ const DELETE_USER = gql`
 export default function ProfileForm() {
   const t = useTranslations('Profile')
   const tRoot = useTranslations()
-  const { currentUser, setCurrentUser } = useStore()
+  const { currentUser, setCurrentUser } = useStore( (state: any) => ({
+    currentUser: state.currentUser,
+    setCurrentUser: state.setCurrentUser
+  }))
   const { name = '', languages = [], about = '', contacts = '', sex = null, birthYear = null } = currentUser || {}
   const [tempName, setTempName] = useState(name)
   const [tempLanguages, setTempLanguages] = useState(languages)

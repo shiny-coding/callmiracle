@@ -27,9 +27,12 @@ const removeTypename = <T>(value: T): Omit<T, '__typename'> => {
 
 export const useUpdateUser = () => {
   const [updateUser, { data, loading }] = useMutation(UPDATE_USER)
-  const updateUserData = async () => {
-    const { currentUser, setCurrentUser } = useStore.getState()
+  const { currentUser, setCurrentUser } = useStore( (state: any) => ({
+    currentUser: state.currentUser,
+    setCurrentUser: state.setCurrentUser
+  }))
 
+  const updateUserData = async () => {
     if (!currentUser) {
       return
     }

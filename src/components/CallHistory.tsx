@@ -1,11 +1,14 @@
 import { gql, useQuery } from '@apollo/client'
-import { Paper, List, ListItem, Typography, Chip } from '@mui/material'
+import { Paper, List, ListItem, Typography, Chip, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { CallHistoryEntry, User } from '@/generated/graphql'
 import UserCard from './UserCard'
 import { formatDuration } from '@/utils/formatDuration'
 import { useStore } from '@/store/useStore'
 import LoadingDialog from './LoadingDialog'
+import HistoryIcon from '@mui/icons-material/History'
+import CloseIcon from '@mui/icons-material/Close'
+import { useRouter } from 'next/navigation'
 
 const CALL_HISTORY = gql`
   query CallHistory($userId: ID!) {
@@ -25,6 +28,7 @@ const CALL_HISTORY = gql`
 
 export default function CallHistory() {
   const { currentUser } = useStore()
+  const router = useRouter()
 
   const { data, loading, error } = useQuery(CALL_HISTORY, {
     variables: { userId: currentUser?._id }
@@ -43,50 +47,64 @@ export default function CallHistory() {
   }
 
   return (
-    <Paper className="p-4 bg-gray-800">
-      <List>
-        {data?.getCallHistory.map((entry: CallHistoryEntry) => (
-          <ListItem 
-            key={entry.user._id}
-            className="flex flex-col items-start hover:bg-gray-700 rounded-lg mb-2"
-          >
-            <div className="w-full">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex-grow">
-                  <UserCard 
-                    user={entry.user} 
-                    showDetails={false} 
-                    showCallButton={true}
-                    showHistoryButton={true}
+    <Paper className="p-4 bg-gray-800 flex flex-col h-full">
+      <div style={{ display: 'flex', alignItems: 'center', paddingBottom: '0.5rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+        <HistoryIcon sx={{ marginRight: '0.5rem' }} />
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>{t('callHistory')}</Typography>
+        <IconButton 
+          onClick={() => router.back()} 
+          aria-label={t('close')}
+          size="small"
+        >
+          <CloseIcon />
+        </IconButton>
+      </div>
+
+      <div className="flex-grow overflow-y-auto">
+        <List>
+          {data?.getCallHistory.map((entry: CallHistoryEntry) => (
+            <ListItem 
+              key={entry.user._id}
+              className="flex flex-col items-start hover:bg-gray-700 rounded-lg mb-2"
+            >
+              <div className="w-full">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex-grow">
+                    <UserCard 
+                      user={entry.user} 
+                      showDetails={false} 
+                      showCallButton={true}
+                      showHistoryButton={true}
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Chip
+                    label={`${entry.totalCalls} calls`}
+                    size="small"
+                    className="text-xs text-white bg-gray-700"
+                  />
+                  <Chip
+                    label={`Last call: ${formatDate(entry.lastCallAt)}`}
+                    size="small"
+                    className="text-xs text-white bg-gray-700"
+                  />
+                  <Chip
+                    label={`Total duration: ${formatDuration(entry.durationS)}`}
+                    size="small"
+                    className="text-xs text-white bg-gray-700"
                   />
                 </div>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Chip
-                  label={`${entry.totalCalls} calls`}
-                  size="small"
-                  className="text-xs text-white bg-gray-700"
-                />
-                <Chip
-                  label={`Last call: ${formatDate(entry.lastCallAt)}`}
-                  size="small"
-                  className="text-xs text-white bg-gray-700"
-                />
-                <Chip
-                  label={`Total duration: ${formatDuration(entry.durationS)}`}
-                  size="small"
-                  className="text-xs text-white bg-gray-700"
-                />
-              </div>
-            </div>
-          </ListItem>
-        ))}
-        {data?.getCallHistory.length === 0 && (
-          <Typography className="text-gray-400 text-center py-4">
-            {t('noCallHistory')}
-          </Typography>
-        )}
-      </List>
+            </ListItem>
+          ))}
+          {data?.getCallHistory.length === 0 && (
+            <Typography className="text-gray-400 text-center py-4">
+              {t('noCallHistory')}
+            </Typography>
+          )}
+        </List>
+      </div>
     </Paper>
   )
 } 

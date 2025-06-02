@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed, SLOT_DURATION, getNonBlockedInterests, getInterestsOverlap } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
 import LoadingDialog from './LoadingDialog'
 import MeetingsFilters from './MeetingsFilters'
@@ -154,6 +155,7 @@ export default function MeetingsCalendar() {
   return (
     <Paper className="flex flex-col relative h-full" sx={{ paddingTop: '0.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 'var(--16sp)', paddingRight: '0.5rem', marginBottom: '0.5rem' }}>
+        <CalendarTodayIcon sx={{ marginRight: '0.5rem' }} />
         <Typography variant="h6" sx={{ flexGrow: 1 }}>{t('upcomingMeetings')}</Typography>
         <IconButton
           onClick={() => {

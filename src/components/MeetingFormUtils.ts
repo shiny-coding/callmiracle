@@ -1,7 +1,10 @@
-import { MeetingOutput } from "@/generated/graphql";
+import { MeetingOutput, MeetingStatus } from "@/generated/graphql";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { SLOT_DURATION, getSlotDuration, getLateAllowance } from '@/utils/meetingUtils'
 import { TimeSlot } from "./TimeSlotsGrid";
+import { useMutation } from '@apollo/client';
+import { useState } from 'react';
+import { UPDATE_MEETING_LAST_CALL } from './MeetingCardUtils'; // Assuming this is the correct path
 
 export function handleMeetingSaveResult(
   result: MeetingOutput,
@@ -100,4 +103,53 @@ export function trySelectHourSlots(timeslot: number, availableTimeSlots: TimeSlo
     }
   }
   return slotsToSelect
+}
+
+export function useCancelMeeting(
+  t: any, 
+  refetchMeetings: () => void, 
+  router: AppRouterInstance, 
+  showSnackbar: (message: string, type: 'success' | 'error') => void
+) {
+  const [updateMeetingStatus, { loading: isCancellingMeeting }] = useMutation(UPDATE_MEETING_LAST_CALL)
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
+
+  const handleOpenCancelDialog = () => {
+    setConfirmCancelOpen(true)
+  }
+
+  const handleCloseCancelDialog = () => {
+    setConfirmCancelOpen(false)
+  }
+
+  const handleConfirmCancelMeeting = async (meetingId: string) => {
+    if (!meetingId) return
+
+    try {
+      await updateMeetingStatus({
+        variables: {
+          input: {
+            _id: meetingId,
+            status: MeetingStatus.Cancelled
+          }
+        }
+      })
+      showSnackbar(t('meetingCancelledSuccess'), 'success')
+      refetchMeetings()
+      router.back()
+    } catch (error) {
+      console.error('Error cancelling meeting:', error)
+      showSnackbar(t('meetingCancelError'), 'error')
+    } finally {
+      handleCloseCancelDialog()
+    }
+  }
+
+  return {
+    isCancellingMeeting,
+    confirmCancelOpen,
+    handleOpenCancelDialog,
+    handleCloseCancelDialog,
+    handleConfirmCancelMeeting
+  }
 }

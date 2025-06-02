@@ -1,10 +1,11 @@
 import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider, Snackbar, Alert } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import CancelIcon from '@mui/icons-material/Cancel'
 import { useLocale, useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect, ChangeEvent, useRef } from 'react'
-import { Interest, Meeting } from '@/generated/graphql'
+import { Interest, Meeting, MeetingStatus } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
@@ -13,8 +14,9 @@ import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import LoadingDialog from './LoadingDialog'
+import ConfirmDialog from './ConfirmDialog'
 import { useSnackbar } from '@/contexts/SnackContext'
-import { handleMeetingSaveResult, calculateHasValidDuration, trySelectHourSlots } from './MeetingFormUtils'
+import { handleMeetingSaveResult, calculateHasValidDuration, trySelectHourSlots, useCancelMeeting } from './MeetingFormUtils'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -51,6 +53,14 @@ export default function MeetingForm() {
   const locale = useLocale()
 
   const { showSnackbar } = useSnackbar()
+
+  const {
+    isCancellingMeeting,
+    confirmCancelOpen,
+    handleOpenCancelDialog,
+    handleCloseCancelDialog,
+    handleConfirmCancelMeeting
+  } = useCancelMeeting(t, refetchMeetings, router, showSnackbar)
 
   // Add these derived values
   const preselectedInterest = (
@@ -337,6 +347,18 @@ export default function MeetingForm() {
       </div>
       {/* Bottom Controls Bar */}
       <div className="sticky bottom-0 left-0 w-full panel-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10">
+        {meeting && (
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={<CancelIcon />}
+            onClick={handleOpenCancelDialog}
+            disabled={loading || isCancellingMeeting}
+            className="mr-auto"
+          >
+            {t('cancelMeetingButton')}
+          </Button>
+        )}
         <div className="flex flex-col justify-start gap-2 mr-auto">
           {tempInterests.length === 0 && (
             <Typography color="warning" className="text-sm">
@@ -356,6 +378,7 @@ export default function MeetingForm() {
           onClick={handleSave}
           variant="contained"
           disabled={loading || 
+            isCancellingMeeting ||
             selectedTimeSlots.length === 0 || 
             tempInterests.length === 0 || 
             tempLanguages.length === 0 ||
@@ -364,6 +387,13 @@ export default function MeetingForm() {
           {meeting ? t('update') : t('create')}
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirmCancelOpen}
+        title={t('confirmCancelTitle')}
+        message={t('confirmCancelMessage')}
+        onConfirm={() => meeting?._id && handleConfirmCancelMeeting(meeting._id)}
+        onCancel={handleCloseCancelDialog}
+      />
     </div>
   )
 } 

@@ -235,5 +235,9 @@
   "refreshMeetings": "Обновить встречи",
   "createNewMeeting": "Создать новую встречу",
   "back": "Назад",
-  "addNewMeetingPrompt": "Создать новую встречу"
+  "addNewMeetingPrompt": "Создать новую встречу",
+  "cancelMeetingButton": "Отменить встречу",
+  "meetingCancelledSuccess": "Встреча успешно отменена.",
+  "meetingCancelError": "Не удалось отменить встречу.",
+  "users": "Пользователи"
 } 

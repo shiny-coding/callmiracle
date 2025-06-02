@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
+import ViewListIcon from '@mui/icons-material/ViewList'
 import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
@@ -87,7 +88,7 @@ export default function MeetingsList() {
       <Paper className="p-4 bg-gray-800">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            <EventIcon className="text-blue-400" />
+            <ViewListIcon className="text-blue-400" />
             <Typography variant="h6">
               {t('myMeetings')}
             </Typography>

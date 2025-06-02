@@ -235,5 +235,9 @@
   "filterMeetings": "Filter Meetings",
   "createNewMeeting": "Create New Meeting",
   "back": "Back",
-  "addNewMeetingPrompt": "Add new meeting"
+  "addNewMeetingPrompt": "Add new meeting",
+  "cancelMeetingButton": "Cancel Meeting",
+  "meetingCancelledSuccess": "Meeting cancelled successfully.",
+  "meetingCancelError": "Failed to cancel meeting.",
+  "users": "Users"
 } 

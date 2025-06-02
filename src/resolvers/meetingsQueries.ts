@@ -61,10 +61,6 @@ export const meetingsQueries = {
       // 7. Sort meetings by earliest time slot or start time
       const now = new Date().getTime()
 
-      console.log('meetingsWithPeers', meetingsWithPeers.map( mwp => mwp.meeting).map(
-        m=> ({ id: m._id.toString(), interests: m.interests, status: m.status, timeSlots: m.timeSlots.map((t: number) => new Date(t))}))
-      )
-
       meetingsWithPeers.sort((a, b) => {
         const aEnded = isMeetingPassed(a.meeting as any);
         const bEnded = isMeetingPassed(b.meeting as any);
