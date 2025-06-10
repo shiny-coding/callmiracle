@@ -9,6 +9,8 @@ import { useMeetings } from '@/contexts/MeetingsContext'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import { NotificationType } from '@/generated/graphql'
 import { useRouter } from 'next/navigation'
+import { getNotificationMessage } from '@/utils/notificationUtils'
+
 interface NotificationsListProps {
   onClose?: () => void
 }
@@ -30,20 +32,6 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
   
   if (loading && notifications.length === 0) return <Typography>Loading...</Typography>
   if (error) return <Typography color="error">Error loading notifications</Typography>
-
-  const getNotificationMessage = (notification: any) => {
-    switch (notification.type) {
-      case NotificationType.MeetingConnected:
-        return t('notificationMessages.meetingConnected')
-      case NotificationType.MeetingDisconnected:
-        return t('notificationMessages.meetingDisconnected')
-      case NotificationType.MeetingFinished:
-        return t('notificationMessages.meetingWithFinished', { name: notification.peerUserName })
-      default:
-        console.log('Unknown notification type:', notification.type)
-        return t('notificationMessages.newNotification')
-    }
-  }
 
   const handleGoToMeeting = (notification: any) => {
     setNotificationSeen(notification._id)
@@ -87,13 +75,13 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
                       <Badge color="primary" variant="dot" className="mr-2" />
                     )}
                     <Typography variant="subtitle1">
-                      {getNotificationMessage(notification)}
+                      {getNotificationMessage(notification, t)}
                     </Typography>
                   </div>
                   <Chip 
                     size="small" 
                     label={formatRelativeTime(notification.createdAt)} 
-                    className="text-xs bg-gray-500"
+                    className="!text-xs bg-gray-500 !ml-2"
                   />
                 </div>
                 

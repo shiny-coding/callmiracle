@@ -51,7 +51,7 @@ interface SubscriptionsContextType {
 const SubscriptionsContext = createContext<SubscriptionsContextType | null>(null)
 
 export function SubscriptionsProvider({ children }: { children: ReactNode }) {
-  const { currentUser } = useStore()
+  const { currentUser } = useStore((state: any) => ({ currentUser: state.currentUser }))
 
   // Store callbacks in refs to avoid unnecessary re-renders
   const notificationCallbacks = React.useRef<((event: any) => void)[]>([])

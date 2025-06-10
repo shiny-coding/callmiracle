@@ -75,6 +75,7 @@ type User {
   friends: [ID!]
   deleted: Boolean
   deletedAt: Float
+  pushSubscription: PushSubscription
 }
 
 type CallEvent {
@@ -241,4 +242,24 @@ input UpdateMeetingStatusInput {
   status: MeetingStatus
   lastCallTime: Float
   totalDurationS: Int
-} 
+}
+
+type PushSubscriptionKeys {
+  p256dh: String!
+  auth: String!
+}
+
+type PushSubscription {
+  endpoint: String!
+  keys: PushSubscriptionKeys!
+}
+
+input PushSubscriptionKeysInput {
+  p256dh: String!
+  auth: String!
+}
+
+input PushSubscriptionInput {
+  endpoint: String!
+  keys: PushSubscriptionKeysInput!
+}

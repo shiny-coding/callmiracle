@@ -1,9 +1,13 @@
 'use client'
-import React, { createContext, useContext, ReactNode, useEffect, useCallback, useRef } from 'react'
+import React, { createContext, useContext, ReactNode, useEffect, useCallback } from 'react'
 import { gql, useQuery, useMutation } from '@apollo/client'
 import { useSubscriptions } from './SubscriptionsContext'
 import { useStore } from '@/store/useStore'
 import { usePlaySound } from '@/hooks/usePlaySound'
+import { useTranslations } from 'next-intl'
+import { getNotificationMessage } from '@/utils/notificationUtils'
+import { useRouter } from 'next/navigation'
+import { useClientPushNotifications } from '@/hooks/useClientPushNotifications'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications($userId: ID!) {
@@ -66,10 +70,30 @@ interface NotificationsContextType {
 
 const NotificationsContext = createContext<NotificationsContextType | null>(null)
 
+function notificationPermissionGranted() {
+  return typeof window !== 'undefined' && window.Notification && window.Notification.permission === 'granted'
+}
+
+function showBrowserNotification(notificationEvent: any, t: any, router: any) {
+  if (!notificationPermissionGranted()) return
+
+  const body = getNotificationMessage(notificationEvent, t)
+  const notification = new window.Notification('Commiracle', { body })
+  notification.onclick = () => {
+    if (notificationEvent.meeting?._id) {
+      router.push(`/list?meetingId=${notificationEvent.meeting._id}`)
+    }
+  }
+}
+
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const { currentUser } = useStore()
+  const { currentUser } = useStore((state: any) => ({ currentUser: state.currentUser }))
   const { subscribeToNotifications } = useSubscriptions()
+  const t = useTranslations()
+  const router = useRouter()
   
+  useClientPushNotifications(currentUser)
+
   const { data, loading, error, refetch } = useQuery(GET_NOTIFICATIONS, {
     variables: { userId: currentUser?._id },
     skip: !currentUser?._id
@@ -89,8 +113,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   
   // Update the subscription effect to use isPlaying
   useEffect(() => {
-    const unsubscribe = subscribeToNotifications((notificationEvent) => {
+    const unsubscribe = subscribeToNotifications((notificationEvent: any) => {
       if (notificationEvent) {
+        showBrowserNotification(notificationEvent, t, router)
         // Play notification sound if not already playing
         if (!isPlaying) {
           playNotificationSound()
@@ -101,7 +126,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     })
     
     return unsubscribe
-  }, [subscribeToNotifications, refetch, playNotificationSound, isPlaying])
+  }, [subscribeToNotifications, refetch, playNotificationSound, isPlaying, t, router])
   
   const setNotificationSeen = async (id: string) => {
     try {

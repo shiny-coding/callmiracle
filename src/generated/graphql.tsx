@@ -244,6 +244,28 @@ export enum NotificationType {
   MeetingFinished = 'MEETING_FINISHED'
 }
 
+export type PushSubscription = {
+  __typename?: 'PushSubscription';
+  endpoint: Scalars['String']['output'];
+  keys: PushSubscriptionKeys;
+};
+
+export type PushSubscriptionInput = {
+  endpoint: Scalars['String']['input'];
+  keys: PushSubscriptionKeysInput;
+};
+
+export type PushSubscriptionKeys = {
+  __typename?: 'PushSubscriptionKeys';
+  auth: Scalars['String']['output'];
+  p256dh: Scalars['String']['output'];
+};
+
+export type PushSubscriptionKeysInput = {
+  auth: Scalars['String']['input'];
+  p256dh: Scalars['String']['input'];
+};
+
 export type Query = {
   __typename?: 'Query';
   getCallHistory: Array<CallHistoryEntry>;
@@ -337,6 +359,7 @@ export type User = {
   friends?: Maybe<Array<Scalars['ID']['output']>>;
   languages: Array<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  pushSubscription?: Maybe<PushSubscription>;
   sex: Scalars['String']['output'];
   updatedAt: Scalars['Float']['output'];
 };
