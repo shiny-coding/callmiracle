@@ -8,6 +8,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { compare } from "bcrypt"
 import { ObjectId } from 'mongodb'
 import NextAuth from "next-auth"
+import { cookies } from 'next/headers'
 
 export const authOptions: NextAuthOptions = {
   debug: false,
@@ -107,30 +108,37 @@ export const authOptions: NextAuthOptions = {
   events: {
     async signIn({ user, account, profile, isNewUser }) {
       console.log(`[Event: signIn] User: ${user.id}, Email: ${user.email}, New User: ${isNewUser}`);
-      if (isNewUser && user.id && (account?.provider === 'google' || account?.provider === 'apple')) {
+      
+      const cookieStore = await cookies()
+      const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en'
+
+      if (user.id) {
         try {
           const client = await clientPromise;
           const usersCollection = client.db().collection("users");
           const now = new Date();
 
-          if ( !user.name ) user.name = '';
+          const updateData: any = {
+            locale: locale,
+          }
+          if (isNewUser && (account?.provider === 'google' || account?.provider === 'apple')) {
+            if ( !user.name ) user.name = '';
+
+            updateData.name = user.name
+            updateData.createdAt = now // Good to set here
+            updateData.updatedAt = now // Good to set here
+            updateData.languages = []
+            updateData.blocks = []
+            updateData.friends = []
+            updateData.about = ''
+            updateData.contacts = ''
+            updateData.sex = ''
+            updateData.birthYear = null
+          }
 
           await usersCollection.updateOne(
-            { _id: new ObjectId(user.id) }, // user.id SHOULD be the MongoDB ID here
-            {
-              $set: {
-                name: user.name,
-                createdAt: now, // Good to set here
-                updatedAt: now, // Good to set here
-                languages: [],
-                blocks: [],
-                friends: [],
-                about: '',
-                contacts: '',
-                sex: '',
-                birthYear: null,
-              }
-            }
+            { _id: new ObjectId(user.id) },
+            { $set: updateData }
           );
           console.log(`[Event: signIn] Successfully augmented user ${user.id}`);
         } catch (error) {

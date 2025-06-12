@@ -75,7 +75,7 @@ type User {
   friends: [ID!]
   deleted: Boolean
   deletedAt: Float
-  pushSubscription: PushSubscription
+  pushSubscriptions: [PushSubscription]
 }
 
 type CallEvent {

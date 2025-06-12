@@ -39,31 +39,11 @@ export async function publishMeetingNotification(notificationType: NotificationT
   
   console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId.toString() })
 
-  if (peerUser.pushSubscription) {
-    let body = ''
-    switch (notificationType) {
-      case NotificationType.MeetingConnected:
-        body = 'You have been connected with a peer.'
-        break
-      case NotificationType.MeetingDisconnected:
-        body = 'Your peer has disconnected.'
-        break
-      case NotificationType.MeetingFinished:
-        body = `Your meeting with ${meeting.userName} has finished.`
-        break
-      default:
-        body = 'You have a new notification.'
-    }
-
-    const payload = {
-      title: 'Commiracle',
-      body,
-      data: {
-        url: `/list?meetingId=${peerMeeting._id.toString()}`
-      }
-    }
-    await publishPushNotification(peerUser.pushSubscription, payload)
-  }
+  await publishPushNotification(db, peerUser, {
+    type: notificationType,
+    peerUserName: meeting.userName,
+    meetingId: peerMeeting._id
+  })
 }
 
 const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {

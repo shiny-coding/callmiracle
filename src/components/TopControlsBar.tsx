@@ -15,23 +15,18 @@ import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import LocalVideo from './LocalVideo'
 import { useCheckImage } from '@/hooks/useCheckImage'
 import { useRouter } from 'next/navigation'
+import LocaleSelector from './LocaleSelector'
 
 export default function TopControlsBar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const { hasUnseenNotifications } = useNotifications()
-  const { currentUser } = useStore()
+  const { currentUser, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled } = useStore((state: any) => ({ currentUser: state.currentUser, localAudioEnabled: state.localAudioEnabled, localVideoEnabled: state.localVideoEnabled, setLocalAudioEnabled: state.setLocalAudioEnabled, setLocalVideoEnabled: state.setLocalVideoEnabled }))
   const [isHoveringOverVideoControls, setIsHoveringOverVideoControls] = useState(false)
   const [isVideoDeviceSelectorOpen, setIsVideoDeviceSelectorOpen] = useState(false)
   const [videoOpenedByTouch, setVideoOpenedByTouch] = useState(false)
   const { exists: imageExists } = useCheckImage(currentUser?._id)
   const router = useRouter()
 
-  const {
-    localAudioEnabled,
-    localVideoEnabled,
-    setLocalAudioEnabled,
-    setLocalVideoEnabled,
-  } = useStore()
   const {
     connectionStatus,
     hangup,
@@ -105,8 +100,11 @@ export default function TopControlsBar() {
           <NotificationsIcon className="text-white" />
         </Badge>
       </IconButton>
+      <div className="mr-auto opacity-80">
+        <LocaleSelector />
+      </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 grow justify-center">
         <div className="flex gap-2 items-center">
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40"

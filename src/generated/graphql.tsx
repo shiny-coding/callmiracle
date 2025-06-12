@@ -359,7 +359,7 @@ export type User = {
   friends?: Maybe<Array<Scalars['ID']['output']>>;
   languages: Array<Scalars['String']['output']>;
   name: Scalars['String']['output'];
-  pushSubscription?: Maybe<PushSubscription>;
+  pushSubscriptions?: Maybe<Array<PushSubscription>>;
   sex: Scalars['String']['output'];
   updatedAt: Scalars['Float']['output'];
 };

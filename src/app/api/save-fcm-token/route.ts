@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $set: { pushSubscription: subscription } }
+      { $addToSet: { pushSubscriptions: subscription } }
     )
 
     if (result.modifiedCount === 0 && result.matchedCount === 0) {

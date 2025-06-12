@@ -27,9 +27,21 @@ export default function LocaleSelector() {
   // Use the current URL locale or detect from browser
   const currentLocale = pathname?.split('/')[1] || getDefaultLocale();
 
-  const handleChange = (newLocale: string) => {
+  const handleChange = async (newLocale: string) => {
     // Set cookie with 1 year expiry
     Cookies.set('NEXT_LOCALE', newLocale, { expires: 365 })
+
+    try {
+      await fetch('/api/update-locale', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ locale: newLocale }),
+      })
+    } catch (error) {
+      console.error('Failed to update locale on server:', error)
+    }
     
     const pathWithoutLocale = pathname?.split('/').slice(2).join('/')
     const newPath = `/${newLocale}/${pathWithoutLocale}`
@@ -38,7 +50,7 @@ export default function LocaleSelector() {
 
   return (
     <div className="">
-      <FormControl size="small" sx={{ minWidth: 100 }}>
+      <FormControl size="small" sx={{ minWidth: 80 }}>
         <Select
           value={currentLocale}
           onChange={(e) => handleChange(e.target.value)}
