@@ -180,8 +180,10 @@ export default function TopControlsBar() {
         </div>
       </div>
 
-      <div className="flex gap-3 items-center">
-        <div className="text-sm text-white/80 capitalize">{currentUser?.name}</div>
+      <div className="flex gap-3 items-center overflow-hidden">
+        <div className="text-sm text-white/80 capitalize overflow-hidden text-ellipsis whitespace-nowrap">
+          {currentUser?.name}
+        </div>
         <div className="relative w-10 h-10">
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40 p-0"
