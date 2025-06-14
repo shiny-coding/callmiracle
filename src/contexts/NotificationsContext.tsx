@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import { getNotificationMessage } from '@/utils/notificationUtils'
 import { useRouter } from 'next/navigation'
 import { useClientPushNotifications } from '@/hooks/useClientPushNotifications'
+import { useSnackbar } from './SnackContext'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications($userId: ID!) {
@@ -91,6 +92,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const { subscribeToNotifications } = useSubscriptions()
   const t = useTranslations()
   const router = useRouter()
+  const { showSnackbar } = useSnackbar()
   
   useClientPushNotifications(currentUser)
 
@@ -115,7 +117,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((notificationEvent: any) => {
       if (notificationEvent) {
-        showBrowserNotification(notificationEvent, t, router)
+        // showBrowserNotification(notificationEvent, t, router)
+        showSnackbar(getNotificationMessage(notificationEvent, t), 'info')
         // Play notification sound if not already playing
         if (!isPlaying) {
           playNotificationSound()

@@ -72,6 +72,6 @@ export const config = {
     // - Profile images
     // - PNG files
     // - Sound files (new exclusion)
-    '/((?!api|_next/static|_next/image|favicon.ico|profiles|sounds|.*\\.png$).*)' 
+    '/((?!api|_next/static|_next/image|favicon.ico|profiles|sounds).*)' 
   ]
 }

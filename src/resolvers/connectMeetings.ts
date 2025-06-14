@@ -1,6 +1,6 @@
 import { Interest, Meeting, MeetingStatus, NotificationType, User } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
-import { publishMeetingNotification } from "./meetingsMutations";
+import { publishMeetingNotification } from "./meetingsNotifications";
 import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
 
 // Helper function to find overlapping time ranges
@@ -127,7 +127,8 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
   const potentialPeers = await db.collection('meetings').find({
       userId: { $ne: _userId },
       peerMeetingId: null,
-      timeSlots: { $elemMatch: { $gte: now } }
+      timeSlots: { $elemMatch: { $gte: now } },
+      status: MeetingStatus.Seeking
     }).toArray();
 
   if (potentialPeers.length === 0) return meeting;
@@ -182,7 +183,7 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
       await session.withTransaction(async () => {
 
         const { peer: peerMeeting, overlap } = peersToChooseFrom[randomIndex];
-        updatedMeeting = await tryConnectTwoMeetings(updatedMeeting, peerMeeting, overlap, db, session)
+        updatedMeeting = await tryConnectTwoMeetings(updatedMeeting, peerMeeting, overlap, db, session, NofitySelf.Yes)
       });
       break;
     } catch (err) {
@@ -219,8 +220,10 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
   return updatedMeeting;
 }
 
+export enum NofitySelf { No, Yes }
+
 // throws MeetingAlreadyConnected or PeerAlreadyConnected
-export async function tryConnectTwoMeetings(meeting: Meeting, peerMeeting: Meeting, overlap: TimeRange[], db: any, session: any) {
+export async function tryConnectTwoMeetings(meeting: Meeting, peerMeeting: Meeting, overlap: TimeRange[], db: any, session: any, notifySelf: NofitySelf) {
 
   // Determine the best start time
   const bestStartTime = determineBestStartTime(overlap, meeting, peerMeeting);
@@ -270,7 +273,10 @@ export async function tryConnectTwoMeetings(meeting: Meeting, peerMeeting: Meeti
   console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
 
   await publishMeetingNotification(NotificationType.MeetingConnected, db, peerMeeting, updatedMeeting)
-  await publishMeetingNotification(NotificationType.MeetingConnected, db, updatedMeeting, peerMeeting)
+
+  if (notifySelf === NofitySelf.Yes) {
+    await publishMeetingNotification(NotificationType.MeetingConnected, db, updatedMeeting, peerMeeting)
+  }
 
   return updatedMeeting
 }

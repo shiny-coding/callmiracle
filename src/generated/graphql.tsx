@@ -119,6 +119,7 @@ export type Meeting = {
   lastSlotEnd: Scalars['Float']['output'];
   minDurationM: Scalars['Int']['output'];
   peerMeetingId?: Maybe<Scalars['String']['output']>;
+  linkedToPeer?: Maybe<Scalars['Boolean']['output']>;
   preferEarlier: Scalars['Boolean']['output'];
   startTime?: Maybe<Scalars['Float']['output']>;
   status: MeetingStatus;

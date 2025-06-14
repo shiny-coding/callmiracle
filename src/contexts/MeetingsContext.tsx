@@ -178,7 +178,10 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event: NotificationEvent) => {
       if (event.type.startsWith('MEETING_')) {
-        refetchMeetings();
+        // setTimeout(() => {
+          console.log('refetching meetings from notification')
+          refetchMeetings();
+        // }, 5000)
       }
     })
     

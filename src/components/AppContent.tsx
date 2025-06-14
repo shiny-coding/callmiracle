@@ -9,6 +9,7 @@ import { NotificationsProvider } from '@/contexts/NotificationsContext'
 import { MeetingsProvider } from '@/contexts/MeetingsContext'
 import LoadingDialog from './LoadingDialog'
 import { vanillaStore } from '@/store/useStore'
+import { SnackbarProvider } from '@/contexts/SnackContext'
 
 interface AppContentProps {
   children: ReactNode
@@ -22,9 +23,11 @@ export function AppContent({ children }: AppContentProps) {
     <SubscriptionsProvider>
       <MeetingsProvider>
         <UsersProvider>
-          <NotificationsProvider>
-            {children}
-          </NotificationsProvider>
+          <SnackbarProvider>
+            <NotificationsProvider>
+              {children}
+            </NotificationsProvider>
+          </SnackbarProvider>
         </UsersProvider>
       </MeetingsProvider>
     </SubscriptionsProvider>

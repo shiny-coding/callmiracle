@@ -2,48 +2,13 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { MeetingStatus, NotificationType } from '@/generated/graphql';
 import { createOrUpdateMeeting } from './createOrUpdateMeeting';
-import { pubsub } from './pubsub';
-import { publishPushNotification } from './pushNotifications';
+import { publishMeetingNotification } from './meetingsNotifications';
 
 interface UpdateMeetingStatusInput {
   _id: string
   status?: MeetingStatus
   lastCallTime?: Date
   totalDuration?: number
-}
-
-// Helper function to publish meeting disconnection notification
-export async function publishMeetingNotification(notificationType: NotificationType, db: any, peerMeeting: any, meeting: any) {
-  
-  // Get the peer user for notification
-  const peerUser = await db.collection('users').findOne({ _id: peerMeeting.userId })
-  
-  if (!peerUser) {
-    console.error('Peer user not found', { peerMeeting, meeting })
-    return
-  }
-  
-  // Create a notification in the database
-  await db.collection('notifications').insertOne({
-    userId: peerUser._id,
-    userName: peerUser.name,
-    type: notificationType,
-    seen: false,
-    meetingId: peerMeeting._id,
-    createdAt: new Date()
-  })
-  
-  // Publish notification event
-  const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
-  pubsub.publish(topic, { notificationEvent: { type: notificationType, meeting: peerMeeting, user: peerUser, peerUserName: meeting.userName } })
-  
-  console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId.toString() })
-
-  await publishPushNotification(db, peerUser, {
-    type: notificationType,
-    peerUserName: meeting.userName,
-    meetingId: peerMeeting._id
-  })
 }
 
 const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {
@@ -53,6 +18,8 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
 
     const meeting = await db.collection('meetings').findOne({ _id })
     const _peerMeetingId = meeting?.peerMeetingId
+
+    const peerMeeting = _peerMeetingId ? await db.collection('meetings').findOne({ _id: _peerMeetingId }) : null
 
     // Create update object with only provided fields
     const updateFields: any = {}
@@ -88,7 +55,8 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
       const peerMeeting = await db.collection('meetings').findOne({ _id: _peerMeetingId })
 
       if (disconnectPeer) {
-        updateFields.status = MeetingStatus.Seeking
+        // if peer meeting was linked to our meeting, finish it, otherwise update to seeking
+        updateFields.status = peerMeeting?.linkedToPeer ? MeetingStatus.Finished : MeetingStatus.Seeking
         updateFields.peerMeetingId = null
         updateFields.startTime = null
         console.log('Disconnecting peer:', _peerMeetingId.toString())

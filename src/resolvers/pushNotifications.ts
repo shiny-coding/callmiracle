@@ -2,6 +2,7 @@ import webpush from 'web-push'
 import { getNotificationMessage } from '@/utils/notificationUtils'
 import { Db, ObjectId } from 'mongodb'
 import { NotificationType } from '@/generated/graphql'
+import { getTranslations } from 'next-intl/server'
 
 // VAPID keys should be generated once and stored securely as environment variables.
 // You can generate them using the web-push library:
@@ -19,23 +20,6 @@ if (vapidKeys.publicKey && vapidKeys.privateKey) {
   )
 } else {
   console.warn('VAPID keys are not configured. Push notifications will be disabled.')
-}
-
-// TODO: use a proper i18n implementation for server-side rendering
-const t_en = (key: string, values?: Record<string, any>): string => {
-  const messages: Record<string, string> = {
-    'notificationMessages.meetingConnected': 'You have been connected with a peer.',
-    'notificationMessages.meetingDisconnected': 'Your peer has disconnected.',
-    'notificationMessages.meetingWithFinished': 'Your meeting with {name} has finished.',
-    'notificationMessages.newNotification': 'You have a new notification.'
-  }
-  let message = messages[key] || key
-  if (values) {
-    Object.keys(values).forEach(k => {
-      message = message.replace(`{${k}}`, values[k])
-    })
-  }
-  return message
 }
 
 const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription: any, payload: any) => {
@@ -72,16 +56,23 @@ export const publishPushNotification = async (db: Db, user: any, notification: {
     return
   }
 
-  const body = getNotificationMessage(notification, t_en)
+  // Get user's locale, fallback to 'en' if not set
+  const userLocale = user.locale || 'en'
+  
+  // Get translations using next-intl
+  const t = await getTranslations({ locale: userLocale })
+  
+  const body = getNotificationMessage(notification, t)
 
   const payload = {
-    title: 'Commiracle',
+    title: 'CallMiracle',
     body,
     data: {
       url: `/list?meetingId=${notification.meetingId.toString()}`
     }
   }
 
+  console.log('Sending push notifications to user:', user.name + " (" + user._id.toString() + ")", body)
   for (const subscription of user.pushSubscriptions) {
     await sendSinglePushNotification(db, user._id, subscription, payload)
   }

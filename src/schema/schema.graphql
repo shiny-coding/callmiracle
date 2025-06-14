@@ -45,6 +45,7 @@ type Meeting {
   allowedMaxAge: Int!
   startTime: Float
   peerMeetingId: String
+  linkedToPeer: Boolean
   lastCallTime: Float
   lastMissedCallTime: Float
   totalDurationS: Int

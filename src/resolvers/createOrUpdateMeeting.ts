@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb"
-import { canConnectMeetings, MeetingAlreadyConnected, PeerAlreadyConnected, tryConnectTwoMeetings } from "./connectMeetings"
+import { canConnectMeetings, MeetingAlreadyConnected, NofitySelf, PeerAlreadyConnected, tryConnectTwoMeetings } from "./connectMeetings"
 import { Context } from "@apollo/client/react/types/types"
 import { BroadcastType, Meeting, MeetingOutput, MeetingStatus } from "@/generated/graphql"
 import { SLOT_DURATION } from "@/utils/meetingUtils"
@@ -132,7 +132,8 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
 
         const insertResult = await db.collection('meetings').insertOne({
           ...$set,
-          createdAt: new Date()
+          createdAt: new Date(),
+          linkedToPeer: true
         });
         myMeeting = await db.collection('meetings').findOne({ _id: insertResult.insertedId });
         if (!myMeeting) {
@@ -150,7 +151,7 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
           return { error: MeetingError.MeetingDoNotSufficientlyOverlapError }
         }
 
-        myMeeting = await tryConnectTwoMeetings(myMeeting, peerMeeting, overlap, db, session)
+        myMeeting = await tryConnectTwoMeetings(myMeeting, peerMeeting, overlap, db, session, NofitySelf.No)
       });
 
       return { meeting: myMeeting }

@@ -21,11 +21,9 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     <AppContent>
       <WebRTCProvider>
         <DetailedCallHistoryProvider>
-          <SnackbarProvider>
-            <MainContent>
-              {children}
-            </MainContent>
-          </SnackbarProvider>
+          <MainContent>
+            {children}
+          </MainContent>
         </DetailedCallHistoryProvider>
       </WebRTCProvider>
     </AppContent>

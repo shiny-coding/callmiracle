@@ -47,23 +47,21 @@ export function useClientPushNotifications(currentUser: any) {
     if (!currentUser?._id) return
 
     const registerAndSubscribe = async () => {
-        if ('serviceWorker' in navigator && window.PushManager) {
-            try {
-                const swReg = await navigator.serviceWorker.register('/sw.js')
-                console.log('Service Worker is registered', swReg)
-
-                if (Notification.permission === 'granted') {
-                    await subscribeToPushNotifications()
-                } else if (Notification.permission === 'default') {
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                        await subscribeToPushNotifications()
-                    }
-                }
-            } catch (error) {
-                console.error('Service Worker Error or Push Subscription failed', error)
+      if ('serviceWorker' in navigator && window.PushManager) {
+        try {
+          await navigator.serviceWorker.register('/sw.js')
+          if (Notification.permission === 'granted') {
+            await subscribeToPushNotifications()
+          } else if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+              await subscribeToPushNotifications()
             }
+          }
+        } catch (error) {
+          console.error('Service Worker Error or Push Subscription failed', error)
         }
+      }
     }
 
     registerAndSubscribe()

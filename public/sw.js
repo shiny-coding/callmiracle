@@ -1,11 +1,11 @@
 self.addEventListener('push', event => {
   const data = event.data.json()
-  console.log('New notification', data)
+  console.log('New push notification', data)
 
   const options = {
     body: data.body,
-    icon: '/icon-192x192.png', // You should create this icon file
-    badge: '/badge-72x72.png', // You should create this badge file
+    icon: '/logo-192.png',
+    badge: '/logo-72.png',
     data: {
       url: data.data.url
     }
