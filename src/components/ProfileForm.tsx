@@ -2,7 +2,6 @@
 
 import { Dialog, DialogTitle, DialogContent, TextField, IconButton, DialogActions, Button, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Select, MenuItem } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import LogoutIcon from '@mui/icons-material/Logout'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useTranslations } from 'next-intl'
 import { useCallback, useState, useEffect, useRef } from 'react'
@@ -164,10 +163,6 @@ export default function ProfileForm() {
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 80 }, (_, i) => currentYear - i - 10)
 
-  const handleLogout = () => {
-    signOut({ callbackUrl: '/auth/signin' })
-  }
-
   const handleDeleteAccount = async () => {
     try {
       await deleteUser({ variables: { userId: currentUserId } })
@@ -190,15 +185,6 @@ export default function ProfileForm() {
       )}
       {/* Header */}
       <PageHeader title={t('title')}>
-        <IconButton 
-          onClick={handleLogout} 
-          size="small" 
-          color="primary"
-          title={t('logout')}
-          aria-label={t('logout')}
-        >
-          <LogoutIcon />
-        </IconButton>
         <IconButton 
           onClick={handleCancel} 
           size="small"

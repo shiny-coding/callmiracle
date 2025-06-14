@@ -1,6 +1,8 @@
-import { IconButton, Badge, Avatar } from '@mui/material'
+import { IconButton, Badge, Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import NotificationsIcon from '@mui/icons-material/Notifications'
+import SettingsIcon from '@mui/icons-material/Settings'
+import LogoutIcon from '@mui/icons-material/Logout'
 import { useState, useRef, useEffect, MutableRefObject } from 'react'
 import NotificationsPopup from './NotificationsPopup'
 import { useNotifications } from '@/contexts/NotificationsContext'
@@ -16,9 +18,12 @@ import LocalVideo from './LocalVideo'
 import { useCheckImage } from '@/hooks/useCheckImage'
 import { useRouter } from 'next/navigation'
 import LocaleSelector from './LocaleSelector'
+import { signOut } from 'next-auth/react'
+import { useTranslations } from 'next-intl'
 
 export default function TopControlsBar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null)
   const { hasUnseenNotifications } = useNotifications()
   const { currentUser, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled } = useStore((state: any) => ({ currentUser: state.currentUser, localAudioEnabled: state.localAudioEnabled, localVideoEnabled: state.localVideoEnabled, setLocalAudioEnabled: state.setLocalAudioEnabled, setLocalVideoEnabled: state.setLocalVideoEnabled }))
   const [isHoveringOverVideoControls, setIsHoveringOverVideoControls] = useState(false)
@@ -26,6 +31,7 @@ export default function TopControlsBar() {
   const [videoOpenedByTouch, setVideoOpenedByTouch] = useState(false)
   const { exists: imageExists } = useCheckImage(currentUser?._id)
   const router = useRouter()
+  const t = useTranslations('Profile')
 
   const {
     connectionStatus,
@@ -87,6 +93,24 @@ export default function TopControlsBar() {
     }
   }
 
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setProfileMenuAnchor(event.currentTarget)
+  }
+
+  const handleProfileMenuClose = () => {
+    setProfileMenuAnchor(null)
+  }
+
+  const handleProfileSettings = () => {
+    handleProfileMenuClose()
+    router.push('/profile')
+  }
+
+  const handleLogout = () => {
+    handleProfileMenuClose()
+    signOut({ callbackUrl: '/auth/signin' })
+  }
+
   return (
     <div
       ref={barRef}
@@ -100,9 +124,6 @@ export default function TopControlsBar() {
           <NotificationsIcon className="text-white" />
         </Badge>
       </IconButton>
-      <div className="mr-auto opacity-80">
-        <LocaleSelector />
-      </div>
 
       <div className="flex items-center gap-4 grow justify-center">
         <div className="flex gap-2 items-center">
@@ -164,7 +185,7 @@ export default function TopControlsBar() {
         <div className="relative w-10 h-10">
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40 p-0"
-            onClick={() => router.push('/profile')}
+            onClick={handleProfileMenuOpen}
             style={{ width: 40, height: 40 }}
           >
             <Avatar
@@ -176,6 +197,52 @@ export default function TopControlsBar() {
           </IconButton>
         </div>
       </div>
+
+      <Menu
+        anchorEl={profileMenuAnchor}
+        open={Boolean(profileMenuAnchor)}
+        onClose={handleProfileMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            bgcolor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            '& .MuiMenuItem-root': {
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+              },
+            },
+          },
+        }}
+      >
+        <MenuItem onClick={handleProfileSettings}>
+          <ListItemIcon>
+            <SettingsIcon sx={{ color: 'white' }} />
+          </ListItemIcon>
+          <ListItemText primary={t('title')} />
+        </MenuItem>
+        <MenuItem>
+          <LocaleSelector />
+        </MenuItem>
+        <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <LogoutIcon sx={{ color: 'white' }} />
+          </ListItemIcon>
+          <ListItemText primary={t('logout')} />
+        </MenuItem>
+      </Menu>
+
       <NotificationsPopup
         open={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}

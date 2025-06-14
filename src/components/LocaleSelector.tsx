@@ -49,12 +49,24 @@ export default function LocaleSelector() {
   };
 
   return (
-    <div className="">
-      <FormControl size="small" sx={{ minWidth: 80 }}>
+    <div className="w-full">
+      <FormControl size="small" fullWidth>
         <Select
           value={currentLocale}
           onChange={(e) => handleChange(e.target.value)}
           variant="outlined"
+          sx={{
+            '& .MuiOutlinedInput-notchedOutline': {
+              border: 'none',
+            },
+            '& .MuiSelect-select': {
+              color: 'white',
+              fontSize: '0.875rem',
+            },
+            '& .MuiSvgIcon-root': {
+              color: 'white',
+            },
+          }}
         >
           {locales.map((locale) => (
             <MenuItem key={locale} value={locale}>

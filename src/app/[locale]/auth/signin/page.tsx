@@ -144,7 +144,9 @@ export default function SignInContent() {
             >
               {t('forgotPassword')}
             </Button>
-            <LocaleSelector />
+            <div>
+              <LocaleSelector />
+            </div>
           </div>
           {mode !== 'password-reset' && (
             <>
