@@ -272,11 +272,13 @@ export async function tryConnectTwoMeetings(meeting: Meeting, peerMeeting: Meeti
   // If we get here, transaction was successful
   console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
 
-  await publishMeetingNotification(NotificationType.MeetingConnected, db, peerMeeting, updatedMeeting)
+  setTimeout(async () => {
+    await publishMeetingNotification(NotificationType.MeetingConnected, db, peerMeeting, updatedMeeting)
 
-  if (notifySelf === NofitySelf.Yes) {
-    await publishMeetingNotification(NotificationType.MeetingConnected, db, updatedMeeting, peerMeeting)
-  }
+    if (notifySelf === NofitySelf.Yes) {
+      await publishMeetingNotification(NotificationType.MeetingConnected, db, updatedMeeting, peerMeeting)
+    }
+  }) // do this after the transaction in which we're in, so the user will receive fresh data
 
   return updatedMeeting
 }
