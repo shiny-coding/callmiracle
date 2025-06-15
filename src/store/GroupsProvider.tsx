@@ -11,7 +11,13 @@ const GET_GROUPS = gql`
       _id
       name
       open
+      owner
       admins
+      interestsPairs
+      interestsDescriptions {
+        interest
+        description
+      }
     }
   }
 `

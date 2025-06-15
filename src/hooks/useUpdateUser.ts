@@ -14,10 +14,10 @@ const UPDATE_USER = gql`
 `
 
 // Helper function to remove __typename recursively (optional but robust)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const removeTypename = <T>(value: T): Omit<T, '__typename'> => {
+
+export const removeTypename = <T>(value: T): Omit<T, '__typename'> => {
   if (value !== null && typeof value === 'object') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const newValue: any = Array.isArray(value) ? [] : {}
     for (const key in value) {
       if (key !== '__typename') {

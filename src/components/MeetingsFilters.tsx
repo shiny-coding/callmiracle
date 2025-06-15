@@ -2,14 +2,13 @@
 
 import { Button, Checkbox, FormControlLabel, FormGroup, Slider, Typography, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { Interest } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import InterestSelector from './InterestSelector'
-import { interestRelationships } from './InterestSelector'
 import LanguageSelector from './LanguageSelector'
 import { useEffect, useState, useRef } from 'react'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import { getAllInterests } from '@/utils/interests'
 
 interface MeetingsFiltersProps {
   onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
@@ -50,7 +49,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
   }))
 
   // Local interactive state for filters
-  const [changedFilterInterests, setChangedFilterInterests] = useState<Interest[]>(filterInterests)
+  const [changedFilterInterests, setChangedFilterInterests] = useState<string[]>(filterInterests)
   const [changedFilterLanguages, setChangedFilterLanguages] = useState<string[]>(filterLanguages)
   const [changedFilterAllowedMales, setChangedFilterAllowedMales] = useState<boolean>(filterAllowedMales)
   const [changedFilterAllowedFemales, setChangedFilterAllowedFemales] = useState<boolean>(filterAllowedFemales)
@@ -113,7 +112,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     }
 
     // Interests
-    const allAvailableInterests = Array.from(interestRelationships.keys())
+    const allAvailableInterests = getAllInterests()
     if (changedFilterInterests.length > 0 && changedFilterInterests.length < allAvailableInterests.length) {
       summaryParts.push(changedFilterInterests.map(interest => t(`Interest.${interest}`)).join(', '))
     }

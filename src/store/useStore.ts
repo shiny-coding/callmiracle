@@ -1,13 +1,13 @@
 import { createStore } from 'zustand/vanilla'
 import { useStoreWithEqualityFn } from 'zustand/traditional'
 import { persist, createJSONStorage, PersistOptions } from 'zustand/middleware'
-import { Interest, User } from '@/generated/graphql'
+import { User } from '@/generated/graphql'
 import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 import { shallow } from 'zustand/shallow'
 
 // Define default filter values
-const DEFAULT_FILTER_INTERESTS: Interest[] = []
+const DEFAULT_FILTER_INTERESTS: string[] = []
 const DEFAULT_FILTER_LANGUAGES: string[] = [] // Will be overridden by user's languages on init
 const DEFAULT_FILTER_ALLOWED_MALES = true
 const DEFAULT_FILTER_ALLOWED_FEMALES = true
@@ -48,7 +48,7 @@ export interface AppState {
   setMeetingLastCallTime: (time: number | null) => void
 
   // Meeting Filters (these are the applied filters)
-  filterInterests: Interest[]
+  filterInterests: string[]
   filterLanguages: string[]
   filterAllowedMales: boolean
   filterAllowedFemales: boolean
@@ -56,7 +56,7 @@ export interface AppState {
   filterMinDurationM: number
 
   // Filter setters (directly update the applied filters)
-  setFilterInterests: (interests: Interest[]) => void
+  setFilterInterests: (interests: string[]) => void
   setFilterLanguages: (languages: string[]) => void
   setFilterAllowedMales: (allowed: boolean) => void
   setFilterAllowedFemales: (allowed: boolean) => void

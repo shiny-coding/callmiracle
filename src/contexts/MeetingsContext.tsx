@@ -3,7 +3,6 @@ import { useStore } from '@/store/useStore'
 import { ApolloError, gql, useQuery, NetworkStatus } from '@apollo/client'
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react'
 import { useSubscriptions } from './SubscriptionsContext'
-import { Interest } from '@/generated/graphql'
 import { shallow } from 'zustand/shallow'
 
 export const GET_MEETINGS_WITH_PEERS = gql`
@@ -46,7 +45,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
 export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
   query GetFutureMeetingsWithPeers(
     $userId: ID!
-    $filterInterests: [Interest!]
+    $filterInterests: [String!]
     $filterLanguages: [String!]
     $filterAllowedMales: Boolean
     $filterAllowedFemales: Boolean

@@ -1,18 +1,5 @@
 scalar Date
 
-enum Interest {
-  CHAT
-  MEET_NEW_PEOPLE
-  NEED_SPEAKING_OUT
-  PROVIDE_LISTENING
-  MEDITATE_TOGETHER
-  PRAY_TOGETHER
-  NEED_EMOTIONAL_SUPPORT
-  PROVIDE_EMOTIONAL_SUPPORT
-  NEED_MENTAL_SUPPORT
-  PROVIDE_MENTAL_SUPPORT
-}
-
 enum BroadcastType {
   MEETING_UPDATED
 }
@@ -26,14 +13,22 @@ enum NotificationType {
 type Block {
   userId: ID!
   all: Boolean!
-  interests: [Interest!]!
+  interests: [String!]!
 }
 
 type Group {
   _id: ID!
   name: String!
   open: Boolean!
+  owner: ID!
   admins: [ID!]!
+  interestsPairs: [[String!]!]!
+  interestsDescriptions: [InterestDescription!]!
+}
+
+type InterestDescription {
+  interest: String!
+  description: String!
 }
 
 type Meeting {
@@ -42,7 +37,7 @@ type Meeting {
   groupId: ID!
   userName: String
   languages: [String!]!
-  interests: [Interest!]!
+  interests: [String!]!
   timeSlots: [Float!]!
   lastSlotEnd: Float!
   minDurationM: Int!
@@ -170,7 +165,7 @@ input CallUserInput {
 input BlockInput {
   userId: ID!
   all: Boolean!
-  interests: [Interest!]!
+  interests: [String!]!
 }
 
 input GroupInput {
@@ -178,6 +173,13 @@ input GroupInput {
   name: String!
   open: Boolean!
   admins: [ID!]!
+  interestsPairs: [[String!]!]!
+  interestsDescriptions: [InterestDescriptionInput!]!
+}
+
+input InterestDescriptionInput {
+  interest: String!
+  description: String!
 }
 
 input MeetingInput {
@@ -185,7 +187,7 @@ input MeetingInput {
   userId: ID!
   userName: String
   languages: [String!]!
-  interests: [Interest!]!
+  interests: [String!]!
   timeSlots: [Float!]!
   minDurationM: Int!
   preferEarlier: Boolean!
@@ -221,7 +223,7 @@ type Query {
   getNotifications(userId: ID!): [Notification!]!
   getFutureMeetingsWithPeers(
     userId: ID!
-    filterInterests: [Interest!]
+    filterInterests: [String!]
     filterLanguages: [String!]
     filterAllowedMales: Boolean
     filterAllowedFemales: Boolean
@@ -236,6 +238,7 @@ type Mutation {
   callUser(input: CallUserInput!): CallEvent
   createOrUpdateMeeting(input: MeetingInput!): MeetingOutput!
   createOrUpdateGroup(input: GroupInput!): Group!
+  deleteGroup(id: ID!): Boolean!
   updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse
   setNotificationSeen(id: ID!): Notification

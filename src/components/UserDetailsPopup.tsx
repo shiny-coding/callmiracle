@@ -1,8 +1,7 @@
 import React from 'react'
 import { Dialog, DialogTitle, DialogContent, IconButton, Typography, Chip, Divider, FormGroup, FormControlLabel, Checkbox, Button } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { User, Interest } from '@/generated/graphql'
-import { interestRelationships } from './InterestSelector'
+import { User } from '@/generated/graphql'
 import { useTranslations } from 'next-intl'
 import { LANGUAGES } from '@/config/languages'
 import { formatTextWithLinks } from '@/utils/formatTextWithLinks'
@@ -12,6 +11,7 @@ import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { useCheckImage } from '@/hooks/useCheckImage'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import { getAllInterests } from '@/utils/interests'
 
 interface UserDetailsPopupProps {
   user: User
@@ -22,19 +22,22 @@ interface UserDetailsPopupProps {
 export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPopupProps) {
   const t = useTranslations()
   const tInterest = useTranslations('Interest')
-  const { currentUser, setCurrentUser } = useStore()
+  const { currentUser, setCurrentUser } = useStore(state => ({ 
+    currentUser: state.currentUser, 
+    setCurrentUser: state.setCurrentUser 
+  }))
   const { updateUserData } = useUpdateUser()
   const [showFullImage, setShowFullImage] = useState(false)
   const { exists: imageExists } = useCheckImage(user._id)
 
-  const existingBlock = currentUser?.blocks.find(b => b.userId === user._id)
+  const existingBlock = currentUser?.blocks.find((b: any) => b.userId === user._id)
   const [blockAll, setBlockAll] = useState(existingBlock?.all || false)
-  const [blockedInterests, setBlockedInterests] = useState<Interest[]>(existingBlock?.interests || [])
+  const [blockedInterests, setBlockedInterests] = useState<string[]>(existingBlock?.interests || [])
   const [isEditing, setIsEditing] = useState(false)
-  const { refetchFutureMeetings } = useMeetings()
-  // Split interests into left and right columns
-  const leftColumnInterests = Array.from(interestRelationships.keys())
-  const rightColumnInterests = Array.from(new Set(interestRelationships.values()))
+  const { refetchFutureMeetingsWithPeers } = useMeetings()
+  
+  // Get all available interests
+  const allInterests = getAllInterests()
 
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -46,7 +49,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
   const handleApply = async () => {
     if (!currentUser) return
 
-    const updatedBlocks = currentUser.blocks.filter(b => b.userId !== user._id)
+    const updatedBlocks = currentUser.blocks.filter((b: any) => b.userId !== user._id)
     if (blockAll || blockedInterests.length > 0) {
       updatedBlocks.push({
         userId: user._id,
@@ -61,7 +64,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     })
     await updateUserData()
     setIsEditing(false)
-    refetchFutureMeetings()
+    refetchFutureMeetingsWithPeers()
     onClose()
   }
 
@@ -172,45 +175,25 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
                 {t('blockInterests')}
               </Typography>
               <div className="grid grid-cols-2 gap-4">
-                {leftColumnInterests.map((leftInterest, index) => {
-                  const rightInterest = rightColumnInterests[index]
-                  return (
-                    <React.Fragment key={leftInterest}>
-                      <Button
-                        fullWidth
-                        variant={blockedInterests.includes(leftInterest) ? "contained" : "outlined"}
-                        onClick={() => {
-                          if (blockedInterests.includes(leftInterest)) {
-                            setBlockedInterests(blockedInterests.filter(i => i !== leftInterest))
-                          } else {
-                            setBlockedInterests([...blockedInterests, leftInterest])
-                          }
-                          setIsEditing(true)
-                        }}
-                        color={blockedInterests.includes(leftInterest) ? "error" : "success"}
-                        className="h-full"
-                      >
-                        {tInterest(leftInterest)}
-                      </Button>
-                      <Button
-                        fullWidth
-                        variant={blockedInterests.includes(rightInterest) ? "contained" : "outlined"}
-                        onClick={() => {
-                          if (blockedInterests.includes(rightInterest)) {
-                            setBlockedInterests(blockedInterests.filter(i => i !== rightInterest))
-                          } else {
-                            setBlockedInterests([...blockedInterests, rightInterest])
-                          }
-                          setIsEditing(true)
-                        }}
-                        color={blockedInterests.includes(rightInterest) ? "error" : "success"}
-                        className="h-full"
-                      >
-                        {tInterest(rightInterest)}
-                      </Button>
-                    </React.Fragment>
-                  )
-                })}
+                {allInterests.map(interest => (
+                  <Button
+                    key={interest}
+                    fullWidth
+                    variant={blockedInterests.includes(interest) ? "contained" : "outlined"}
+                    onClick={() => {
+                      if (blockedInterests.includes(interest)) {
+                        setBlockedInterests(blockedInterests.filter(i => i !== interest))
+                      } else {
+                        setBlockedInterests([...blockedInterests, interest])
+                      }
+                      setIsEditing(true)
+                    }}
+                    color={blockedInterests.includes(interest) ? "error" : "success"}
+                    className="h-full"
+                  >
+                    {tInterest(interest)}
+                  </Button>
+                ))}
               </div>
             </>
           )}

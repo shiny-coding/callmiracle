@@ -18,13 +18,13 @@ export type Scalars = {
 export type Block = {
   __typename?: 'Block';
   all: Scalars['Boolean']['output'];
-  interests: Array<Interest>;
+  interests: Array<Scalars['String']['output']>;
   userId: Scalars['ID']['output'];
 };
 
 export type BlockInput = {
   all: Scalars['Boolean']['input'];
-  interests: Array<Interest>;
+  interests: Array<Scalars['String']['input']>;
   userId: Scalars['ID']['input'];
 };
 
@@ -95,22 +95,32 @@ export type Group = {
   __typename?: 'Group';
   _id: Scalars['ID']['output'];
   admins: Array<Scalars['ID']['output']>;
+  interestsDescriptions: Array<InterestDescription>;
+  interestsPairs: Array<Array<Scalars['String']['output']>>;
   name: Scalars['String']['output'];
   open: Scalars['Boolean']['output'];
+  owner: Scalars['ID']['output'];
 };
 
-export enum Interest {
-  Chat = 'CHAT',
-  MeditateTogether = 'MEDITATE_TOGETHER',
-  MeetNewPeople = 'MEET_NEW_PEOPLE',
-  NeedEmotionalSupport = 'NEED_EMOTIONAL_SUPPORT',
-  NeedMentalSupport = 'NEED_MENTAL_SUPPORT',
-  NeedSpeakingOut = 'NEED_SPEAKING_OUT',
-  PrayTogether = 'PRAY_TOGETHER',
-  ProvideEmotionalSupport = 'PROVIDE_EMOTIONAL_SUPPORT',
-  ProvideListening = 'PROVIDE_LISTENING',
-  ProvideMentalSupport = 'PROVIDE_MENTAL_SUPPORT'
-}
+export type GroupInput = {
+  _id?: InputMaybe<Scalars['ID']['input']>;
+  admins: Array<Scalars['ID']['input']>;
+  interestsDescriptions: Array<InterestDescriptionInput>;
+  interestsPairs: Array<Array<Scalars['String']['input']>>;
+  name: Scalars['String']['input'];
+  open: Scalars['Boolean']['input'];
+};
+
+export type InterestDescription = {
+  __typename?: 'InterestDescription';
+  description: Scalars['String']['output'];
+  interest: Scalars['String']['output'];
+};
+
+export type InterestDescriptionInput = {
+  description: Scalars['String']['input'];
+  interest: Scalars['String']['input'];
+};
 
 export type Meeting = {
   __typename?: 'Meeting';
@@ -121,7 +131,7 @@ export type Meeting = {
   allowedMinAge: Scalars['Int']['output'];
   createdAt?: Maybe<Scalars['Date']['output']>;
   groupId: Scalars['ID']['output'];
-  interests: Array<Interest>;
+  interests: Array<Scalars['String']['output']>;
   languages: Array<Scalars['String']['output']>;
   lastCallTime?: Maybe<Scalars['Float']['output']>;
   lastMissedCallTime?: Maybe<Scalars['Float']['output']>;
@@ -138,20 +148,13 @@ export type Meeting = {
   userName?: Maybe<Scalars['String']['output']>;
 };
 
-export type GroupInput = {
-  _id?: InputMaybe<Scalars['ID']['input']>;
-  admins: Array<Scalars['ID']['input']>;
-  name: Scalars['String']['input'];
-  open: Scalars['Boolean']['input'];
-};
-
 export type MeetingInput = {
   _id?: InputMaybe<Scalars['ID']['input']>;
   allowedFemales: Scalars['Boolean']['input'];
   allowedMales: Scalars['Boolean']['input'];
   allowedMaxAge: Scalars['Int']['input'];
   allowedMinAge: Scalars['Int']['input'];
-  interests: Array<Interest>;
+  interests: Array<Scalars['String']['input']>;
   languages: Array<Scalars['String']['input']>;
   meetingToConnectId?: InputMaybe<Scalars['ID']['input']>;
   minDurationM: Scalars['Int']['input'];
@@ -189,6 +192,7 @@ export type Mutation = {
   callUser?: Maybe<CallEvent>;
   createOrUpdateGroup: Group;
   createOrUpdateMeeting: MeetingOutput;
+  deleteGroup: Scalars['Boolean']['output'];
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   deleteUser: Scalars['Boolean']['output'];
   setAllNotificationsSeen: Scalars['Boolean']['output'];
@@ -210,6 +214,11 @@ export type MutationCreateOrUpdateGroupArgs = {
 
 export type MutationCreateOrUpdateMeetingArgs = {
   input: MeetingInput;
+};
+
+
+export type MutationDeleteGroupArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -317,7 +326,7 @@ export type QueryGetDetailedCallHistoryArgs = {
 export type QueryGetFutureMeetingsWithPeersArgs = {
   filterAllowedFemales?: InputMaybe<Scalars['Boolean']['input']>;
   filterAllowedMales?: InputMaybe<Scalars['Boolean']['input']>;
-  filterInterests?: InputMaybe<Array<Interest>>;
+  filterInterests?: InputMaybe<Array<Scalars['String']['input']>>;
   filterLanguages?: InputMaybe<Array<Scalars['String']['input']>>;
   filterMaxAge?: InputMaybe<Scalars['Int']['input']>;
   filterMinAge?: InputMaybe<Scalars['Int']['input']>;

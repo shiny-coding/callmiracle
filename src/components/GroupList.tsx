@@ -59,12 +59,12 @@ export default function GroupList() {
     <Paper className="h-full flex flex-col">
       <PageHeader
         icon={<GroupIcon />}
-        title={t('groups', { defaultValue: 'Groups' })}
+        title={t('groups')}
       >
         <IconButton 
           onClick={() => router.push(`/${locale}/groups/create`)} 
-          aria-label={t('createGroup', { defaultValue: 'Create Group' })}
-          title={t('createGroup', { defaultValue: 'Create Group' })}
+          aria-label={t('createGroup')}
+          title={t('createGroup')}
           size="small"
         >
           <AddIcon />
@@ -91,7 +91,7 @@ export default function GroupList() {
         <div className="group-filters my-4">
           <TextField
             fullWidth
-            placeholder="Search by group name"
+            placeholder={t('searchGroups')}
             value={nameFilter}
             onChange={e => setNameFilter(e.target.value)}
             className="mb-4"
@@ -107,7 +107,7 @@ export default function GroupList() {
                     size="small"
                   />
                 }
-                label="Open Groups"
+                label={t('openGroups')}
               />
               <FormControlLabel
                 control={
@@ -117,7 +117,7 @@ export default function GroupList() {
                     size="small"
                   />
                 }
-                label="Private Groups"
+                label={t('privateGroups')}
               />
               <FormControlLabel
                 control={
@@ -127,16 +127,16 @@ export default function GroupList() {
                     className="text-white"
                   />
                 }
-                label={<span className="text-white">My Groups</span>}
+                label={<span className="text-white">{t('myGroups')}</span>}
               />
             </div>
           </FormGroup>
         </div>
         <Divider className="mb-4" />
-        <div className="p-4 relative">
+        <div className="py-4 relative">
           {filteredGroups.length === 0 ? (
             <Typography className="text-gray-400 text-center py-8">
-              {showMyGroups ? 'You are not a member of any groups yet.' : 'No groups found.'}
+              {t('noGroupsFound')}
             </Typography>
           ) : (
             <List>

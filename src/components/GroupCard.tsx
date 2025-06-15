@@ -6,11 +6,16 @@ import LockIcon from '@mui/icons-material/Lock'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
+import { useUpdateGroup } from '@/hooks/useUpdateGroup'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
+import { useSnackbar } from '@/contexts/SnackContext'
+import { useGroups } from '@/store/GroupsProvider'
+import ConfirmationDialog from './ConfirmationDialog'
 
 interface GroupCardProps {
   group: Group
@@ -23,7 +28,11 @@ export default function GroupCard({ group }: GroupCardProps) {
     setCurrentUser: state.setCurrentUser
   }))
   const { updateUserData, loading: updateLoading } = useUpdateUser()
+  const { deleteGroup, loading: deleteLoading } = useUpdateGroup()
+  const { refetch } = useGroups()
+  const { showSnackbar } = useSnackbar()
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [actionType, setActionType] = useState<'join' | 'leave'>('join')
   const router = useRouter()
   const locale = useLocale()
@@ -33,6 +42,9 @@ export default function GroupCard({ group }: GroupCardProps) {
   
   // Check if user is admin of this group
   const isAdmin = group.admins.includes(currentUser?._id || '')
+  
+  // Check if user is owner of this group
+  const isOwner = group.owner === currentUser?._id
 
   const handleJoinLeave = (action: 'join' | 'leave') => {
     setActionType(action)
@@ -41,6 +53,33 @@ export default function GroupCard({ group }: GroupCardProps) {
 
   const handleEdit = () => {
     router.push(`/${locale}/groups/${group._id}`)
+  }
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteGroup(group._id)
+      
+      // Remove the group from current user's groups if they were in it
+      if (currentUser && isInGroup) {
+        const updatedGroups = currentUser.groups?.filter((id: string) => id !== group._id) || []
+        setCurrentUser({
+          ...currentUser,
+          groups: updatedGroups
+        })
+        await updateUserData()
+      }
+      
+      refetch()
+      showSnackbar(t('groupDeleted'), 'success')
+      setDeleteDialogOpen(false)
+    } catch (error) {
+      console.error('Error deleting group:', error)
+      showSnackbar(t('errorDeletingGroup'), 'error')
+    }
   }
 
   const handleConfirm = async () => {
@@ -96,36 +135,53 @@ export default function GroupCard({ group }: GroupCardProps) {
                     Admin
                   </Typography>
                 )}
+                {isOwner && (
+                  <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
+                    Owner
+                  </Typography>
+                )}
               </div>
               
               <Typography variant="body2" className="text-gray-400">
-                {group.open ? 'Open Group' : 'Private Group'}
+                {group.open ? t('openGroup') : t('privateGroup')}
               </Typography>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
-            {isAdmin && (
+            {(isAdmin || isOwner) && (
               <IconButton
                 size="small"
                 onClick={handleEdit}
-                aria-label={t('editGroup', { defaultValue: 'Edit Group' })}
-                title={t('editGroup', { defaultValue: 'Edit Group' })}
+                aria-label={t('editGroup')}
+                title={t('editGroup')}
               >
                 <EditIcon className="text-gray-400 hover:text-white" />
               </IconButton>
             )}
-            {isInGroup ? (
-              <Button
-                variant="outlined"
-                color="error"
+            {isOwner && (
+              <IconButton
                 size="small"
-                startIcon={<ExitToAppIcon />}
-                onClick={() => handleJoinLeave('leave')}
-                disabled={updateLoading}
+                onClick={handleDeleteClick}
+                aria-label={t('deleteGroup')}
+                title={t('deleteGroup')}
               >
-                {t('leave', { defaultValue: 'Leave' })}
-              </Button>
+                <DeleteIcon className="text-red-400 hover:text-red-300" />
+              </IconButton>
+            )}
+            {isInGroup ? (
+              !isOwner && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  startIcon={<ExitToAppIcon />}
+                  onClick={() => handleJoinLeave('leave')}
+                  disabled={updateLoading}
+                >
+                  {t('leave')}
+                </Button>
+              )
             ) : (
               <Button
                 variant="contained"
@@ -135,26 +191,26 @@ export default function GroupCard({ group }: GroupCardProps) {
                 onClick={() => handleJoinLeave('join')}
                 disabled={updateLoading || (!group.open && !isAdmin)}
               >
-                {t('join', { defaultValue: 'Join' })}
+                {t('join')}
               </Button>
             )}
           </div>
         </div>
       </Paper>
 
-      {/* Confirmation Dialog */}
+      {/* Join/Leave Confirmation Dialog */}
       <Dialog open={confirmDialogOpen} onClose={handleCancel}>
         <DialogTitle>
           {actionType === 'join' 
-            ? `Join ${group.name}?` 
-            : `Leave ${group.name}?`
+            ? t('join') + ` ${group.name}?`
+            : t('leave') + ` ${group.name}?`
           }
         </DialogTitle>
         <DialogContent>
           <Typography>
             {actionType === 'join' 
-              ? `Are you sure you want to join the group "${group.name}"?`
-              : `Are you sure you want to leave the group "${group.name}"?`
+              ? t('confirmJoinGroup')
+              : t('confirmLeaveGroup')
             }
           </Typography>
         </DialogContent>
@@ -172,6 +228,18 @@ export default function GroupCard({ group }: GroupCardProps) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        title={t('deleteGroup')}
+        message={t('confirmDeleteGroup', { groupName: group.name })}
+        confirmText={t('delete')}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteDialogOpen(false)}
+        loading={deleteLoading}
+        destructive={true}
+      />
     </>
   )
 } 

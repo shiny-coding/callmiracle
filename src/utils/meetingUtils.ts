@@ -1,10 +1,11 @@
-import { Block, Interest, Meeting, MeetingStatus } from "@/generated/graphql"
+import { Block, Meeting, MeetingStatus } from "@/generated/graphql"
 import resolveConfig from "tailwindcss/resolveConfig"
 import tailwindConfig from "../../tailwind.config"
 import { ObjectId } from "mongodb"
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes, differenceInMilliseconds, isTomorrow, isToday } from 'date-fns'
 import { enUS } from "date-fns/locale"
 import { TimeSlot } from "@/components/TimeSlotsGrid"
+import { getMatchingInterest as getMatchingInterestFromInterests } from './interests'
 
 export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 export const LATE_ALLOWANCE_FOR_HALF_HOUR_MEETING = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -120,9 +121,9 @@ export function isMeetingPassed(meeting: {
  * @returns Array of shared interests
  */
 export function getSharedInterests(
-  meeting: { interests: Interest[], peerMeetingId?: string | null },
-  peerMeeting?: { interests: Interest[] } | null
-): Interest[] {
+  meeting: { interests: string[], peerMeetingId?: string | null },
+  peerMeeting?: { interests: string[] } | null
+): string[] {
   if (!meeting.peerMeetingId || !peerMeeting) {
     return meeting.interests
   }
@@ -170,10 +171,10 @@ export function class2Hex(tailwindColor: string) {
  * @returns Array of compatible interests
  */
 export function getNonBlockedInterests(
-  meeting: { interests: Interest[] },
+  meeting: { interests: string[] },
   meetingUser: { blocks?: Block[] },
   otherUser: { _id: ObjectId }
-): Interest[] {
+): string[] {
   if (!meetingUser?.blocks) return meeting.interests
 
   const otherUserId = otherUser._id.toString()
@@ -366,27 +367,10 @@ export function getSlotDuration(timestamp: number) {
   return slotDuration
 }
 
-export function getInterestsOverlap(interests1: Interest[], interests2: Interest[]) {
-  return interests1.filter((interest: Interest) => {
-    return interests2.includes(getMatchingInterest(interest))
-  })
+export function getInterestsOverlap(interests1: string[], interests2: string[]) {
+  return interests1.filter(interest => interests2.includes(interest)).length
 }
 
-export function getMatchingInterest(interest: Interest) {
-  switch (interest) {
-    case Interest.Chat: return Interest.Chat
-    case Interest.MeetNewPeople: return Interest.MeetNewPeople
-    case Interest.NeedEmotionalSupport: return Interest.ProvideEmotionalSupport
-    case Interest.NeedMentalSupport: return Interest.ProvideMentalSupport
-    case Interest.ProvideEmotionalSupport: return Interest.NeedEmotionalSupport
-    case Interest.ProvideMentalSupport: return Interest.NeedMentalSupport
-    case Interest.ProvideListening: return Interest.NeedSpeakingOut
-    case Interest.NeedSpeakingOut: return Interest.ProvideListening
-    case Interest.PrayTogether: return Interest.PrayTogether
-    case Interest.MeditateTogether: return Interest.MeditateTogether
-    default: {
-      const _exhaustiveCheck: never = interest
-      return _exhaustiveCheck
-    }
-  }
+export function getMatchingInterest(interest: string) {
+  return getMatchingInterestFromInterests(interest)
 }

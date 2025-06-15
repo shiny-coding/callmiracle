@@ -1,7 +1,7 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { isMeetingPassed, getNonBlockedInterests } from '@/utils/meetingUtils'
-import { Meeting, MeetingStatus, User, Interest } from '@/generated/graphql'
+import { Meeting, MeetingStatus, User } from '@/generated/graphql'
 import { subDays, getYear, subYears } from 'date-fns'
 
 export const meetingsQueries = {
@@ -124,7 +124,7 @@ export const meetingsQueries = {
     filterMinDurationM
   }: { 
     userId: string,
-    filterInterests?: Interest[],
+    filterInterests?: string[],
     filterLanguages?: string[],
     filterAllowedMales?: boolean,
     filterAllowedFemales?: boolean,
