@@ -8,6 +8,7 @@ const UPDATE_USER = gql`
       _id
       updatedAt
       friends
+      groups
     }
   }
 `
@@ -52,7 +53,8 @@ export const useUpdateUser = () => {
       sex: currentUser.sex,
       birthYear: currentUser.birthYear,
       blocks: currentUser.blocks,
-      friends: currentUser.friends
+      friends: currentUser.friends,
+      groups: currentUser.groups
     }
 
     const result = await updateUser({

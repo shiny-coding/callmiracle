@@ -2,10 +2,12 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 
 export const updateUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
-  const { name, interests, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge, blocks, friends } = input
+  const { name, interests, languages, online, about, contacts, sex, birthYear, allowedMales, allowedFemales, allowedMinAge, allowedMaxAge, blocks, friends, groups } = input
   const _id = new ObjectId(input._id)
 
-  const friendsIds = friends.map((friend: any) => new ObjectId(friend))
+  const friendsIds = friends?.map((friend: any) => new ObjectId(friend)) || []
+  const groupsIds = groups?.map((group: any) => new ObjectId(group)) || []
+  
   const user = await db.collection('users').findOneAndUpdate(
     { _id },
     { 
@@ -24,7 +26,8 @@ export const updateUserMutation = async (_: any, { input }: { input: any }, { db
         allowedMinAge,
         allowedMaxAge,
         blocks,
-        friends: friendsIds
+        friends: friendsIds,
+        groups: groupsIds
       } 
     },
     { 

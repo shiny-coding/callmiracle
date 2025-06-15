@@ -4,6 +4,7 @@ import { ReactNode, useState, useEffect } from 'react'
 import { useInitUser } from '@/hooks/useInitUser'
 import { useStore } from '@/store/useStore'
 import { UsersProvider } from '@/store/UsersProvider'
+import { GroupsProvider } from '@/store/GroupsProvider'
 import { SubscriptionsProvider } from '@/contexts/SubscriptionsContext'
 import { NotificationsProvider } from '@/contexts/NotificationsContext'
 import { MeetingsProvider } from '@/contexts/MeetingsContext'
@@ -23,11 +24,13 @@ export function AppContent({ children }: AppContentProps) {
     <SubscriptionsProvider>
       <MeetingsProvider>
         <UsersProvider>
-          <SnackbarProvider>
-            <NotificationsProvider>
-              {children}
-            </NotificationsProvider>
-          </SnackbarProvider>
+          <GroupsProvider>
+            <SnackbarProvider>
+              <NotificationsProvider>
+                {children}
+              </NotificationsProvider>
+            </SnackbarProvider>
+          </GroupsProvider>
         </UsersProvider>
       </MeetingsProvider>
     </SubscriptionsProvider>

@@ -16,6 +16,7 @@ export const GET_USER = gql`
       sex
       birthYear
       friends
+      groups
       updatedAt
       blocks {
         userId
@@ -28,7 +29,10 @@ export const GET_USER = gql`
 
 export function useInitUser() {
   const { data: session, status } = useSession()
-  const { currentUser, setCurrentUser } = useStore()
+  const { currentUser, setCurrentUser } = useStore((state: any) => ({
+    currentUser: state.currentUser,
+    setCurrentUser: state.setCurrentUser
+  }))
 
   const authenticatedUserId = status === 'authenticated' ? session?.user?.id : null
 

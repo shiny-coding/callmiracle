@@ -91,6 +91,14 @@ export type DeleteMeetingResponse = {
   _id: Scalars['ID']['output'];
 };
 
+export type Group = {
+  __typename?: 'Group';
+  _id: Scalars['ID']['output'];
+  admins: Array<Scalars['ID']['output']>;
+  name: Scalars['String']['output'];
+  open: Scalars['Boolean']['output'];
+};
+
 export enum Interest {
   Chat = 'CHAT',
   MeditateTogether = 'MEDITATE_TOGETHER',
@@ -112,14 +120,15 @@ export type Meeting = {
   allowedMaxAge: Scalars['Int']['output'];
   allowedMinAge: Scalars['Int']['output'];
   createdAt?: Maybe<Scalars['Date']['output']>;
+  groupId: Scalars['ID']['output'];
   interests: Array<Interest>;
   languages: Array<Scalars['String']['output']>;
   lastCallTime?: Maybe<Scalars['Float']['output']>;
   lastMissedCallTime?: Maybe<Scalars['Float']['output']>;
   lastSlotEnd: Scalars['Float']['output'];
+  linkedToPeer?: Maybe<Scalars['Boolean']['output']>;
   minDurationM: Scalars['Int']['output'];
   peerMeetingId?: Maybe<Scalars['String']['output']>;
-  linkedToPeer?: Maybe<Scalars['Boolean']['output']>;
   preferEarlier: Scalars['Boolean']['output'];
   startTime?: Maybe<Scalars['Float']['output']>;
   status: MeetingStatus;
@@ -127,6 +136,13 @@ export type Meeting = {
   totalDurationS?: Maybe<Scalars['Int']['output']>;
   userId: Scalars['ID']['output'];
   userName?: Maybe<Scalars['String']['output']>;
+};
+
+export type GroupInput = {
+  _id?: InputMaybe<Scalars['ID']['input']>;
+  admins: Array<Scalars['ID']['input']>;
+  name: Scalars['String']['input'];
+  open: Scalars['Boolean']['input'];
 };
 
 export type MeetingInput = {
@@ -171,6 +187,7 @@ export type MeetingWithPeer = {
 export type Mutation = {
   __typename?: 'Mutation';
   callUser?: Maybe<CallEvent>;
+  createOrUpdateGroup: Group;
   createOrUpdateMeeting: MeetingOutput;
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   deleteUser: Scalars['Boolean']['output'];
@@ -183,6 +200,11 @@ export type Mutation = {
 
 export type MutationCallUserArgs = {
   input: CallUserInput;
+};
+
+
+export type MutationCreateOrUpdateGroupArgs = {
+  input: GroupInput;
 };
 
 
@@ -273,6 +295,7 @@ export type Query = {
   getCalls: Array<Call>;
   getDetailedCallHistory: Array<Call>;
   getFutureMeetingsWithPeers: Array<MeetingWithPeer>;
+  getGroups: Array<Group>;
   getMyMeetingsWithPeers: Array<MeetingWithPeer>;
   getNotifications: Array<Notification>;
   getUser?: Maybe<User>;
@@ -299,6 +322,11 @@ export type QueryGetFutureMeetingsWithPeersArgs = {
   filterMaxAge?: InputMaybe<Scalars['Int']['input']>;
   filterMinAge?: InputMaybe<Scalars['Int']['input']>;
   filterMinDurationM?: InputMaybe<Scalars['Int']['input']>;
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetGroupsArgs = {
   userId: Scalars['ID']['input'];
 };
 
@@ -358,9 +386,10 @@ export type User = {
   deletedAt?: Maybe<Scalars['Float']['output']>;
   email: Scalars['String']['output'];
   friends?: Maybe<Array<Scalars['ID']['output']>>;
+  groups: Array<Scalars['ID']['output']>;
   languages: Array<Scalars['String']['output']>;
   name: Scalars['String']['output'];
-  pushSubscriptions?: Maybe<Array<PushSubscription>>;
+  pushSubscriptions?: Maybe<Array<Maybe<PushSubscription>>>;
   sex: Scalars['String']['output'];
   updatedAt: Scalars['Float']['output'];
 };
@@ -372,6 +401,7 @@ export type UserInput = {
   blocks: Array<BlockInput>;
   contacts: Scalars['String']['input'];
   friends?: InputMaybe<Array<Scalars['ID']['input']>>;
+  groups?: InputMaybe<Array<Scalars['ID']['input']>>;
   languages: Array<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   sex: Scalars['String']['input'];

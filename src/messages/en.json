@@ -239,5 +239,19 @@
   "cancelMeetingButton": "Cancel Meeting",
   "meetingCancelledSuccess": "Meeting cancelled successfully.",
   "meetingCancelError": "Failed to cancel meeting.",
-  "users": "Users"
+  "users": "Users",
+  "groups": "Groups",
+  "join": "Join",
+  "leave": "Leave",
+  "group": "Group",
+  "createGroup": "Create Group",
+  "editGroup": "Edit Group",
+  "groupName": "Group Name",
+  "groupNameRequired": "Group name is required",
+  "openGroup": "Open Group",
+  "openGroupDescription": "Anyone can join this group",
+  "privateGroupDescription": "Only invited members can join",
+  "groupCreated": "Group created successfully",
+  "groupUpdated": "Group updated successfully",
+  "errorSavingGroup": "Error saving group"
 } 

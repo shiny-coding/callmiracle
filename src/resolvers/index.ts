@@ -1,4 +1,5 @@
 import { usersQueries } from './usersQueries'
+import { groupsQueries } from './groupsQueries'
 import { callsQueries } from './callsQueries'
 import { meetingsQueries } from './meetingsQueries'
 import { notificationsQueries } from './notificationsQueries'
@@ -8,11 +9,13 @@ import { notificationsMutations } from './notificationsMutations'
 import { subscriptions } from './subscriptions'
 import { dateScalar } from './scalarResolvers'
 import { meetingsMutations } from './meetingsMutations'
+import { groupsMutations } from './groupsMutations'
 import { deleteUserMutation } from './deleteUserMutation'
 
 export const resolvers = {
   Query: {
     ...usersQueries,
+    ...groupsQueries,
     ...callsQueries,
     ...meetingsQueries,
     ...notificationsQueries
@@ -21,6 +24,7 @@ export const resolvers = {
     updateUser: updateUserMutation,
     callUser: callUserMutation,
     ...meetingsMutations,
+    ...groupsMutations,
     ...notificationsMutations,
     deleteUser: deleteUserMutation
   },

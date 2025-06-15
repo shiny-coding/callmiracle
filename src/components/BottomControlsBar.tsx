@@ -1,7 +1,8 @@
 import { IconButton } from '@mui/material'
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import HistoryIcon from '@mui/icons-material/History'
-import PeopleIcon from '@mui/icons-material/People'
+import PersonIcon from '@mui/icons-material/Person'
+import GroupIcon from '@mui/icons-material/Group'
 import ListIcon from '@mui/icons-material/List'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
@@ -27,6 +28,7 @@ export default function BottomControlsBar() {
   const listPath = `/${locale}/list`
   const calendarPath = `/${locale}/calendar`
   const usersPath = `/${locale}/users`
+  const groupsPath = `/${locale}/groups`
   const callHistoryPath = `/${locale}/call-history`
 
   const selectedColor = '#60a5fa'
@@ -44,8 +46,13 @@ export default function BottomControlsBar() {
             </IconButton>
 
             <IconButton onClick={() => router.push(usersPath)} style={{ color: pathname === usersPath ? selectedColor : undefined, }} >
-              <PeopleIcon />
-            </IconButton>        
+              <PersonIcon />
+            </IconButton>
+            
+            <IconButton onClick={() => router.push(groupsPath)} style={{ color: pathname === groupsPath ? selectedColor : undefined, }} >
+              <GroupIcon />
+            </IconButton>
+            
             <IconButton onClick={() => router.push(callHistoryPath)} style={{ color: pathname === callHistoryPath ? selectedColor : undefined, }} >
               <HistoryIcon />
             </IconButton>

@@ -239,5 +239,19 @@
   "cancelMeetingButton": "Отменить встречу",
   "meetingCancelledSuccess": "Встреча успешно отменена.",
   "meetingCancelError": "Не удалось отменить встречу.",
-  "users": "Пользователи"
+  "users": "Пользователи",
+  "groups": "Группы",
+  "join": "Присоединиться",
+  "leave": "Покинуть",
+  "group": "Группа",
+  "createGroup": "Создать группу",
+  "editGroup": "Редактировать группу",
+  "groupName": "Название группы",
+  "groupNameRequired": "Название группы обязательно",
+  "openGroup": "Открытая группа",
+  "openGroupDescription": "Любой может присоединиться к этой группе",
+  "privateGroupDescription": "Только приглашенные участники могут присоединиться",
+  "groupCreated": "Группа успешно создана",
+  "groupUpdated": "Группа успешно обновлена",
+  "errorSavingGroup": "Ошибка сохранения группы"
 } 
