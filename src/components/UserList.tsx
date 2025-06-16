@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Paper, List, ListItem, Typography, IconButton, FormControlLabel, Checkbox, TextField, FormGroup, Divider } from '@mui/material'
 import PeopleIcon from '@mui/icons-material/People'
@@ -31,60 +31,24 @@ export default function UserList() {
   const [nameFilter, setNameFilter] = useState('')
   const [showMales, setShowMales] = useState(true)
   const [showFemales, setShowFemales] = useState(true)
-  const isUpdatingFromUrl = useRef(false)
 
-  // Check for groupId parameter and auto-select the group
+  // Check for groupId parameter and auto-select the group, then remove from URL
   useEffect(() => {
     const groupId = searchParams.get('groupId')
     if (groupId && groups) {
       // Check if the groupId exists in available groups
       const groupExists = groups.some(group => group._id === groupId)
       if (groupExists && !selectedGroups.includes(groupId)) {
-        isUpdatingFromUrl.current = true
         setSelectedGroups([groupId])
       }
-    } else if (!groupId && selectedGroups.length > 0) {
-      // If no groupId in URL but we have selected groups, clear them
-      isUpdatingFromUrl.current = true
-      setSelectedGroups([])
+      
+      // Remove groupId from URL immediately after using it
+      const newSearchParams = new URLSearchParams(searchParams.toString())
+      newSearchParams.delete('groupId')
+      const newUrl = newSearchParams.toString()
+      router.replace(`/users${newUrl ? `?${newUrl}` : ''}`, { scroll: false })
     }
-  }, [searchParams, groups])
-
-  // Update URL when group selection changes (but not when we're updating from URL)
-  useEffect(() => {
-    if (isUpdatingFromUrl.current) {
-      isUpdatingFromUrl.current = false
-      return
-    }
-
-    const currentGroupId = searchParams.get('groupId')
-    
-    if (selectedGroups.length === 0) {
-      // No groups selected - remove groupId from URL if it exists
-      if (currentGroupId) {
-        const newSearchParams = new URLSearchParams(searchParams.toString())
-        newSearchParams.delete('groupId')
-        const newUrl = newSearchParams.toString()
-        router.replace(`/users${newUrl ? `?${newUrl}` : ''}`, { scroll: false })
-      }
-    } else if (selectedGroups.length === 1) {
-      // Single group selected - update groupId in URL
-      const selectedGroupId = selectedGroups[0]
-      if (currentGroupId !== selectedGroupId) {
-        const newSearchParams = new URLSearchParams(searchParams.toString())
-        newSearchParams.set('groupId', selectedGroupId)
-        router.replace(`/users?${newSearchParams.toString()}`, { scroll: false })
-      }
-    } else {
-      // Multiple groups selected - remove groupId from URL since it represents a single group
-      if (currentGroupId) {
-        const newSearchParams = new URLSearchParams(searchParams.toString())
-        newSearchParams.delete('groupId')
-        const newUrl = newSearchParams.toString()
-        router.replace(`/users${newUrl ? `?${newUrl}` : ''}`, { scroll: false })
-      }
-    }
-  }, [selectedGroups, router, searchParams])
+  }, [searchParams, groups, router])
 
   // Collect all available languages from users
   let availableLanguages: string[] = []
