@@ -115,9 +115,17 @@ export default function GroupCard({ group }: GroupCardProps) {
     setConfirmDialogOpen(false)
   }
 
+  const handleGroupClick = () => {
+    router.push(`/${locale}/users?groupId=${group._id}`)
+  }
+
   return (
     <>
-      <div className="flex items-center flex-grow flex-wrap"  style={{ gap: 'var(--20sp)' }}>
+      <div 
+        className="flex items-center flex-grow flex-wrap cursor-pointer hover:bg-gray-800 rounded-lg p-2 transition-colors"
+        style={{ gap: 'var(--20sp)' }}
+        onClick={handleGroupClick}
+      >
         <div className="flex items-center justify-center w-12 h-12 bg-blue-600 rounded-full">
           <GroupIcon className="text-white" />
         </div>
@@ -152,7 +160,10 @@ export default function GroupCard({ group }: GroupCardProps) {
           {(isAdmin || isOwner) && (
             <IconButton
               size="small"
-              onClick={handleEdit}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleEdit()
+              }}
               aria-label={t('editGroup')}
               title={t('editGroup')}
             >
@@ -162,7 +173,10 @@ export default function GroupCard({ group }: GroupCardProps) {
           {isOwner && (
             <IconButton
               size="small"
-              onClick={handleDeleteClick}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteClick()
+              }}
               aria-label={t('deleteGroup')}
               title={t('deleteGroup')}
             >
@@ -176,7 +190,10 @@ export default function GroupCard({ group }: GroupCardProps) {
                 color="error"
                 size="small"
                 startIcon={<ExitToAppIcon />}
-                onClick={() => handleJoinLeave('leave')}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleJoinLeave('leave')
+                }}
                 disabled={updateLoading}
               >
                 {t('leave')}
@@ -188,7 +205,10 @@ export default function GroupCard({ group }: GroupCardProps) {
               color="primary"
               size="small"
               startIcon={<AddIcon />}
-              onClick={() => handleJoinLeave('join')}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleJoinLeave('join')
+              }}
               disabled={updateLoading || (!group.open && !isAdmin)}
             >
               {t('join')}
