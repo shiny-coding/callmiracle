@@ -281,5 +281,10 @@
   "groupDeleted": "Group deleted successfully",
   "errorDeletingGroup": "Error deleting group",
   "delete": "Delete",
-  "confirm": "Confirm"
+  "confirm": "Confirm",
+  "participants": "participants",
+  "participant": "participant",
+  "participantCount": "{count, plural, =0 {no participants} =1 {1 participant} other {# participants}}",
+  "admin": "Admin",
+  "owner": "Owner"
 } 

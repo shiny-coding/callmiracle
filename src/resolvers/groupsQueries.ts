@@ -19,10 +19,20 @@ export const groupsQueries = {
         .sort({ name: 1 }) // Sort by name alphabetically
         .toArray()
       
-      return groups.map(group => ({
-        ...group,
-        _id: group._id.toString()
+      // For each group, count how many users have this group in their groups array
+      const groupsWithUsersCount = await Promise.all(groups.map(async (group) => {
+        const usersCount = await db.collection('users').countDocuments({
+          groups: { $in: [group._id] }
+        })
+        
+        return {
+          ...group,
+          _id: group._id.toString(),
+          usersCount
+        }
       }))
+      
+      return groupsWithUsersCount
     } catch (error) {
       console.error('Error fetching groups:', error)
       throw new Error('Failed to fetch groups')

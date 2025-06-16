@@ -130,18 +130,22 @@ export default function GroupCard({ group }: GroupCardProps) {
             {!group.open && <LockIcon className="text-gray-400" fontSize="small" />}
             {isAdmin && (
               <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
-                Admin
+                {t('admin')}
               </Typography>
             )}
             {isOwner && (
               <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
-                Owner
+                {t('owner')}
               </Typography>
             )}
           </div>
           
           <Typography variant="body2" className="text-gray-400">
             {group.open ? t('openGroup') : t('privateGroup')}
+          </Typography>
+          
+          <Typography variant="body2" className="text-gray-500 text-sm">
+            {t('participantCount', { count: group.usersCount || 0 })}
           </Typography>
         </div>
         <div className="flex items-center space-x-2 ml-auto">

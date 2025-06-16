@@ -63,7 +63,7 @@ body:before {
 
 :root {
   --link-color: rgb(121, 179, 250);
-  --border-color: #273d58;
+  --border-color: #1f2937;
   --hover-border-color: #3f618d;
 }
 
@@ -72,11 +72,12 @@ body:before {
 }
 
 .panel-bg {
-  background-color: #1e2b3f;
+  // background-color: #1e2b3f;
+  background-color: #111827;
 }
 
 .input-bg {
-  background-color: #273d58;
+  background-color: #1f2937;
 }
 
 .panel-border {

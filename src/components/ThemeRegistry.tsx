@@ -45,7 +45,7 @@ const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1e2b3f', // your desired Paper background color
+          backgroundColor: '#111827', // your desired Paper background color
           backgroundImage: 'none'
         }
       }
@@ -53,7 +53,7 @@ const theme = createTheme({
     MuiListItem: {
       styleOverrides: {
         root: {
-          backgroundColor: '#273d58',
+          backgroundColor: '#1f2937',
           padding: '1rem'
         }
       }

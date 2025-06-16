@@ -100,6 +100,7 @@ export type Group = {
   name: Scalars['String']['output'];
   open: Scalars['Boolean']['output'];
   owner: Scalars['ID']['output'];
+  usersCount: Scalars['Int']['output'];
 };
 
 export type GroupInput = {

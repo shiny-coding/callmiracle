@@ -24,6 +24,7 @@ type Group {
   admins: [ID!]!
   interestsPairs: [[String!]!]!
   interestsDescriptions: [InterestDescription!]!
+  usersCount: Int
 }
 
 type InterestDescription {

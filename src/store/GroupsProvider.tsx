@@ -13,6 +13,7 @@ const GET_GROUPS = gql`
       open
       owner
       admins
+      usersCount
       interestsPairs
       interestsDescriptions {
         interest
