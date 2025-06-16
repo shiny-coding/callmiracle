@@ -97,7 +97,7 @@ export default function GroupList() {
             className="mb-4"
             size="small"
           />
-          <FormGroup className="mb-4">
+          <FormGroup className="mt-2">
             <div className="flex gap-4">
               <FormControlLabel
                 control={
@@ -143,11 +143,9 @@ export default function GroupList() {
               {filteredGroups.map((group: Group) => (
                 <ListItem 
                   key={group._id} 
-                  className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
+                  className="flex flex-col items-start hover:bg-gray-700 rounded-lg !items-stretch"
                 >
-                  <div className="w-full">
-                    <GroupCard group={group} />
-                  </div>
+                  <GroupCard group={group} />
                 </ListItem>
               ))}
             </List>

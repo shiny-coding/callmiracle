@@ -117,86 +117,81 @@ export default function GroupCard({ group }: GroupCardProps) {
 
   return (
     <>
-      <Paper className="p-4 mb-3 bg-gray-800 hover:bg-gray-700 transition-colors">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 flex-grow">
-            <div className="flex items-center justify-center w-12 h-12 bg-blue-600 rounded-full">
-              <GroupIcon className="text-white" />
-            </div>
-            
-            <div className="flex-grow">
-              <div className="flex items-center gap-2">
-                <Typography variant="h6" className="text-white font-medium">
-                  {group.name}
-                </Typography>
-                {!group.open && <LockIcon className="text-gray-400" fontSize="small" />}
-                {isAdmin && (
-                  <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
-                    Admin
-                  </Typography>
-                )}
-                {isOwner && (
-                  <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
-                    Owner
-                  </Typography>
-                )}
-              </div>
-              
-              <Typography variant="body2" className="text-gray-400">
-                {group.open ? t('openGroup') : t('privateGroup')}
+      <div className="flex items-center flex-grow flex-wrap"  style={{ gap: 'var(--20sp)' }}>
+        <div className="flex items-center justify-center w-12 h-12 bg-blue-600 rounded-full">
+          <GroupIcon className="text-white" />
+        </div>
+        
+        <div className="flex-grow">
+          <div className="flex items-center" style={{ gap: 'var(--16sp)' }}>
+            <Typography variant="h6" className="text-white font-medium">
+              {group.name}
+            </Typography>
+            {!group.open && <LockIcon className="text-gray-400" fontSize="small" />}
+            {isAdmin && (
+              <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
+                Admin
               </Typography>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            {(isAdmin || isOwner) && (
-              <IconButton
-                size="small"
-                onClick={handleEdit}
-                aria-label={t('editGroup')}
-                title={t('editGroup')}
-              >
-                <EditIcon className="text-gray-400 hover:text-white" />
-              </IconButton>
             )}
             {isOwner && (
-              <IconButton
-                size="small"
-                onClick={handleDeleteClick}
-                aria-label={t('deleteGroup')}
-                title={t('deleteGroup')}
-              >
-                <DeleteIcon className="text-red-400 hover:text-red-300" />
-              </IconButton>
-            )}
-            {isInGroup ? (
-              !isOwner && (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  size="small"
-                  startIcon={<ExitToAppIcon />}
-                  onClick={() => handleJoinLeave('leave')}
-                  disabled={updateLoading}
-                >
-                  {t('leave')}
-                </Button>
-              )
-            ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() => handleJoinLeave('join')}
-                disabled={updateLoading || (!group.open && !isAdmin)}
-              >
-                {t('join')}
-              </Button>
+              <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
+                Owner
+              </Typography>
             )}
           </div>
+          
+          <Typography variant="body2" className="text-gray-400">
+            {group.open ? t('openGroup') : t('privateGroup')}
+          </Typography>
         </div>
-      </Paper>
+        <div className="flex items-center space-x-2 ml-auto">
+          {(isAdmin || isOwner) && (
+            <IconButton
+              size="small"
+              onClick={handleEdit}
+              aria-label={t('editGroup')}
+              title={t('editGroup')}
+            >
+              <EditIcon className="text-gray-400 hover:text-white" />
+            </IconButton>
+          )}
+          {isOwner && (
+            <IconButton
+              size="small"
+              onClick={handleDeleteClick}
+              aria-label={t('deleteGroup')}
+              title={t('deleteGroup')}
+            >
+              <DeleteIcon className="text-red-400 hover:text-red-300" />
+            </IconButton>
+          )}
+          {isInGroup ? (
+            !isOwner && (
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<ExitToAppIcon />}
+                onClick={() => handleJoinLeave('leave')}
+                disabled={updateLoading}
+              >
+                {t('leave')}
+              </Button>
+            )
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => handleJoinLeave('join')}
+              disabled={updateLoading || (!group.open && !isAdmin)}
+            >
+              {t('join')}
+            </Button>
+          )}
+        </div>
+      </div>
 
       {/* Join/Leave Confirmation Dialog */}
       <Dialog open={confirmDialogOpen} onClose={handleCancel}>
