@@ -355,11 +355,6 @@ export type QueryGetUserArgs = {
   userId: Scalars['ID']['input'];
 };
 
-
-export type QueryGetUsersArgs = {
-  userId: Scalars['ID']['input'];
-};
-
 export type Subscription = {
   __typename?: 'Subscription';
   onSubscriptionEvent?: Maybe<SubscriptionEvent>;

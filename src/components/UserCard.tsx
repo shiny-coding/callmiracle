@@ -44,6 +44,9 @@ export default function UserCard({
   
   // Check if this user is a friend
   const isFriend = currentUser?.friends?.includes(user._id) || false
+  
+  // Check if this is the current user
+  const isCurrentUser = currentUser?._id === user._id
 
   const handleCall = async () => {
     await doCall(user, false, null, null)
@@ -95,7 +98,7 @@ export default function UserCard({
           </Typography>
         </div>
         <div className="flex gap-2">
-          {showHistoryButton && (
+          {showHistoryButton && !isCurrentUser && (
             <IconButton
               onClick={(e) => {
                 e.stopPropagation()
@@ -106,7 +109,7 @@ export default function UserCard({
               <HistoryIcon />
             </IconButton>
           )}
-          {showCallButton && (
+          {showCallButton && !isCurrentUser && (
             <IconButton 
               onClick={(e) => {
                 e.stopPropagation()
@@ -157,6 +160,18 @@ export default function UserCard({
           className="mr-2"
         >
           {isFriend ? t('friend') : t('addFriend')}
+        </Button>
+      )}
+
+      {isCurrentUser && (
+        <Button
+          variant="outlined"
+          color="primary"
+          size="small"
+          disabled
+          className="mr-2"
+        >
+          {t('me')}
         </Button>
       )}
 

@@ -8,21 +8,25 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import CloseIcon from '@mui/icons-material/Close'
 import { User } from '@/generated/graphql'
 import { useUsers } from '@/store/UsersProvider'
+import { useGroups } from '@/store/GroupsProvider'
 import UserCard from './UserCard'
 import { normalizeText } from '@/utils/textNormalization'
 import { useStore } from '@/store/useStore'
 import LanguageSelector from './LanguageSelector'
+import GroupSelector from './GroupSelector'
 import LoadingDialog from './LoadingDialog'
 import { useRouter } from 'next/navigation'
 import PageHeader from './PageHeader'
 
 export default function UserList() {
   const { users, loading, error, refetch } = useUsers()
+  const { groups } = useGroups()
   const t = useTranslations()
   const currentUser = useStore(state => state.currentUser)
   const router = useRouter()
   const [showOnlyFriends, setShowOnlyFriends] = useState(false)
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([])
   const [nameFilter, setNameFilter] = useState('')
   const [showMales, setShowMales] = useState(true)
   const [showFemales, setShowFemales] = useState(true)
@@ -38,13 +42,22 @@ export default function UserList() {
   if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
   let filteredUsers = users || []
-  filteredUsers = filteredUsers.filter(user => user._id !== currentUser?._id)
+  // Note: We no longer filter out the current user - they will be shown with "Me" label
 
   // Apply sex filter
   if (!showMales || !showFemales) {
     filteredUsers = filteredUsers.filter(user => {
       if (!user.sex) return showMales && showFemales
       return (showMales && user.sex === 'male') || (showFemales && user.sex === 'female')
+    })
+  }
+
+  // Apply group filter if any groups are selected
+  if (selectedGroups.length > 0) {
+    filteredUsers = filteredUsers.filter(user => {
+      // Check if user belongs to any of the selected groups
+      if (!user.groups || user.groups.length === 0) return false
+      return user.groups.some(groupId => selectedGroups.includes(groupId))
     })
   }
 
@@ -137,14 +150,20 @@ export default function UserList() {
             label={t('filterByLanguages')}
             availableLanguages={availableLanguages}
           />
+          <GroupSelector
+            value={selectedGroups}
+            onChange={setSelectedGroups}
+            label={t('filterByGroups')}
+            availableGroups={groups || []}
+          />
         </div>
         <Divider className="mb-4" />
-        <div className="p-4 relative">
+        <div className="relative">
           <List>
             {filteredUsers.map((user: User) => (
               <ListItem 
                 key={user._id} 
-                className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
+                className="flex flex-col items-start hover:bg-gray-700 rounded-lg mb-4"
               >
                 <div className="w-full">
                   <UserCard 

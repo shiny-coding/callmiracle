@@ -1,18 +1,20 @@
 'use client'
 
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
+import { createContext, useContext, ReactNode } from 'react'
 import { gql, useQuery } from '@apollo/client'
 import { User } from '@/generated/graphql'
 import { useStore } from './useStore'
+
 const GET_USERS = gql`
-  query GetUsers($userId: ID!) {
-    getUsers(userId: $userId) {
+  query GetUsers {
+    getUsers {
       _id
       name
       languages
       about
       contacts
       sex
+      groups
     }
   }
 `
@@ -39,10 +41,8 @@ interface UsersProviderProps {
 }
 
 export function UsersProvider({ children }: UsersProviderProps) {
-  const currentUser = useStore(state => state.currentUser)
-  const { data, loading, error, refetch } = useQuery(GET_USERS, {
-    variables: { userId: currentUser?._id }
-  })
+  const { data, loading, error, refetch } = useQuery(GET_USERS)
+  
   const users = data?.getUsers || []
 
   return (

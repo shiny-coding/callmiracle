@@ -215,7 +215,7 @@ type CallHistoryEntry {
 
 type Query {
   getUser(userId: ID!): User
-  getUsers(userId: ID!): [User!]!
+  getUsers: [User!]!
   getGroups(userId: ID!): [Group!]!
   getCalls: [Call!]!
   getCallHistory(userId: ID!): [CallHistoryEntry!]!
