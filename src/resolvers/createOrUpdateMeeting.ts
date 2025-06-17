@@ -17,6 +17,7 @@ export enum MeetingError {
 
 export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, { db }: Context) : Promise<MeetingOutput> => {
   const { 
+    groupId,
     userName,
     interests, 
     timeSlots, 
@@ -30,9 +31,17 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
     meetingToConnectId
   } = input
 
+  if (!groupId) {
+    return {
+      error: 'GroupIdRequired'
+    }
+  }
+
   const _meetingId = input._id ? new ObjectId(input._id) : new ObjectId()
   const _meetingToConnectId = meetingToConnectId ? new ObjectId(meetingToConnectId) : undefined
   const _userId = new ObjectId(input.userId)
+  const _groupId = new ObjectId(groupId)
+  
   if (input.peerMeetingId && input._id) {
     return {
       error: MeetingError.MeetingNotCancelledError
@@ -42,6 +51,7 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
   const lastSlotEnd = timeSlots[timeSlots.length - 1] + SLOT_DURATION
   const $set =  {
     userId: _userId,
+    groupId: _groupId,
     userName,
     interests,
     timeSlots,

@@ -12,14 +12,35 @@ interface InterestSelectorProps {
   interestsToMatch?: string[]
   label?: string
   group?: Group
+  groups?: Group[]
 }
 
-export default function InterestSelector({ value, onChange, interestsToMatch, label, group }: InterestSelectorProps) {
+export default function InterestSelector({ value, onChange, interestsToMatch, label, group, groups }: InterestSelectorProps) {
   const t = useTranslations('Interest')
   const tRoot = useTranslations()
 
-  // Use interestsPairs from group if provided, otherwise show individual interests
-  const interestsPairs = group?.interestsPairs?.length ? group.interestsPairs : null
+  // Determine which groups to use for interest pairs
+  const groupsToUse = groups || (group ? [group] : [])
+  
+  // Collect all unique interest pairs from all groups
+  const allInterestsPairs: string[][] = []
+  if (groupsToUse.length > 0) {
+    groupsToUse.forEach(g => {
+      if (g.interestsPairs && g.interestsPairs.length > 0) {
+        g.interestsPairs.forEach(pair => {
+          // Only add if this exact pair doesn't already exist
+          const pairExists = allInterestsPairs.some(existingPair => 
+            existingPair[0] === pair[0] && existingPair[1] === pair[1]
+          )
+          if (!pairExists) {
+            allInterestsPairs.push(pair)
+          }
+        })
+      }
+    })
+  }
+
+  const interestsPairs = allInterestsPairs.length > 0 ? allInterestsPairs : null
   const allInterests = getAllInterests()
 
   const isInterestVisible = (interest: string) =>

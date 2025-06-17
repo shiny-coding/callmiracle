@@ -11,6 +11,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
       meeting {
         _id
         userId
+        groupId
         languages
         interests
         timeSlots
@@ -29,6 +30,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
       peerMeeting {
         _id
         userId
+        groupId
         languages
         interests
       }
@@ -52,6 +54,7 @@ export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
     $filterMinAge: Int
     $filterMaxAge: Int
     $filterMinDurationM: Int
+    $filterGroups: [String!]
   ) {
     getFutureMeetingsWithPeers(
       userId: $userId
@@ -62,6 +65,7 @@ export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
       filterMinAge: $filterMinAge
       filterMaxAge: $filterMaxAge
       filterMinDurationM: $filterMinDurationM
+      filterGroups: $filterGroups
     ) {
       meeting {
         _id
@@ -70,6 +74,7 @@ export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
         languages
         minDurationM
         userId
+        groupId
       }
       peerUser {
         sex
@@ -110,6 +115,7 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     filterAllowedFemales,
     filterAgeRange,
     filterMinDurationM,
+    filterGroups,
     // initializeFilters
   } = useStore(state => ({
     currentUser: state.currentUser,
@@ -119,6 +125,7 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     filterAllowedFemales: state.filterAllowedFemales,
     filterAgeRange: state.filterAgeRange,
     filterMinDurationM: state.filterMinDurationM,
+    filterGroups: state.filterGroups,
     // initializeFilters: state.initializeFilters,
   }), shallow)
   const { subscribeToNotifications, subscribeToBroadcastEvents } = useSubscriptions()
@@ -158,6 +165,7 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
       filterMinAge: filterAgeRange[0],
       filterMaxAge: filterAgeRange[1],
       filterMinDurationM: filterMinDurationM,
+      filterGroups: filterGroups,
     },
     skip: !currentUser?._id,
     fetchPolicy: 'network-only',

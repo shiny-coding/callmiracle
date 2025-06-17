@@ -121,7 +121,8 @@ export const meetingsQueries = {
     filterAllowedFemales,
     filterMinAge,
     filterMaxAge,
-    filterMinDurationM
+    filterMinDurationM,
+    filterGroups
   }: { 
     userId: string,
     filterInterests?: string[],
@@ -130,7 +131,8 @@ export const meetingsQueries = {
     filterAllowedFemales?: boolean,
     filterMinAge?: number,
     filterMaxAge?: number,
-    filterMinDurationM?: number
+    filterMinDurationM?: number,
+    filterGroups?: string[]
   }, { db }: Context) => {
     try {
       const _userId = new ObjectId(userId)
@@ -140,7 +142,25 @@ export const meetingsQueries = {
       const now = Date.now()
       const currentYear = getYear(new Date())
 
-      // 1. Fetch meetings as before
+      // Determine which groups to consider
+      let groupsToFilter: ObjectId[] = []
+      
+      if (filterGroups !== undefined) {
+        // If filterGroups is passed, use intersection with user's accessible groups
+        const userAccessibleGroups = (currentUser.groups || []).map(id => id.toString())
+        const selectedGroups = filterGroups.filter(groupId => userAccessibleGroups.includes(groupId))
+        groupsToFilter = selectedGroups.map(id => new ObjectId(id))
+      } else {
+        // If filterGroups is not passed, use all groups accessible to current user
+        groupsToFilter = (currentUser.groups || []).map(id => new ObjectId(id))
+      }
+
+      // If no groups to filter by, return empty array immediately
+      if (groupsToFilter.length === 0) {
+        return []
+      }
+
+      // 1. Fetch meetings with group filtering applied at the database level
       const meetingsQuery: any = {
         $and: [
           {
@@ -154,7 +174,8 @@ export const meetingsQueries = {
               }
             ]
           },
-          { lastSlotEnd: { $gt: now } }
+          { lastSlotEnd: { $gt: now } },
+          { groupId: { $in: groupsToFilter } } // Always apply group filter
         ]
       }
 
@@ -184,6 +205,9 @@ export const meetingsQueries = {
           const meetingUserId = meeting.userId?.toString()
           const meetingUser = usersById[meetingUserId]
           if (!meetingUser) return null
+
+          // Note: Group filtering is now done at the database level via meeting.groupId
+          // No need to filter by user groups here anymore
 
           // Apply filters
           if (filterInterests && filterInterests.length > 0) {

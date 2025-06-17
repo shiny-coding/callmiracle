@@ -54,6 +54,7 @@ export interface AppState {
   filterAllowedFemales: boolean
   filterAgeRange: [number, number]
   filterMinDurationM: number
+  filterGroups: string[]
 
   // Filter setters (directly update the applied filters)
   setFilterInterests: (interests: string[]) => void
@@ -62,6 +63,7 @@ export interface AppState {
   setFilterAllowedFemales: (allowed: boolean) => void
   setFilterAgeRange: (range: [number, number]) => void
   setFilterMinDurationM: (duration: number) => void
+  setFilterGroups: (groups: string[]) => void
 }
 
 // Define which parts of AppState are persisted
@@ -85,6 +87,7 @@ type PersistedAppState = Pick<
   | 'filterAllowedFemales'
   | 'filterAgeRange'
   | 'filterMinDurationM'
+  | 'filterGroups'
 >;
 
 const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
@@ -114,6 +117,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       filterAllowedFemales: DEFAULT_FILTER_ALLOWED_FEMALES,
       filterAgeRange: DEFAULT_FILTER_AGE_RANGE,
       filterMinDurationM: DEFAULT_FILTER_MIN_DURATION_M,
+      filterGroups: [],
       setCurrentUser: (currentUser) => {
         set({ currentUser })
       },
@@ -155,6 +159,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       setFilterAllowedFemales: (allowed) => set({ filterAllowedFemales: allowed }),
       setFilterAgeRange: (range) => set({ filterAgeRange: range }),
       setFilterMinDurationM: (duration) => set({ filterMinDurationM: duration }),
+      setFilterGroups: (groups) => set({ filterGroups: groups }),
     }),
     {
       name: 'app-storage',
@@ -178,6 +183,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
         filterAllowedFemales: state.filterAllowedFemales,
         filterAgeRange: state.filterAgeRange,
         filterMinDurationM: state.filterMinDurationM,
+        filterGroups: state.filterGroups,
       }),
       onRehydrateStorage: () => (state?: AppState, error?: Error) => {
         if (state && !rehydrated) {

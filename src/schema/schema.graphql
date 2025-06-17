@@ -188,6 +188,7 @@ input InterestDescriptionInput {
 input MeetingInput {
   _id: ID
   userId: ID!
+  groupId: ID!
   userName: String
   languages: [String!]!
   interests: [String!]!
@@ -233,6 +234,7 @@ type Query {
     filterMinAge: Int
     filterMaxAge: Int
     filterMinDurationM: Int
+    filterGroups: [String!]
   ): [MeetingWithPeer!]!
 }
 

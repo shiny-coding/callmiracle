@@ -5,10 +5,12 @@ import { useTranslations } from 'next-intl'
 import { useStore } from '@/store/useStore'
 import InterestSelector from './InterestSelector'
 import LanguageSelector from './LanguageSelector'
+import GroupSelector from './GroupSelector'
 import { useEffect, useState, useRef } from 'react'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { getAllInterests } from '@/utils/interests'
+import { useGroups } from '@/store/GroupsProvider'
 
 interface MeetingsFiltersProps {
   onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
@@ -16,6 +18,7 @@ interface MeetingsFiltersProps {
 
 export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProps) {
   const t = useTranslations()
+  const { groups } = useGroups()
 
   // Applied filters from the store
   const {
@@ -26,12 +29,14 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     filterAllowedFemales,
     filterAgeRange,
     filterMinDurationM,
+    filterGroups,
     setFilterInterests,
     setFilterLanguages,
     setFilterAllowedMales,
     setFilterAllowedFemales,
     setFilterAgeRange,
     setFilterMinDurationM,
+    setFilterGroups,
   } = useStore(state => ({
     currentUser: state.currentUser,
     filterInterests: state.filterInterests,
@@ -40,12 +45,14 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     filterAllowedFemales: state.filterAllowedFemales,
     filterAgeRange: state.filterAgeRange,
     filterMinDurationM: state.filterMinDurationM,
+    filterGroups: state.filterGroups,
     setFilterInterests: state.setFilterInterests,
     setFilterLanguages: state.setFilterLanguages,
     setFilterAllowedMales: state.setFilterAllowedMales,
     setFilterAllowedFemales: state.setFilterAllowedFemales,
     setFilterAgeRange: state.setFilterAgeRange,
     setFilterMinDurationM: state.setFilterMinDurationM,
+    setFilterGroups: state.setFilterGroups,
   }))
 
   // Local interactive state for filters
@@ -55,12 +62,23 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
   const [changedFilterAllowedFemales, setChangedFilterAllowedFemales] = useState<boolean>(filterAllowedFemales)
   const [changedFilterAgeRange, setChangedFilterAgeRange] = useState<[number, number]>(filterAgeRange)
   const [changedFilterMinDurationM, setChangedFilterMinDurationM] = useState<number>(filterMinDurationM)
+  const [changedFilterGroups, setChangedFilterGroups] = useState<string[]>(filterGroups)
 
   const [hasChanges, setHasChanges] = useState<boolean>(false)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [activeFiltersSummary, setActiveFiltersSummary] = useState<string>('')
 
   const scrollableContainerRef = useRef<HTMLDivElement>(null)
+
+  // Get available groups accessible to current user
+  const availableGroups = groups?.filter(group => 
+    currentUser?.groups?.includes(group._id)
+  ) || []
+
+  // Determine which groups to use for interest pairs
+  const selectedGroups = changedFilterGroups.length > 0 
+    ? groups?.filter(group => changedFilterGroups.includes(group._id)) || []
+    : availableGroups
 
   // Sync local state when store's applied filters change (e.g., on init or external update)
   useEffect(() => {
@@ -70,13 +88,15 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     setChangedFilterAllowedFemales(filterAllowedFemales)
     setChangedFilterAgeRange([...filterAgeRange] as [number, number])
     setChangedFilterMinDurationM(filterMinDurationM)
+    setChangedFilterGroups([...filterGroups])
   }, [
     filterInterests, 
     filterLanguages, 
     filterAllowedMales, 
     filterAllowedFemales, 
     filterAgeRange, 
-    filterMinDurationM
+    filterMinDurationM,
+    filterGroups
   ])
 
   // Check for changes between local interactive state and store's applied state
@@ -87,16 +107,25 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
       changedFilterAllowedMales !== filterAllowedMales ||
       changedFilterAllowedFemales !== filterAllowedFemales ||
       changedFilterAgeRange.join(',') !== filterAgeRange.join(',') ||
-      changedFilterMinDurationM !== filterMinDurationM
+      changedFilterMinDurationM !== filterMinDurationM ||
+      changedFilterGroups.join(',') !== filterGroups.join(',')
 
     setHasChanges(changed)
   }, [
-    changedFilterInterests, changedFilterLanguages, changedFilterAllowedMales, changedFilterAllowedFemales, changedFilterAgeRange, changedFilterMinDurationM,
-    filterInterests, filterLanguages, filterAllowedMales, filterAllowedFemales, filterAgeRange, filterMinDurationM
+    changedFilterInterests, changedFilterLanguages, changedFilterAllowedMales, changedFilterAllowedFemales, changedFilterAgeRange, changedFilterMinDurationM, changedFilterGroups,
+    filterInterests, filterLanguages, filterAllowedMales, filterAllowedFemales, filterAgeRange, filterMinDurationM, filterGroups
   ])
 
   useEffect(() => {
     const summaryParts: string[] = []
+
+    // Groups
+    if (changedFilterGroups.length > 0 && changedFilterGroups.length < availableGroups.length) {
+      const groupNames = changedFilterGroups.map(groupId => 
+        groups?.find(g => g._id === groupId)?.name || groupId
+      ).join(', ')
+      summaryParts.push(groupNames)
+    }
 
     // Minimum Duration
     if (changedFilterMinDurationM === 60) {
@@ -131,12 +160,15 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
 
     setActiveFiltersSummary(summaryParts.join(', '))
   }, [
+    changedFilterGroups,
     changedFilterMinDurationM,
     changedFilterLanguages,
     changedFilterInterests,
     changedFilterAgeRange,
     changedFilterAllowedMales,
     changedFilterAllowedFemales,
+    availableGroups,
+    groups,
     currentUser?.languages,
     t
   ])
@@ -168,6 +200,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     setFilterAllowedFemales(changedFilterAllowedFemales)
     setFilterAgeRange([...changedFilterAgeRange] as [number, number])
     setFilterMinDurationM(changedFilterMinDurationM)
+    setFilterGroups([...changedFilterGroups])
     
     setHasChanges(false) // Reset after applying
     setIsExpanded(false) // Collapse the filter section
@@ -182,6 +215,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     setChangedFilterAllowedFemales(filterAllowedFemales)
     setChangedFilterAgeRange([...filterAgeRange] as [number, number])
     setChangedFilterMinDurationM(filterMinDurationM)
+    setChangedFilterGroups([...filterGroups])
     setHasChanges(false)
     setIsExpanded(false) // Collapse the filter section
     onToggleFilters(false) // Inform parent about visibility change
@@ -214,10 +248,17 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
             ref={scrollableContainerRef} 
             className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4"
           >
+            <GroupSelector
+              value={changedFilterGroups}
+              onChange={setChangedFilterGroups}
+              label={t('filterByGroups')}
+              availableGroups={availableGroups}
+            />
             <InterestSelector
               value={changedFilterInterests}
               onChange={setChangedFilterInterests}
               label={t('filterByInterests')}
+              groups={selectedGroups}
             />
             <LanguageSelector
               value={changedFilterLanguages}
