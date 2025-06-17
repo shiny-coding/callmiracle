@@ -8,6 +8,7 @@ const CREATE_OR_UPDATE_GROUP = gql`
     createOrUpdateGroup(input: $input) {
       _id
       name
+      description
       open
       admins
       interestsPairs

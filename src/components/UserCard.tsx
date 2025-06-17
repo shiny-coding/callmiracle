@@ -96,6 +96,12 @@ export default function UserCard({
           <Typography variant="h6" className="text-white">
             {user.name}
           </Typography>
+          
+          {user.about && (
+            <Typography variant="body2" className="text-gray-300 mt-1">
+              {user.about}
+            </Typography>
+          )}
         </div>
         <div className="flex gap-2">
           {showHistoryButton && !isCurrentUser && (

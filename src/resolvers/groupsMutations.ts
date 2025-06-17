@@ -11,13 +11,14 @@ const createOrUpdateGroup = async (_: any, { input }: { input: GroupInput }, { d
 
   try {
     // Remove __typename from nested objects
-    const { name, open, admins, interestsPairs, interestsDescriptions } = input
+    const { name, description, open, admins, interestsPairs, interestsDescriptions } = input
     const _groupId = input._id ? new ObjectId(input._id) : new ObjectId()
     
     const _adminIds = admins.map(id => new ObjectId(id))
 
     const $set = {
       name,
+      description,
       open,
       admins: _adminIds,
       interestsPairs: interestsPairs || [],

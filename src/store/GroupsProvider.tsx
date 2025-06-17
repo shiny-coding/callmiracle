@@ -10,6 +10,7 @@ const GET_GROUPS = gql`
     getGroups(userId: $userId) {
       _id
       name
+      description
       open
       owner
       admins

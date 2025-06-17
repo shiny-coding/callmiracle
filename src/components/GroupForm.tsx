@@ -36,6 +36,7 @@ export default function GroupForm() {
   const locale = useLocale()
 
   const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
   const [open, setOpen] = useState(true)
   const [interestsPairs, setInterestsPairs] = useState<string[][]>([])
   const [interestsDescriptions, setInterestsDescriptions] = useState<InterestDescription[]>([])
@@ -47,11 +48,13 @@ export default function GroupForm() {
   useEffect(() => {
     if (group) {
       setName(group.name || '')
+      setDescription(group.description || '')
       setOpen(group.open !== undefined ? group.open : true)
       setInterestsPairs(group.interestsPairs || [])
       setInterestsDescriptions(group.interestsDescriptions || [])
     } else {
       setName('')
+      setDescription('')
       setOpen(true)
       setInterestsPairs([])
       setInterestsDescriptions([])
@@ -68,7 +71,7 @@ export default function GroupForm() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      showSnackbar(t('groupNameRequired', { defaultValue: 'Group name is required' }), 'error')
+      showSnackbar(t('groupNameRequired'), 'error')
       return
     }
 
@@ -79,6 +82,7 @@ export default function GroupForm() {
     const groupInput = {
       _id: groupId as string || undefined,
       name: name.trim(),
+      description: description.trim(),
       open,
       admins: group?.admins || [currentUser?._id || ''],
       interestsPairs: validPairs,
@@ -89,15 +93,17 @@ export default function GroupForm() {
       const result = await updateGroup(groupInput)
       if (result) {
         refetch()
-        const message = groupId 
-          ? t('groupUpdated', { defaultValue: 'Group updated successfully' })
-          : t('groupCreated', { defaultValue: 'Group created successfully' })
-        showSnackbar(message, 'success')
+        showSnackbar(
+          groupId
+            ? t('groupUpdated')
+            : t('groupCreated'),
+          'success'
+        )
         router.push(`/${locale}/groups`)
       }
     } catch (error) {
       console.error('Error saving group:', error)
-      showSnackbar(t('errorSavingGroup', { defaultValue: 'Error saving group' }), 'error')
+      showSnackbar(t('errorSavingGroup'), 'error')
     }
   }
 
@@ -120,22 +126,51 @@ export default function GroupForm() {
       }
     })
 
-    // Update descriptions with new interest names
-    if (Object.keys(interestChanges).length > 0) {
-      const updatedDescriptions = interestsDescriptions.map(desc => {
-        const newInterestName = interestChanges[desc.interest]
-        if (newInterestName) {
-          return {
-            ...desc,
-            interest: newInterestName
-          }
+    // Get all unique interests from new pairs
+    const newInterests = new Set<string>()
+    newPairs.forEach(pair => {
+      if (pair[0]) newInterests.add(pair[0])
+      if (pair[1]) newInterests.add(pair[1])
+    })
+
+    // Update descriptions: rename existing ones and remove orphaned ones
+    let updatedDescriptions = interestsDescriptions.map(desc => {
+      const newInterestName = interestChanges[desc.interest]
+      if (newInterestName) {
+        return {
+          ...desc,
+          interest: newInterestName
         }
-        return desc
-      })
-      setInterestsDescriptions(updatedDescriptions)
-    }
+      }
+      return desc
+    })
+
+    // Remove descriptions for interests that no longer exist in any pair
+    updatedDescriptions = updatedDescriptions.filter(desc => 
+      newInterests.has(desc.interest)
+    )
+
+    setInterestsDescriptions(updatedDescriptions)
+    setInterestsPairs(newPairs)
+  }
+
+  // Handle reordering of pairs and maintain description connections
+  const handlePairReorder = (newPairs: string[][]) => {
+    // Reorder descriptions list to follow new order of interests in pairs
+    const newOrder: string[] = []
+    newPairs.forEach(pair => {
+      if (pair[0]) newOrder.push(pair[0])
+      if (pair[1]) newOrder.push(pair[1])
+    })
+
+    const reordered = [...interestsDescriptions].sort((a, b) => {
+      const posA = newOrder.indexOf(a.interest)
+      const posB = newOrder.indexOf(b.interest)
+      return (posA === -1 ? Number.MAX_SAFE_INTEGER : posA) - (posB === -1 ? Number.MAX_SAFE_INTEGER : posB)
+    })
 
     setInterestsPairs(newPairs)
+    setInterestsDescriptions(reordered)
   }
 
   const isFormValid = name.trim().length > 0
@@ -144,7 +179,7 @@ export default function GroupForm() {
     <div className="h-full flex flex-col bg-gray-900 text-white">
       <PageHeader
         icon={<GroupIcon />}
-        title={groupId ? t('editGroup', { defaultValue: 'Edit Group' }) : t('createGroup', { defaultValue: 'Create Group' })}
+        title={groupId ? t('editGroup') : t('createGroup')}
       >
         <IconButton 
           onClick={handleCancel} 
@@ -160,11 +195,28 @@ export default function GroupForm() {
         <div className="mx-auto space-y-6">
           <TextField
             fullWidth
-            label={t('groupName', { defaultValue: 'Group Name' })}
+            label={t('groupName')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             variant="outlined"
             required
+            InputLabelProps={{
+              className: 'text-gray-300'
+            }}
+            InputProps={{
+              className: 'text-white'
+            }}
+            className="mb-4"
+          />
+
+          <TextField
+            fullWidth
+            label={t('groupDescription')}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            variant="outlined"
+            multiline
+            rows={3}
             InputLabelProps={{
               className: 'text-gray-300'
             }}
@@ -186,12 +238,12 @@ export default function GroupForm() {
               label={
                 <div>
                   <div className="text-white">
-                    {t('openGroup', { defaultValue: 'Open Group' })}
+                    {t('openGroup')}
                   </div>
                   <div className="text-sm text-gray-400">
                     {open 
-                      ? t('openGroupDescription', { defaultValue: 'Anyone can join this group' })
-                      : t('privateGroupDescription', { defaultValue: 'Only invited members can join' })
+                      ? t('openGroupDescription')
+                      : t('privateGroupDescription')
                     }
                   </div>
                 </div>
@@ -202,6 +254,7 @@ export default function GroupForm() {
           <InterestsPairsEditor
             value={interestsPairs}
             onChange={handleInterestsPairsChange}
+            onReorder={handlePairReorder}
           />
 
           <InterestsDescriptionsEditor
@@ -220,7 +273,7 @@ export default function GroupForm() {
             disabled={loading}
             className="text-white border-gray-600 hover:border-gray-400"
           >
-            {t('cancel', { defaultValue: 'Cancel' })}
+            {t('cancel')}
           </Button>
           <Button
             variant="contained"
@@ -231,7 +284,7 @@ export default function GroupForm() {
             {loading ? (
               <CircularProgress size={20} className="text-white" />
             ) : (
-              groupId ? t('update', { defaultValue: 'Update' }) : t('create', { defaultValue: 'Create' })
+              groupId ? t('update') : t('create')
             )}
           </Button>
         </div>

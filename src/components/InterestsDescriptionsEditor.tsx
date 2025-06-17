@@ -5,6 +5,7 @@ import { Button, IconButton, TextField, Select, MenuItem, FormControl, InputLabe
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useTranslations } from 'next-intl'
+import { Typography } from '@mui/material'
 
 interface InterestDescription {
   interest: string
@@ -76,30 +77,32 @@ export default function InterestsDescriptionsEditor({ value, onChange, interests
     onChange(newDescriptions)
   }
 
+  const canAddDescription = () => {
+    return availableForNew.length > 0
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-white">
-          {label || t('interestsDescriptions', { defaultValue: 'Interest Descriptions' })}
-        </h3>
+      <Typography variant="h6" component="h2" className="mb-4">
+        {label || t('interestsDescriptions')}
+      </Typography>
+      <div className="flex justify-between items-center mb-4">
         <Button
-          startIcon={<AddIcon />}
-          onClick={handleAddDescription}
           variant="outlined"
-          size="small"
+          onClick={handleAddDescription}
+          disabled={!canAddDescription()}
           className="text-blue-400 border-blue-400"
-          disabled={availableForNew.length === 0}
         >
-          {t('addDescription', { defaultValue: 'Add Description' })}
+          {t('addDescription')}
         </Button>
       </div>
       
       <div className="text-sm text-gray-400 mb-4">
-        {availableForNew.length === 0 && interestsPairs.length > 0
-          ? t('allInterestsHaveDescriptions', { defaultValue: 'All interests already have descriptions.' })
-          : availableForNew.length === 0
-          ? t('addInterestPairsFirst', { defaultValue: 'Add interest pairs first to enable descriptions.' })
-          : t('interestsDescriptionsDescription', { defaultValue: 'Add optional descriptions for interests to provide more context to group members.' })
+        {!canAddDescription()
+          ? t('allInterestsHaveDescriptions')
+          : availableInterests.length === 0
+          ? t('addInterestPairsFirst')
+          : t('interestsDescriptionsDescription')
         }
       </div>
 
@@ -115,7 +118,7 @@ export default function InterestsDescriptionsEditor({ value, onChange, interests
             <div className="flex items-center gap-2">
               <FormControl className="flex-1">
                 <InputLabel className="text-gray-300">
-                  {t('selectInterest', { defaultValue: 'Select interest' })}
+                  {t('selectInterest')}
                 </InputLabel>
                 <Select
                   value={item.interest}
@@ -142,14 +145,14 @@ export default function InterestsDescriptionsEditor({ value, onChange, interests
               </IconButton>
             </div>
             
-            <div className="text-sm text-gray-300 mb-2">
-              {t('describingInterest', { defaultValue: 'Describing' })}: <strong>{item.interest || t('emptyInterest', { defaultValue: '(empty)' })}</strong>
+            <div className="text-sm text-gray-600 mb-2">
+              {t('describingInterest')}: <strong>{item.interest || t('emptyInterest')}</strong>
             </div>
             
             <TextField
               value={item.description}
               onChange={(e) => handleDescriptionChange(index, e.target.value)}
-              placeholder={t('enterDescription', { defaultValue: 'Enter description...' })}
+              placeholder={t('enterDescription')}
               variant="outlined"
               size="small"
               multiline

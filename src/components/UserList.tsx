@@ -136,14 +136,6 @@ export default function UserList() {
         >
           <RefreshIcon />
         </IconButton>
-        <IconButton 
-          onClick={() => router.back()} 
-          aria-label={t('close')}
-          title={t('close')}
-          size="small"
-        >
-          <CloseIcon />
-        </IconButton>
       </PageHeader>
 
       <UsersFilters

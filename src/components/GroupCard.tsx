@@ -152,6 +152,12 @@ export default function GroupCard({ group }: GroupCardProps) {
             {group.open ? t('openGroup') : t('privateGroup')}
           </Typography>
           
+          {group.description && (
+            <Typography variant="body2" className="text-gray-300 mt-1">
+              {group.description}
+            </Typography>
+          )}
+          
           <Typography variant="body2" className="text-gray-500 text-sm">
             {t('participantCount', { count: group.usersCount || 0 })}
           </Typography>

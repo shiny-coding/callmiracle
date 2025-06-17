@@ -19,6 +19,7 @@ type Block {
 type Group {
   _id: ID!
   name: String!
+  description: String
   open: Boolean!
   owner: ID!
   admins: [ID!]!
@@ -172,6 +173,7 @@ input BlockInput {
 input GroupInput {
   _id: ID
   name: String!
+  description: String
   open: Boolean!
   admins: [ID!]!
   interestsPairs: [[String!]!]!

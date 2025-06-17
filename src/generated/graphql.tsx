@@ -95,17 +95,19 @@ export type Group = {
   __typename?: 'Group';
   _id: Scalars['ID']['output'];
   admins: Array<Scalars['ID']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
   interestsDescriptions: Array<InterestDescription>;
   interestsPairs: Array<Array<Scalars['String']['output']>>;
   name: Scalars['String']['output'];
   open: Scalars['Boolean']['output'];
   owner: Scalars['ID']['output'];
-  usersCount: Scalars['Int']['output'];
+  usersCount?: Maybe<Scalars['Int']['output']>;
 };
 
 export type GroupInput = {
   _id?: InputMaybe<Scalars['ID']['input']>;
   admins: Array<Scalars['ID']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
   interestsDescriptions: Array<InterestDescriptionInput>;
   interestsPairs: Array<Array<Scalars['String']['input']>>;
   name: Scalars['String']['input'];

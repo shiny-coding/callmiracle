@@ -25,4 +25,5 @@ Follow these rules when you write code:
 - prefer omitting semicolons in js
 - prefer using .map, .filter instead of loops, but don't use forEach
 - if you add translation strings, put them to src/messages/ru.json and src/messages/en.json
+- do not add defaultValue when using translation strings
 
