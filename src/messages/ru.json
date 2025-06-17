@@ -224,6 +224,7 @@
   "meetingCreatedAndConnected": "Встреча создана, партнер найден",
   "meetingPassedCannotConnect": "Встреча прошла, невозможно присоединиться",
   "filterMeetings": "Фильтры встреч",
+  "filterUsers": "Фильтры пользователей",
   "filterByLanguage": "Фильтр по языку",
   "filterByInterests": "Фильтр по интересам",
   "applyFilters": "Применить фильтры",

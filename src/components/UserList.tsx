@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
-import { Paper, List, ListItem, Typography, IconButton, FormControlLabel, Checkbox, TextField, FormGroup, Divider } from '@mui/material'
+import { Paper, List, ListItem, Typography, IconButton, Divider } from '@mui/material'
 import PeopleIcon from '@mui/icons-material/People'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import CloseIcon from '@mui/icons-material/Close'
@@ -12,8 +12,7 @@ import { useGroups } from '@/store/GroupsProvider'
 import UserCard from './UserCard'
 import { normalizeText } from '@/utils/textNormalization'
 import { useStore } from '@/store/useStore'
-import LanguageSelector from './LanguageSelector'
-import GroupSelector from './GroupSelector'
+import UsersFilters from './UsersFilters'
 import LoadingDialog from './LoadingDialog'
 import { useRouter, useSearchParams } from 'next/navigation'
 import PageHeader from './PageHeader'
@@ -25,12 +24,16 @@ export default function UserList() {
   const currentUser = useStore(state => state.currentUser)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [showOnlyFriends, setShowOnlyFriends] = useState(false)
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
-  const [selectedGroups, setSelectedGroups] = useState<string[]>([])
-  const [nameFilter, setNameFilter] = useState('')
-  const [showMales, setShowMales] = useState(true)
-  const [showFemales, setShowFemales] = useState(true)
+
+  // Applied filter state (what's actually being used for filtering)
+  const [appliedShowOnlyFriends, setAppliedShowOnlyFriends] = useState(false)
+  const [appliedSelectedLanguages, setAppliedSelectedLanguages] = useState<string[]>([])
+  const [appliedSelectedGroups, setAppliedSelectedGroups] = useState<string[]>([])
+  const [appliedNameFilter, setAppliedNameFilter] = useState('')
+  const [appliedShowMales, setAppliedShowMales] = useState(true)
+  const [appliedShowFemales, setAppliedShowFemales] = useState(true)
+
+  const [filtersVisible, setFiltersVisible] = useState(false)
 
   // Check for groupId parameter and auto-select the group, then remove from URL
   useEffect(() => {
@@ -38,8 +41,8 @@ export default function UserList() {
     if (groupId && groups) {
       // Check if the groupId exists in available groups
       const groupExists = groups.some(group => group._id === groupId)
-      if (groupExists && !selectedGroups.includes(groupId)) {
-        setSelectedGroups([groupId])
+      if (groupExists && !appliedSelectedGroups.includes(groupId)) {
+        setAppliedSelectedGroups([groupId])
       }
       
       // Remove groupId from URL immediately after using it
@@ -48,7 +51,7 @@ export default function UserList() {
       const newUrl = newSearchParams.toString()
       router.replace(`/users${newUrl ? `?${newUrl}` : ''}`, { scroll: false })
     }
-  }, [searchParams, groups, router])
+  }, [searchParams, groups, router, appliedSelectedGroups])
 
   // Collect all available languages from users
   let availableLanguages: string[] = []
@@ -58,38 +61,54 @@ export default function UserList() {
     )
   }
 
+  const handleApplyFilters = (filters: {
+    showOnlyFriends: boolean
+    selectedLanguages: string[]
+    selectedGroups: string[]
+    nameFilter: string
+    showMales: boolean
+    showFemales: boolean
+  }) => {
+    setAppliedShowOnlyFriends(filters.showOnlyFriends)
+    setAppliedSelectedLanguages(filters.selectedLanguages)
+    setAppliedSelectedGroups(filters.selectedGroups)
+    setAppliedNameFilter(filters.nameFilter)
+    setAppliedShowMales(filters.showMales)
+    setAppliedShowFemales(filters.showFemales)
+  }
+
   if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
   let filteredUsers = users || []
   // Note: We no longer filter out the current user - they will be shown with "Me" label
 
   // Apply sex filter
-  if (!showMales || !showFemales) {
+  if (!appliedShowMales || !appliedShowFemales) {
     filteredUsers = filteredUsers.filter(user => {
-      if (!user.sex) return showMales && showFemales
-      return (showMales && user.sex === 'male') || (showFemales && user.sex === 'female')
+      if (!user.sex) return appliedShowMales && appliedShowFemales
+      return (appliedShowMales && user.sex === 'male') || (appliedShowFemales && user.sex === 'female')
     })
   }
 
   // Apply group filter if any groups are selected
-  if (selectedGroups.length > 0) {
+  if (appliedSelectedGroups.length > 0) {
     filteredUsers = filteredUsers.filter(user => {
       // Check if user belongs to any of the selected groups
       if (!user.groups || user.groups.length === 0) return false
-      return user.groups.some(groupId => selectedGroups.includes(groupId))
+      return user.groups.some(groupId => appliedSelectedGroups.includes(groupId))
     })
   }
 
   // Apply language filter if any languages are selected
-  if (selectedLanguages.length > 0) {
+  if (appliedSelectedLanguages.length > 0) {
     filteredUsers = filteredUsers.filter(user =>
-      user.languages.some(lang => selectedLanguages.includes(lang))
+      user.languages.some(lang => appliedSelectedLanguages.includes(lang))
     )
   }
 
   // Apply name filter if provided
-  if (nameFilter) {
-    const normalizedFilter = normalizeText(nameFilter)
+  if (appliedNameFilter) {
+    const normalizedFilter = normalizeText(appliedNameFilter)
     filteredUsers = filteredUsers.filter(user =>
       normalizeText(user.name).includes(normalizedFilter)
     )
@@ -97,7 +116,7 @@ export default function UserList() {
 
   // Apply friends filter if enabled
   const friends = currentUser?.friends ?? []
-  if (showOnlyFriends) {
+  if (appliedShowOnlyFriends) {
     filteredUsers = filteredUsers.filter(user =>
       friends.includes(user._id)
     )
@@ -110,6 +129,14 @@ export default function UserList() {
         title={t('users')}
       >
         <IconButton 
+          onClick={() => refetch && refetch()}
+          aria-label={t('refreshMeetings')}
+          title={t('refreshMeetings')}
+          size="small"
+        >
+          <RefreshIcon />
+        </IconButton>
+        <IconButton 
           onClick={() => router.back()} 
           aria-label={t('close')}
           title={t('close')}
@@ -119,84 +146,44 @@ export default function UserList() {
         </IconButton>
       </PageHeader>
 
-      <div className="flex-grow overflow-y-auto px-4">
-        <div className="user-filters my-4">
-          <TextField
-            fullWidth
-            placeholder={t('searchByName')}
-            value={nameFilter}
-            onChange={e => setNameFilter(e.target.value)}
-            className="mb-4"
-            size="small"
-          />
-          <FormGroup className="mb-4">
-            <div className="flex gap-4">
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={showMales}
-                    onChange={e => setShowMales(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label={t('Profile.male')}
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={showFemales}
-                    onChange={e => setShowFemales(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label={t('Profile.female')}
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={showOnlyFriends}
-                    onChange={() => setShowOnlyFriends(!showOnlyFriends)}
-                    className="text-white"
-                  />
-                }
-                label={<span className="text-white">{t('onlyFriends')}</span>}
-              />
-            </div>
-          </FormGroup>
-          <LanguageSelector
-            value={selectedLanguages}
-            onChange={setSelectedLanguages}
-            label={t('filterByLanguages')}
-            availableLanguages={availableLanguages}
-          />
-          <GroupSelector
-            value={selectedGroups}
-            onChange={setSelectedGroups}
-            label={t('filterByGroups')}
-            availableGroups={groups || []}
-          />
+      <UsersFilters
+        appliedShowOnlyFriends={appliedShowOnlyFriends}
+        appliedSelectedLanguages={appliedSelectedLanguages}
+        appliedSelectedGroups={appliedSelectedGroups}
+        appliedNameFilter={appliedNameFilter}
+        appliedShowMales={appliedShowMales}
+        appliedShowFemales={appliedShowFemales}
+        availableLanguages={availableLanguages}
+        availableGroups={groups || []}
+        onApplyFilters={handleApplyFilters}
+        onToggleFilters={setFiltersVisible}
+      />
+
+      {/* Conditional User List Display: Only show if filters are not expanded */}
+      {!filtersVisible && (
+        <div className="flex-grow overflow-y-auto px-4">
+          <Divider className="mb-4" />
+          <div className="relative">
+            <List>
+              {filteredUsers.map((user: User) => (
+                <ListItem 
+                  key={user._id} 
+                  className="flex flex-col items-start hover:bg-gray-700 rounded-lg mb-4"
+                >
+                  <div className="w-full">
+                    <UserCard 
+                      user={user} 
+                      showDetails={true} 
+                      showCallButton={true}
+                      showHistoryButton={true}
+                    />
+                  </div>
+                </ListItem>
+              ))}
+            </List>
+          </div>
         </div>
-        <Divider className="mb-4" />
-        <div className="relative">
-          <List>
-            {filteredUsers.map((user: User) => (
-              <ListItem 
-                key={user._id} 
-                className="flex flex-col items-start hover:bg-gray-700 rounded-lg mb-4"
-              >
-                <div className="w-full">
-                  <UserCard 
-                    user={user} 
-                    showDetails={true} 
-                    showCallButton={true}
-                    showHistoryButton={true}
-                  />
-                </div>
-              </ListItem>
-            ))}
-          </List>
-        </div>
-      </div>
+      )}
     </Paper>
   )
 } 
