@@ -225,6 +225,7 @@
   "meetingPassedCannotConnect": "Встреча прошла, невозможно присоединиться",
   "filterMeetings": "Фильтры встреч",
   "filterUsers": "Фильтры пользователей",
+  "filterGroups": "Фильтры групп",
   "filterByLanguage": "Фильтр по языку",
   "filterByInterests": "Фильтр по интересам",
   "applyFilters": "Применить фильтры",

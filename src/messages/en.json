@@ -234,6 +234,7 @@
   "refreshMeetings": "Refresh Meetings",
   "filterMeetings": "Filter Meetings",
   "filterUsers": "Filter Users",
+  "filterGroups": "Filter Groups",
   "createNewMeeting": "Create New Meeting",
   "back": "Back",
   "addNewMeetingPrompt": "Add new meeting",
