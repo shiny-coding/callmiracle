@@ -23,6 +23,7 @@ export const GET_USER = gql`
         all
         interestsBlocks {
           groupId
+          all
           interests
         }
       }

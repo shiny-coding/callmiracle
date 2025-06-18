@@ -186,7 +186,10 @@ export function getNonBlockedInterests(
   const groupInterestsBlock = block.interestsBlocks?.find(ib => ib.groupId === meeting.groupId)
   if (!groupInterestsBlock) return meeting.interests
   
-  // Filter out blocked interests for this specific group
+  // If all interests in this group are blocked, return empty array
+  if (groupInterestsBlock.all) return []
+  
+  // Filter out specific blocked interests for this group
   return meeting.interests.filter(interest => !groupInterestsBlock.interests.includes(interest))
 }
 

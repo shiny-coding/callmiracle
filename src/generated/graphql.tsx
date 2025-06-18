@@ -24,7 +24,7 @@ export type Block = {
 
 export type BlockInput = {
   all: Scalars['Boolean']['input'];
-  interests: Array<Scalars['String']['input']>;
+  interestsBlocks: Array<InterestsBlockInput>;
   userId: Scalars['ID']['input'];
 };
 
@@ -127,8 +127,15 @@ export type InterestDescriptionInput = {
 
 export type InterestsBlock = {
   __typename?: 'InterestsBlock';
+  all: Scalars['Boolean']['output'];
   groupId: Scalars['ID']['output'];
   interests: Array<Scalars['String']['output']>;
+};
+
+export type InterestsBlockInput = {
+  all: Scalars['Boolean']['input'];
+  groupId: Scalars['ID']['input'];
+  interests: Array<Scalars['String']['input']>;
 };
 
 export type Meeting = {

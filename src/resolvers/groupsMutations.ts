@@ -66,6 +66,7 @@ const deleteGroup = async (_: any, { id }: { id: string }, { db, session }: Cont
   }
 
   const _id = new ObjectId(id)
+  const _userId = new ObjectId(session.user.id)
 
   try {
     // First check if the group exists and if the user is the owner
@@ -75,7 +76,7 @@ const deleteGroup = async (_: any, { id }: { id: string }, { db, session }: Cont
       throw new Error('Group not found')
     }
 
-    if (group.owner !== (session.user as any)._id) {
+    if (!group.owner.equals(_userId)) {
       throw new Error('Only the group owner can delete the group')
     }
 

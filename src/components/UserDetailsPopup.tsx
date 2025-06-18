@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { Dialog, DialogContent, Typography, Button, Checkbox, FormControlLabel, FormGroup, Chip, Divider, Switch } from '@mui/material'
-import { User } from '@/generated/graphql'
+import { InterestsBlock, User } from '@/generated/graphql'
 import { useTranslations } from 'next-intl'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
@@ -32,8 +32,12 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
 
   const existingBlock = currentUser?.blocks.find((b: any) => b.userId === user._id)
   const [blockAll, setBlockAll] = useState(existingBlock?.all || false)
-  const [interestsBlocks, setInterestsBlocks] = useState<{ groupId: string, interests: string[] }[]>(
-    existingBlock?.interestsBlocks || []
+  const [interestsBlocks, setInterestsBlocks] = useState<InterestsBlock[]>(
+    existingBlock?.interestsBlocks?.map((ib: any) => ({
+      groupId: ib.groupId,
+      all: ib.all || false,
+      interests: [...(ib.interests || [])]
+    })) || []
   )
   const [isEditing, setIsEditing] = useState(false)
   const { refetchFutureMeetingsWithPeers } = useMeetings()
@@ -52,20 +56,24 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
   }
 
   const handleGroupInterestsChange = (groupId: string, interests: string[]) => {
-    const newInterestsBlocks = [...interestsBlocks]
+    const newInterestsBlocks = interestsBlocks.map(ib => ({ ...ib, interests: [...ib.interests] }))
     const existingIndex = newInterestsBlocks.findIndex(ib => ib.groupId === groupId)
     
     if (interests.length === 0) {
-      // Remove the group block if no interests are blocked
-      if (existingIndex !== -1) {
+      // Remove the group block if no interests are blocked and 'all' is false
+      if (existingIndex !== -1 && !newInterestsBlocks[existingIndex].all) {
         newInterestsBlocks.splice(existingIndex, 1)
+      } else if (existingIndex !== -1) {
+        // Keep the block but clear specific interests
+        newInterestsBlocks[existingIndex].interests = []
       }
     } else {
       // Update or add the group block
       if (existingIndex !== -1) {
-        newInterestsBlocks[existingIndex].interests = interests
+        newInterestsBlocks[existingIndex].interests = [...interests]
+        newInterestsBlocks[existingIndex].all = false // Reset all flag when selecting specific interests
       } else {
-        newInterestsBlocks.push({ groupId, interests })
+        newInterestsBlocks.push({ groupId, all: false, interests: [...interests] })
       }
     }
     
@@ -74,33 +82,45 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
   }
 
   const handleBlockAllInGroup = (groupId: string, blockAll: boolean) => {
-    const group = commonGroups.find(g => g._id === groupId)
-    if (!group) return
-
+    const newInterestsBlocks = interestsBlocks.map(ib => ({ 
+      groupId: ib.groupId,
+      all: ib.all,
+      interests: [...ib.interests]
+    }))
+    const existingIndex = newInterestsBlocks.findIndex(ib => ib.groupId === groupId)
+    
     if (blockAll) {
-      // Get all interests from the group's interest pairs
-      const allInterests = Array.from(new Set(
-        group.interestsPairs?.flatMap(pair => pair) || []
-      ))
-      handleGroupInterestsChange(groupId, allInterests)
+      // Set the 'all' flag to true and clear specific interests
+      if (existingIndex !== -1) {
+        newInterestsBlocks[existingIndex] = {
+          ...newInterestsBlocks[existingIndex],
+          all: true,
+          interests: []
+        }
+      } else {
+        newInterestsBlocks.push({ groupId, all: true, interests: [] })
+      }
     } else {
-      // Clear all blocked interests for this group
-      handleGroupInterestsChange(groupId, [])
+      // Remove the group block entirely or set all to false
+      if (existingIndex !== -1) {
+        if (newInterestsBlocks[existingIndex].interests.length === 0) {
+          newInterestsBlocks.splice(existingIndex, 1)
+        } else {
+          newInterestsBlocks[existingIndex] = {
+            ...newInterestsBlocks[existingIndex],
+            all: false
+          }
+        }
+      }
     }
+    
+    setInterestsBlocks(newInterestsBlocks)
+    setIsEditing(true)
   }
 
   const isAllBlockedInGroup = (groupId: string): boolean => {
-    const group = commonGroups.find(g => g._id === groupId)
-    if (!group) return false
-    
-    const allInterests = Array.from(new Set(
-      group.interestsPairs?.flatMap(pair => pair) || []
-    ))
-    const blockedInterests = getBlockedInterestsForGroup(groupId)
-    
-    return allInterests.length > 0 && allInterests.every(interest => 
-      blockedInterests.includes(interest)
-    )
+    const groupBlock = interestsBlocks.find(ib => ib.groupId === groupId)
+    return groupBlock?.all || false
   }
 
   const getBlockedInterestsForGroup = (groupId: string): string[] => {
@@ -132,7 +152,11 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
 
   const handleCancel = () => {
     setBlockAll(existingBlock?.all || false)
-    setInterestsBlocks(existingBlock?.interestsBlocks || [])
+    setInterestsBlocks(existingBlock?.interestsBlocks?.map((ib: any) => ({
+      groupId: ib.groupId,
+      all: ib.all || false,
+      interests: ib.interests || []
+    })) || [])
     setIsEditing(false)
     onClose()
   }
@@ -146,7 +170,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
             <div className="relative">
               {imageExists ? (
                 <img
-                  src={`/api/user-image/${user._id}`}
+                  src={`/profiles/${user._id}.jpg`}
                   alt={user.name}
                   className="w-16 h-16 rounded-full object-cover cursor-pointer"
                   onClick={handleImageClick}
@@ -284,7 +308,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
         >
           <DialogContent className="p-0">
             <img
-              src={`/api/user-image/${user._id}`}
+              src={`/profiles/${user._id}.jpg`}
               alt={user.name}
               className="w-full h-auto max-h-screen object-contain"
             />

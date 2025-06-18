@@ -12,6 +12,7 @@ enum NotificationType {
 
 type InterestsBlock {
   groupId: ID!
+  all: Boolean!
   interests: [String!]!
 }
 
@@ -170,6 +171,7 @@ input CallUserInput {
 }
 
 input InterestsBlockInput {
+  all: Boolean!
   groupId: ID!
   interests: [String!]!
 }

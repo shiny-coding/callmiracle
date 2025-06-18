@@ -141,7 +141,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
 
     // Interests
     if (changedFilterInterests.length > 0) {
-      summaryParts.push(changedFilterInterests.map(interest => t(`Interest.${interest}`)).join(', '))
+      summaryParts.push(changedFilterInterests.join(', '))
     }
 
     // Age Range

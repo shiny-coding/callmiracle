@@ -5,6 +5,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useLocale, useTranslations } from 'next-intl'
 import { useUpdateGroup } from '@/hooks/useUpdateGroup'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
+import { useInitUser } from '@/hooks/useInitUser'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect } from 'react'
 import { Group } from '@/generated/graphql'
@@ -25,6 +26,7 @@ interface InterestDescription {
 export default function GroupForm() {
   const t = useTranslations()
   const { groups, loading: loadingGroups, error: errorGroups, refetch } = useGroups()
+  const { refetch: refetchUser } = useInitUser()
   const { id: groupId } = useParams()
   const group = groups?.find(g => g._id === groupId)
   
@@ -93,6 +95,11 @@ export default function GroupForm() {
       const result = await updateGroup(groupInput)
       if (result) {
         refetch()
+        // Refetch user data to update current user's groups array
+        if (!groupId) {
+          // Only refetch user data when creating a new group (not updating)
+          await refetchUser()
+        }
         showSnackbar(
           groupId
             ? t('groupUpdated')
