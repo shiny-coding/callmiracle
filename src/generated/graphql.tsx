@@ -18,7 +18,7 @@ export type Scalars = {
 export type Block = {
   __typename?: 'Block';
   all: Scalars['Boolean']['output'];
-  interests: Array<Scalars['String']['output']>;
+  interestsBlocks: Array<InterestsBlock>;
   userId: Scalars['ID']['output'];
 };
 
@@ -125,6 +125,12 @@ export type InterestDescriptionInput = {
   interest: Scalars['String']['input'];
 };
 
+export type InterestsBlock = {
+  __typename?: 'InterestsBlock';
+  groupId: Scalars['ID']['output'];
+  interests: Array<Scalars['String']['output']>;
+};
+
 export type Meeting = {
   __typename?: 'Meeting';
   _id: Scalars['ID']['output'];
@@ -157,6 +163,7 @@ export type MeetingInput = {
   allowedMales: Scalars['Boolean']['input'];
   allowedMaxAge: Scalars['Int']['input'];
   allowedMinAge: Scalars['Int']['input'];
+  groupId: Scalars['ID']['input'];
   interests: Array<Scalars['String']['input']>;
   languages: Array<Scalars['String']['input']>;
   meetingToConnectId?: InputMaybe<Scalars['ID']['input']>;
@@ -329,6 +336,7 @@ export type QueryGetDetailedCallHistoryArgs = {
 export type QueryGetFutureMeetingsWithPeersArgs = {
   filterAllowedFemales?: InputMaybe<Scalars['Boolean']['input']>;
   filterAllowedMales?: InputMaybe<Scalars['Boolean']['input']>;
+  filterGroups?: InputMaybe<Array<Scalars['String']['input']>>;
   filterInterests?: InputMaybe<Array<Scalars['String']['input']>>;
   filterLanguages?: InputMaybe<Array<Scalars['String']['input']>>;
   filterMaxAge?: InputMaybe<Scalars['Int']['input']>;

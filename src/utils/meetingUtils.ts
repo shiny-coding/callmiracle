@@ -5,7 +5,6 @@ import { ObjectId } from "mongodb"
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes, differenceInMilliseconds, isTomorrow, isToday } from 'date-fns'
 import { enUS } from "date-fns/locale"
 import { TimeSlot } from "@/components/TimeSlotsGrid"
-import { getMatchingInterest as getMatchingInterestFromInterests } from './interests'
 
 export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 export const LATE_ALLOWANCE_FOR_HALF_HOUR_MEETING = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -165,13 +164,13 @@ export function class2Hex(tailwindColor: string) {
 
 /**
  * Returns interests from meeting that are not blocked by meetingUser for otherUser
- * @param meeting The meeting object (must have .interests)
+ * @param meeting The meeting object (must have .interests and .groupId)
  * @param meetingUser The user who owns the meeting (must have .blocks)
  * @param otherUser The user to check blocks against (must have ._id)
  * @returns Array of compatible interests
  */
 export function getNonBlockedInterests(
-  meeting: { interests: string[] },
+  meeting: { interests: string[], groupId?: string },
   meetingUser: { blocks?: Block[] },
   otherUser: { _id: ObjectId }
 ): string[] {
@@ -182,7 +181,13 @@ export function getNonBlockedInterests(
   const block = meetingUser.blocks.find(b => b.userId === otherUserId)
   if (!block) return meeting.interests
   if (block.all) return []
-  return meeting.interests.filter(interest => !block.interests.includes(interest))
+  
+  // Find the interests block for this meeting's group
+  const groupInterestsBlock = block.interestsBlocks?.find(ib => ib.groupId === meeting.groupId)
+  if (!groupInterestsBlock) return meeting.interests
+  
+  // Filter out blocked interests for this specific group
+  return meeting.interests.filter(interest => !groupInterestsBlock.interests.includes(interest))
 }
 
 function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
@@ -369,8 +374,4 @@ export function getSlotDuration(timestamp: number) {
 
 export function getInterestsOverlap(interests1: string[], interests2: string[]) {
   return interests1.filter(interest => interests2.includes(interest)).length
-}
-
-export function getMatchingInterest(interest: string) {
-  return getMatchingInterestFromInterests(interest)
 }

@@ -1,17 +1,17 @@
-import React from 'react'
-import { Dialog, DialogTitle, DialogContent, IconButton, Typography, Chip, Divider, FormGroup, FormControlLabel, Checkbox, Button } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
+'use client'
+
+import React, { useState } from 'react'
+import { Dialog, DialogContent, Typography, Button, Checkbox, FormControlLabel, FormGroup, Chip, Divider, Switch } from '@mui/material'
 import { User } from '@/generated/graphql'
 import { useTranslations } from 'next-intl'
-import { LANGUAGES } from '@/config/languages'
-import { formatTextWithLinks } from '@/utils/formatTextWithLinks'
-import Image from 'next/image'
-import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
-import { useCheckImage } from '@/hooks/useCheckImage'
+import { LANGUAGES } from '@/config/languages'
+import { formatTextWithLinks } from '@/utils/formatTextWithLinks'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import { getAllInterests } from '@/utils/interests'
+import { useCheckImage } from '@/hooks/useCheckImage'
+import InterestSelector from './InterestSelector'
+import { useGroups } from '@/store/GroupsProvider'
 
 interface UserDetailsPopupProps {
   user: User
@@ -21,24 +21,29 @@ interface UserDetailsPopupProps {
 
 export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPopupProps) {
   const t = useTranslations()
-  const tInterest = useTranslations('Interest')
   const { currentUser, setCurrentUser } = useStore(state => ({ 
     currentUser: state.currentUser, 
     setCurrentUser: state.setCurrentUser 
   }))
+  const { groups } = useGroups()
   const { updateUserData } = useUpdateUser()
   const [showFullImage, setShowFullImage] = useState(false)
   const { exists: imageExists } = useCheckImage(user._id)
 
   const existingBlock = currentUser?.blocks.find((b: any) => b.userId === user._id)
   const [blockAll, setBlockAll] = useState(existingBlock?.all || false)
-  const [blockedInterests, setBlockedInterests] = useState<string[]>(existingBlock?.interests || [])
+  const [interestsBlocks, setInterestsBlocks] = useState<{ groupId: string, interests: string[] }[]>(
+    existingBlock?.interestsBlocks || []
+  )
   const [isEditing, setIsEditing] = useState(false)
   const { refetchFutureMeetingsWithPeers } = useMeetings()
-  
-  // Get all available interests
-  const allInterests = getAllInterests()
 
+  // Get groups that both users have access to
+  const commonGroups = groups?.filter(group => 
+    currentUser?.groups?.includes(group._id) && 
+    user.groups?.includes(group._id)
+  ) || []
+  
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (imageExists) {
@@ -46,15 +51,72 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     }
   }
 
+  const handleGroupInterestsChange = (groupId: string, interests: string[]) => {
+    const newInterestsBlocks = [...interestsBlocks]
+    const existingIndex = newInterestsBlocks.findIndex(ib => ib.groupId === groupId)
+    
+    if (interests.length === 0) {
+      // Remove the group block if no interests are blocked
+      if (existingIndex !== -1) {
+        newInterestsBlocks.splice(existingIndex, 1)
+      }
+    } else {
+      // Update or add the group block
+      if (existingIndex !== -1) {
+        newInterestsBlocks[existingIndex].interests = interests
+      } else {
+        newInterestsBlocks.push({ groupId, interests })
+      }
+    }
+    
+    setInterestsBlocks(newInterestsBlocks)
+    setIsEditing(true)
+  }
+
+  const handleBlockAllInGroup = (groupId: string, blockAll: boolean) => {
+    const group = commonGroups.find(g => g._id === groupId)
+    if (!group) return
+
+    if (blockAll) {
+      // Get all interests from the group's interest pairs
+      const allInterests = Array.from(new Set(
+        group.interestsPairs?.flatMap(pair => pair) || []
+      ))
+      handleGroupInterestsChange(groupId, allInterests)
+    } else {
+      // Clear all blocked interests for this group
+      handleGroupInterestsChange(groupId, [])
+    }
+  }
+
+  const isAllBlockedInGroup = (groupId: string): boolean => {
+    const group = commonGroups.find(g => g._id === groupId)
+    if (!group) return false
+    
+    const allInterests = Array.from(new Set(
+      group.interestsPairs?.flatMap(pair => pair) || []
+    ))
+    const blockedInterests = getBlockedInterestsForGroup(groupId)
+    
+    return allInterests.length > 0 && allInterests.every(interest => 
+      blockedInterests.includes(interest)
+    )
+  }
+
+  const getBlockedInterestsForGroup = (groupId: string): string[] => {
+    const groupBlock = interestsBlocks.find(ib => ib.groupId === groupId)
+    return groupBlock?.interests || []
+  }
+
   const handleApply = async () => {
     if (!currentUser) return
 
     const updatedBlocks = currentUser.blocks.filter((b: any) => b.userId !== user._id)
-    if (blockAll || blockedInterests.length > 0) {
+    if (blockAll || interestsBlocks.length > 0) {
       updatedBlocks.push({
         userId: user._id,
         all: blockAll,
-        interests: blockedInterests
+        interestsBlocks: interestsBlocks
       })
     }
 
@@ -70,48 +132,45 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
 
   const handleCancel = () => {
     setBlockAll(existingBlock?.all || false)
-    setBlockedInterests(existingBlock?.interests || [])
+    setInterestsBlocks(existingBlock?.interestsBlocks || [])
     setIsEditing(false)
     onClose()
   }
 
   return (
     <>
-      <Dialog
-        open={open}
-        onClose={onClose}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle className="flex justify-between items-center">
-          {user.name}
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent className="flex flex-col gap-4 overflow-y-auto">
-          {imageExists && (
-            <div 
-              className="relative w-full cursor-pointer overflow-hidden rounded-lg"
-              style={{
-                paddingTop: '75%' // 4:3 aspect ratio
-              }}
-              onClick={handleImageClick}
-            >
-              <Image
-                src={`/profiles/${user._id}.jpg`}
-                alt={user.name}
-                fill
-                unoptimized
-                className="absolute top-0 left-0 w-full h-full object-cover hover:scale-105 transition-transform"
-              />
+      <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>
+        <DialogContent className="space-y-4">
+          {/* User Avatar and Basic Info */}
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="relative">
+              {imageExists ? (
+                <img
+                  src={`/api/user-image/${user._id}`}
+                  alt={user.name}
+                  className="w-16 h-16 rounded-full object-cover cursor-pointer"
+                  onClick={handleImageClick}
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-lg font-semibold">
+                  {user.name[0]?.toUpperCase() || '?'}
+                </div>
+              )}
             </div>
-          )}
+            <div>
+              <Typography variant="h6" component="h2">
+                {user.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {user.sex === 'male' ? t('male') : user.sex === 'female' ? t('female') : ''}
+              </Typography>
+            </div>
+          </div>
 
           {user.languages.length > 0 && (
             <div>
               <Typography variant="subtitle2" className="text-gray-400 mb-2">
-                {t('languages')}
+                {t('Profile.languages')}
               </Typography>
               <div className="flex flex-wrap gap-1">
                 {user.languages.map(lang => {
@@ -121,7 +180,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
                       key={lang}
                       label={language?.name || lang}
                       size="small"
-                      className="text-xs text-white bg-gray-700"
+                      className="text-xs"
                     />
                   )
                 })}
@@ -169,32 +228,31 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
             />
           </FormGroup>
 
-          {!blockAll && (
+          {!blockAll && commonGroups.length > 0 && (
             <>
-              <Typography variant="subtitle1" className="mt-2">
-                {t('blockInterests')}
-              </Typography>
-              <div className="grid grid-cols-2 gap-4">
-                {allInterests.map(interest => (
-                  <Button
-                    key={interest}
-                    fullWidth
-                    variant={blockedInterests.includes(interest) ? "contained" : "outlined"}
-                    onClick={() => {
-                      if (blockedInterests.includes(interest)) {
-                        setBlockedInterests(blockedInterests.filter(i => i !== interest))
-                      } else {
-                        setBlockedInterests([...blockedInterests, interest])
-                      }
-                      setIsEditing(true)
-                    }}
-                    color={blockedInterests.includes(interest) ? "error" : "success"}
-                    className="h-full"
-                  >
-                    {tInterest(interest)}
-                  </Button>
-                ))}
-              </div>
+              {commonGroups.map(group => (
+                <div key={group._id} className="mb-4">
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={isAllBlockedInGroup(group._id)}
+                        onChange={(e) => handleBlockAllInGroup(group._id, e.target.checked)}
+                        color="warning"
+                      />
+                    }
+                    label={`${t('blockAllInterestsIn')} ${group.name}`}
+                    className="mb-2"
+                  />
+                  {!isAllBlockedInGroup(group._id) && (
+                    <InterestSelector
+                      value={getBlockedInterestsForGroup(group._id)}
+                      onChange={(interests) => handleGroupInterestsChange(group._id, interests)}
+                      label={`${t('blockInterestsIn')} ${group.name}`}
+                      interestsPairs={group.interestsPairs || []}
+                    />
+                  )}
+                </div>
+              ))}
             </>
           )}
 
@@ -216,25 +274,23 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={showFullImage}
-        onClose={() => setShowFullImage(false)}
-        maxWidth={false}
-        onClick={() => setShowFullImage(false)}
-      >
-        <div 
-          className="relative w-screen h-[50vh] cursor-pointer"
-          style={{ maxHeight: 'calc(100vh - 64px)' }}
+      {/* Full screen image dialog */}
+      {showFullImage && (
+        <Dialog
+          open={showFullImage}
+          onClose={() => setShowFullImage(false)}
+          maxWidth={false}
+          fullWidth
         >
-          <Image
-            src={`/profiles/${user._id}.jpg`}
-            alt={user.name}
-            fill
-            unoptimized
-            className="object-contain"
-          />
-        </div>
-      </Dialog>
+          <DialogContent className="p-0">
+            <img
+              src={`/api/user-image/${user._id}`}
+              alt={user.name}
+              className="w-full h-auto max-h-screen object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 } 

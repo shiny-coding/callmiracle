@@ -40,7 +40,7 @@ export default function UserCard({
   const { exists: imageExists } = useCheckImage(user._id)
   
   const existingBlock = currentUser?.blocks.find((b:any) => b.userId === user._id)
-  const isBlocked = existingBlock?.all || (existingBlock?.interests.length ?? 0) > 0
+  const isBlocked = existingBlock?.all || (existingBlock?.interestsBlocks?.length ?? 0) > 0
   
   // Check if this user is a friend
   const isFriend = currentUser?.friends?.includes(user._id) || false

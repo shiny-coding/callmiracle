@@ -9,7 +9,6 @@ import GroupSelector from './GroupSelector'
 import { useEffect, useState, useRef } from 'react'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import { getAllInterests } from '@/utils/interests'
 import { useGroups } from '@/store/GroupsProvider'
 
 interface MeetingsFiltersProps {
@@ -141,8 +140,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     }
 
     // Interests
-    const allAvailableInterests = getAllInterests()
-    if (changedFilterInterests.length > 0 && changedFilterInterests.length < allAvailableInterests.length) {
+    if (changedFilterInterests.length > 0) {
       summaryParts.push(changedFilterInterests.map(interest => t(`Interest.${interest}`)).join(', '))
     }
 
@@ -254,12 +252,15 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
               label={t('filterByGroups')}
               availableGroups={availableGroups}
             />
-            <InterestSelector
-              value={changedFilterInterests}
-              onChange={setChangedFilterInterests}
-              label={t('filterByInterests')}
-              groups={selectedGroups}
-            />
+            {selectedGroups.map(group => (
+              <InterestSelector
+                key={group._id}
+                value={changedFilterInterests}
+                onChange={setChangedFilterInterests}
+                label={`${t('filterByInterests')} - ${group.name}`}
+                interestsPairs={group.interestsPairs || []}
+              />
+            ))}
             <LanguageSelector
               value={changedFilterLanguages}
               onChange={setChangedFilterLanguages}

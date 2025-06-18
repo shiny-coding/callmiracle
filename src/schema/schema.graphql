@@ -10,10 +10,15 @@ enum NotificationType {
   MEETING_FINISHED
 }
 
+type InterestsBlock {
+  groupId: ID!
+  interests: [String!]!
+}
+
 type Block {
   userId: ID!
   all: Boolean!
-  interests: [String!]!
+  interestsBlocks: [InterestsBlock!]!
 }
 
 type Group {
@@ -164,10 +169,15 @@ input CallUserInput {
   meetingLastCallTime: Float
 }
 
+input InterestsBlockInput {
+  groupId: ID!
+  interests: [String!]!
+}
+
 input BlockInput {
   userId: ID!
   all: Boolean!
-  interests: [String!]!
+  interestsBlocks: [InterestsBlockInput!]!
 }
 
 input GroupInput {

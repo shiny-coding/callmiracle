@@ -21,7 +21,10 @@ export const GET_USER = gql`
       blocks {
         userId
         all
-        interests
+        interestsBlocks {
+          groupId
+          interests
+        }
       }
     }
   }
