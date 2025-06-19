@@ -108,6 +108,8 @@ export default function GroupCard({ group }: GroupCardProps) {
     })
     
     await updateUserData()
+    // Refetch groups to update participant counts and any other group data
+    refetch()
     setConfirmDialogOpen(false)
   }
 
@@ -136,14 +138,13 @@ export default function GroupCard({ group }: GroupCardProps) {
               {group.name}
             </Typography>
             {!group.open && <LockIcon className="text-gray-400" fontSize="small" />}
-            {isAdmin && (
-              <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
-                {t('admin')}
-              </Typography>
-            )}
-            {isOwner && (
+            {isOwner ? (
               <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
                 {t('owner')}
+              </Typography>
+            ) : isAdmin && (
+              <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
+                {t('admin')}
               </Typography>
             )}
           </div>

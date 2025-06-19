@@ -29,6 +29,7 @@ type Group {
   open: Boolean!
   owner: ID!
   admins: [ID!]!
+  joinToken: String
   interestsPairs: [[String!]!]!
   interestsDescriptions: [InterestDescription!]!
   usersCount: Int
@@ -255,6 +256,7 @@ type Mutation {
   callUser(input: CallUserInput!): CallEvent
   createOrUpdateMeeting(input: MeetingInput!): MeetingOutput!
   createOrUpdateGroup(input: GroupInput!): Group!
+  regenerateJoinToken(groupId: ID!): Group!
   deleteGroup(id: ID!): Boolean!
   updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse

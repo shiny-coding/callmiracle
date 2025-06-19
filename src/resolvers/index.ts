@@ -9,7 +9,7 @@ import { notificationsMutations } from './notificationsMutations'
 import { subscriptions } from './subscriptions'
 import { dateScalar } from './scalarResolvers'
 import { meetingsMutations } from './meetingsMutations'
-import { groupsMutations } from './groupsMutations'
+import groupsMutations from './groupsMutations'
 import { deleteUserMutation } from './deleteUserMutation'
 
 export const resolvers = {

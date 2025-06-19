@@ -1,6 +1,7 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { GroupInput } from '@/generated/graphql'
+import { randomBytes } from 'crypto'
 
 const createOrUpdateGroup = async (_: any, { input }: { input: GroupInput }, { db, session }: Context) => {
   if (!session?.user) {
@@ -16,7 +17,7 @@ const createOrUpdateGroup = async (_: any, { input }: { input: GroupInput }, { d
     
     const _adminIds = admins.map(id => new ObjectId(id))
 
-    const $set = {
+    const $set: any = {
       name,
       description,
       open,
@@ -29,6 +30,14 @@ const createOrUpdateGroup = async (_: any, { input }: { input: GroupInput }, { d
     const existingGroup = await db.collection('groups').findOne({ _id: _groupId })
     const isNewGroup = !existingGroup
 
+    // For updates, if we don't have a token or if this is triggered by a token generation request, create one
+    const needsNewToken = isNewGroup || (!existingGroup?.joinToken)
+
+    if (needsNewToken) {
+      const joinToken = randomBytes(32).toString('hex')
+      $set.joinToken = joinToken
+    }
+
     // Use upsert to either update existing or create new
     const group = await db.collection('groups').findOneAndUpdate(
       { _id: _groupId },
@@ -36,7 +45,7 @@ const createOrUpdateGroup = async (_: any, { input }: { input: GroupInput }, { d
         $set,
         $setOnInsert: {
           createdAt: new Date(),
-          owner: _userId,
+          owner: _userId
         }
       },
       {
@@ -100,7 +109,49 @@ const deleteGroup = async (_: any, { id }: { id: string }, { db, session }: Cont
   }
 }
 
-export const groupsMutations = {
+const regenerateJoinToken = async (_: any, { groupId }: { groupId: string }, { db, session }: Context) => {
+  if (!session?.user) {
+    throw new Error('Authentication required')
+  }
+
+  const _userId = new ObjectId(session.user.id)
+  const _groupId = new ObjectId(groupId)
+
+  try {
+    // Check if the group exists and if the user is the owner or admin
+    const group = await db.collection('groups').findOne({ _id: _groupId })
+    
+    if (!group) {
+      throw new Error('Group not found')
+    }
+
+    // Check if user is owner or admin
+    const isOwner = group.owner.equals(_userId)
+    const isAdmin = group.admins.some((adminId: ObjectId) => adminId.equals(_userId))
+    
+    if (!isOwner && !isAdmin) {
+      throw new Error('Only group owners and administrators can regenerate join tokens')
+    }
+
+    // Generate new join token
+    const joinToken = randomBytes(32).toString('hex')
+
+    // Update the group with the new join token
+    const updatedGroup = await db.collection('groups').findOneAndUpdate(
+      { _id: _groupId },
+      { $set: { joinToken } },
+      { returnDocument: 'after' }
+    )
+
+    return updatedGroup
+  } catch (error) {
+    console.error('Error regenerating join token:', error)
+    throw error
+  }
+}
+
+export default {
   createOrUpdateGroup,
+  regenerateJoinToken,
   deleteGroup
 } 

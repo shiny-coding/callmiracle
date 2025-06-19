@@ -98,6 +98,7 @@ export type Group = {
   description?: Maybe<Scalars['String']['output']>;
   interestsDescriptions: Array<InterestDescription>;
   interestsPairs: Array<Array<Scalars['String']['output']>>;
+  joinToken?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   open: Scalars['Boolean']['output'];
   owner: Scalars['ID']['output'];
@@ -212,6 +213,7 @@ export type Mutation = {
   deleteGroup: Scalars['Boolean']['output'];
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   deleteUser: Scalars['Boolean']['output'];
+  regenerateJoinToken: Group;
   setAllNotificationsSeen: Scalars['Boolean']['output'];
   setNotificationSeen?: Maybe<Notification>;
   updateMeetingStatus: Meeting;
@@ -246,6 +248,11 @@ export type MutationDeleteMeetingArgs = {
 
 export type MutationDeleteUserArgs = {
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationRegenerateJoinTokenArgs = {
+  groupId: Scalars['ID']['input'];
 };
 
 

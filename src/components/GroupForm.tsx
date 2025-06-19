@@ -1,14 +1,18 @@
 'use client'
 
-import { IconButton, Button, FormGroup, FormControlLabel, Switch, TextField, CircularProgress } from '@mui/material'
+import { IconButton, Button, FormGroup, FormControlLabel, Switch, TextField, CircularProgress, Autocomplete, Chip, Box, InputAdornment } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { useLocale, useTranslations } from 'next-intl'
 import { useUpdateGroup } from '@/hooks/useUpdateGroup'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { useInitUser } from '@/hooks/useInitUser'
+import { useRegenerateJoinToken } from '@/hooks/useRegenerateJoinToken'
+import { useUsers } from '@/store/UsersProvider'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect } from 'react'
-import { Group } from '@/generated/graphql'
+import { Group, User } from '@/generated/graphql'
 import { useParams, useRouter } from 'next/navigation'
 import { useGroups } from '@/store/GroupsProvider'
 import LoadingDialog from './LoadingDialog'
@@ -26,6 +30,7 @@ interface InterestDescription {
 export default function GroupForm() {
   const t = useTranslations()
   const { groups, loading: loadingGroups, error: errorGroups, refetch } = useGroups()
+  const { users, loading: loadingUsers } = useUsers()
   const { refetch: refetchUser } = useInitUser()
   const { id: groupId } = useParams()
   const group = groups?.find(g => g._id === groupId)
@@ -40,32 +45,46 @@ export default function GroupForm() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [open, setOpen] = useState(true)
+  const [selectedAdmins, setSelectedAdmins] = useState<User[]>([])
   const [interestsPairs, setInterestsPairs] = useState<string[][]>([])
   const [interestsDescriptions, setInterestsDescriptions] = useState<InterestDescription[]>([])
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false)
   const { updateGroup, loading } = useUpdateGroup()
   const { updateUserData } = useUpdateUser()
+  const { regenerateJoinToken } = useRegenerateJoinToken()
   const { showSnackbar } = useSnackbar()
 
   // Reset form when group changes
   useEffect(() => {
-    if (group) {
+    if (group && users) {
       setName(group.name || '')
       setDescription(group.description || '')
       setOpen(group.open !== undefined ? group.open : true)
       setInterestsPairs(group.interestsPairs || [])
       setInterestsDescriptions(group.interestsDescriptions || [])
-    } else {
+      
+      // Set selected administrators based on group.admins
+      const adminUsers = users.filter(user => group.admins.includes(user._id))
+      setSelectedAdmins(adminUsers)
+    } else if (!group) {
       setName('')
       setDescription('')
       setOpen(true)
       setInterestsPairs([])
       setInterestsDescriptions([])
+      // For new groups, set current user as default admin
+      if (currentUser) {
+        setSelectedAdmins([currentUser])
+      }
     }
-  }, [group])
+  }, [group, users, currentUser])
 
-  if (loadingGroups || errorGroups) {
-    return <LoadingDialog loading={loadingGroups} error={errorGroups} />
+  if (loadingGroups || loadingUsers || errorGroups) {
+    return <LoadingDialog loading={loadingGroups || loadingUsers} error={errorGroups} />
   }
+
+  // Filter users to exclude deleted ones and ensure current user is available
+  const availableUsers = users?.filter(user => !user.deleted) || []
 
   const handleCancel = () => {
     router.back()
@@ -86,7 +105,7 @@ export default function GroupForm() {
       name: name.trim(),
       description: description.trim(),
       open,
-      admins: group?.admins || [currentUser?._id || ''],
+      admins: selectedAdmins.map(admin => admin._id),
       interestsPairs: validPairs,
       interestsDescriptions: validDescriptions
     }
@@ -180,6 +199,40 @@ export default function GroupForm() {
     setInterestsDescriptions(reordered)
   }
 
+  // Generate join link
+  const generateJoinLink = (joinToken: string | null | undefined) => {
+    if (!joinToken || !groupId) return ''
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    return `${baseUrl}/api/join-group?groupId=${groupId}&joinToken=${joinToken}`
+  }
+
+  const handleCopyJoinLink = () => {
+    const joinLink = generateJoinLink(group?.joinToken)
+    if (joinLink) {
+      navigator.clipboard.writeText(joinLink)
+      showSnackbar(t('joinLinkCopied'), 'success')
+    }
+  }
+
+  const handleGenerateJoinToken = async () => {
+    if (!group) return
+    
+    setIsGeneratingToken(true)
+    try {
+      const result = await regenerateJoinToken(group._id)
+      
+      if (result) {
+        refetch() // Refresh groups to get the new token
+        showSnackbar(t('joinTokenGenerated'), 'success')
+      }
+    } catch (error) {
+      console.error('Error generating join token:', error)
+      showSnackbar(t('errorGeneratingJoinToken'), 'error')
+    } finally {
+      setIsGeneratingToken(false)
+    }
+  }
+
   const isFormValid = name.trim().length > 0
 
   return (
@@ -257,6 +310,110 @@ export default function GroupForm() {
               }
             />
           </FormGroup>
+
+          <div className="space-y-2">
+            <label className="text-white text-sm font-medium">
+              {t('administrators')}
+            </label>
+            <Autocomplete
+              multiple
+              options={availableUsers}
+              value={selectedAdmins}
+              onChange={(_, newValue) => setSelectedAdmins(newValue)}
+              getOptionLabel={(option) => option.name}
+              isOptionEqualToValue={(option, value) => option._id === value._id}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder={t('searchAndSelectAdministrators')}
+                  variant="outlined"
+                  InputLabelProps={{
+                    className: 'text-gray-300'
+                  }}
+                  InputProps={{
+                    ...params.InputProps,
+                    className: 'text-white'
+                  }}
+                />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => {
+                  const { key, ...tagProps } = getTagProps({ index })
+                  return (
+                    <Chip
+                      key={key}
+                      label={option.name}
+                      {...tagProps}
+                      className="bg-blue-600 text-white"
+                    />
+                  )
+                })
+              }
+              filterOptions={(options, { inputValue }) => {
+                return options.filter(option =>
+                  option.name.toLowerCase().includes(inputValue.toLowerCase())
+                )
+              }}
+              className="mb-4"
+            />
+            <div className="text-sm text-gray-400">
+              {t('administratorsDescription')}
+            </div>
+          </div>
+
+          {/* Join Link Section - Only show for existing groups */}
+          {groupId && group && (
+            <div className="space-y-2">
+              <label className="text-white text-sm font-medium">
+                {t('joinLink')}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <TextField
+                  fullWidth
+                  value={generateJoinLink(group.joinToken)}
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                    className: 'text-white',
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={handleCopyJoinLink}
+                          disabled={!group.joinToken}
+                          title={t('copyJoinLink')}
+                          className="text-gray-400 hover:text-white"
+                        >
+                          <ContentCopyIcon />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                  InputLabelProps={{
+                    className: 'text-gray-300'
+                  }}
+                  className="flex-1 min-w-0"
+                />
+                <Button
+                  variant="outlined"
+                  onClick={handleGenerateJoinToken}
+                  disabled={isGeneratingToken}
+                  className="text-white border-gray-600 hover:border-gray-400 whitespace-nowrap flex-shrink-0"
+                >
+                  {isGeneratingToken ? (
+                    <CircularProgress size={20} className="text-white" />
+                  ) : (
+                    <>
+                      <RefreshIcon className="mr-2" />
+                      {group.joinToken ? t('regenerateJoinToken') : t('generateJoinToken')}
+                    </>
+                  )}
+                </Button>
+              </div>
+              <div className="text-sm text-gray-400">
+                {t('joinLinkDescription')}
+              </div>
+            </div>
+          )}
 
           <InterestsPairsEditor
             value={interestsPairs}

@@ -11,6 +11,7 @@ const CREATE_OR_UPDATE_GROUP = gql`
       description
       open
       admins
+      joinToken
       interestsPairs
       interestsDescriptions {
         interest
