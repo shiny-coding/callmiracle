@@ -11,7 +11,7 @@ import { MeetingsProvider } from '@/contexts/MeetingsContext'
 import LoadingDialog from './LoadingDialog'
 import { vanillaStore } from '@/store/useStore'
 import { SnackbarProvider } from '@/contexts/SnackContext'
-import { JoinGroupHandler } from './JoinGroupHandler'
+import { InitialMessageHandler } from './InitialMessageHandler'
 
 interface AppContentProps {
   children: ReactNode
@@ -27,7 +27,7 @@ export function AppContent({ children }: AppContentProps) {
         <UsersProvider>
           <GroupsProvider>
             <SnackbarProvider>
-              <JoinGroupHandler />
+              <InitialMessageHandler />
               <NotificationsProvider>
                 {children}
               </NotificationsProvider>
