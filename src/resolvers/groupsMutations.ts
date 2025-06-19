@@ -150,8 +150,62 @@ const regenerateJoinToken = async (_: any, { groupId }: { groupId: string }, { d
   }
 }
 
+const removeUserFromGroup = async (_: any, { groupId, userId }: { groupId: string, userId: string }, { db, session }: Context) => {
+  if (!session?.user) {
+    throw new Error('Authentication required')
+  }
+
+  const _currentUserId = new ObjectId(session.user.id)
+  const _groupId = new ObjectId(groupId)
+  const _userToRemoveId = new ObjectId(userId)
+
+  try {
+    // Check if the group exists and if the current user is the owner or admin
+    const group = await db.collection('groups').findOne({ _id: _groupId })
+    
+    if (!group) {
+      throw new Error('Group not found')
+    }
+
+    // Check if current user is owner or admin
+    const isOwner = group.owner.equals(_currentUserId)
+    const isAdmin = group.admins.some((adminId: ObjectId) => adminId.equals(_currentUserId))
+    
+    if (!isOwner && !isAdmin) {
+      throw new Error('Only group owners and administrators can remove users from the group')
+    }
+
+    // Prevent removing the group owner
+    if (group.owner.equals(_userToRemoveId)) {
+      throw new Error('Cannot remove the group owner from the group')
+    }
+
+    // Remove the group from user's groups array
+    const result = await db.collection('users').updateOne(
+      { _id: _userToRemoveId },
+      { $pull: { groups: _groupId } } as any
+    )
+
+    if (result.modifiedCount === 0) {
+      throw new Error('User was not in the group or removal failed')
+    }
+
+    // If the user being removed is an admin, also remove them from the admins array
+    await db.collection('groups').updateOne(
+      { _id: _groupId },
+      { $pull: { admins: _userToRemoveId } } as any
+    )
+
+    return true
+  } catch (error) {
+    console.error('Error removing user from group:', error)
+    throw error
+  }
+}
+
 export default {
   createOrUpdateGroup,
   regenerateJoinToken,
+  removeUserFromGroup,
   deleteGroup
 } 

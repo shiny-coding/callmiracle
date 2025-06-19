@@ -99,6 +99,11 @@ export default function UserList() {
     })
   }
 
+  // Get the filtering group (for remove functionality) - only if filtering by a single group
+  const filteringGroup = appliedSelectedGroups.length === 1 
+    ? groups?.find(g => g._id === appliedSelectedGroups[0]) || null 
+    : null
+
   // Apply language filter if any languages are selected
   if (appliedSelectedLanguages.length > 0) {
     filteredUsers = filteredUsers.filter(user =>
@@ -168,6 +173,7 @@ export default function UserList() {
                       showDetails={true} 
                       showCallButton={true}
                       showHistoryButton={true}
+                      filteringByGroup={filteringGroup}
                     />
                   </div>
                 </ListItem>

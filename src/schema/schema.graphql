@@ -257,6 +257,7 @@ type Mutation {
   createOrUpdateMeeting(input: MeetingInput!): MeetingOutput!
   createOrUpdateGroup(input: GroupInput!): Group!
   regenerateJoinToken(groupId: ID!): Group!
+  removeUserFromGroup(groupId: ID!, userId: ID!): Boolean!
   deleteGroup(id: ID!): Boolean!
   updateMeetingStatus(input: UpdateMeetingStatusInput!): Meeting!
   deleteMeeting(id: ID!): DeleteMeetingResponse

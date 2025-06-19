@@ -1,25 +1,29 @@
-import { Typography, Chip, IconButton, Avatar, Button } from '@mui/material'
+import { Typography, Chip, IconButton, Avatar, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { User } from '@/generated/graphql'
+import { User, Group } from '@/generated/graphql'
 import { LANGUAGES } from '@/config/languages'
 import CallIcon from '@mui/icons-material/Call'
 import HistoryIcon from '@mui/icons-material/History'
 import LockIcon from '@mui/icons-material/Lock'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import CheckIcon from '@mui/icons-material/Check'
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useDetailedCallHistory } from '@/store/DetailedCallHistoryProvider'
 import { useState } from 'react'
 import UserDetailsPopup from './UserDetailsPopup'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
+import { useRemoveUserFromGroup } from '@/hooks/useRemoveUserFromGroup'
 import { useCheckImage } from '@/hooks/useCheckImage'
+import { useSnackbar } from '@/contexts/SnackContext'
 
 interface UserCardProps {
   user: User
   showDetails?: boolean
   showCallButton?: boolean
   showHistoryButton?: boolean
+  filteringByGroup?: Group | null // The group being filtered by, if any
 }
 
 export default function UserCard({ 
@@ -27,17 +31,21 @@ export default function UserCard({
   showDetails = true, 
   showCallButton = false,
   showHistoryButton = false,
+  filteringByGroup = null
 }: UserCardProps) {
   const t = useTranslations()
   const { doCall } = useWebRTCContext()
   const { setSelectedUser } = useDetailedCallHistory()
   const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
+  const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false)
   const { currentUser, setCurrentUser } = useStore( (state: any) => ({
     currentUser: state.currentUser,
     setCurrentUser: state.setCurrentUser
   }))
   const { updateUserData, loading: updateLoading } = useUpdateUser()
+  const { removeUserFromGroup, loading: removeLoading } = useRemoveUserFromGroup()
   const { exists: imageExists } = useCheckImage(user._id)
+  const { showSnackbar } = useSnackbar()
   
   const existingBlock = currentUser?.blocks.find((b:any) => b.userId === user._id)
   const isBlocked = existingBlock?.all || (existingBlock?.interestsBlocks?.length ?? 0) > 0
@@ -47,6 +55,15 @@ export default function UserCard({
   
   // Check if this is the current user
   const isCurrentUser = currentUser?._id === user._id
+
+  // Check if current user can remove others from the group
+  const canRemoveFromGroup = filteringByGroup && !isCurrentUser && (
+    filteringByGroup.owner === currentUser?._id || 
+    filteringByGroup.admins.includes(currentUser?._id || '')
+  )
+
+  // Prevent removing the group owner
+  const isGroupOwner = filteringByGroup?.owner === user._id
 
   const handleCall = async () => {
     await doCall(user, false, null, null)
@@ -78,6 +95,19 @@ export default function UserCard({
     updateUserData()
   }
 
+  const handleRemoveFromGroup = async () => {
+    if (!filteringByGroup) return
+    
+    try {
+      await removeUserFromGroup(filteringByGroup._id, user._id)
+      showSnackbar(t('userRemovedFromGroup'), 'success')
+      setRemoveConfirmOpen(false)
+    } catch (error) {
+      console.error('Error removing user from group:', error)
+      showSnackbar(t('errorRemovingUserFromGroup'), 'error')
+    }
+  }
+
   return (
     <>
       <div 
@@ -104,6 +134,18 @@ export default function UserCard({
           )}
         </div>
         <div className="flex gap-2">
+          {canRemoveFromGroup && !isGroupOwner && (
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation()
+                setRemoveConfirmOpen(true)
+              }}
+              className="text-red-400 hover:bg-red-900"
+              title={t('removeFromGroup')}
+            >
+              <RemoveCircleIcon />
+            </IconButton>
+          )}
           {showHistoryButton && !isCurrentUser && (
             <IconButton
               onClick={(e) => {
@@ -186,6 +228,37 @@ export default function UserCard({
         open={detailsPopupOpen}
         onClose={() => setDetailsPopupOpen(false)}
       />
+
+      {/* Remove from group confirmation dialog */}
+      <Dialog
+        open={removeConfirmOpen}
+        onClose={() => setRemoveConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('removeFromGroup')}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {t('confirmRemoveFromGroup', { userName: user.name })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setRemoveConfirmOpen(false)}
+            disabled={removeLoading}
+          >
+            {t('cancel')}
+          </Button>
+          <Button 
+            onClick={handleRemoveFromGroup}
+            color="error"
+            variant="contained"
+            disabled={removeLoading}
+          >
+            {t('removeFromGroup')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 } 

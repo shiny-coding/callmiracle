@@ -313,5 +313,9 @@
   "joinLinkCopied": "Ссылка для вступления скопирована в буфер обмена",
   "joinTokenGenerated": "Ссылка для вступления успешно создана",
   "errorGeneratingJoinToken": "Ошибка при создании ссылки для вступления",
-  "youveJoined": "Вы присоединились к {groupName}"
+  "youveJoined": "Вы присоединились к {groupName}",
+  "removeFromGroup": "Удалить из группы",
+  "confirmRemoveFromGroup": "Вы уверены, что хотите удалить {userName} из группы?",
+  "userRemovedFromGroup": "Пользователь успешно удален из группы",
+  "errorRemovingUserFromGroup": "Ошибка при удалении пользователя из группы"
 } 

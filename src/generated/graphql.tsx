@@ -214,6 +214,7 @@ export type Mutation = {
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
   deleteUser: Scalars['Boolean']['output'];
   regenerateJoinToken: Group;
+  removeUserFromGroup: Scalars['Boolean']['output'];
   setAllNotificationsSeen: Scalars['Boolean']['output'];
   setNotificationSeen?: Maybe<Notification>;
   updateMeetingStatus: Meeting;
@@ -253,6 +254,12 @@ export type MutationDeleteUserArgs = {
 
 export type MutationRegenerateJoinTokenArgs = {
   groupId: Scalars['ID']['input'];
+};
+
+
+export type MutationRemoveUserFromGroupArgs = {
+  groupId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
