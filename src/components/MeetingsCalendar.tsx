@@ -4,11 +4,11 @@ import { useStore, type AppState } from '@/store/useStore'
 import { Paper, Typography, Chip, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Meeting, MeetingWithPeer } from '@/generated/graphql'
-import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
-import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
+import { isToday } from 'date-fns'
+import { Fragment, useRef, useState, useEffect } from 'react'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import Link from 'next/link'
-import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed, SLOT_DURATION, getNonBlockedInterests, getSharedInterests } from '@/utils/meetingUtils'
+import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed, SLOT_DURATION, getSharedInterests } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
@@ -42,6 +42,7 @@ interface MeetingsCalendarRowProps {
   filterGroups: string[];
   groups: Group[] | undefined;
   currentUser: any;
+  myOccupiedSlots: Set<number>;
 }
 
 export default function MeetingsCalendar() {
@@ -93,6 +94,24 @@ export default function MeetingsCalendar() {
     } else {
       meeting.timeSlots.forEach(slot => {
         myMeetingSlotToId[slot] = meeting._id
+      })
+    }
+  })
+
+  // Create a set of all time slots occupied by user's own meetings for conflict detection
+  const myOccupiedSlots = new Set<number>()
+  myMeetingsWithPeers.forEach(meetingWithPeer => {
+    const meeting = meetingWithPeer.meeting
+    if (isMeetingPassed(meeting)) return
+    
+    if (meeting.startTime) {
+      // If meeting is scheduled, it occupies two slots (an hour)
+      myOccupiedSlots.add(meeting.startTime)
+      myOccupiedSlots.add(meeting.startTime + SLOT_DURATION)
+    } else {
+      // If meeting is not scheduled yet, add all its time slots
+      meeting.timeSlots.forEach(timeSlot => {
+        myOccupiedSlots.add(timeSlot)
       })
     }
   })
@@ -268,6 +287,7 @@ export default function MeetingsCalendar() {
                       filterGroups={filterGroups}
                       groups={groups}
                       currentUser={currentUser}
+                      myOccupiedSlots={myOccupiedSlots}
                     />
                   )
                 })}
@@ -293,7 +313,8 @@ function MeetingsCalendarRow({
   slotRefs,
   filterGroups,
   groups,
-  currentUser
+  currentUser,
+  myOccupiedSlots
 }: MeetingsCalendarRowProps) {
   // Determine if we should group by groups
   const userAccessibleGroups = groups?.filter(group => 
@@ -447,6 +468,8 @@ function MeetingsCalendarRow({
                     chipTooltipText = t('connectWithMeeting');
                   } else if (hasMine) {
                     chipTooltipText = t('myMeeting');
+                  } else if (myOccupiedSlots.has(slot.timestamp)) {
+                    chipTooltipText = t('cannotJoinOwnMeetingConflict');
                   } else {
                     chipTooltipText = t('pleaseSelectAnEarlierTimeSlot');
                   }

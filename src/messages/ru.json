@@ -214,6 +214,7 @@
   "connectWithMeeting": "Присоединиться к встрече",
   "pleaseSelectAnEarlierTimeSlot": "Пожалуйста, выберите более раннее время для этой встречи или измените минимальную продолжительность",
   "myMeeting": "Моя встреча",
+  "cannotJoinOwnMeetingConflict": "Нельзя присоединиться, у вас уже есть встреча в это время",
   "MeetingErrors": {
     "CannotCreateMeetingInternalError": "Не удалось создать встречу из-за внутренней ошибки. Пожалуйста, попробуйте еще раз.",
     "CannotUpdateMeetingInternalError": "Не удалось обновить встречу из-за внутренней ошибки. Пожалуйста, попробуйте еще раз.",

@@ -1,4 +1,3 @@
-
 import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { TimeSlot } from './TimeSlotsGrid'
@@ -42,13 +41,30 @@ export function getCalendarTimeSlots(now: number, hoursAhead: number): TimeSlot[
   return slots
 }
 
-
-
 export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot[], myMeetingsWithPeers: MeetingWithPeer[], minDurationM: number) {
   const slot2meetingInfos: Record<number, MeetingWithInfo[]> = {}
   for (let i = 0; i < slots.length; i++) {
     slot2meetingInfos[slots[i].timestamp] = []
   }
+  
+  // Create a set of all time slots occupied by user's own meetings
+  const myOccupiedSlots = new Set<number>()
+  myMeetingsWithPeers.forEach(meetingWithPeer => {
+    const meeting = meetingWithPeer.meeting
+    if (isMeetingPassed(meeting)) return
+    
+    if (meeting.startTime) {
+      // If meeting is scheduled, it occupies two slots (an hour)
+      myOccupiedSlots.add(meeting.startTime)
+      myOccupiedSlots.add(meeting.startTime + SLOT_DURATION)
+    } else {
+      // If meeting is not scheduled yet, add all its time slots
+      meeting.timeSlots.forEach(slot => {
+        myOccupiedSlots.add(slot)
+      })
+    }
+  })
+  
   const now = Date.now()
   for (const futureMeeting of futureMeetings) {
     if (isMeetingPassed(futureMeeting)) continue
@@ -67,8 +83,13 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
       const nextNextSlotContiguous = nextNextSlot && nextNextSlot - nextSlot === SLOT_DURATION
       const contiguousTime = timeLeftInCurrentSlot + (nextSlotContiguous ? (SLOT_DURATION + (nextNextSlotContiguous ? SLOT_DURATION : 0)) : 0)
       const lateAllowance = getLateAllowance(futureMeeting.minDurationM)
-      const joinable = !isMine && contiguousTime >= minDurationM * 60 * 1000 - lateAllowance
-      if (foundFirstJoinable || joinable || isMine) {
+      
+      // Check if this slot conflicts with user's own meetings
+      const hasConflictWithMyMeetings = myOccupiedSlots.has(slot)
+      
+      const potentiallyJoinable = !isMine && contiguousTime >= minDurationM * 60 * 1000 - lateAllowance
+      const joinable = potentiallyJoinable && !hasConflictWithMyMeetings
+      if (foundFirstJoinable || potentiallyJoinable || isMine) {
         slot2meetingInfos[slot].push({ meeting: futureMeeting, joinable, isMine })
       }
       if (joinable) {
