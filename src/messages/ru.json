@@ -4,6 +4,8 @@
   "searchByName": "Поиск по имени",
   "selectInterest": "Выберите интерес",
   "pleaseSelectInterest": "Пожалуйста, выберите хотя бы один интерес",
+  "selectGroup": "Выберите группу",
+  "pleaseSelectGroup": "Пожалуйста, выберите группу",
   "pleaseSelectTimeSlots": "Пожалуйста, выберите хотя бы одно время",
   "pleaseSelectLanguages": "Пожалуйста, выберите хотя бы один язык",
   "online": "В сети",

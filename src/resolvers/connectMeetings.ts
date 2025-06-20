@@ -1,4 +1,4 @@
-import { Interest, Meeting, MeetingStatus, NotificationType, User } from "@/generated/graphql";
+import { Meeting, MeetingStatus, NotificationType, User } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./meetingsNotifications";
 import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
@@ -60,7 +60,7 @@ export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]): 
   const interests1 = getNonBlockedInterests(meeting1, user1, user2);
   const interests2 = getNonBlockedInterests(meeting2, user2, user1);
   const interestOverlap = getInterestsOverlap(interests1, interests2);
-  if (interestOverlap.length === 0) return false;
+  if (interestOverlap === 0) return false;
   
   // Check time slot overlap
   const minDurationM = Math.max(meeting1.minDurationM, meeting2.minDurationM);

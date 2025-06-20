@@ -3,12 +3,12 @@
 import { useStore, type AppState } from '@/store/useStore'
 import { Paper, Typography, Chip, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { Interest, Meeting, MeetingWithPeer } from '@/generated/graphql'
+import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import Link from 'next/link'
-import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed, SLOT_DURATION, getNonBlockedInterests, getInterestsOverlap } from '@/utils/meetingUtils'
+import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, getDayLabel, isMeetingPassed, SLOT_DURATION, getNonBlockedInterests, getSharedInterests } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
@@ -288,7 +288,7 @@ function MeetingsCalendarRow({
     let interests = meeting.interests
     if ( isMine && meeting.peerMeetingId ) {
       const peerMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === meeting.peerMeetingId)?.meeting
-      interests = getInterestsOverlap(meeting.interests, peerMeeting?.interests as Interest[])
+      interests = getSharedInterests(meeting, peerMeeting)
     }
     for (const interest of interests) {
       let interestInfo = interest2Info[interest]
@@ -388,7 +388,7 @@ function MeetingsCalendarRow({
       >
         {Object.entries(interest2Info).map(([interest, { count, joinableMeeting, hasMine }]) => {
           const chip = <Chip
-            label={`${t(`Interest.${interest}`)} (${count})`}
+            label={`${interest} (${count})`}
             size="small"
             key={interest}
           />;

@@ -4,15 +4,17 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import { useLocale, useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
-import { useState, useEffect, ChangeEvent, useRef } from 'react'
-import { Interest, Meeting, MeetingStatus } from '@/generated/graphql'
+import { useState, useEffect, ChangeEvent, useRef, useMemo } from 'react'
+import { Meeting, MeetingStatus } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
-import { getAvailableTimeSlots, getMatchingInterest, getTimeSlotsFromMeeting } from '@/utils/meetingUtils'
+import SingleGroupSelector from './SingleGroupSelector'
+import { getAvailableTimeSlots, getTimeSlotsFromMeeting } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import { useGroups } from '@/store/GroupsProvider'
 import LoadingDialog from './LoadingDialog'
 import ConfirmDialog from './ConfirmDialog'
 import { useSnackbar } from '@/contexts/SnackContext'
@@ -23,11 +25,16 @@ export default function MeetingForm() {
   const t = useTranslations()
 
   const { myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, futureMeetingsWithPeers, loadingFutureMeetingsWithPeers, errorFutureMeetingsWithPeers } = useMeetings()
+  const { groups, loading: loadingGroups, error: errorGroups } = useGroups()
 
   const { id: meetingId } = useParams()
   const meeting = myMeetingsWithPeers.find(m => m.meeting._id === meetingId)?.meeting
 
-  const { currentUser } = useStore(state => ({ currentUser: state.currentUser }))
+  const { currentUser, lastMeetingGroup, setLastMeetingGroup } = useStore(state => ({ 
+    currentUser: state.currentUser,
+    lastMeetingGroup: state.lastMeetingGroup,
+    setLastMeetingGroup: state.setLastMeetingGroup
+  }))
   const router = useRouter()
 
   const searchParams = useSearchParams()
@@ -37,8 +44,15 @@ export default function MeetingForm() {
   const meetingToConnect = meetingWithPeerToConnect?.meeting
   const interestToMatch = searchParams?.get('interest')
 
+  // Get groups current user is in - memoize to prevent infinite re-renders
+  const userGroups = useMemo(() => 
+    groups?.filter(group => currentUser?.groups?.includes(group._id)) || [],
+    [groups, currentUser?.groups]
+  )
+
   const [preselectedTimeSlots, setPreselectedTimeSlots] = useState<boolean>(false)
-  const [tempInterests, setTempInterests] = useState<Interest[]>([])
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('')
+  const [tempInterests, setTempInterests] = useState<string[]>([])
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([])
   const [minDurationM, setMinDurationM] = useState(60)
   const [preferEarlier, setPreferEarlier] = useState(true)
@@ -55,6 +69,9 @@ export default function MeetingForm() {
 
   const { showSnackbar } = useSnackbar()
 
+  // Get the selected group object for InterestSelector
+  const selectedGroup = userGroups.find(group => group._id === selectedGroupId)
+
   const {
     isCancellingMeeting,
     confirmCancelOpen,
@@ -66,7 +83,7 @@ export default function MeetingForm() {
   // Add these derived values
   const preselectedInterest = (
     meetingToConnect && interestToMatch
-      ? Object.values(Interest).find(interest => getMatchingInterest(interest) === interestToMatch)
+      ? interestToMatch
       : undefined
   )
 
@@ -94,6 +111,8 @@ export default function MeetingForm() {
   // Reset form when dialog opens or meeting changes
   useEffect(() => {
     if (meeting) {
+      // Editing existing meeting
+      setSelectedGroupId(meeting.groupId || '')
       setTempInterests(meeting.interests || [])
       setSelectedTimeSlots(meeting.timeSlots || [])
       setMinDurationM(meeting.minDurationM || 60)
@@ -106,10 +125,26 @@ export default function MeetingForm() {
       ])
       setTempLanguages(meeting.languages)
     } else if (meetingToConnect) {
+      // Connecting to existing meeting
+      setSelectedGroupId(meetingToConnect.groupId || '')
       setMinDurationM(meetingToConnect.minDurationM || 60)
-      setTempInterests([preselectedInterest as Interest])
+      if (preselectedInterest) {
+        setTempInterests([preselectedInterest])
+      }
+    } else {
+      // Creating new meeting - use lastMeetingGroup if available and user is still in that group
+      if (lastMeetingGroup && currentUser?.groups?.includes(lastMeetingGroup)) {
+        setSelectedGroupId(lastMeetingGroup)
+      }
     }
-  }, [meeting, preselectedInterest, meetingToConnect])
+  }, [meeting, preselectedInterest, meetingToConnect, lastMeetingGroup, currentUser?.groups])
+
+  // Clear interests when group changes (unless it's the initial load)
+  useEffect(() => {
+    if (selectedGroupId && !meeting && !meetingToConnect) {
+      setTempInterests([])
+    }
+  }, [selectedGroupId, meeting, meetingToConnect])
 
   // Add new useEffect to validate time slot durations
   useEffect(() => {
@@ -142,9 +177,9 @@ export default function MeetingForm() {
 
   
 
-  if (loadingMyMeetingsWithPeers || errorMyMeetingsWithPeers || 
+  if (loadingMyMeetingsWithPeers || errorMyMeetingsWithPeers || loadingGroups || errorGroups ||
     (meetingToConnectId && (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers))) {
-    return <LoadingDialog loading={loadingMyMeetingsWithPeers || loadingFutureMeetingsWithPeers} error={errorMyMeetingsWithPeers || errorFutureMeetingsWithPeers} />
+    return <LoadingDialog loading={loadingMyMeetingsWithPeers || loadingFutureMeetingsWithPeers || loadingGroups} error={errorMyMeetingsWithPeers || errorFutureMeetingsWithPeers || errorGroups} />
   }
 
   const toggleTimeSlot = (timestamp: number) => {
@@ -181,8 +216,19 @@ export default function MeetingForm() {
   }
 
   const handleSave = async () => {
+    if (!selectedGroupId) {
+      showSnackbar(t('pleaseSelectGroup'), 'error')
+      return
+    }
+
+    // Remember the selected group for new meetings
+    if (!meeting) {
+      setLastMeetingGroup(selectedGroupId)
+    }
+
     const meetingInput = {
       _id: meetingId as string,
+      groupId: selectedGroupId,
       interests: tempInterests,
       timeSlots: selectedTimeSlots,
       minDurationM,
@@ -220,11 +266,34 @@ export default function MeetingForm() {
       </PageHeader>
       {/* Scrollable Content */}
       <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
-        <InterestSelector
-          value={tempInterests}
-          onChange={setTempInterests}
-          interestsToMatch={meetingToConnect?.interests}
+        {/* Group Selector */}
+        <SingleGroupSelector
+          value={selectedGroupId}
+          onChange={setSelectedGroupId}
+          label={t('selectGroup')}
+          availableGroups={userGroups}
         />
+        {!selectedGroupId && (
+          <Typography color="error" className="text-sm">
+            {t('pleaseSelectGroup')}
+          </Typography>
+        )}
+
+        {/* Interest Selector - only show if group is selected */}
+        {selectedGroup && (
+          <InterestSelector
+            value={tempInterests}
+            onChange={setTempInterests}
+            interestsPairs={selectedGroup.interestsPairs || []}
+            interestsToMatch={meetingToConnect?.interests}
+          />
+        )}
+        {selectedGroupId && tempInterests.length === 0 && (
+          <Typography color="warning" className="text-sm">
+            {t('pleaseSelectInterest')}
+          </Typography>
+        )}
+
         <Typography variant="subtitle1" className="mt-4">
           {t('languages')}
         </Typography>
@@ -360,7 +429,12 @@ export default function MeetingForm() {
           </Button>
         )}
         <div className="flex flex-col justify-start gap-2 mr-auto">
-          {tempInterests.length === 0 && (
+          {!selectedGroupId && (
+            <Typography color="warning" className="text-sm">
+              {t('pleaseSelectGroup')}
+            </Typography>
+          )}
+          {selectedGroupId && tempInterests.length === 0 && (
             <Typography color="warning" className="text-sm">
               {t('pleaseSelectInterest')}
             </Typography>
@@ -379,6 +453,7 @@ export default function MeetingForm() {
           variant="contained"
           disabled={loading || 
             isCancellingMeeting ||
+            !selectedGroupId ||
             selectedTimeSlots.length === 0 || 
             tempInterests.length === 0 || 
             tempLanguages.length === 0 ||

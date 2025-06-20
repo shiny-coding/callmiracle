@@ -6,8 +6,9 @@ import VideocamIcon from '@mui/icons-material/Videocam'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoodIcon from '@mui/icons-material/Mood'
+import GroupIcon from '@mui/icons-material/Group'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
-import { Interest, MeetingWithPeer, User } from '@/generated/graphql'
+import { MeetingWithPeer, User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
 import { isMeetingPassed, getSharedInterests, class2Hex, ACTIVE_MEETING_COLOR, PASSED_MEETING_COLOR, SCHEDULED_MEETING_COLOR, FINDING_MEETING_COLOR, getMeetingColorClass, canEditMeeting, meetingIsActiveNow, getLateAllowance } from '@/utils/meetingUtils'
 import React, { useEffect, useState } from 'react'
@@ -22,6 +23,7 @@ import ConfirmDialog from './ConfirmDialog'
 import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
 import { combineAdjacentSlots } from '@/utils/meetingUtils'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import { useGroups } from '@/store/GroupsProvider'
 
 interface MeetingCardProps {
   meetingWithPeer: MeetingWithPeer
@@ -31,7 +33,6 @@ interface MeetingCardProps {
 
 export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProps) {
   const t = useTranslations()
-  const tInterest = useTranslations('Interest')
   const now = new Date()
   const { doCall } = useWebRTCContext()
   const [, setLastUpdate] = useState(0)
@@ -40,6 +41,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const { refetchMeetings } = useMeetings()
   const [confirmAction, setConfirmAction] = useState<'finish' | 'cancel' | 'delete' | null>(null)
+  const { groups } = useGroups()
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
@@ -50,6 +52,9 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
           getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, t)
 
   const meetingColor = getMeetingColorClass(meeting);
+
+  // Get the group name
+  const meetingGroup = groups?.find(group => group._id === meeting.groupId)
 
   // Reusable chip styling for passed vs active meetings
   const getChipSx = (isActive = isActiveNow) => ({
@@ -389,12 +394,18 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         </div>        
     </div>
       <div className="flex items-center gap-2">
+        <GroupIcon className={meetingColor} fontSize="small" />
+        <Typography variant="body2" className={textColor}>
+          {meetingGroup?.name || t('group')}
+        </Typography>
+      </div>
+      <div className="flex items-center gap-2">
         <MoodIcon className={meetingColor} fontSize="small" />
         <div className="flex flex-wrap gap-2">
         {interestsToShow && interestsToShow.map(interest => (
           <Chip
             key={interest}
-            label={tInterest(interest)}
+            label={interest}
             size="small"
             className="text-xs"
             sx={getChipSx()}

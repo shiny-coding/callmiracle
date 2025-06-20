@@ -4,6 +4,8 @@
   "searchByName": "Search by name",
   "selectInterest": "Select interest",
   "pleaseSelectInterest": "Please select at least one interest",
+  "selectGroup": "Select group",
+  "pleaseSelectGroup": "Please select a group",
   "online": "Online",
   "offline": "Offline",
   "cancel": "Cancel",

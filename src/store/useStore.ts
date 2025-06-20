@@ -64,6 +64,10 @@ export interface AppState {
   setFilterAgeRange: (range: [number, number]) => void
   setFilterMinDurationM: (duration: number) => void
   setFilterGroups: (groups: string[]) => void
+
+  // Last meeting group for remembering user's last choice
+  lastMeetingGroup: string | null
+  setLastMeetingGroup: (groupId: string | null) => void
 }
 
 // Define which parts of AppState are persisted
@@ -88,6 +92,7 @@ type PersistedAppState = Pick<
   | 'filterAgeRange'
   | 'filterMinDurationM'
   | 'filterGroups'
+  | 'lastMeetingGroup'
 >;
 
 const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
@@ -118,6 +123,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       filterAgeRange: DEFAULT_FILTER_AGE_RANGE,
       filterMinDurationM: DEFAULT_FILTER_MIN_DURATION_M,
       filterGroups: [],
+      lastMeetingGroup: null,
       setCurrentUser: (currentUser) => {
         set({ currentUser })
       },
@@ -160,6 +166,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       setFilterAgeRange: (range) => set({ filterAgeRange: range }),
       setFilterMinDurationM: (duration) => set({ filterMinDurationM: duration }),
       setFilterGroups: (groups) => set({ filterGroups: groups }),
+      setLastMeetingGroup: (groupId) => set({ lastMeetingGroup: groupId }),
     }),
     {
       name: 'app-storage',
@@ -184,6 +191,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
         filterAgeRange: state.filterAgeRange,
         filterMinDurationM: state.filterMinDurationM,
         filterGroups: state.filterGroups,
+        lastMeetingGroup: state.lastMeetingGroup,
       }),
       onRehydrateStorage: () => (state?: AppState, error?: Error) => {
         if (state && !rehydrated) {
