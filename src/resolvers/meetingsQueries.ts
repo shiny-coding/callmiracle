@@ -145,7 +145,7 @@ export const meetingsQueries = {
       // Determine which groups to consider
       let groupsToFilter: ObjectId[] = []
       
-      if (filterGroups !== undefined) {
+      if (filterGroups?.length) {
         // If filterGroups is passed, use intersection with user's accessible groups
         const userAccessibleGroups = (currentUser.groups || []).map(id => id.toString())
         const selectedGroups = filterGroups.filter(groupId => userAccessibleGroups.includes(groupId))

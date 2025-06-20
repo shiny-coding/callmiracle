@@ -22,6 +22,9 @@ import { useRouter } from 'next/navigation'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { NetworkStatus } from '@apollo/client'
+import { useGroups } from '@/store/GroupsProvider'
+import { Group } from '@/generated/graphql'
+import React from 'react'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -36,6 +39,9 @@ interface MeetingsCalendarRowProps {
   myMeetingsWithPeers: MeetingWithPeer[];
   t: (key: string, values?: Record<string, any>) => string; // Adjust type based on your i18n setup
   slotRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  filterGroups: string[];
+  groups: Group[] | undefined;
+  currentUser: any;
 }
 
 export default function MeetingsCalendar() {
@@ -43,10 +49,14 @@ export default function MeetingsCalendar() {
   const { 
     currentUser,
     appliedFilterMinDurationM,
+    filterGroups,
   } = useStore((state: AppState) => ({
     currentUser: state.currentUser,
     appliedFilterMinDurationM: state.filterMinDurationM,
+    filterGroups: state.filterGroups,
   }), shallow)
+
+  const { groups } = useGroups()
 
   const router = useRouter()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
@@ -255,6 +265,9 @@ export default function MeetingsCalendar() {
                       myMeetingsWithPeers={myMeetingsWithPeers}
                       t={t}
                       slotRefs={slotRefs}
+                      filterGroups={filterGroups}
+                      groups={groups}
+                      currentUser={currentUser}
                     />
                   )
                 })}
@@ -277,10 +290,22 @@ function MeetingsCalendarRow({
   myMeetingSlotToId,
   myMeetingsWithPeers,
   t,
-  slotRefs
+  slotRefs,
+  filterGroups,
+  groups,
+  currentUser
 }: MeetingsCalendarRowProps) {
+  // Determine if we should group by groups
+  const userAccessibleGroups = groups?.filter(group => 
+    currentUser?.groups?.includes(group._id)
+  ) || []
+  
+  const shouldGroupByGroups = 
+    filterGroups.length > 1 || 
+    (filterGroups.length === 0 && userAccessibleGroups.length > 1)
+
   // Count interests
-  type InterestInfo = { count: number, joinableMeeting: Meeting | null, hasMine: boolean }
+  type InterestInfo = { count: number, joinableMeeting: Meeting | null, hasMine: boolean, groupId?: string }
   const interest2Info: Record<string, InterestInfo> = {}
   const languageCounts: Record<string, number> = {}
 
@@ -291,10 +316,11 @@ function MeetingsCalendarRow({
       interests = getSharedInterests(meeting, peerMeeting)
     }
     for (const interest of interests) {
-      let interestInfo = interest2Info[interest]
+      const key = shouldGroupByGroups ? `${meeting.groupId}_${interest}` : interest
+      let interestInfo = interest2Info[key]
       if ( !interestInfo ) {
-        interestInfo = { count: 0, joinableMeeting: null, hasMine: false }
-        interest2Info[interest] = interestInfo
+        interestInfo = { count: 0, joinableMeeting: null, hasMine: false, groupId: meeting.groupId }
+        interest2Info[key] = interestInfo
       }
       interestInfo.count++
       interestInfo.hasMine ||= isMine
@@ -386,38 +412,68 @@ function MeetingsCalendarRow({
           borderBottom: '1px solid var(--border-color)'
         }}
       >
-        {Object.entries(interest2Info).map(([interest, { count, joinableMeeting, hasMine }]) => {
-          const chip = <Chip
-            label={`${interest} (${count})`}
-            size="small"
-            key={interest}
-          />;
-          let chipTooltipText;
-          if (joinableMeeting) {
-            chipTooltipText = t('connectWithMeeting');
-          } else if (hasMine) {
-            chipTooltipText = t('myMeeting');
-          } else {
-            chipTooltipText = t('pleaseSelectAnEarlierTimeSlot');
-          }
-          return (
-            <Tooltip title={chipTooltipText} placement="top" key={interest + '-tooltip'}>
-              {joinableMeeting ? (
-                <Link href={`/meeting?meetingToConnectId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
-                  {chip}
-                </Link>
-              ) : (
-                chip
-              )}
-            </Tooltip>
-          );
-        })}
+        {(() => {
+          const groupedInterests: Record<string, Array<{key: string, interest: string, info: InterestInfo}>> = {}
+          
+          Object.entries(interest2Info).forEach(([key, info]) => {
+            const groupId = info.groupId || 'unknown'
+            if (!groupedInterests[groupId]) {
+              groupedInterests[groupId] = []
+            }
+            const interest = key.includes('_') ? key.split('_').slice(1).join('_') : key
+            groupedInterests[groupId].push({ key, interest, info })
+          })
+
+          return Object.entries(groupedInterests).map(([groupId, interestEntries]) => {
+            const group = groups?.find(g => g._id === groupId)
+            const groupName = group?.name || t('unknownGroup')
+            
+            return (
+              <React.Fragment key={groupId}>
+                {shouldGroupByGroups && (
+                  <Typography variant="body2" style={{ marginBottom: '0.2rem', width: '100%', textAlign: 'center', fontSize: '0.8rem' }}>
+                    {groupName}
+                  </Typography>
+                )}
+                {interestEntries.map(({ key, interest, info }) => {
+                  const { count, joinableMeeting, hasMine } = info
+                  const chip = <Chip
+                    label={`${interest} (${count})`}
+                    size="small"
+                    key={key}
+                  />;
+                  let chipTooltipText;
+                  if (joinableMeeting) {
+                    chipTooltipText = t('connectWithMeeting');
+                  } else if (hasMine) {
+                    chipTooltipText = t('myMeeting');
+                  } else {
+                    chipTooltipText = t('pleaseSelectAnEarlierTimeSlot');
+                  }
+                  return (
+                    <Tooltip title={chipTooltipText} placement="top" key={key + '-tooltip'}>
+                      {joinableMeeting ? (
+                        <Link href={`/meeting?meetingToConnectId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
+                          {chip}
+                        </Link>
+                      ) : (
+                        chip
+                      )}
+                    </Tooltip>
+                  );
+                })}
+              </React.Fragment>
+            )
+          })
+        })()}
       </div>
       {/* Languages */}
       <div
         style={{
           padding: CELL_PADDING,
-          borderBottom: '1px solid var(--border-color)'
+          borderBottom: '1px solid var(--border-color)',
+          gap: '0.2rem',
+          flexWrap: 'wrap',
         }}
       >
         {Object.entries(languageCounts).map(([lang, count]) => (

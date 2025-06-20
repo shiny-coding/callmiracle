@@ -315,5 +315,6 @@
   "removeFromGroup": "Remove from group",
   "confirmRemoveFromGroup": "Are you sure you want to remove {userName} from the group?",
   "userRemovedFromGroup": "User removed from group successfully",
-  "errorRemovingUserFromGroup": "Error removing user from group"
+  "errorRemovingUserFromGroup": "Error removing user from group",
+  "unknownGroup": "Unknown Group"
 } 
