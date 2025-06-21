@@ -37,7 +37,9 @@ async function getDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
 
 export default function VideoDeviceSelector({ onOpenChange }: VideoDeviceSelectorProps) {
   const { setLocalStream } = useWebRTCContext()
-  const { localVideoEnabled } = useStore()
+  const { localVideoEnabled } = useStore((state) => ({
+    localVideoEnabled: state.localVideoEnabled
+  }))
 
   const getStream = async (deviceId: string) => {
     return navigator.mediaDevices.getUserMedia({

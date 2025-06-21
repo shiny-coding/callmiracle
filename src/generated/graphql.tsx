@@ -102,6 +102,7 @@ export type Group = {
   name: Scalars['String']['output'];
   open: Scalars['Boolean']['output'];
   owner: Scalars['ID']['output'];
+  transparency: GroupTransparency;
   usersCount?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -113,7 +114,14 @@ export type GroupInput = {
   interestsPairs: Array<Array<Scalars['String']['input']>>;
   name: Scalars['String']['input'];
   open: Scalars['Boolean']['input'];
+  transparency: GroupTransparency;
 };
+
+export enum GroupTransparency {
+  Mixed = 'MIXED',
+  Opaque = 'OPAQUE',
+  Transparent = 'TRANSPARENT'
+}
 
 export type InterestDescription = {
   __typename?: 'InterestDescription';

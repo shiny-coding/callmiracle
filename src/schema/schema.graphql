@@ -10,6 +10,12 @@ enum NotificationType {
   MEETING_FINISHED
 }
 
+enum GroupTransparency {
+  TRANSPARENT
+  MIXED
+  OPAQUE
+}
+
 type InterestsBlock {
   groupId: ID!
   all: Boolean!
@@ -27,6 +33,7 @@ type Group {
   name: String!
   description: String
   open: Boolean!
+  transparency: GroupTransparency!
   owner: ID!
   admins: [ID!]!
   joinToken: String
@@ -188,6 +195,7 @@ input GroupInput {
   name: String!
   description: String
   open: Boolean!
+  transparency: GroupTransparency!
   admins: [ID!]!
   interestsPairs: [[String!]!]!
   interestsDescriptions: [InterestDescriptionInput!]!

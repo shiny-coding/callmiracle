@@ -20,7 +20,10 @@ export default function RemoteVideo() {
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isFitMode, setIsFitMode] = useState(true);
   const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
-  const { qualityWeWantFromRemote, targetUser } = useStore()
+  const { qualityWeWantFromRemote, targetUser } = useStore((state) => ({
+    qualityWeWantFromRemote: state.qualityWeWantFromRemote,
+    targetUser: state.targetUser
+  }))
   const {
     connectionStatus,
     remoteVideoEnabled,

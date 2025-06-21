@@ -4,7 +4,9 @@ import { useStore } from '@/store/useStore'
 
 export default function AudioDeviceSelector() {
   const { setLocalStream } = useWebRTCContext()
-  const { localAudioEnabled } = useStore()
+  const { localAudioEnabled } = useStore((state) => ({
+    localAudioEnabled: state.localAudioEnabled
+  }))
 
   const getStream = async (deviceId: string) => {
     return navigator.mediaDevices.getUserMedia({

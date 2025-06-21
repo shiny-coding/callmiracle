@@ -40,7 +40,18 @@ export function useWebRTCCallee({
     qualityWeWantFromRemote,
     localVideoEnabled,
     localAudioEnabled,
-  } = useStore()
+  } = useStore((state) => ({
+    currentUser: state.currentUser,
+    callId: state.callId,
+    setCallId: state.setCallId,
+    targetUser: state.targetUser,
+    setTargetUser: state.setTargetUser,
+    setConnectionStatus: state.setConnectionStatus,
+    setQualityRemoteWantsFromUs: state.setQualityRemoteWantsFromUs,
+    qualityWeWantFromRemote: state.qualityWeWantFromRemote,
+    localVideoEnabled: state.localVideoEnabled,
+    localAudioEnabled: state.localAudioEnabled,
+  }))
 
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)

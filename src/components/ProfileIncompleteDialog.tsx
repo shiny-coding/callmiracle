@@ -11,7 +11,9 @@ interface ProfileIncompleteDialogProps {
 
 export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncompleteDialogProps) {
   const t = useTranslations()
-  const { currentUser } = useStore()
+  const { currentUser } = useStore((state) => ({
+    currentUser: state.currentUser
+  }))
   const router = useRouter()
 
   const handleOpenProfileSettings = () => {

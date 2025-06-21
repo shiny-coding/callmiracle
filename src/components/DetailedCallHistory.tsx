@@ -25,7 +25,9 @@ interface DetailedCallHistoryProps {
 
 export default function DetailedCallHistory({ user, open, onClose }: DetailedCallHistoryProps) {
   const t = useTranslations()
-  const { currentUser } = useStore()
+  const { currentUser } = useStore((state) => ({
+    currentUser: state.currentUser
+  }))
   const { data, loading, error } = useQuery(DETAILED_CALL_HISTORY, {
     variables: { 
       userId: currentUser?._id,

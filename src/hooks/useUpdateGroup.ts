@@ -10,6 +10,7 @@ const CREATE_OR_UPDATE_GROUP = gql`
       name
       description
       open
+      transparency
       admins
       joinToken
       interestsPairs

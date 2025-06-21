@@ -1,6 +1,6 @@
 'use client'
 
-import { IconButton, Button, FormGroup, FormControlLabel, Switch, TextField, CircularProgress, Autocomplete, Chip, Box, InputAdornment } from '@mui/material'
+import { IconButton, Button, FormGroup, FormControlLabel, Switch, TextField, CircularProgress, Autocomplete, Chip, Box, InputAdornment, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -12,7 +12,7 @@ import { useRegenerateJoinToken } from '@/hooks/useRegenerateJoinToken'
 import { useUsers } from '@/store/UsersProvider'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect } from 'react'
-import { Group, User } from '@/generated/graphql'
+import { Group, User, GroupTransparency } from '@/generated/graphql'
 import { useParams, useRouter } from 'next/navigation'
 import { useGroups } from '@/store/GroupsProvider'
 import LoadingDialog from './LoadingDialog'
@@ -45,6 +45,7 @@ export default function GroupForm() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [open, setOpen] = useState(true)
+  const [transparency, setTransparency] = useState<GroupTransparency>(GroupTransparency.Transparent)
   const [selectedAdmins, setSelectedAdmins] = useState<User[]>([])
   const [interestsPairs, setInterestsPairs] = useState<string[][]>([])
   const [interestsDescriptions, setInterestsDescriptions] = useState<InterestDescription[]>([])
@@ -60,6 +61,7 @@ export default function GroupForm() {
       setName(group.name || '')
       setDescription(group.description || '')
       setOpen(group.open !== undefined ? group.open : true)
+      setTransparency(group.transparency || GroupTransparency.Transparent)
       setInterestsPairs(group.interestsPairs || [])
       setInterestsDescriptions(group.interestsDescriptions || [])
       
@@ -70,6 +72,7 @@ export default function GroupForm() {
       setName('')
       setDescription('')
       setOpen(true)
+      setTransparency(GroupTransparency.Transparent)
       setInterestsPairs([])
       setInterestsDescriptions([])
       // For new groups, set current user as default admin
@@ -105,6 +108,7 @@ export default function GroupForm() {
       name: name.trim(),
       description: description.trim(),
       open,
+      transparency,
       admins: selectedAdmins.map(admin => admin._id),
       interestsPairs: validPairs,
       interestsDescriptions: validDescriptions
@@ -310,6 +314,35 @@ export default function GroupForm() {
               }
             />
           </FormGroup>
+
+          <FormControl fullWidth className="mb-4">
+            <InputLabel className="text-gray-300">{t('groupTransparency')}</InputLabel>
+            <Select
+              value={transparency}
+              onChange={(e) => setTransparency(e.target.value as GroupTransparency)}
+              variant="outlined"
+              className="text-white"
+            >
+              <MenuItem value={GroupTransparency.Transparent}>
+                <div>
+                  <div>{t('transparentGroup')}</div>
+                  <div className="text-sm text-gray-400">{t('transparentGroupDescription')}</div>
+                </div>
+              </MenuItem>
+              <MenuItem value={GroupTransparency.Mixed}>
+                <div>
+                  <div>{t('mixedGroup')}</div>
+                  <div className="text-sm text-gray-400">{t('mixedGroupDescription')}</div>
+                </div>
+              </MenuItem>
+              <MenuItem value={GroupTransparency.Opaque}>
+                <div>
+                  <div>{t('opaqueGroup')}</div>
+                  <div className="text-sm text-gray-400">{t('opaqueGroupDescription')}</div>
+                </div>
+              </MenuItem>
+            </Select>
+          </FormControl>
 
           <div className="space-y-2">
             <label className="text-white text-sm font-medium">

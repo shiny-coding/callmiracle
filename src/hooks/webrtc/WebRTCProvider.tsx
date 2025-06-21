@@ -1,7 +1,7 @@
 'use client'
 import { useState, createContext, useContext, ReactNode, useRef, useEffect } from 'react'
 import { useSubscription, useMutation } from '@apollo/client'
-import { useStore } from '@/store/useStore'
+import { useStore, syncStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
 import { CALL_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
@@ -85,11 +85,11 @@ export function WebRTCProvider({
   const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon(callUser)
   const { subscribeToCallEvents } = useSubscriptions()
 
-  const { 
+  const {
     currentUser,
-    callId, 
-    connectionStatus, 
-    targetUser, 
+    callId,
+    connectionStatus,
+    targetUser,
     role,
     setConnectionStatus,
     setTargetUser,
@@ -98,7 +98,20 @@ export function WebRTCProvider({
     setCallId,
     meetingId,
     meetingLastCallTime,
-  } = useStore()
+  } = useStore((state) => ({
+    currentUser: state.currentUser,
+    callId: state.callId,
+    connectionStatus: state.connectionStatus,
+    targetUser: state.targetUser,
+    role: state.role,
+    setConnectionStatus: state.setConnectionStatus,
+    setTargetUser: state.setTargetUser,
+    setRole: state.setRole,
+    clearCallState: state.clearCallState,
+    setCallId: state.setCallId,
+    meetingId: state.meetingId,
+    meetingLastCallTime: state.meetingLastCallTime,
+  }))
 
   const attemptReconnect = async () => {
     if (!targetUser) {
@@ -299,7 +312,7 @@ export function WebRTCProvider({
     const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
     if (!callId || !activePeerConnection || !targetUser || !(caller.active || callee.active)) return
 
-    const { localVideoEnabled, localAudioEnabled, qualityWeWantFromRemote } = useStore.getState()
+    const { localVideoEnabled, localAudioEnabled, qualityWeWantFromRemote } = syncStore()
 
     sendWantedMediaStateImpl(
       activePeerConnection,

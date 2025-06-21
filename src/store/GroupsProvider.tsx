@@ -12,6 +12,7 @@ const GET_GROUPS = gql`
       name
       description
       open
+      transparency
       owner
       admins
       joinToken

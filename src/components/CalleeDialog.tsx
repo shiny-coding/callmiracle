@@ -16,7 +16,9 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const t = useTranslations()
   const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
-  const { connectionStatus } = useStore()
+  const { connectionStatus } = useStore((state) => ({
+    connectionStatus: state.connectionStatus
+  }))
 
   const isReconnecting = connectionStatus === 'reconnecting' || connectionStatus === 'need-reconnect'
   const open = isReconnecting || !!callee.incomingRequest

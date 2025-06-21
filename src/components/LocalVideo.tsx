@@ -8,7 +8,12 @@ import { LANGUAGES } from '@/config/languages'
 
 export default function LocalVideo() {
   const t = useTranslations()
-  const { currentUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore()
+  const { currentUser, localVideoEnabled, localAudioEnabled, connectionStatus } = useStore((state) => ({
+    currentUser: state.currentUser,
+    localVideoEnabled: state.localVideoEnabled,
+    localAudioEnabled: state.localAudioEnabled,
+    connectionStatus: state.connectionStatus
+  }))
   const { name = '', languages = [] } = currentUser || {}
   const { localStream } = useWebRTCContext()
   const [profileOpen, setProfileOpen] = useState(false)
