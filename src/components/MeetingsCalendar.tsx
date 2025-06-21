@@ -3,7 +3,7 @@
 import { useStore, type AppState } from '@/store/useStore'
 import { Paper, Typography, Chip, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { Meeting, MeetingWithPeer } from '@/generated/graphql'
+import { Meeting, MeetingWithPeer, MeetingTransparency } from '@/generated/graphql'
 import { isToday } from 'date-fns'
 import { Fragment, useRef, useState, useEffect } from 'react'
 import { useMeetings } from '@/contexts/MeetingsContext'
@@ -326,7 +326,13 @@ function MeetingsCalendarRow({
     (filterGroups.length === 0 && userAccessibleGroups.length > 1)
 
   // Count interests
-  type InterestInfo = { count: number, joinableMeeting: Meeting | null, hasMine: boolean, groupId?: string }
+  type InterestInfo = { 
+    count: number, 
+    joinableMeeting: Meeting | null, 
+    hasMine: boolean, 
+    groupId?: string,
+    transparentMeetings: Array<{ meeting: Meeting }>
+  }
   const interest2Info: Record<string, InterestInfo> = {}
   const languageCounts: Record<string, number> = {}
 
@@ -340,11 +346,18 @@ function MeetingsCalendarRow({
       const key = shouldGroupByGroups ? `${meeting.groupId}_${interest}` : interest
       let interestInfo = interest2Info[key]
       if ( !interestInfo ) {
-        interestInfo = { count: 0, joinableMeeting: null, hasMine: false, groupId: meeting.groupId }
+        interestInfo = { count: 0, joinableMeeting: null, hasMine: false, groupId: meeting.groupId, transparentMeetings: [] }
         interest2Info[key] = interestInfo
       }
       interestInfo.count++
       interestInfo.hasMine ||= isMine
+      
+      // Add transparent meetings
+      const meetingWithTransparency = meeting as any
+      if (!isMine && meetingWithTransparency.transparency === MeetingTransparency.Transparent && meeting.userName) {
+        interestInfo.transparentMeetings.push({ meeting })
+      }
+      
       if (joinable) {
         // we select oldest joinable meeting for each interest
         if (!interestInfo.joinableMeeting ||
@@ -456,25 +469,48 @@ function MeetingsCalendarRow({
                     {groupName}
                   </Typography>
                 )}
-                {interestEntries.map(({ key, interest, info }) => {
-                  const { count, joinableMeeting, hasMine } = info
-                  const chip = <Chip
-                    label={`${interest} (${count})`}
-                    size="small"
-                    key={key}
-                  />;
-                  let chipTooltipText;
-                  if (joinableMeeting) {
-                    chipTooltipText = t('connectWithMeeting');
-                  } else if (hasMine) {
-                    chipTooltipText = t('myMeeting');
-                  } else if (myOccupiedSlots.has(slot.timestamp)) {
-                    chipTooltipText = t('cannotJoinOwnMeetingConflict');
-                  } else {
-                    chipTooltipText = t('pleaseSelectAnEarlierTimeSlot');
+                {interestEntries.flatMap(({ key, interest, info }) => {
+                  const { count, joinableMeeting, hasMine, transparentMeetings } = info
+                  
+                  const chips = []
+                  
+                  // Show transparent meetings individually with names
+                  transparentMeetings.forEach((meetingInfo, index) => {
+                    const chipLabel = `${meetingInfo.meeting.userName}: ${interest}`
+                    const chipKey = `${key}-transparent-${index}`
+                    chips.push({
+                      chipLabel,
+                      chipKey,
+                      joinableMeeting: meetingInfo.meeting,
+                      chipTooltipText: t('connectWithMeeting'),
+                      interest
+                    })
+                  })
+                  
+                  // Show opaque meetings count (total count minus transparent count)
+                  const opaqueCount = count - transparentMeetings.length
+                  if (opaqueCount > 0) {
+                    const chipLabel = `${interest} (${opaqueCount})`
+                    const chipKey = `${key}-opaque`
+                    chips.push({
+                      chipLabel,
+                      chipKey,
+                      joinableMeeting: hasMine ? null : joinableMeeting,
+                      chipTooltipText: hasMine ? t('myMeeting') : joinableMeeting ? t('connectWithMeeting') : t('pleaseSelectAnEarlierTimeSlot'),
+                      interest
+                    })
                   }
+                  
+                  return chips
+                }).map(({ chipLabel, chipKey, joinableMeeting, chipTooltipText, interest }) => {
+                  const chip = <Chip
+                    label={chipLabel}
+                    size="small"
+                    key={chipKey}
+                  />;
+                  
                   return (
-                    <Tooltip title={chipTooltipText} placement="top" key={key + '-tooltip'}>
+                    <Tooltip title={chipTooltipText} placement="top" key={chipKey + '-tooltip'}>
                       {joinableMeeting ? (
                         <Link href={`/meeting?meetingToConnectId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
                           {chip}

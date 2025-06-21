@@ -30,10 +30,12 @@ export default function MeetingForm() {
   const { id: meetingId } = useParams()
   const meeting = myMeetingsWithPeers.find(m => m.meeting._id === meetingId)?.meeting
 
-  const { currentUser, lastMeetingGroup, setLastMeetingGroup } = useStore(state => ({ 
+  const { currentUser, lastMeetingGroup, setLastMeetingGroup, lastMeetingLanguage, setLastMeetingLanguage } = useStore(state => ({ 
     currentUser: state.currentUser,
     lastMeetingGroup: state.lastMeetingGroup,
-    setLastMeetingGroup: state.setLastMeetingGroup
+    setLastMeetingGroup: state.setLastMeetingGroup,
+    lastMeetingLanguage: state.lastMeetingLanguage,
+    setLastMeetingLanguage: state.setLastMeetingLanguage
   }))
   const router = useRouter()
 
@@ -59,7 +61,15 @@ export default function MeetingForm() {
   const [tempAllowedMales, setTempAllowedMales] = useState(true)
   const [tempAllowedFemales, setTempAllowedFemales] = useState(true)
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([10, 100])
-  const [tempLanguages, setTempLanguages] = useState<string[]>(currentUser?.languages || [])
+  const [tempLanguages, setTempLanguagesState] = useState<string[]>(
+    lastMeetingLanguage || currentUser?.languages || []
+  )
+  
+  // Wrapper function to save to store when languages change
+  const setTempLanguages = (languages: string[]) => {
+    setTempLanguagesState(languages)
+    setLastMeetingLanguage(languages.length > 0 ? languages : null)
+  }
   const { updateMeeting, loading } = useUpdateMeeting()
   const [hasValidDuration, setHasValidDuration] = useState(true)
   const { refetchMeetings } = useMeetings()
@@ -123,7 +133,7 @@ export default function MeetingForm() {
         meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
         meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
       ])
-      setTempLanguages(meeting.languages)
+      setTempLanguagesState(meeting.languages)
     } else if (meetingToConnect) {
       // Connecting to existing meeting
       setSelectedGroupId(meetingToConnect.groupId || '')
@@ -240,7 +250,8 @@ export default function MeetingForm() {
       languages: tempLanguages,
       peerMeetingId: meeting?.peerMeetingId || undefined,
       userId: currentUser?._id || '',
-      meetingToConnectId
+      meetingToConnectId,
+      transparency: selectedGroup?.transparency as any
     }
     const result = await updateMeeting(meetingInput)
     handleMeetingSaveResult(result, t, refetchMeetings, meetingToConnectId, meetingId, router, locale, showSnackbar)

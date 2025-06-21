@@ -102,7 +102,7 @@ export type Group = {
   name: Scalars['String']['output'];
   open: Scalars['Boolean']['output'];
   owner: Scalars['ID']['output'];
-  transparency: GroupTransparency;
+  transparency: MeetingTransparency;
   usersCount?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -114,14 +114,8 @@ export type GroupInput = {
   interestsPairs: Array<Array<Scalars['String']['input']>>;
   name: Scalars['String']['input'];
   open: Scalars['Boolean']['input'];
-  transparency: GroupTransparency;
+  transparency: MeetingTransparency;
 };
-
-export enum GroupTransparency {
-  Mixed = 'MIXED',
-  Opaque = 'OPAQUE',
-  Transparent = 'TRANSPARENT'
-}
 
 export type InterestDescription = {
   __typename?: 'InterestDescription';
@@ -169,6 +163,7 @@ export type Meeting = {
   status: MeetingStatus;
   timeSlots: Array<Scalars['Float']['output']>;
   totalDurationS?: Maybe<Scalars['Int']['output']>;
+  transparency?: Maybe<MeetingTransparency>;
   userId: Scalars['ID']['output'];
   userName?: Maybe<Scalars['String']['output']>;
 };
@@ -188,6 +183,7 @@ export type MeetingInput = {
   preferEarlier: Scalars['Boolean']['input'];
   startTime?: InputMaybe<Scalars['Float']['input']>;
   timeSlots: Array<Scalars['Float']['input']>;
+  transparency?: InputMaybe<MeetingTransparency>;
   userId: Scalars['ID']['input'];
   userName?: InputMaybe<Scalars['String']['input']>;
 };
@@ -204,6 +200,12 @@ export enum MeetingStatus {
   Finished = 'FINISHED',
   Found = 'FOUND',
   Seeking = 'SEEKING'
+}
+
+export enum MeetingTransparency {
+  Mixed = 'MIXED',
+  Opaque = 'OPAQUE',
+  Transparent = 'TRANSPARENT'
 }
 
 export type MeetingWithPeer = {

@@ -12,6 +12,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
         _id
         userId
         groupId
+        userName
         languages
         interests
         timeSlots
@@ -26,6 +27,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
         lastCallTime
         status
         totalDurationS
+        transparency
       }
       peerMeeting {
         _id
@@ -75,6 +77,9 @@ export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
         minDurationM
         userId
         groupId
+        userName
+        transparency
+        createdAt
       }
       peerUser {
         sex

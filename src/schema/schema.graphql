@@ -10,7 +10,7 @@ enum NotificationType {
   MEETING_FINISHED
 }
 
-enum GroupTransparency {
+enum MeetingTransparency {
   TRANSPARENT
   MIXED
   OPAQUE
@@ -33,7 +33,7 @@ type Group {
   name: String!
   description: String
   open: Boolean!
-  transparency: GroupTransparency!
+  transparency: MeetingTransparency!
   owner: ID!
   admins: [ID!]!
   joinToken: String
@@ -70,6 +70,7 @@ type Meeting {
   totalDurationS: Int
   status: MeetingStatus!
   createdAt: Date
+  transparency: MeetingTransparency
 }
 
 enum MeetingStatus {
@@ -195,7 +196,7 @@ input GroupInput {
   name: String!
   description: String
   open: Boolean!
-  transparency: GroupTransparency!
+  transparency: MeetingTransparency!
   admins: [ID!]!
   interestsPairs: [[String!]!]!
   interestsDescriptions: [InterestDescriptionInput!]!
@@ -223,6 +224,7 @@ input MeetingInput {
   startTime: Float
   peerMeetingId: ID
   meetingToConnectId: ID
+  transparency: MeetingTransparency
 }
 
 type MeetingOutput {

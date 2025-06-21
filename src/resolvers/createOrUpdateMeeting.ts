@@ -28,7 +28,8 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
     allowedMinAge,
     allowedMaxAge,
     languages,
-    meetingToConnectId
+    meetingToConnectId,
+    transparency
   } = input
 
   if (!groupId) {
@@ -48,8 +49,11 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
     }
   }
 
+  // Only set transparency if provided in input
+  const meetingTransparency = transparency
+
   const lastSlotEnd = timeSlots[timeSlots.length - 1] + SLOT_DURATION
-  const $set =  {
+  const $set: any = {
     userId: _userId,
     groupId: _groupId,
     userName,
@@ -66,6 +70,11 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
     startTime: null,
     peerMeetingId : null,
     status: MeetingStatus.Seeking
+  }
+  
+  // Only set transparency if provided
+  if (meetingTransparency) {
+    $set.transparency = meetingTransparency
   }
 
   if ( _meetingToConnectId ) {

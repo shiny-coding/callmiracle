@@ -12,7 +12,7 @@ import { useRegenerateJoinToken } from '@/hooks/useRegenerateJoinToken'
 import { useUsers } from '@/store/UsersProvider'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect } from 'react'
-import { Group, User, GroupTransparency } from '@/generated/graphql'
+import { Group, User, MeetingTransparency } from '@/generated/graphql'
 import { useParams, useRouter } from 'next/navigation'
 import { useGroups } from '@/store/GroupsProvider'
 import LoadingDialog from './LoadingDialog'
@@ -45,7 +45,7 @@ export default function GroupForm() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [open, setOpen] = useState(true)
-  const [transparency, setTransparency] = useState<GroupTransparency>(GroupTransparency.Transparent)
+  const [transparency, setTransparency] = useState<MeetingTransparency>(MeetingTransparency.Transparent)
   const [selectedAdmins, setSelectedAdmins] = useState<User[]>([])
   const [interestsPairs, setInterestsPairs] = useState<string[][]>([])
   const [interestsDescriptions, setInterestsDescriptions] = useState<InterestDescription[]>([])
@@ -61,7 +61,7 @@ export default function GroupForm() {
       setName(group.name || '')
       setDescription(group.description || '')
       setOpen(group.open !== undefined ? group.open : true)
-      setTransparency(group.transparency || GroupTransparency.Transparent)
+      setTransparency(group.transparency || MeetingTransparency.Transparent)
       setInterestsPairs(group.interestsPairs || [])
       setInterestsDescriptions(group.interestsDescriptions || [])
       
@@ -72,7 +72,7 @@ export default function GroupForm() {
       setName('')
       setDescription('')
       setOpen(true)
-      setTransparency(GroupTransparency.Transparent)
+      setTransparency(MeetingTransparency.Transparent)
       setInterestsPairs([])
       setInterestsDescriptions([])
       // For new groups, set current user as default admin
@@ -319,23 +319,23 @@ export default function GroupForm() {
             <InputLabel className="text-gray-300">{t('groupTransparency')}</InputLabel>
             <Select
               value={transparency}
-              onChange={(e) => setTransparency(e.target.value as GroupTransparency)}
+              onChange={(e) => setTransparency(e.target.value as MeetingTransparency)}
               variant="outlined"
               className="text-white"
             >
-              <MenuItem value={GroupTransparency.Transparent}>
+              <MenuItem value={MeetingTransparency.Transparent}>
                 <div>
                   <div>{t('transparentGroup')}</div>
                   <div className="text-sm text-gray-400">{t('transparentGroupDescription')}</div>
                 </div>
               </MenuItem>
-              <MenuItem value={GroupTransparency.Mixed}>
+              <MenuItem value={MeetingTransparency.Mixed}>
                 <div>
                   <div>{t('mixedGroup')}</div>
                   <div className="text-sm text-gray-400">{t('mixedGroupDescription')}</div>
                 </div>
               </MenuItem>
-              <MenuItem value={GroupTransparency.Opaque}>
+              <MenuItem value={MeetingTransparency.Opaque}>
                 <div>
                   <div>{t('opaqueGroup')}</div>
                   <div className="text-sm text-gray-400">{t('opaqueGroupDescription')}</div>

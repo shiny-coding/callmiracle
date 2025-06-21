@@ -68,6 +68,10 @@ export interface AppState {
   // Last meeting group for remembering user's last choice
   lastMeetingGroup: string | null
   setLastMeetingGroup: (groupId: string | null) => void
+  
+  // Last meeting languages for remembering user's last choice
+  lastMeetingLanguage: string[] | null
+  setLastMeetingLanguage: (languages: string[] | null) => void
 }
 
 // Define which parts of AppState are persisted
@@ -93,6 +97,7 @@ type PersistedAppState = Pick<
   | 'filterMinDurationM'
   | 'filterGroups'
   | 'lastMeetingGroup'
+  | 'lastMeetingLanguage'
 >;
 
 const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
@@ -124,6 +129,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       filterMinDurationM: DEFAULT_FILTER_MIN_DURATION_M,
       filterGroups: [],
       lastMeetingGroup: null,
+      lastMeetingLanguage: null,
       setCurrentUser: (currentUser) => {
         set({ currentUser })
       },
@@ -167,6 +173,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       setFilterMinDurationM: (duration) => set({ filterMinDurationM: duration }),
       setFilterGroups: (groups) => set({ filterGroups: groups }),
       setLastMeetingGroup: (groupId) => set({ lastMeetingGroup: groupId }),
+      setLastMeetingLanguage: (languages) => set({ lastMeetingLanguage: languages }),
     }),
     {
       name: 'app-storage',
@@ -192,6 +199,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
         filterMinDurationM: state.filterMinDurationM,
         filterGroups: state.filterGroups,
         lastMeetingGroup: state.lastMeetingGroup,
+        lastMeetingLanguage: state.lastMeetingLanguage,
       }),
       onRehydrateStorage: () => (state?: AppState, error?: Error) => {
         if (state && !rehydrated) {
