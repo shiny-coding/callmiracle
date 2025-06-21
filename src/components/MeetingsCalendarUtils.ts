@@ -41,7 +41,7 @@ export function getCalendarTimeSlots(now: number, hoursAhead: number): TimeSlot[
   return slots
 }
 
-export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot[], myMeetingsWithPeers: MeetingWithPeer[], minDurationM: number) {
+export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot[], myMeetingsWithPeers: MeetingWithPeer[]) {
   const slot2meetingInfos: Record<number, MeetingWithInfo[]> = {}
   for (let i = 0; i < slots.length; i++) {
     slot2meetingInfos[slots[i].timestamp] = []
@@ -87,7 +87,7 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
       // Check if this slot conflicts with user's own meetings
       const hasConflictWithMyMeetings = myOccupiedSlots.has(slot)
       
-      const potentiallyJoinable = !isMine && contiguousTime >= minDurationM * 60 * 1000 - lateAllowance
+      const potentiallyJoinable = !isMine && contiguousTime >= futureMeeting.minDurationM * 60 * 1000 - lateAllowance
       const joinable = potentiallyJoinable && !hasConflictWithMyMeetings
       if (foundFirstJoinable || potentiallyJoinable || isMine) {
         slot2meetingInfos[slot].push({ meeting: futureMeeting, joinable, isMine })

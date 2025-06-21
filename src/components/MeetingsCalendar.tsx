@@ -155,8 +155,7 @@ export default function MeetingsCalendar() {
   const slot2meetingsWithInfos = prepareTimeSlotsInfos(
     futureMeetingsWithPeers.map(meetingWithPeer => meetingWithPeer.meeting),
     slots,
-    myMeetingsWithPeers,
-    appliedFilterMinDurationM
+    myMeetingsWithPeers
   )
 
   // Group slots by dayKey
@@ -478,11 +477,20 @@ function MeetingsCalendarRow({
                   transparentMeetings.forEach((meetingInfo, index) => {
                     const chipLabel = `${meetingInfo.meeting.userName}: ${interest}`
                     const chipKey = `${key}-transparent-${index}`
+                    
+                    // Determine tooltip text with proper occupied slots logic
+                    let tooltipTextForTransparent
+                    if (myOccupiedSlots.has(slot.timestamp)) {
+                      tooltipTextForTransparent = t('cannotJoinOwnMeetingConflict')
+                    } else {
+                      tooltipTextForTransparent = t('connectWithMeeting')
+                    }
+                    
                     chips.push({
                       chipLabel,
                       chipKey,
                       joinableMeeting: meetingInfo.meeting,
-                      chipTooltipText: t('connectWithMeeting'),
+                      chipTooltipText: tooltipTextForTransparent,
                       interest
                     })
                   })
@@ -492,11 +500,24 @@ function MeetingsCalendarRow({
                   if (opaqueCount > 0) {
                     const chipLabel = `${interest} (${opaqueCount})`
                     const chipKey = `${key}-opaque`
+                    
+                    // Determine tooltip text with proper occupied slots logic
+                    let tooltipTextForChip
+                    if (hasMine) {
+                      tooltipTextForChip = t('myMeeting')
+                    } else if (joinableMeeting) {
+                      tooltipTextForChip = t('connectWithMeeting')
+                    } else if (myOccupiedSlots.has(slot.timestamp)) {
+                      tooltipTextForChip = t('cannotJoinOwnMeetingConflict')
+                    } else {
+                      tooltipTextForChip = t('pleaseSelectAnEarlierTimeSlot')
+                    }
+                    
                     chips.push({
                       chipLabel,
                       chipKey,
                       joinableMeeting: hasMine ? null : joinableMeeting,
-                      chipTooltipText: hasMine ? t('myMeeting') : joinableMeeting ? t('connectWithMeeting') : t('pleaseSelectAnEarlierTimeSlot'),
+                      chipTooltipText: tooltipTextForChip,
                       interest
                     })
                   }
