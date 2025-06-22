@@ -9,6 +9,7 @@ import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting,
 import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
+import UserAvatar from './UserAvatar'
 import React from 'react'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
@@ -283,29 +284,11 @@ export default function MeetingsCalendarRow({
                           {isTransparent ? (
                             <>
                               <div className="flex items-center gap-1" style={{ minWidth: 0, flex: '0 1 auto' }}>
-                                <div className="flex-shrink-0">
-                                  {user && (user as any)._id ? (
-                                    <img
-                                      src={`/profiles/${(user as any)._id}.jpg`}
-                                      alt={userName || 'Unknown'}
-                                      className="w-5 h-5 rounded-full object-cover"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement
-                                        target.style.display = 'none'
-                                        const fallback = target.nextElementSibling as HTMLDivElement
-                                        if (fallback) {
-                                          fallback.style.display = 'flex'
-                                        }
-                                      }}
-                                    />
-                                  ) : null}
-                                  <div 
-                                    className="w-4 h-4 py-1 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-semibold"
-                                    style={{ display: user && (user as any)._id ? 'none' : 'flex' }}
-                                  >
-                                    {Array(10).fill((userName || 'U')[0]?.toUpperCase()).join('')}
-                                  </div>
-                                </div>
+                                <UserAvatar 
+                                  user={user}
+                                  userName={userName}
+                                  size="md"
+                                />
                                 <span 
                                   className="link-color font-medium overflow-hidden text-ellipsis"
                                   style={{ 
@@ -321,9 +304,9 @@ export default function MeetingsCalendarRow({
                                       onClick()
                                     }
                                   }}
-                                  title={userName || 'Unknown'}
+                                  title={userName}
                                 >
-                                  {Array(10).fill((userName || 'U'))}
+                                  {userName}
                                 </span>
                                 <span style={{ flexShrink: 0 }}>:</span>
                               </div>
@@ -333,7 +316,7 @@ export default function MeetingsCalendarRow({
                                   whiteSpace: 'nowrap', minWidth: 0, flex: '1 1 auto', textAlign: 'center'
                                 }}
                               >
-                                {Array(14).fill(interest)}
+                                {interest}
                               </span>
                             </>
                           ) : (

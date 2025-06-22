@@ -1,4 +1,4 @@
-import { Typography, Chip, IconButton, Avatar, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
+import { Typography, Chip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User, Group } from '@/generated/graphql'
 import { LANGUAGES } from '@/config/languages'
@@ -15,8 +15,8 @@ import UserDetailsPopup from './UserDetailsPopup'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { useRemoveUserFromGroup } from '@/hooks/useRemoveUserFromGroup'
-import { useCheckImage } from '@/hooks/useCheckImage'
 import { useSnackbar } from '@/contexts/SnackContext'
+import UserAvatar from './UserAvatar'
 
 interface UserCardProps {
   user: User
@@ -44,7 +44,6 @@ export default function UserCard({
   }))
   const { updateUserData, loading: updateLoading } = useUpdateUser()
   const { removeUserFromGroup, loading: removeLoading } = useRemoveUserFromGroup()
-  const { exists: imageExists } = useCheckImage(user._id)
   const { showSnackbar } = useSnackbar()
   
   const existingBlock = currentUser?.blocks.find((b:any) => b.userId === user._id)
@@ -115,12 +114,11 @@ export default function UserCard({
         onClick={() => setDetailsPopupOpen(true)}
       >
         <div className="relative">
-          <Avatar
-            src={imageExists ? `/profiles/${user._id}.jpg` : undefined}
-            className="w-12 h-12"
-          >
-            {!imageExists && user.name?.[0]?.toUpperCase()}
-          </Avatar>
+          <UserAvatar 
+            user={user}
+            userName={user.name}
+            size="lg"
+          />
         </div>
         <div className="flex-grow">
           <Typography variant="h6" className="text-white">
