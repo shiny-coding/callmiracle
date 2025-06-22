@@ -227,17 +227,17 @@ export default function MeetingsCalendarRow({
                     const user = users?.find(u => u._id === meeting.userId)
                     
                     // Determine tooltip text with proper occupied slots logic
-                    let tooltipTextForTransparent
+                    let meetingTooltipText
                     if (myOccupiedSlots.has(slot.timestamp)) {
-                      tooltipTextForTransparent = t('cannotJoinOwnMeetingConflict')
+                      meetingTooltipText = t('cannotJoinOwnMeetingConflict')
                     } else {
-                      tooltipTextForTransparent = t('connectWithMeeting')
+                      meetingTooltipText = t('connectWithMeeting')
                     }
                     
                     chips.push({
                       chipKey,
                       joinableMeeting: meeting,
-                      chipTooltipText: tooltipTextForTransparent,
+                      chipTooltipText: meetingTooltipText,
                       interest,
                       user,
                       userName: meeting.userName,
@@ -252,19 +252,19 @@ export default function MeetingsCalendarRow({
                     const chipKey = `${key}-opaque`
                     
                     // Determine tooltip text with proper occupied slots logic
-                    let tooltipTextForChip
+                    let meetingTooltipText
                     if (joinableMeeting) {
-                      tooltipTextForChip = t('connectWithMeeting')
+                      meetingTooltipText = t('connectWithMeeting')
                     } else if (myOccupiedSlots.has(slot.timestamp)) {
-                      tooltipTextForChip = t('cannotJoinOwnMeetingConflict')
+                      meetingTooltipText = t('cannotJoinOwnMeetingConflict')
                     } else {
-                      tooltipTextForChip = t('pleaseSelectAnEarlierTimeSlot')
+                      meetingTooltipText = t('pleaseSelectAnEarlierTimeSlot')
                     }
                     
                     chips.push({
                       chipKey,
                       joinableMeeting: joinableMeeting,
-                      chipTooltipText: tooltipTextForChip,
+                      chipTooltipText: meetingTooltipText,
                       interest,
                       opaqueCount,
                       isTransparent: false,
@@ -283,33 +283,36 @@ export default function MeetingsCalendarRow({
                         <div className="flex items-center gap-1 p-1 flex-wrap" style={{ maxWidth: '100%', minWidth: 0 }}>
                           {isTransparent ? (
                             <>
-                              <div className="flex items-center gap-1" style={{ minWidth: 0, flex: '0 1 auto' }}>
+                              <span 
+                                className="flex items-center gap-1 link-color font-medium cursor-pointer"
+                                style={{ minWidth: 0, flex: '0 1 auto' }}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  if (user && onClick) {
+                                    onClick()
+                                  }
+                                }}
+                                title={userName}
+                              >
                                 <UserAvatar 
                                   user={user}
                                   userName={userName}
-                                  size="md"
+                                  size="sm"
                                 />
                                 <span 
-                                  className="link-color font-medium overflow-hidden text-ellipsis"
+                                  className="overflow-hidden text-ellipsis"
                                   style={{ 
                                     whiteSpace: 'nowrap',
                                     minWidth: 0,
                                     maxWidth: '100%',
                                     display: 'inline-block'
                                   }}
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    if (user && onClick) {
-                                      onClick()
-                                    }
-                                  }}
-                                  title={userName}
                                 >
                                   {userName}
                                 </span>
-                                <span style={{ flexShrink: 0 }}>:</span>
-                              </div>
+                              </span>
+                              <span style={{ flexShrink: 0 }}>:</span>
                               <span 
                                 className="overflow-hidden text-ellipsis"
                                 style={{ 
@@ -348,6 +351,96 @@ export default function MeetingsCalendarRow({
                   
                   const chip = <CustomChip onClick={handleUserClick} />
                   
+                  // Create custom tooltip content for transparent chips
+                  const userInfo = isTransparent ? (user as User | undefined) : null
+                  const tooltipContent = isTransparent && userInfo ? (
+                    <div className="flex items-center gap-2 p-2">
+                      <UserAvatar 
+                        user={userInfo}
+                        userName={userName}
+                        size="lg"
+                      />
+                      <div className="flex flex-col">
+                        <div className="font-medium text-lg">{userName}</div>
+                        {userInfo.about && (
+                          <div className="text-sm opacity-80 max-w-xs">{userInfo.about}</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : chipTooltipText
+                  
+                  // For transparent chips, we need custom handling with two separate clickable areas
+                  if (isTransparent) {
+                    return (
+                      <Chip
+                        label={
+                          <div className="flex items-center gap-1 p-1 flex-wrap" style={{ maxWidth: '100%', minWidth: 0 }}>
+                            <Tooltip title={tooltipContent} placement="top">
+                              <span 
+                                className="flex items-center gap-1 link-color font-medium cursor-pointer"
+                                style={{ minWidth: 0, flex: '0 1 auto' }}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  if (user && handleUserClick) {
+                                    handleUserClick()
+                                  }
+                                }}
+                              >
+                                <UserAvatar 
+                                  user={user}
+                                  userName={userName}
+                                  size="sm"
+                                />
+                                <span 
+                                  className="overflow-hidden text-ellipsis"
+                                  style={{ 
+                                    whiteSpace: 'nowrap',
+                                    minWidth: 0,
+                                    maxWidth: '100%',
+                                    display: 'inline-block'
+                                  }}
+                                >
+                                  {userName}
+                                </span>
+                              </span>
+                            </Tooltip>
+                            <span style={{ flexShrink: 0 }}>:</span>
+                            {joinableMeeting ? (
+                              <Tooltip title={chipTooltipText} placement="top">
+                                <Link 
+                                  href={`/meeting?meetingToConnectId=${joinableMeeting._id}&timeslot=${slot.timestamp}&interest=${interest}`}
+                                  className="overflow-hidden text-ellipsis link-color"
+                                  style={{ 
+                                    whiteSpace: 'nowrap', minWidth: 0, flex: '1 1 auto', textAlign: 'center'
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {interest}
+                                </Link>
+                              </Tooltip>
+                            ) : (
+                              <Tooltip title={chipTooltipText} placement="top">
+                                <span 
+                                  className="overflow-hidden text-ellipsis"
+                                  style={{ 
+                                    whiteSpace: 'nowrap', minWidth: 0, flex: '1 1 auto', textAlign: 'center'
+                                  }}
+                                >
+                                  {interest}
+                                </span>
+                              </Tooltip>
+                            )}
+                          </div>
+                        }
+                        size="small"
+                        key={chipKey}
+                        style={{ maxWidth: '100%', height: 'unset' }}
+                      />
+                    )
+                  }
+                  
+                  // For non-transparent chips, use the original logic
                   return (
                     <Tooltip title={chipTooltipText} placement="top" key={chipKey + '-tooltip'}>
                       {joinableMeeting ? (
