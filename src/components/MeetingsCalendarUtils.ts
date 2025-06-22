@@ -6,7 +6,6 @@ import { SLOT_DURATION, getLateAllowance, getSlotDuration, isMeetingPassed } fro
 export type MeetingWithInfo = {
   meeting: Meeting,
   joinable: boolean,
-  isMine: boolean,
 }
 
 export function getCalendarTimeSlots(now: number, hoursAhead: number): TimeSlot[] {
@@ -75,7 +74,6 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
         continue
       }
 
-      const isMine = myMeetingsWithPeers.some(meetingWithPeer => meetingWithPeer.meeting._id === futureMeeting._id)
       const nextSlot = futureMeeting.timeSlots[i + 1]
       const nextSlotContiguous = nextSlot && nextSlot - slot === SLOT_DURATION
       const timeLeftInCurrentSlot = getSlotDuration(slot)
@@ -87,10 +85,10 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
       // Check if this slot conflicts with user's own meetings
       const hasConflictWithMyMeetings = myOccupiedSlots.has(slot)
       
-      const potentiallyJoinable = !isMine && contiguousTime >= futureMeeting.minDurationM * 60 * 1000 - lateAllowance
+      const potentiallyJoinable = contiguousTime >= futureMeeting.minDurationM * 60 * 1000 - lateAllowance
       const joinable = potentiallyJoinable && !hasConflictWithMyMeetings
-      if (foundFirstJoinable || potentiallyJoinable || isMine) {
-        slot2meetingInfos[slot].push({ meeting: futureMeeting, joinable, isMine })
+      if (foundFirstJoinable || potentiallyJoinable) {
+        slot2meetingInfos[slot].push({ meeting: futureMeeting, joinable })
       }
       if (joinable) {
         foundFirstJoinable = true

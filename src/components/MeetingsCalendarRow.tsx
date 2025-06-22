@@ -66,12 +66,8 @@ export default function MeetingsCalendarRow({
   const interest2Info: Record<string, InterestInfo> = {}
   const languageCounts: Record<string, number> = {}
 
-  for (const { meeting, joinable, isMine } of meetingsWithInfos) {
-    let interests = meeting.interests
-    if ( isMine && meeting.peerMeetingId ) {
-      const peerMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === meeting.peerMeetingId)?.meeting
-      interests = getSharedInterests(meeting, peerMeeting)
-    }
+  for (const { meeting, joinable } of meetingsWithInfos) {
+    const interests = meeting.interests
     for (const interest of interests) {
       const key = shouldGroupByGroups ? `${meeting.groupId}_${interest}` : interest
       let interestInfo = interest2Info[key]
@@ -80,11 +76,10 @@ export default function MeetingsCalendarRow({
         interest2Info[key] = interestInfo
       }
       interestInfo.count++
-      interestInfo.hasMine ||= isMine
       
       // Add transparent meetings
       const meetingWithTransparency = meeting as any
-      if (!isMine && meetingWithTransparency.transparency === MeetingTransparency.Transparent && meeting.userName) {
+      if (meetingWithTransparency.transparency === MeetingTransparency.Transparent && meeting.userName) {
         interestInfo.transparentMeetings.push({ meeting })
       }
       
@@ -171,11 +166,31 @@ export default function MeetingsCalendarRow({
       <div
         style={{
           padding: `0.3rem ${HORIZONTAL_CELL_PADDING}`,
+          display: 'flex',
           flexWrap: 'wrap',
           gap: '0.2rem',
-          borderBottom: '1px solid var(--border-color)'
+          borderBottom: '1px solid var(--border-color)',
+          minWidth: 0,
+          maxWidth: '100%',
         }}
       >
+        {/* My Meeting Chip */}
+        {myMeeting && !meetingPassed && (
+          <Tooltip title={tooltipText} placement="top">
+            <Link href={timeSlotLink}>
+              <Chip
+                label={
+                  <span style={{ color: meetingColor }}>
+                    {t('myMeeting')}: {myMeeting.interests.join(', ')}
+                  </span>
+                }
+                size="small"
+                variant="outlined"
+                style={{ borderColor: meetingColor, minHeight: '28px' }}
+              />
+            </Link>
+          </Tooltip>
+        )}
         {(() => {
           const groupedInterests: Record<string, Array<{key: string, interest: string, info: InterestInfo}>> = {}
           
@@ -237,9 +252,7 @@ export default function MeetingsCalendarRow({
                     
                     // Determine tooltip text with proper occupied slots logic
                     let tooltipTextForChip
-                    if (hasMine) {
-                      tooltipTextForChip = t('myMeeting')
-                    } else if (joinableMeeting) {
+                    if (joinableMeeting) {
                       tooltipTextForChip = t('connectWithMeeting')
                     } else if (myOccupiedSlots.has(slot.timestamp)) {
                       tooltipTextForChip = t('cannotJoinOwnMeetingConflict')
@@ -249,7 +262,7 @@ export default function MeetingsCalendarRow({
                     
                     chips.push({
                       chipKey,
-                      joinableMeeting: hasMine ? null : joinableMeeting,
+                      joinableMeeting: joinableMeeting,
                       chipTooltipText: tooltipTextForChip,
                       interest,
                       opaqueCount,
@@ -266,10 +279,10 @@ export default function MeetingsCalendarRow({
                   const CustomChip = ({ onClick }: { onClick?: () => void }) => (
                     <Chip
                       label={
-                        <div className="flex flex-wrap items-center gap-1 max-w-full">
+                        <div className="flex items-center gap-1 p-1 flex-wrap" style={{ maxWidth: '100%', minWidth: 0 }}>
                           {isTransparent ? (
                             <>
-                              <div className="flex items-center gap-1 min-w-0">
+                              <div className="flex items-center gap-1" style={{ minWidth: 0, flex: '0 1 auto' }}>
                                 <div className="flex-shrink-0">
                                   {user && (user as any)._id ? (
                                     <img
@@ -287,14 +300,20 @@ export default function MeetingsCalendarRow({
                                     />
                                   ) : null}
                                   <div 
-                                    className="w-4 h-4 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-semibold"
+                                    className="w-4 h-4 py-1 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-semibold"
                                     style={{ display: user && (user as any)._id ? 'none' : 'flex' }}
                                   >
-                                    {(userName || 'U')[0]?.toUpperCase()}
+                                    {Array(10).fill((userName || 'U')[0]?.toUpperCase()).join('')}
                                   </div>
                                 </div>
                                 <span 
-                                  className="link-color font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                                  className="link-color font-medium overflow-hidden text-ellipsis"
+                                  style={{ 
+                                    whiteSpace: 'nowrap',
+                                    minWidth: 0,
+                                    maxWidth: '100%',
+                                    display: 'inline-block'
+                                  }}
                                   onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
@@ -304,16 +323,29 @@ export default function MeetingsCalendarRow({
                                   }}
                                   title={userName || 'Unknown'}
                                 >
-                                  {userName || 'Unknown'}
+                                  {Array(10).fill((userName || 'U'))}
                                 </span>
+                                <span style={{ flexShrink: 0 }}>:</span>
                               </div>
-                              <span className="whitespace-nowrap">:</span>
-                              <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                                {interest}
+                              <span 
+                                className="overflow-hidden text-ellipsis"
+                                style={{ 
+                                  whiteSpace: 'nowrap', minWidth: 0, flex: '1 1 auto', textAlign: 'center'
+                                }}
+                              >
+                                {Array(14).fill(interest)}
                               </span>
                             </>
                           ) : (
-                            <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                            <span 
+                              className="overflow-hidden text-ellipsis"
+                              style={{ 
+                                whiteSpace: 'nowrap',
+                                minWidth: 0,
+                                maxWidth: '100%',
+                                display: 'inline-block'
+                              }}
+                            >
                               {interest} ({opaqueCount})
                             </span>
                           )}
@@ -321,6 +353,7 @@ export default function MeetingsCalendarRow({
                       }
                       size="small"
                       key={chipKey}
+                      style={{ maxWidth: '100%', height: 'unset' }}
                     />
                   )
                   
@@ -335,7 +368,7 @@ export default function MeetingsCalendarRow({
                   return (
                     <Tooltip title={chipTooltipText} placement="top" key={chipKey + '-tooltip'}>
                       {joinableMeeting ? (
-                        <Link href={`/meeting?meetingToConnectId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
+                        <Link className="max-w-full" href={`/meeting?meetingToConnectId=${joinableMeeting?._id}&timeslot=${slot.timestamp}&interest=${interest}`}>
                           {chip}
                         </Link>
                       ) : (

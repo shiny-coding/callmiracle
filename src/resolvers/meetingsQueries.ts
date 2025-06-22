@@ -160,20 +160,11 @@ export const meetingsQueries = {
         return []
       }
 
-      // 1. Fetch meetings with group filtering applied at the database level
+      // 1. Fetch meetings with group filtering applied at the database level (excluding user's own meetings)
       const meetingsQuery: any = {
         $and: [
-          {
-            $or: [
-              { status: MeetingStatus.Seeking },
-              {
-                $and: [
-                  { userId: _userId },
-                  { status: { $in: [MeetingStatus.Called, MeetingStatus.Found] } }
-                ]
-              }
-            ]
-          },
+          { status: MeetingStatus.Seeking }, // Only seeking meetings, not user's own meetings
+          { userId: { $ne: _userId } }, // Exclude user's own meetings
           { lastSlotEnd: { $gt: now } },
           { groupId: { $in: groupsToFilter } } // Always apply group filter
         ]
