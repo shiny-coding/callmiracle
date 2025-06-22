@@ -3,20 +3,23 @@ import { getToken } from 'next-auth/jwt'
 import createIntlMiddleware from 'next-intl/middleware'
 import { Locale, locales, defaultLocale } from './config'
 import { getCurrentLocale } from './utils'
+import { routing } from './i18n/routing'
 
 // Create internationalization middleware
-const intlMiddleware = createIntlMiddleware({
-  locales: locales,
-  defaultLocale: defaultLocale
-})
+const intlMiddleware = createIntlMiddleware(routing)
 
 // Add any other extensions you want to exclude
 const PUBLIC_FILE = /\.(.*)$/i
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-  const pathname = request.nextUrl.pathname
-  
+  // Handle profile image requests FIRST - rewrite /profiles/{id}.jpg to /api/profiles/{id}.jpg
+  if (pathname.startsWith('/profiles/') && pathname.endsWith('.jpg')) {
+    const rewriteUrl = new URL(`/api${pathname}`, request.url)
+    return NextResponse.rewrite(rewriteUrl)
+  }
+
   // Skip middleware for public files (e.g. .jpg, .png, .css, .js, .ico, etc)
   if (PUBLIC_FILE.test(pathname)) {
     return NextResponse.next()
@@ -56,12 +59,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(calendarPath, request.url))
     }
   }
+
   
   // For all other routes, run intlMiddleware after auth check
   return intlMiddleware(request)
 }
 
-// Update the matcher to exclude sound files
+// Update the matcher to include profile images but exclude sound files
 export const config = {
   matcher: [
     // Match all paths except:
@@ -69,9 +73,8 @@ export const config = {
     // - Next.js static files
     // - Next.js image optimization files
     // - Favicon
-    // - Profile images
     // - PNG files
     // - Sound files (new exclusion)
-    '/((?!api|_next/static|_next/image|favicon.ico|profiles|sounds).*)' 
+    '/((?!api|_next/static|_next/image|favicon.ico|sounds).*)' 
   ]
 }
