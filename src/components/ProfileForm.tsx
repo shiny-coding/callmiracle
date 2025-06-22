@@ -48,8 +48,9 @@ export default function ProfileForm() {
   const [showCameraPreview, setShowCameraPreview] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const currentUserId = currentUser?._id || ''
-  const { exists: imageExists } = useCheckImage(currentUserId)
+  const { exists: imageExists } = useCheckImage(currentUserId, timestamp)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
+  const [imageDeleted, setImageDeleted] = useState(false)
   const [deleteUser] = useMutation(DELETE_USER)
   const router = useRouter()
 
@@ -61,6 +62,7 @@ export default function ProfileForm() {
     setTempSex(sex)
     setTempBirthYear(birthYear)
     setSelectedFile(null)
+    setImageDeleted(false)
     setTimestamp(Date.now())
     return () => {
       setShowCameraPreview(false)
@@ -91,12 +93,27 @@ export default function ProfileForm() {
     setTempSex(sex)
     setTempBirthYear(birthYear)
     setSelectedFile(null)
+    setImageDeleted(false)
     onClose()
   }
 
   const handleApply = async () => {
     setUploading(true)
     try {
+      // Handle photo deletion first
+      if (imageDeleted) {
+        await fetch('/api/delete-photo', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: currentUserId }),
+        })
+        // Force re-check of image existence after deletion
+        setTimestamp(Date.now())
+      }
+      
+      // Handle photo upload
       if (selectedFile) {
         const formData = new FormData()
         formData.append('photo', selectedFile)
@@ -129,6 +146,7 @@ export default function ProfileForm() {
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return
     setSelectedFile(acceptedFiles[0])
+    setImageDeleted(false)
   }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -155,6 +173,7 @@ export default function ProfileForm() {
       if (blob) {
         const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' })
         setSelectedFile(file)
+        setImageDeleted(false)
         setShowCameraPreview(false)
       }
     }, 'image/jpeg')
@@ -170,6 +189,10 @@ export default function ProfileForm() {
     } catch (error) {
       console.error('Error deleting account:', error)
     }
+  }
+
+  const handleDeletePhoto = () => {
+    setImageDeleted(true)
   }
 
   return (
@@ -213,7 +236,7 @@ export default function ProfileForm() {
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">
                   {uploading ? t('uploading') : selectedFile ? selectedFile.name : t('uploadPhoto')}
                 </div>
-                {(imageExists || selectedFile) && (
+                {((imageExists && !imageDeleted) || selectedFile) && (
                     <Image
                       src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${currentUserId}.jpg?v=${currentUser?.updatedAt}`}
                       alt={t('photo')}
@@ -234,7 +257,7 @@ export default function ProfileForm() {
             )}
           </div>
 
-          <div className="">
+          <div className="flex gap-2">
             <IconButton 
               onClick={(e) => {
                 e.stopPropagation()
@@ -245,6 +268,17 @@ export default function ProfileForm() {
             >
               <PhotoCameraIcon className="text-white" />
             </IconButton>
+            {((imageExists && !imageDeleted) || selectedFile) && (
+              <IconButton 
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeletePhoto()
+                }}
+                className="bg-red-500/50 hover:bg-red-500/70"
+              >
+                <DeleteIcon className="text-white" />
+              </IconButton>
+            )}
           </div>
         </div>
 
@@ -338,7 +372,8 @@ export default function ProfileForm() {
             tempContacts === contacts &&
             tempSex === sex &&
             tempBirthYear === birthYear &&
-            !selectedFile
+            !selectedFile &&
+            !imageDeleted
           }
         >
           {tRoot('apply')}
@@ -385,7 +420,7 @@ export default function ProfileForm() {
         </DialogActions>
       </CameraDialog>
 
-      {/* Delete Confirmation Dialog (can be kept as a modal) */}
+      {/* Delete Confirmation Dialog */}
       <Dialog
         open={showDeleteConfirmation}
         onClose={() => setShowDeleteConfirmation(false)}
@@ -409,6 +444,8 @@ export default function ProfileForm() {
           </Button>
         </DialogActions>
       </Dialog>
+
+
     </div>
   )
 } 

@@ -34,19 +34,10 @@
     "close": "Close",
     "deleteAccount": "Delete Account",
     "deleteAccountConfirmMessage": "Are you sure you want to delete your account? This action cannot be undone.",
-    "deleteAccountConfirmTitle": "Delete Account"
-  },
-  "Interest": {
-    "CHAT": "Chat",
-    "MEET_NEW_PEOPLE": "Meet New People",
-    "NEED_SPEAKING_OUT": "Need Speaking Out",
-    "PROVIDE_LISTENING": "Provide Listening",
-    "MEDITATE_TOGETHER": "Meditate Together",
-    "PRAY_TOGETHER": "Pray Together",
-    "NEED_EMOTIONAL_SUPPORT": "Need Emotional Support",
-    "PROVIDE_EMOTIONAL_SUPPORT": "Provide Emotional Support",
-    "NEED_MENTAL_SUPPORT": "Need Mental Support",
-    "PROVIDE_MENTAL_SUPPORT": "Provide Mental Support"
+    "deleteAccountConfirmTitle": "Delete Account",
+    "deletePhoto": "Delete Photo",
+    "deletePhotoConfirmMessage": "Are you sure you want to delete your profile photo?",
+    "deletePhotoConfirmTitle": "Delete Photo"
   },
   "connect": "Find Partner",
   "filterByLanguages": "Filter by languages",

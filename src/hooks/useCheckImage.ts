@@ -5,7 +5,7 @@ interface CheckImageResult {
   checking: boolean
 }
 
-export function useCheckImage(userId: string | undefined): CheckImageResult {
+export function useCheckImage(userId: string | undefined, refreshTrigger?: number): CheckImageResult {
   const [state, setState] = useState<CheckImageResult>({
     exists: false,
     checking: true
@@ -24,6 +24,8 @@ export function useCheckImage(userId: string | undefined): CheckImageResult {
         const response = await fetch(`/api/check-image?userId=${userId}`)
         const data = await response.json()
         setState({ exists: data.exists, checking: false })
+
+        console.log('data', data)
       } catch (error) {
         console.error('Error checking image:', error)
         setState({ exists: false, checking: false })
@@ -31,7 +33,7 @@ export function useCheckImage(userId: string | undefined): CheckImageResult {
     }
     
     checkImageExists()
-  }, [userId])
+  }, [userId, refreshTrigger])
 
   return state
 } 

@@ -29,7 +29,7 @@ export default function TopControlsBar() {
   const [isHoveringOverVideoControls, setIsHoveringOverVideoControls] = useState(false)
   const [isVideoDeviceSelectorOpen, setIsVideoDeviceSelectorOpen] = useState(false)
   const [videoOpenedByTouch, setVideoOpenedByTouch] = useState(false)
-  const { exists: imageExists } = useCheckImage(currentUser?._id)
+  const { exists: imageExists } = useCheckImage(currentUser?._id, currentUser?.updatedAt)
   const router = useRouter()
   const t = useTranslations('Profile')
 

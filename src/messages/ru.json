@@ -33,19 +33,10 @@
     "close": "Закрыть",
     "deleteAccount": "Удалить аккаунт",
     "deleteAccountConfirmMessage": "Вы уверены, что хотите удалить свой аккаунт? Это действие нельзя отменить.",
-    "deleteAccountConfirmTitle": "Удалить аккаунт"
-  },
-  "Interest": {
-    "CHAT": "Поболтать",
-    "MEET_NEW_PEOPLE": "Познакомиться",
-    "NEED_SPEAKING_OUT": "Хочу выговориться",
-    "PROVIDE_LISTENING": "Слушать",
-    "MEDITATE_TOGETHER": "Медитировать вместе",
-    "PRAY_TOGETHER": "Молиться вместе",
-    "NEED_EMOTIONAL_SUPPORT": "Нужна эмоциональная поддержка",
-    "PROVIDE_EMOTIONAL_SUPPORT": "Хочу помочь эмоционально",
-    "NEED_MENTAL_SUPPORT": "Нужна ментальная поддержка",
-    "PROVIDE_MENTAL_SUPPORT": "Хочу помочь ментально"
+    "deleteAccountConfirmTitle": "Удалить аккаунт",
+    "deletePhoto": "Удалить фото",
+    "deletePhotoConfirmMessage": "Вы уверены, что хотите удалить фото профиля?",
+    "deletePhotoConfirmTitle": "Удалить фото"
   },
   "connect": "Найти собеседника",
   "filterByLanguages": "Фильтр по языкам",
