@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Dialog, DialogContent, Typography, Button, Checkbox, FormControlLabel, FormGroup, Chip, Divider, Switch } from '@mui/material'
+import { Dialog, DialogContent, Typography, Button, Checkbox, FormControlLabel, FormGroup, Chip, Divider, Switch, IconButton } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { InterestsBlock, User } from '@/generated/graphql'
 import { useTranslations } from 'next-intl'
 import { useStore } from '@/store/useStore'
@@ -40,6 +42,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     })) || []
   )
   const [isEditing, setIsEditing] = useState(false)
+  const [isBlockSectionExpanded, setIsBlockSectionExpanded] = useState(false)
   const { refetchFutureMeetingsWithPeers } = useMeetings()
 
   // Get groups that both users have access to
@@ -146,6 +149,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     })
     await updateUserData()
     setIsEditing(false)
+    setIsBlockSectionExpanded(false)
     refetchFutureMeetingsWithPeers()
     onClose()
   }
@@ -158,7 +162,12 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
       interests: ib.interests || []
     })) || [])
     setIsEditing(false)
+    setIsBlockSectionExpanded(false)
     onClose()
+  }
+
+  const handleToggleBlockSection = () => {
+    setIsBlockSectionExpanded(!isBlockSectionExpanded)
   }
 
   return (
@@ -234,8 +243,24 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
             </div>
           )}
 
-          {/* Block controls section */}
+          {/* Collapsible Block controls section */}
           <Divider className="my-4" />
+          <div className="flex flex-col overflow-hidden">
+            <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
+              <IconButton 
+                size="small" 
+                onClick={handleToggleBlockSection} 
+                aria-label={isBlockSectionExpanded ? t('collapseBlockControls') : t('expandBlockControls')}
+              >
+                {isBlockSectionExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
+              </IconButton>
+              <Typography variant="subtitle1" component="span" onClick={handleToggleBlockSection} className="cursor-pointer">
+                {t('blockControls')}
+              </Typography>
+            </div>
+
+            {isBlockSectionExpanded && (
+              <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-8 py-0 pb-4">
           <FormGroup>
             <FormControlLabel
               control={
@@ -279,11 +304,17 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
               ))}
             </>
           )}
+              </div>
+            )}
+          </div>
 
-          {/* Action buttons */}
-          {isEditing && (
-            <div className="flex justify-end gap-2 mt-4">
-              <Button onClick={handleCancel}>
+          {/* Action buttons - shown when expanded and editing */}
+          {isBlockSectionExpanded && isEditing && (
+            <div 
+              className="p-3 panel-bg border-t panel-border flex justify-end gap-2 z-20 shadow-lg rounded-md"
+              style={{ backgroundColor: 'var(--mui-palette-background-paper)' }}
+            >
+              <Button onClick={handleCancel} variant="outlined">
                 {t('cancel')}
               </Button>
               <Button 

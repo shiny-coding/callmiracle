@@ -3,7 +3,7 @@
 import { useStore, type AppState } from '@/store/useStore'
 import { Paper, Typography, Chip, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { Meeting, MeetingWithPeer, MeetingTransparency } from '@/generated/graphql'
+import { Meeting, MeetingWithPeer, MeetingTransparency, User } from '@/generated/graphql'
 import { isToday } from 'date-fns'
 import { Fragment, useRef, useState, useEffect } from 'react'
 import { useMeetings } from '@/contexts/MeetingsContext'
@@ -25,6 +25,8 @@ import { NetworkStatus } from '@apollo/client'
 import { useGroups } from '@/store/GroupsProvider'
 import { Group } from '@/generated/graphql'
 import React from 'react'
+import UserDetailsPopup from './UserDetailsPopup'
+import { useUsers } from '@/store/UsersProvider'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -41,8 +43,10 @@ interface MeetingsCalendarRowProps {
   slotRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
   filterGroups: string[];
   groups: Group[] | undefined;
+  users: User[] | undefined;
   currentUser: any;
   myOccupiedSlots: Set<number>;
+  onUserClick: (user: User) => void;
 }
 
 export default function MeetingsCalendar() {
@@ -58,6 +62,7 @@ export default function MeetingsCalendar() {
   }), shallow)
 
   const { groups } = useGroups()
+  const { users } = useUsers()
 
   const router = useRouter()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
@@ -72,6 +77,8 @@ export default function MeetingsCalendar() {
   } = useMeetings()
 
   const [filtersVisible, setFiltersVisible] = useState<boolean>(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [userDetailsPopupOpen, setUserDetailsPopupOpen] = useState(false)
 
   const now = Date.now()
   const HOURS_AHEAD = 24 * 7
@@ -175,6 +182,16 @@ export default function MeetingsCalendar() {
   const userIdToX: Record<string, number> = {}
   for (let i = 0; i < userIds.length; i++) {
     userIdToX[userIds[i]] = i
+  }
+
+  const handleUserClick = (user: User) => {
+    setSelectedUser(user)
+    setUserDetailsPopupOpen(true)
+  }
+
+  const handleCloseUserDetails = () => {
+    setUserDetailsPopupOpen(false)
+    setSelectedUser(null)
   }
 
   const headerStyle = {
@@ -285,8 +302,10 @@ export default function MeetingsCalendar() {
                       slotRefs={slotRefs}
                       filterGroups={filterGroups}
                       groups={groups}
+                      users={users}
                       currentUser={currentUser}
                       myOccupiedSlots={myOccupiedSlots}
+                      onUserClick={handleUserClick}
                     />
                   )
                 })}
@@ -299,6 +318,13 @@ export default function MeetingsCalendar() {
         open={profileIncompleteDialogOpen}
         onClose={() => setProfileIncompleteDialogOpen(false)}
       />
+      {selectedUser && (
+        <UserDetailsPopup
+          user={selectedUser}
+          open={userDetailsPopupOpen}
+          onClose={handleCloseUserDetails}
+        />
+      )}
     </Paper>
   )
 } 
@@ -312,8 +338,10 @@ function MeetingsCalendarRow({
   slotRefs,
   filterGroups,
   groups,
+  users,
   currentUser,
-  myOccupiedSlots
+  myOccupiedSlots,
+  onUserClick
 }: MeetingsCalendarRowProps) {
   // Determine if we should group by groups
   const userAccessibleGroups = groups?.filter(group => 
@@ -475,8 +503,9 @@ function MeetingsCalendarRow({
                   
                   // Show transparent meetings individually with names
                   transparentMeetings.forEach((meetingInfo, index) => {
-                    const chipLabel = `${meetingInfo.meeting.userName}: ${interest}`
                     const chipKey = `${key}-transparent-${index}`
+                    const meeting = meetingInfo.meeting
+                    const user = users?.find(u => u._id === meeting.userId)
                     
                     // Determine tooltip text with proper occupied slots logic
                     let tooltipTextForTransparent
@@ -487,18 +516,20 @@ function MeetingsCalendarRow({
                     }
                     
                     chips.push({
-                      chipLabel,
                       chipKey,
-                      joinableMeeting: meetingInfo.meeting,
+                      joinableMeeting: meeting,
                       chipTooltipText: tooltipTextForTransparent,
-                      interest
+                      interest,
+                      user,
+                      userName: meeting.userName,
+                      isTransparent: true,
+                      opaqueCount: undefined
                     })
                   })
                   
                   // Show opaque meetings count (total count minus transparent count)
                   const opaqueCount = count - transparentMeetings.length
                   if (opaqueCount > 0) {
-                    const chipLabel = `${interest} (${opaqueCount})`
                     const chipKey = `${key}-opaque`
                     
                     // Determine tooltip text with proper occupied slots logic
@@ -514,21 +545,89 @@ function MeetingsCalendarRow({
                     }
                     
                     chips.push({
-                      chipLabel,
                       chipKey,
                       joinableMeeting: hasMine ? null : joinableMeeting,
                       chipTooltipText: tooltipTextForChip,
-                      interest
+                      interest,
+                      opaqueCount,
+                      isTransparent: false,
+                      user: undefined,
+                      userName: undefined
                     })
                   }
                   
                   return chips
-                }).map(({ chipLabel, chipKey, joinableMeeting, chipTooltipText, interest }) => {
-                  const chip = <Chip
-                    label={chipLabel}
+                }).map((chipData) => {
+                  const { chipKey, joinableMeeting, chipTooltipText, interest, isTransparent, user, userName, opaqueCount } = chipData
+                  
+                  const CustomChip = ({ onClick }: { onClick?: () => void }) => (
+                    <Chip
+                      label={
+                        <div className="flex flex-wrap items-center gap-1 max-w-full">
+                          {isTransparent ? (
+                            <>
+                              <div className="flex items-center gap-1 min-w-0">
+                                <div className="flex-shrink-0">
+                                  {user && (user as any)._id ? (
+                                    <img
+                                      src={`/profiles/${(user as any)._id}.jpg`}
+                                      alt={userName || 'Unknown'}
+                                      className="w-4 h-4 rounded-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement
+                                        target.style.display = 'none'
+                                        const fallback = target.nextElementSibling as HTMLDivElement
+                                        if (fallback) {
+                                          fallback.style.display = 'flex'
+                                        }
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div 
+                                    className="w-4 h-4 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-semibold"
+                                    style={{ display: user && (user as any)._id ? 'none' : 'flex' }}
+                                  >
+                                    {(userName || 'U')[0]?.toUpperCase()}
+                                  </div>
+                                </div>
+                                <span 
+                                  className="username-link font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    if (user && onClick) {
+                                      onClick()
+                                    }
+                                  }}
+                                  title={userName || 'Unknown'}
+                                >
+                                  {userName || 'Unknown'}
+                                </span>
+                              </div>
+                              <span className="whitespace-nowrap">:</span>
+                              <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                                {interest}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                              {interest} ({opaqueCount})
+                            </span>
+                          )}
+                        </div>
+                      }
                     size="small"
                     key={chipKey}
-                  />;
+                    />
+                  )
+                  
+                  const handleUserClick = () => {
+                    if (user) {
+                      onUserClick(user)
+                    }
+                  }
+                  
+                  const chip = <CustomChip onClick={handleUserClick} />
                   
                   return (
                     <Tooltip title={chipTooltipText} placement="top" key={chipKey + '-tooltip'}>

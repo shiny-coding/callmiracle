@@ -71,6 +71,16 @@ body:before {
   color: var(--link-color);
 }
 
+.username-link {
+  color: var(--link-color);
+  transition: color 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.username-link:hover {
+  color: rgb(160, 205, 255);
+}
+
 .panel-bg {
   // background-color: #1e2b3f;
   background-color: #111827;
