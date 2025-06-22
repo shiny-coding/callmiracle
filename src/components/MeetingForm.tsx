@@ -236,10 +236,14 @@ export default function MeetingForm() {
       setLastMeetingGroup(selectedGroupId)
     }
 
+    // Filter interests to only include those that belong to the selected group
+    const groupInterests = selectedGroup?.interestsPairs?.flat() || []
+    const filteredInterests = tempInterests.filter(interest => groupInterests.includes(interest))
+
     const meetingInput = {
       _id: meetingId as string,
       groupId: selectedGroupId,
-      interests: tempInterests,
+      interests: filteredInterests,
       timeSlots: selectedTimeSlots,
       minDurationM,
       preferEarlier,
