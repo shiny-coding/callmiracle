@@ -125,6 +125,7 @@
   "malesOnly": "Males only",
   "femalesOnly": "Females only",
   "pleaseSelectLanguages": "Please select at least one language",
+  "showMyNameNextToMeetingInCalendar": "Show my name next to meeting in Calendar",
   "callDuration": "Call duration",
   "incompleteProfile": "Incomplete Profile",
   "pleaseCompleteProfileFirst": "Please set up your name, gender, and age before creating a meeting.",

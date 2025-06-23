@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect, ChangeEvent, useRef, useMemo } from 'react'
-import { Meeting, MeetingStatus } from '@/generated/graphql'
+import { Meeting, MeetingStatus, MeetingTransparency } from '@/generated/graphql'
 import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
@@ -64,6 +64,7 @@ export default function MeetingForm() {
   const [tempLanguages, setTempLanguagesState] = useState<string[]>(
     lastMeetingLanguage || currentUser?.languages || []
   )
+  const [showNameInCalendar, setShowNameInCalendar] = useState<boolean>(false)
   
   // Wrapper function to save to store when languages change
   const setTempLanguages = (languages: string[]) => {
@@ -134,6 +135,7 @@ export default function MeetingForm() {
         meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
       ])
       setTempLanguagesState(meeting.languages)
+      setShowNameInCalendar(meeting.transparency === MeetingTransparency.Transparent)
     } else if (meetingToConnect) {
       // Connecting to existing meeting
       setSelectedGroupId(meetingToConnect.groupId || '')
@@ -146,6 +148,7 @@ export default function MeetingForm() {
       if (lastMeetingGroup && currentUser?.groups?.includes(lastMeetingGroup)) {
         setSelectedGroupId(lastMeetingGroup)
       }
+      setShowNameInCalendar(false)
     }
   }, [meeting, preselectedInterest, meetingToConnect, lastMeetingGroup, currentUser?.groups])
 
@@ -240,6 +243,12 @@ export default function MeetingForm() {
     const groupInterests = selectedGroup?.interestsPairs?.flat() || []
     const filteredInterests = tempInterests.filter(interest => groupInterests.includes(interest))
 
+    // Determine meeting transparency based on group setting and user choice
+    let meetingTransparency = selectedGroup?.transparency
+    if (selectedGroup?.transparency === MeetingTransparency.Mixed) {
+      meetingTransparency = showNameInCalendar ? MeetingTransparency.Transparent : MeetingTransparency.Opaque
+    }
+
     const meetingInput = {
       _id: meetingId as string,
       groupId: selectedGroupId,
@@ -255,7 +264,7 @@ export default function MeetingForm() {
       peerMeetingId: meeting?.peerMeetingId || undefined,
       userId: currentUser?._id || '',
       meetingToConnectId,
-      transparency: selectedGroup?.transparency as any
+      transparency: meetingTransparency as any
     }
     const result = await updateMeeting(meetingInput)
     handleMeetingSaveResult(result, t, refetchMeetings, meetingToConnectId, meetingId, router, locale, showSnackbar)
@@ -363,6 +372,18 @@ export default function MeetingForm() {
                 label={t('allowFemales')}
               />
             </>
+          )}
+          {/* Transparency checkbox - only show if group transparency is MIXED and not connecting to existing meeting */}
+          {selectedGroup?.transparency === MeetingTransparency.Mixed && !meetingToConnect && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showNameInCalendar}
+                  onChange={(e) => setShowNameInCalendar(e.target.checked)}
+                />
+              }
+              label={t('showMyNameNextToMeetingInCalendar')}
+            />
           )}
         </FormGroup>
         {!meetingToConnect &&
