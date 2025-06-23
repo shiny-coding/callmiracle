@@ -1,4 +1,4 @@
-import { Meeting, MeetingWithPeer } from '@/generated/graphql'
+import { Meeting, MeetingWithPeer, User } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { TimeSlot } from './TimeSlotsGrid'
 import { SLOT_DURATION, getLateAllowance, getSlotDuration, isMeetingPassed } from '@/utils/meetingUtils'
@@ -40,7 +40,7 @@ export function getCalendarTimeSlots(now: number, hoursAhead: number): TimeSlot[
   return slots
 }
 
-export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot[], myMeetingsWithPeers: MeetingWithPeer[]) {
+export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot[], myMeetingsWithPeers: MeetingWithPeer[], currentUser: User) {
   const slot2meetingInfos: Record<number, MeetingWithInfo[]> = {}
   for (let i = 0; i < slots.length; i++) {
     slot2meetingInfos[slots[i].timestamp] = []
@@ -74,6 +74,7 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
         continue
       }
 
+      const isMine = currentUser._id === futureMeeting.userId
       const nextSlot = futureMeeting.timeSlots[i + 1]
       const nextSlotContiguous = nextSlot && nextSlot - slot === SLOT_DURATION
       const timeLeftInCurrentSlot = getSlotDuration(slot)
@@ -85,9 +86,9 @@ export function prepareTimeSlotsInfos(futureMeetings: Meeting[], slots: TimeSlot
       // Check if this slot conflicts with user's own meetings
       const hasConflictWithMyMeetings = myOccupiedSlots.has(slot)
       
-      const potentiallyJoinable = contiguousTime >= futureMeeting.minDurationM * 60 * 1000 - lateAllowance
+      const potentiallyJoinable = !isMine && contiguousTime >= futureMeeting.minDurationM * 60 * 1000 - lateAllowance
       const joinable = potentiallyJoinable && !hasConflictWithMyMeetings
-      if (foundFirstJoinable || potentiallyJoinable) {
+      if (foundFirstJoinable || potentiallyJoinable || isMine) {
         slot2meetingInfos[slot].push({ meeting: futureMeeting, joinable })
       }
       if (joinable) {

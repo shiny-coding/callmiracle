@@ -23,12 +23,11 @@ interface MeetingChipProps {
   user?: User
   isMyMeeting?: boolean
   isJoinable?: boolean
-  chipTooltipText: string
   onUserClick?: (user: User) => void
   slot: ReturnType<typeof getCalendarTimeSlots>[0]
   group?: Group
   meetingColor?: string
-  linkHref?: string
+  myOccupiedSlots: Set<number>
   t: (key: string, values?: Record<string, any>) => string
 }
 
@@ -37,14 +36,37 @@ function MeetingChip({
   user, 
   isMyMeeting = false, 
   isJoinable = false, 
-  chipTooltipText, 
   onUserClick, 
   slot, 
   group,
   meetingColor,
-  linkHref,
+  myOccupiedSlots,
   t 
 }: MeetingChipProps) {
+  // Determine tooltip text and link behavior
+  let chipTooltipText: string
+  let linkHref: string | undefined
+  
+  if (isMyMeeting) {
+    // For user's own meetings
+    if (canEditMeeting(meeting)) {
+      linkHref = `/meeting/${meeting._id}`
+      chipTooltipText = t('editMeeting')
+    } else {
+      linkHref = `list?meetingId=${meeting._id}`
+      chipTooltipText = t('viewMeeting')
+    }
+  } else {
+    // For other users' meetings
+    if (isJoinable) {
+      chipTooltipText = t('connectWithMeeting')
+    } else if (myOccupiedSlots.has(slot.timestamp)) {
+      chipTooltipText = t('cannotJoinOwnMeetingConflict')
+    } else {
+      chipTooltipText = t('pleaseSelectAnEarlierTimeSlot')
+    }
+  }
+
   // Determine if meeting should show user name (transparent or group is transparent)
   const shouldShowUserName = !isMyMeeting && (
     meeting.transparency === MeetingTransparency.Transparent ||
@@ -74,105 +96,89 @@ function MeetingChip({
     }
   }
 
-  const chipLabel = isMyMeeting 
-    ? `${t('myMeeting')}: ${meeting.interests.join(', ')}`
-    : meeting.interests.join(', ')
+  // Prepare interests text
+  const interestsText = meeting.interests.join(', ')
+  const interestsLabel = isMyMeeting ? `${t('myMeeting')}: ${interestsText}` : interestsText
+
+  // User name part (when shown)
+  const userNamePart = shouldShowUserName ? (
+    <Tooltip title={userTooltipContent || chipTooltipText} placement="top">
+      <span 
+        className="flex items-center gap-1 link-color font-medium cursor-pointer"
+        style={{ minWidth: 0, flex: '0 1 auto' }}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (user) {
+            handleUserClick()
+          }
+        }}
+      >
+        <UserAvatar 
+          user={user}
+          userName={meeting.userName}
+          size="sm"
+        />
+        <span 
+          className="overflow-hidden text-ellipsis"
+          style={{ 
+            whiteSpace: 'nowrap',
+            minWidth: 0,
+            maxWidth: '100%',
+            display: 'inline-block'
+          }}
+        >
+          {meeting.userName}
+        </span>
+      </span>
+    </Tooltip>
+  ) : null
+
+  // Interests part
+  const interestsPart = (
+    <Tooltip title={chipTooltipText} placement="top">
+      {isJoinable && !isMyMeeting ? (
+        <Link 
+          href={`/meeting?meetingToConnectId=${meeting._id}&timeslot=${slot.timestamp}`}
+          className="overflow-hidden text-ellipsis link-color"
+          style={{ 
+            whiteSpace: 'nowrap',
+            minWidth: 0,
+            maxWidth: shouldShowUserName ? '100%' : '100%',
+            display: 'inline-block',
+            flex: shouldShowUserName ? '1 1 auto' : undefined,
+            textAlign: shouldShowUserName ? 'center' : undefined
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {shouldShowUserName ? interestsText : interestsLabel}
+        </Link>
+      ) : (
+        <span 
+          className="overflow-hidden text-ellipsis"
+          style={{ 
+            whiteSpace: 'nowrap',
+            minWidth: 0,
+            maxWidth: shouldShowUserName ? '100%' : '100%',
+            display: 'inline-block',
+            flex: shouldShowUserName ? '1 1 auto' : undefined,
+            textAlign: shouldShowUserName ? 'center' : undefined,
+            color: isMyMeeting ? meetingColor : undefined
+          }}
+        >
+          {shouldShowUserName ? interestsText : interestsLabel}
+        </span>
+      )}
+    </Tooltip>
+  )
 
   const chipElement = (
     <Chip
       label={
         <div className="flex items-center gap-1 p-1 flex-wrap" style={{ maxWidth: '100%', minWidth: 0 }}>
-          {shouldShowUserName ? (
-            <>
-              <Tooltip title={userTooltipContent || chipTooltipText} placement="top">
-                <span 
-                  className="flex items-center gap-1 link-color font-medium cursor-pointer"
-                  style={{ minWidth: 0, flex: '0 1 auto' }}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    if (user) {
-                      handleUserClick()
-                    }
-                  }}
-                >
-                  <UserAvatar 
-                    user={user}
-                    userName={meeting.userName}
-                    size="sm"
-                  />
-                  <span 
-                    className="overflow-hidden text-ellipsis"
-                    style={{ 
-                      whiteSpace: 'nowrap',
-                      minWidth: 0,
-                      maxWidth: '100%',
-                      display: 'inline-block'
-                    }}
-                  >
-                    {meeting.userName}
-                  </span>
-                </span>
-              </Tooltip>
-              <span style={{ flexShrink: 0 }}>:</span>
-              {isJoinable ? (
-                <Tooltip title={chipTooltipText} placement="top">
-                  <Link 
-                    href={`/meeting?meetingToConnectId=${meeting._id}&timeslot=${slot.timestamp}`}
-                    className="overflow-hidden text-ellipsis link-color"
-                    style={{ 
-                      whiteSpace: 'nowrap', minWidth: 0, flex: '1 1 auto', textAlign: 'center'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {meeting.interests.join(', ')}
-                  </Link>
-                </Tooltip>
-              ) : (
-                <Tooltip title={chipTooltipText} placement="top">
-                  <span 
-                    className="overflow-hidden text-ellipsis"
-                    style={{ 
-                      whiteSpace: 'nowrap', minWidth: 0, flex: '1 1 auto', textAlign: 'center'
-                    }}
-                  >
-                    {meeting.interests.join(', ')}
-                  </span>
-                </Tooltip>
-              )}
-            </>
-          ) : (
-            // For meetings without user name shown (opaque or my meetings)
-            <Tooltip title={chipTooltipText} placement="top">
-              {isJoinable && !isMyMeeting ? (
-                <Link 
-                  href={`/meeting?meetingToConnectId=${meeting._id}&timeslot=${slot.timestamp}`}
-                  className="overflow-hidden text-ellipsis link-color"
-                  style={{ 
-                    whiteSpace: 'nowrap',
-                    minWidth: 0,
-                    maxWidth: '100%',
-                    display: 'inline-block'
-                  }}
-                >
-                  {chipLabel}
-                </Link>
-              ) : (
-                <span 
-                  className="overflow-hidden text-ellipsis"
-                  style={{ 
-                    whiteSpace: 'nowrap',
-                    minWidth: 0,
-                    maxWidth: '100%',
-                    display: 'inline-block',
-                    color: isMyMeeting ? meetingColor : undefined
-                  }}
-                >
-                  {chipLabel}
-                </span>
-              )}
-            </Tooltip>
-          )}
+          {userNamePart}
+          {shouldShowUserName && <span style={{ flexShrink: 0 }}>:</span>}
+          {interestsPart}
         </div>
       }
       size="small"
@@ -236,8 +242,6 @@ export default function MeetingsCalendarRow({
     (filterGroups.length === 0 && userAccessibleGroups.length > 1)
 
   // Prepare meeting chips data
-  const languageCounts: Record<string, number> = {}
-  
   // Group meetings by group if needed
   const groupedMeetings: Record<string, typeof meetingsWithInfos> = {}
   
@@ -249,12 +253,6 @@ export default function MeetingsCalendarRow({
       groupedMeetings[groupId] = []
     }
     groupedMeetings[groupId].push(meetingWithInfo)
-    
-    // Count languages
-    for (const language of meeting.languages) {
-      if (!languageCounts[language]) languageCounts[language] = 0
-      languageCounts[language]++
-    }
   }
   const startLabel = slot.isNow ? t('now') : slot.startTime
 
@@ -354,36 +352,6 @@ export default function MeetingsCalendarRow({
                 
                 // Check if this is the current user's meeting
                 const isMyMeeting = meeting.userId === currentUser?._id
-                const meetingPassed = isMyMeeting && isMeetingPassed(meeting)
-                
-                // Skip passed meetings for current user
-                if (isMyMeeting && meetingPassed) {
-                  return null
-                }
-                
-                // Determine tooltip text and link behavior
-                let chipTooltipText
-                let linkHref: string | undefined
-                
-                if (isMyMeeting) {
-                  // For user's own meetings
-                  if (canEditMeeting(meeting)) {
-                    linkHref = `/meeting/${meeting._id}`
-                    chipTooltipText = t('editMeeting')
-                  } else {
-                    linkHref = `list?meetingId=${meeting._id}`
-                    chipTooltipText = t('viewMeeting')
-                  }
-                } else {
-                  // For other users' meetings
-                  if (joinable) {
-                    chipTooltipText = t('connectWithMeeting')
-                  } else if (myOccupiedSlots.has(slot.timestamp)) {
-                    chipTooltipText = t('cannotJoinOwnMeetingConflict')
-                  } else {
-                    chipTooltipText = t('pleaseSelectAnEarlierTimeSlot')
-                  }
-                }
                 
                 return (
                   <MeetingChip
@@ -392,12 +360,11 @@ export default function MeetingsCalendarRow({
                     user={user}
                     isMyMeeting={isMyMeeting}
                     isJoinable={joinable}
-                    chipTooltipText={chipTooltipText}
                     onUserClick={onUserClick}
                     slot={slot}
                     group={group}
                     meetingColor={isMyMeeting ? class2Hex(getMeetingColorClass(meeting)) : undefined}
-                    linkHref={linkHref}
+                    myOccupiedSlots={myOccupiedSlots}
                     t={t}
                   />
                 )
@@ -405,23 +372,6 @@ export default function MeetingsCalendarRow({
             </React.Fragment>
           )
         })}
-      </div>
-      {/* Languages */}
-      <div
-        style={{
-          padding: CELL_PADDING,
-          borderBottom: '1px solid var(--border-color)',
-          gap: '0.2rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        {Object.entries(languageCounts).map(([lang, count]) => (
-          <Chip
-            key={lang}
-            label={`${lang} (${count})`}
-            size="small"
-          />
-        ))}
       </div>
     </Fragment>
   )

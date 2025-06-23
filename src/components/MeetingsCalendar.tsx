@@ -144,7 +144,8 @@ export default function MeetingsCalendar() {
   const slot2meetingsWithInfos = prepareTimeSlotsInfos(
     futureMeetingsWithPeers.map(meetingWithPeer => meetingWithPeer.meeting),
     slots,
-    myMeetingsWithPeers
+    myMeetingsWithPeers,
+    currentUser!
   )
 
   // Group slots by dayKey
@@ -222,7 +223,7 @@ export default function MeetingsCalendar() {
             className="calendar-grid-header input-bg px-2"
             style={{
               display: 'grid',
-              gridTemplateColumns: '80px 10fr 80px',
+              gridTemplateColumns: '80px 1fr',
               alignItems: 'stretch',
               width: '100%',
               position: 'sticky',
@@ -231,11 +232,8 @@ export default function MeetingsCalendar() {
               paddingRight: '0.8rem',
             }}
           >
-            <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('timeSlot')}</div>
+            <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('time')}</div>
             <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('interests')}</div>
-            <div style={{ padding: CELL_PADDING, ...headerStyle, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              {t('languages')}
-            </div>
           </div>
           {/* Body grid (scrollable) */}
           <div
@@ -243,7 +241,7 @@ export default function MeetingsCalendar() {
             ref={gridBodyRef}
             style={{
               display: 'grid',
-              gridTemplateColumns: '80px 10fr 80px',
+              gridTemplateColumns: '80px 1fr',
               alignItems: 'stretch',
               width: '100%',
               overflowY: 'auto',
@@ -256,7 +254,7 @@ export default function MeetingsCalendar() {
               <div className="panel-bg panel-border"
                 style={{
                   position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
-                  gridColumn: '1 / span 3', padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
+                  gridColumn: '1 / span 2', padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
                 }}
               >
                 {getDayLabel(new Date(topDayKey), t)}
@@ -266,7 +264,7 @@ export default function MeetingsCalendar() {
               <Fragment key={dayKey}>
                 {/* Day label row (skip for today) */}
                 {!isToday(new Date(dayKey)) && (
-                  <div style={{ gridColumn: '1 / span 3', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
+                  <div style={{ gridColumn: '1 / span 2', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
                     {getDayLabel(new Date(dayKey), t)}
                   </div>
                 )}
