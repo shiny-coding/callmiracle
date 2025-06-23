@@ -44,7 +44,6 @@ export default function MeetingForm() {
   const meetingToConnectId = searchParams?.get('meetingToConnectId')
   const meetingWithPeerToConnect = futureMeetingsWithPeers.find(m => m.meeting._id === meetingToConnectId)
   const meetingToConnect = meetingWithPeerToConnect?.meeting
-  const interestToMatch = searchParams?.get('interest')
 
   // Get groups current user is in - memoize to prevent infinite re-renders
   const userGroups = useMemo(() => 
@@ -91,13 +90,6 @@ export default function MeetingForm() {
     handleConfirmCancelMeeting
   } = useCancelMeeting(t, refetchMeetings, router, showSnackbar)
 
-  // Add these derived values
-  const preselectedInterest = (
-    meetingToConnect && interestToMatch
-      ? interestToMatch
-      : undefined
-  )
-
   // Determine if we are joining and which sex to allow
   const joiningSex = meetingWithPeerToConnect?.peerUser?.sex
 
@@ -140,9 +132,6 @@ export default function MeetingForm() {
       // Connecting to existing meeting
       setSelectedGroupId(meetingToConnect.groupId || '')
       setMinDurationM(meetingToConnect.minDurationM || 60)
-      if (preselectedInterest) {
-        setTempInterests([preselectedInterest])
-      }
     } else {
       // Creating new meeting - use lastMeetingGroup if available and user is still in that group
       if (lastMeetingGroup && currentUser?.groups?.includes(lastMeetingGroup)) {
@@ -150,7 +139,7 @@ export default function MeetingForm() {
       }
       setShowNameInCalendar(false)
     }
-  }, [meeting, preselectedInterest, meetingToConnect, lastMeetingGroup, currentUser?.groups])
+  }, [meeting, meetingToConnect, lastMeetingGroup, currentUser?.groups])
 
   // Clear interests when group changes (unless it's the initial load)
   useEffect(() => {

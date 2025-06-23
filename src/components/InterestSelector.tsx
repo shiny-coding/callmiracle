@@ -15,9 +15,12 @@ interface InterestSelectorProps {
 export default function InterestSelector({ value, onChange, interestsPairs, interestsToMatch, label }: InterestSelectorProps) {
   const tRoot = useTranslations()
 
-  const isInterestVisible = (interest: string) => {
+  const isInterestVisible = (interest: string, pairInterest: string) => {
     if (!interestsToMatch || interestsToMatch.length === 0) return true
-    return interestsToMatch.includes(interest)
+    // If interestsToMatch is provided, show only the other interest in the pair
+    // If the pair interest is in interestsToMatch, show this interest
+    // If this interest is in interestsToMatch, don't show it (show the pair instead)
+    return interestsToMatch.includes(pairInterest) && !interestsToMatch.includes(interest)
   }
 
   const handleInterestClick = (interest: string) => {
@@ -37,7 +40,7 @@ export default function InterestSelector({ value, onChange, interestsPairs, inte
           const [leftInterest, rightInterest] = pair
           
           // Only show row if at least one column is visible
-          const rowVisible = isInterestVisible(leftInterest) || isInterestVisible(rightInterest)
+          const rowVisible = isInterestVisible(leftInterest, rightInterest) || isInterestVisible(rightInterest, leftInterest)
           if (!rowVisible) {
             return null
           }
@@ -48,7 +51,7 @@ export default function InterestSelector({ value, onChange, interestsPairs, inte
                 fullWidth
                 variant={value.includes(leftInterest) ? "contained" : "outlined"}
                 onClick={() => handleInterestClick(leftInterest)}
-                style={{ visibility: isInterestVisible(leftInterest) ? 'visible' : 'hidden' }}
+                style={{ visibility: isInterestVisible(leftInterest, rightInterest) ? 'visible' : 'hidden' }}
               >
                 {leftInterest}
               </Button>
@@ -56,7 +59,7 @@ export default function InterestSelector({ value, onChange, interestsPairs, inte
                 fullWidth
                 variant={value.includes(rightInterest) ? "contained" : "outlined"}
                 onClick={() => handleInterestClick(rightInterest)}
-                style={{ visibility: isInterestVisible(rightInterest) ? 'visible' : 'hidden' }}
+                style={{ visibility: isInterestVisible(rightInterest, leftInterest) ? 'visible' : 'hidden' }}
               >
                 {rightInterest}
               </Button>
