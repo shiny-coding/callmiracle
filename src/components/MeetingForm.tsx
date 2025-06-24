@@ -20,6 +20,8 @@ import ConfirmDialog from './ConfirmDialog'
 import { useSnackbar } from '@/contexts/SnackContext'
 import { handleMeetingSaveResult, calculateHasValidDuration, trySelectHourSlots, useCancelMeeting } from './MeetingFormUtils'
 import PageHeader from './PageHeader'
+import UserAvatar from './UserAvatar'
+import UserDetailsPopup from './UserDetailsPopup'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -64,6 +66,7 @@ export default function MeetingForm() {
     lastMeetingLanguage || currentUser?.languages || []
   )
   const [showNameInCalendar, setShowNameInCalendar] = useState<boolean>(false)
+  const [userDetailsPopupOpen, setUserDetailsPopupOpen] = useState(false)
   
   // Wrapper function to save to store when languages change
   const setTempLanguages = (languages: string[]) => {
@@ -217,6 +220,14 @@ export default function MeetingForm() {
     router.back()
   }
 
+  const handleUserClick = () => {
+    setUserDetailsPopupOpen(true)
+  }
+
+  const handleCloseUserDetails = () => {
+    setUserDetailsPopupOpen(false)
+  }
+
   const handleSave = async () => {
     if (!selectedGroupId) {
       showSnackbar(t('pleaseSelectGroup'), 'error')
@@ -279,6 +290,25 @@ export default function MeetingForm() {
       </PageHeader>
       {/* Scrollable Content */}
       <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
+        {/* User Info Display - only show when connecting to transparent meeting */}
+        {meetingToConnect && meetingToConnect.transparency === MeetingTransparency.Transparent && meetingWithPeerToConnect?.peerUser && (
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
+            <UserAvatar user={meetingWithPeerToConnect.peerUser} size="lg" />
+            <div className="flex-1">
+              <Typography 
+                variant="body1" 
+                className="font-medium cursor-pointer hover:underline"
+                onClick={handleUserClick}
+              >
+                {meetingWithPeerToConnect.peerUser.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('connectingToUser')}
+              </Typography>
+            </div>
+          </div>
+        )}
+
         {/* Group Selector */}
         <SingleGroupSelector
           value={selectedGroupId}
@@ -494,6 +524,13 @@ export default function MeetingForm() {
         onConfirm={() => meeting?._id && handleConfirmCancelMeeting(meeting._id)}
         onCancel={handleCloseCancelDialog}
       />
+      {meetingWithPeerToConnect?.peerUser && (
+        <UserDetailsPopup
+          user={meetingWithPeerToConnect.peerUser}
+          open={userDetailsPopupOpen}
+          onClose={handleCloseUserDetails}
+        />
+      )}
     </div>
   )
 } 

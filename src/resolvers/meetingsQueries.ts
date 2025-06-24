@@ -163,6 +163,8 @@ const getFutureMeetingsWithPeers = async (_: any, {
     // 1. Fetch meetings with group filtering applied at the database level (excluding user's own meetings)
     const meetingsQuery: any = {
       $and: [
+        { groupId: { $in: groupsToFilter } }, // Always apply group filter
+        { lastSlotEnd: { $gt: now } },
         {
           $or: [
             { status: MeetingStatus.Seeking },
@@ -174,8 +176,6 @@ const getFutureMeetingsWithPeers = async (_: any, {
             }
           ]
         },
-        { lastSlotEnd: { $gt: now } },
-        { groupId: { $in: groupsToFilter } } // Always apply group filter
       ]
     }
 

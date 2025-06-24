@@ -3,6 +3,7 @@ import { usePathname } from "next/navigation"
 import { AppContent } from "@/components/AppContent";
 import { WebRTCProvider } from "@/hooks/webrtc/WebRTCProvider";
 import { DetailedCallHistoryProvider } from "@/store/DetailedCallHistoryProvider";
+import { ConversationsProvider } from "@/store/ConversationsProvider";
 import { useWebRTCContext } from "@/hooks/webrtc/WebRTCProvider";
 import TopControlsBar from "@/components/TopControlsBar";
 import RemoteVideo from "@/components/RemoteVideo";
@@ -10,7 +11,6 @@ import BottomControlsBar from "@/components/BottomControlsBar";
 import DetailedCallHistoryDialog from "@/components/DetailedCallHistoryDialog";
 import CallerDialog from "@/components/CallerDialog";
 import CalleeDialog from "@/components/CalleeDialog";
-import { SnackbarProvider } from '@/contexts/SnackContext'
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -21,9 +21,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     <AppContent>
       <WebRTCProvider>
         <DetailedCallHistoryProvider>
-          <MainContent>
-            {children}
-          </MainContent>
+          <ConversationsProvider>
+            <MainContent>
+              {children}
+            </MainContent>
+          </ConversationsProvider>
         </DetailedCallHistoryProvider>
       </WebRTCProvider>
     </AppContent>

@@ -201,6 +201,7 @@
   "tomorrow": "Tomorrow",
   "count": "Count",
   "connectWithMeeting": "Connect with Meeting",
+  "connectingToUser": "Connecting to user",
   "pleaseSelectAnEarlierTimeSlot": "Please select an earlier time slot for this meeting or change the minimum duration",
   "myMeeting": "My Meeting",
   "cannotJoinOwnMeetingConflict": "Cannot join because you have your own meeting at that time",
@@ -319,5 +320,14 @@
   "confirmRemoveFromGroup": "Are you sure you want to remove {userName} from the group?",
   "userRemovedFromGroup": "User removed from group successfully",
   "errorRemovingUserFromGroup": "Error removing user from group",
-  "unknownGroup": "Unknown Group"
+  "unknownGroup": "Unknown Group",
+  "conversations": "Messages",
+  "sendMessage": "Send Message",
+  "noConversationsYet": "No conversations yet",
+  "selectConversationToViewMessages": "Select a conversation to view messages",
+  "startConversationToSeeMessages": "Start a conversation to see messages here",
+  "noMessagesYet": "No messages yet",
+  "typeMessage": "Type a message...",
+  "errorLoadingMessages": "Error loading messages",
+  "edited": "edited"
 } 

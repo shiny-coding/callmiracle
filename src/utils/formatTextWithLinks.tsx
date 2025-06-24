@@ -1,25 +1,28 @@
-const URL_REGEX = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([^\s]+\.[^\s]+)/g
+import React from 'react';
 
-export const formatTextWithLinks = (text: string) => {
-  if (!text) return []
+export function formatTextWithLinks(text: string): React.ReactNode {
+  if (!text) {
+    return text;
+  }
 
-  const parts = text.split(URL_REGEX)
-  return parts.filter(Boolean).map((part, i) => {
-    if (part.match(URL_REGEX)) {
-      const url = part.startsWith('http') ? part : `https://${part}`
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
       return (
-        <a 
-          key={i}
-          href={url}
+        <a
+          key={index}
+          href={part}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300"
+          className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
           onClick={(e) => e.stopPropagation()}
         >
           {part}
         </a>
-      )
+      );
     }
-    return part
-  })
+    return part;
+  });
 } 

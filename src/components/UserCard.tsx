@@ -8,6 +8,7 @@ import LockIcon from '@mui/icons-material/Lock'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import CheckIcon from '@mui/icons-material/Check'
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle'
+import MessageIcon from '@mui/icons-material/Message'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useDetailedCallHistory } from '@/store/DetailedCallHistoryProvider'
 import { useState } from 'react'
@@ -17,12 +18,15 @@ import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { useRemoveUserFromGroup } from '@/hooks/useRemoveUserFromGroup'
 import { useSnackbar } from '@/contexts/SnackContext'
 import UserAvatar from './UserAvatar'
+import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 
 interface UserCardProps {
   user: User
   showDetails?: boolean
   showCallButton?: boolean
   showHistoryButton?: boolean
+  showMessageButton?: boolean
   filteringByGroup?: Group | null // The group being filtered by, if any
 }
 
@@ -31,10 +35,13 @@ export default function UserCard({
   showDetails = true, 
   showCallButton = false,
   showHistoryButton = false,
+  showMessageButton = false,
   filteringByGroup = null
 }: UserCardProps) {
   const t = useTranslations()
   const { doCall } = useWebRTCContext()
+  const router = useRouter()
+  const locale = useLocale()
   const { setSelectedUser } = useDetailedCallHistory()
   const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false)
@@ -142,6 +149,18 @@ export default function UserCard({
               title={t('removeFromGroup')}
             >
               <RemoveCircleIcon />
+            </IconButton>
+          )}
+          {showMessageButton && !isCurrentUser && (
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push(`/${locale}/conversations?with=${user._id}`)
+              }}
+              className="text-white hover:bg-gray-600"
+              title={t('sendMessage')}
+            >
+              <MessageIcon />
             </IconButton>
           )}
           {showHistoryButton && !isCurrentUser && (

@@ -204,6 +204,7 @@
   "tomorrow": "Завтра",
   "count": "Кол.",
   "connectWithMeeting": "Присоединиться к встрече",
+  "connectingToUser": "Подключение к пользователю",
   "pleaseSelectAnEarlierTimeSlot": "Пожалуйста, выберите более раннее время для этой встречи или измените минимальную продолжительность",
   "myMeeting": "Моя встреча",
   "cannotJoinOwnMeetingConflict": "Нельзя присоединиться, у вас уже есть встреча в это время",
@@ -327,5 +328,14 @@
   "confirmRemoveFromGroup": "Вы уверены, что хотите удалить {userName} из группы?",
   "userRemovedFromGroup": "Пользователь успешно удален из группы",
   "errorRemovingUserFromGroup": "Ошибка при удалении пользователя из группы",
-  "unknownGroup": "Неизвестная группа"
+  "unknownGroup": "Неизвестная группа",
+  "conversations": "Сообщения",
+  "sendMessage": "Отправить сообщение",
+  "noConversationsYet": "Пока нет переписок",
+  "selectConversationToViewMessages": "Выберите переписку для просмотра сообщений",
+  "startConversationToSeeMessages": "Начните переписку, чтобы увидеть сообщения здесь",
+  "noMessagesYet": "Пока нет сообщений",
+  "typeMessage": "Введите сообщение...",
+  "errorLoadingMessages": "Ошибка загрузки сообщений",
+  "edited": "изменено"
 } 

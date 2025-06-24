@@ -125,11 +125,12 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
   // Try to find a matching meeting
   const now = new Date().getTime();
   const potentialPeers = await db.collection('meetings').find({
-      userId: { $ne: _userId },
-      peerMeetingId: null,
-      timeSlots: { $elemMatch: { $gte: now } },
-      status: MeetingStatus.Seeking
-    }).toArray();
+    groupId: meeting.groupId,
+    lastSlotEnd: { $gt: now },
+    userId: { $ne: _userId },
+    peerMeetingId: null,
+    status: MeetingStatus.Seeking
+  }).toArray();
 
   if (potentialPeers.length === 0) return meeting;
 

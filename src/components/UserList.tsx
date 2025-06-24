@@ -172,6 +172,7 @@ export default function UserList() {
                       user={user} 
                       showDetails={true} 
                       showCallButton={true}
+                      showMessageButton={true}
                       showHistoryButton={true}
                       filteringByGroup={filteringGroup}
                     />

@@ -151,6 +151,28 @@ type Call {
   durationS: Int!
 }
 
+type Conversation {
+  _id: ID!
+  user1Id: ID!
+  user2Id: ID!
+  blockedByUser1: Boolean!
+  blockedByUser2: Boolean!
+  createdAt: Float!
+  updatedAt: Float!
+  user1: User!
+  user2: User!
+}
+
+type Message {
+  _id: ID!
+  conversationId: ID!
+  userId: ID!
+  message: String!
+  createdAt: Float!
+  updatedAt: Float
+  edited: Boolean!
+}
+
 input UserInput {
   _id: ID!
   name: String!
@@ -259,6 +281,8 @@ type Query {
     filterMinDurationM: Int
     filterGroups: [String!]
   ): [MeetingWithPeer!]!
+  getConversations: [Conversation!]!
+  getMessages(conversationId: ID!, beforeId: ID): [Message!]!
 }
 
 type Mutation {
@@ -274,6 +298,9 @@ type Mutation {
   setNotificationSeen(id: ID!): Notification
   setAllNotificationsSeen(userId: ID!): Boolean!
   deleteUser(userId: ID!): Boolean!
+  addMessage(input: AddMessageInput!): Message!
+  editMessage(input: EditMessageInput!): Message!
+  deleteMessage(messageId: ID!): Boolean!
 }
 
 type Subscription {
@@ -315,4 +342,14 @@ input PushSubscriptionKeysInput {
 input PushSubscriptionInput {
   endpoint: String!
   keys: PushSubscriptionKeysInput!
+}
+
+input AddMessageInput {
+  targetUserId: ID!
+  message: String!
+}
+
+input EditMessageInput {
+  messageId: ID!
+  message: String!
 }

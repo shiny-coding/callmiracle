@@ -15,6 +15,11 @@ export type Scalars = {
   Date: { input: any; output: any; }
 };
 
+export type AddMessageInput = {
+  message: Scalars['String']['input'];
+  targetUserId: Scalars['ID']['input'];
+};
+
 export type Block = {
   __typename?: 'Block';
   all: Scalars['Boolean']['output'];
@@ -86,9 +91,27 @@ export type CallUserInput = {
   videoEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export type Conversation = {
+  __typename?: 'Conversation';
+  _id: Scalars['ID']['output'];
+  blockedByUser1: Scalars['Boolean']['output'];
+  blockedByUser2: Scalars['Boolean']['output'];
+  createdAt: Scalars['Float']['output'];
+  updatedAt: Scalars['Float']['output'];
+  user1: User;
+  user1Id: Scalars['ID']['output'];
+  user2: User;
+  user2Id: Scalars['ID']['output'];
+};
+
 export type DeleteMeetingResponse = {
   __typename?: 'DeleteMeetingResponse';
   _id: Scalars['ID']['output'];
+};
+
+export type EditMessageInput = {
+  message: Scalars['String']['input'];
+  messageId: Scalars['ID']['input'];
 };
 
 export type Group = {
@@ -215,20 +238,39 @@ export type MeetingWithPeer = {
   peerUser?: Maybe<User>;
 };
 
+export type Message = {
+  __typename?: 'Message';
+  _id: Scalars['ID']['output'];
+  conversationId: Scalars['ID']['output'];
+  createdAt: Scalars['Float']['output'];
+  edited: Scalars['Boolean']['output'];
+  message: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['Float']['output']>;
+  userId: Scalars['ID']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
+  addMessage: Message;
   callUser?: Maybe<CallEvent>;
   createOrUpdateGroup: Group;
   createOrUpdateMeeting: MeetingOutput;
   deleteGroup: Scalars['Boolean']['output'];
   deleteMeeting?: Maybe<DeleteMeetingResponse>;
+  deleteMessage: Scalars['Boolean']['output'];
   deleteUser: Scalars['Boolean']['output'];
+  editMessage: Message;
   regenerateJoinToken: Group;
   removeUserFromGroup: Scalars['Boolean']['output'];
   setAllNotificationsSeen: Scalars['Boolean']['output'];
   setNotificationSeen?: Maybe<Notification>;
   updateMeetingStatus: Meeting;
   updateUser?: Maybe<User>;
+};
+
+
+export type MutationAddMessageArgs = {
+  input: AddMessageInput;
 };
 
 
@@ -257,8 +299,18 @@ export type MutationDeleteMeetingArgs = {
 };
 
 
+export type MutationDeleteMessageArgs = {
+  messageId: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteUserArgs = {
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationEditMessageArgs = {
+  input: EditMessageInput;
 };
 
 
@@ -343,9 +395,11 @@ export type Query = {
   __typename?: 'Query';
   getCallHistory: Array<CallHistoryEntry>;
   getCalls: Array<Call>;
+  getConversations: Array<Conversation>;
   getDetailedCallHistory: Array<Call>;
   getFutureMeetingsWithPeers: Array<MeetingWithPeer>;
   getGroups: Array<Group>;
+  getMessages: Array<Message>;
   getMyMeetingsWithPeers: Array<MeetingWithPeer>;
   getNotifications: Array<Notification>;
   getUser?: Maybe<User>;
@@ -379,6 +433,12 @@ export type QueryGetFutureMeetingsWithPeersArgs = {
 
 export type QueryGetGroupsArgs = {
   userId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetMessagesArgs = {
+  beforeId?: InputMaybe<Scalars['ID']['input']>;
+  conversationId: Scalars['ID']['input'];
 };
 
 
