@@ -120,6 +120,8 @@ type NotificationEvent {
   type: NotificationType!
   meeting: Meeting
   user: User
+  peerUserName: String
+  messageText: String
 }
 
 type BroadcastEvent {

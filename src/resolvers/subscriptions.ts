@@ -27,12 +27,21 @@ export const subscriptions = {
     },
     resolve: (payload: SubscriptionEventPayload) => {
       if ( payload.notificationEvent ) {
-        console.log('Resolving meeting changed:', {
-          type: payload.notificationEvent.type,
-          meetingId: payload.notificationEvent.meeting?._id,
-          userName: payload.notificationEvent.user?.name,
-          userId: payload.notificationEvent.user?._id
-        })
+        if (payload.notificationEvent.type === 'MESSAGE_RECEIVED') {
+          console.log('Resolving message notification:', {
+            type: payload.notificationEvent.type,
+            senderName: payload.notificationEvent.peerUserName,
+            senderId: payload.notificationEvent.user?._id,
+            messagePreview: payload.notificationEvent.messageText
+          })
+        } else {
+          console.log('Resolving meeting notification:', {
+            type: payload.notificationEvent.type,
+            meetingId: payload.notificationEvent.meeting?._id,
+            userName: payload.notificationEvent.user?.name,
+            userId: payload.notificationEvent.user?._id
+          })
+        }
       } else if ( payload.callEvent ) {
         console.log('Resolving call request:', {
           type: payload.callEvent.type,

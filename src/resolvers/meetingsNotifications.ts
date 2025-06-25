@@ -56,6 +56,7 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
   pubsub.publish(topic, { 
     notificationEvent: { 
       type: NotificationType.MessageReceived, 
+      meeting: null, // No meeting for message notifications
       user: senderUser,
       peerUserName: senderUser.name,
       messageText: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText
