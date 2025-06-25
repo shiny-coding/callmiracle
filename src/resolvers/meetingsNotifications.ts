@@ -39,3 +39,28 @@ export async function publishMeetingNotification(notificationType: NotificationT
     meetingId: peerMeeting._id
   })
 }
+
+// Helper function to publish message notification (no DB storage, just real-time notification)
+export async function publishMessageNotification(db: any, targetUserId: ObjectId, senderUser: any, messageText: string) {
+  
+  // Get the target user for notification
+  const targetUser = await db.collection('users').findOne({ _id: targetUserId })
+  
+  if (!targetUser) {
+    console.error('Target user not found', { targetUserId })
+    return
+  }
+  
+  // Publish notification event (no DB storage)
+  const topic = `SUBSCRIPTION_EVENT:${targetUserId.toString()}`
+  pubsub.publish(topic, { 
+    notificationEvent: { 
+      type: NotificationType.MessageReceived, 
+      user: senderUser,
+      peerUserName: senderUser.name,
+      messageText: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText
+    }
+  })
+  
+  console.log(`Published MESSAGE_RECEIVED event for user:`, { name: targetUser.name, userId: targetUserId.toString() })
+}

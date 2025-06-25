@@ -2,6 +2,7 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { MESSAGE_MAX_LENGTH } from './conversationsQueries'
 import { publishPushNotification } from './pushNotifications'
+import { publishMessageNotification } from './meetingsNotifications'
 import { NotificationType } from '@/generated/graphql'
 
 export const conversationsMutations = {
@@ -103,9 +104,11 @@ export const conversationsMutations = {
       { $set: updateFields }
     )
 
-    // Send push notification to the target user
+    // Send push notification and real-time notification to the target user
     try {
       const truncatedMessage = message.length > 100 ? message.substring(0, 100) + '...' : message
+      
+      // Send push notification
       await publishPushNotification(db, targetUser, {
         type: NotificationType.MessageReceived,
         peerUserName: currentUser.name,
@@ -113,9 +116,12 @@ export const conversationsMutations = {
         conversationId: conversation._id,
         senderUserId: userId
       })
+      
+      // Send real-time notification (no DB storage)
+      await publishMessageNotification(db, _targetUserId, currentUser, message.trim())
     } catch (error) {
-      console.error('Error sending push notification:', error)
-      // Don't fail the message send if push notification fails
+      console.error('Error sending notifications:', error)
+      // Don't fail the message send if notifications fail
     }
 
     return {

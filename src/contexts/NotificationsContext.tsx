@@ -9,6 +9,7 @@ import { getNotificationMessage } from '@/utils/notificationUtils'
 import { useRouter } from 'next/navigation'
 import { useClientPushNotifications } from '@/hooks/useClientPushNotifications'
 import { useSnackbar } from './SnackContext'
+import { NotificationType } from '@/generated/graphql'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications($userId: ID!) {
@@ -48,15 +49,6 @@ const MARK_ALL_NOTIFICATIONS_SEEN = gql`
     setAllNotificationsSeen(userId: $userId)
   }
 `
-
-type NotificationType = {
-  _id: string
-  type: string
-  seen: boolean
-  meetingId?: string
-  createdAt: number
-  meeting?: any
-}
 
 interface NotificationsContextType {
   notifications: NotificationType[]
@@ -118,18 +110,35 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const unsubscribe = subscribeToNotifications((notificationEvent: any) => {
       if (notificationEvent) {
         // showBrowserNotification(notificationEvent, t, router)
-        showSnackbar(getNotificationMessage(notificationEvent, t), 'info')
+        
+        // Handle message notifications differently
+        if (notificationEvent.type === NotificationType.MessageReceived) {
+          const messageText = `${notificationEvent.peerUserName}: ${notificationEvent.messageText}`
+          showSnackbar(messageText, 'info', () => {
+            router.push(`/conversations?with=${notificationEvent.user._id}`)
+          })
+        } else {
+          showSnackbar(getNotificationMessage(notificationEvent, t), 'info', () => {
+            if (notificationEvent.meeting?._id) {
+              router.push(`/list?meetingId=${notificationEvent.meeting._id}`)
+            }
+          })
+        }
+        
         // Play notification sound if not already playing
         if (!isPlaying) {
           playNotificationSound()
         }
         
-        refetch()
+        // Only refetch for non-message notifications (since message notifications aren't stored in DB)
+        if (notificationEvent.type !== NotificationType.MessageReceived) {
+          refetch()
+        }
       }
     })
     
     return unsubscribe
-  }, [subscribeToNotifications, refetch, playNotificationSound, isPlaying, t, router])
+  }, [subscribeToNotifications, refetch, playNotificationSound, isPlaying, t, router, showSnackbar])
   
   const setNotificationSeen = async (id: string) => {
     try {
