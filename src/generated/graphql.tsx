@@ -97,11 +97,14 @@ export type Conversation = {
   blockedByUser1: Scalars['Boolean']['output'];
   blockedByUser2: Scalars['Boolean']['output'];
   createdAt: Scalars['Float']['output'];
+  lastMessage?: Maybe<Scalars['ID']['output']>;
   updatedAt: Scalars['Float']['output'];
   user1: User;
   user1Id: Scalars['ID']['output'];
+  user1LastSeenMessage?: Maybe<Scalars['ID']['output']>;
   user2: User;
   user2Id: Scalars['ID']['output'];
+  user2LastSeenMessage?: Maybe<Scalars['ID']['output']>;
 };
 
 export type DeleteMeetingResponse = {
@@ -260,6 +263,7 @@ export type Mutation = {
   deleteMessage: Scalars['Boolean']['output'];
   deleteUser: Scalars['Boolean']['output'];
   editMessage: Message;
+  markConversationRead: Scalars['Boolean']['output'];
   regenerateJoinToken: Group;
   removeUserFromGroup: Scalars['Boolean']['output'];
   setAllNotificationsSeen: Scalars['Boolean']['output'];
@@ -311,6 +315,11 @@ export type MutationDeleteUserArgs = {
 
 export type MutationEditMessageArgs = {
   input: EditMessageInput;
+};
+
+
+export type MutationMarkConversationReadArgs = {
+  conversationId: Scalars['ID']['input'];
 };
 
 
@@ -366,7 +375,8 @@ export type NotificationEvent = {
 export enum NotificationType {
   MeetingConnected = 'MEETING_CONNECTED',
   MeetingDisconnected = 'MEETING_DISCONNECTED',
-  MeetingFinished = 'MEETING_FINISHED'
+  MeetingFinished = 'MEETING_FINISHED',
+  MessageReceived = 'MESSAGE_RECEIVED'
 }
 
 export type PushSubscription = {

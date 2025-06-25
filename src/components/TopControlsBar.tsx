@@ -5,6 +5,7 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import LogoutIcon from '@mui/icons-material/Logout'
 import { useState, useRef, useEffect, MutableRefObject } from 'react'
 import NotificationsPopup from './NotificationsPopup'
+import NotificationBadge from './NotificationBadge'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useStore } from '@/store/useStore'
@@ -120,9 +121,9 @@ export default function TopControlsBar() {
         className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
         onClick={() => setNotificationsOpen(true)}
       >
-        <Badge color="error" variant="dot" invisible={!hasUnseenNotifications}>
+        <NotificationBadge show={hasUnseenNotifications}>
           <NotificationsIcon className="text-white" />
-        </Badge>
+        </NotificationBadge>
       </IconButton>
 
       <div className="flex items-center gap-4 grow justify-center">

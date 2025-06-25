@@ -11,8 +11,9 @@ import { useStore } from '@/store/useStore'
 import LoadingDialog from '@/components/LoadingDialog'
 import PageHeader from '@/components/PageHeader'
 import MessagesList from '@/components/MessagesList'
+import NotificationBadge from '@/components/NotificationBadge'
 import { useSearchParams } from 'next/navigation'
-import { gql, useLazyQuery } from '@apollo/client'
+import { gql, useLazyQuery, useMutation } from '@apollo/client'
 
 const GET_USER = gql`
   query GetUser($userId: ID!) {
@@ -23,8 +24,14 @@ const GET_USER = gql`
   }
 `
 
+const MARK_CONVERSATION_READ = gql`
+  mutation MarkConversationRead($conversationId: ID!) {
+    markConversationRead(conversationId: $conversationId)
+  }
+`
+
 export default function ConversationsList() {
-  const { conversations, loading, error, refetch } = useConversations()
+  const { conversations, loading, error, refetch, hasUnreadMessages } = useConversations()
   const t = useTranslations()
   const currentUser = useStore(state => state.currentUser)
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
@@ -40,6 +47,7 @@ export default function ConversationsList() {
   const sortedConversations = [...allConversations].sort((a, b) => b.updatedAt - a.updatedAt)
 
   const [getUser, { data: newUserData, loading: newUserLoading }] = useLazyQuery<{ getUser: User }>(GET_USER)
+  const [markConversationRead] = useMutation(MARK_CONVERSATION_READ)
 
   useEffect(() => {
     // If there's no selected conversation and there are conversations available,
@@ -76,6 +84,9 @@ export default function ConversationsList() {
         createdAt: Date.now(),
         blockedByUser1: false,
         blockedByUser2: false,
+        lastMessage: null,
+        user1LastSeenMessage: null,
+        user2LastSeenMessage: null,
         __typename: 'Conversation',
       }
       setTempConversation(tempConvo)
@@ -88,6 +99,25 @@ export default function ConversationsList() {
   const getOtherUser = (conversation: Conversation) => {
     if (!currentUser) return null
     return conversation.user1Id === currentUser._id ? conversation.user2 : conversation.user1
+  }
+
+
+
+  const handleConversationSelect = async (conversationId: string) => {
+    setSelectedConversationId(conversationId)
+    
+    // Mark conversation as read if it's not a temp conversation
+    if (!conversationId.startsWith('temp_')) {
+      try {
+        await markConversationRead({
+          variables: { conversationId }
+        })
+        // Refetch conversations to update the UI
+        refetch()
+      } catch (error) {
+        console.error('Error marking conversation as read:', error)
+      }
+    }
   }
 
   return (
@@ -132,6 +162,7 @@ export default function ConversationsList() {
             sortedConversations.map((conversation) => {
               const otherUser = getOtherUser(conversation)
               const isSelected = selectedConversationId === conversation._id
+              const hasUnread = hasUnreadMessages(conversation)
               
               return (
                 <Box
@@ -139,18 +170,20 @@ export default function ConversationsList() {
                   className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors min-w-[80px] ${
                     isSelected ? 'bg-blue-600' : 'hover:bg-gray-700'
                   }`}
-                  onClick={() => setSelectedConversationId(conversation._id)}
+                  onClick={() => handleConversationSelect(conversation._id)}
                 >
-                  <Avatar 
-                    className="w-12 h-12 mb-1"
-                    sx={{ 
-                      backgroundColor: isSelected ? '#ffffff' : '#4b5563',
-                      color: isSelected ? '#2563eb' : '#ffffff',
-                      fontSize: '1rem' 
-                    }}
-                  >
-                    {otherUser?.name?.charAt(0)?.toUpperCase() || '?'}
-                  </Avatar>
+                  <NotificationBadge show={hasUnread && !isSelected}>
+                    <Avatar 
+                      className="w-12 h-12 mb-1"
+                      sx={{ 
+                        backgroundColor: isSelected ? '#ffffff' : '#4b5563',
+                        color: isSelected ? '#2563eb' : '#ffffff',
+                        fontSize: '1rem' 
+                      }}
+                    >
+                      {otherUser?.name?.charAt(0)?.toUpperCase() || '?'}
+                    </Avatar>
+                  </NotificationBadge>
                   <Typography 
                     variant="caption" 
                     className={`text-center text-xs max-w-[70px] overflow-hidden text-ellipsis whitespace-nowrap ${

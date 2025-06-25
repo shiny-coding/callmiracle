@@ -296,15 +296,14 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
       </Box>
 
       {/* Input area */}
-      <Paper className="border-t border-gray-200 p-4" elevation={0}>
+      <Paper className="border-t brighter-border p-4" elevation={0}>
         <Box className="flex gap-2 items-end">
           <Box className="flex-grow">
             <div
               ref={messageInputRef}
               contentEditable
-              className="min-h-[2.5rem] max-h-[6rem] overflow-y-auto p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="brighter-border min-h-[2.5rem] max-h-[6rem] overflow-y-auto p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               style={{
-                borderColor: 'var(--border-color)',
                 lineHeight: '1.5',
                 wordWrap: 'break-word',
                 whiteSpace: 'pre-wrap'

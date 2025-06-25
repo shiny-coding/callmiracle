@@ -4,6 +4,16 @@ import { Db, ObjectId } from 'mongodb'
 import { NotificationType } from '@/generated/graphql'
 import { getTranslations } from 'next-intl/server'
 
+
+type PushNotification = {
+  type: NotificationType, 
+  peerUserName: string, 
+  meetingId?: ObjectId,
+  messageText?: string,
+  conversationId?: ObjectId,
+  senderUserId?: ObjectId
+}
+
 // VAPID keys should be generated once and stored securely as environment variables.
 // You can generate them using the web-push library:
 // npx web-push generate-vapid-keys
@@ -50,7 +60,7 @@ const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription
   }
 }
 
-export const publishPushNotification = async (db: Db, user: any, notification: { type: NotificationType, peerUserName: string, meetingId: ObjectId }) => {
+export const publishPushNotification = async (db: Db, user: any, notification: PushNotification) => {
   if (!user || !user.pushSubscriptions || !Array.isArray(user.pushSubscriptions) || user.pushSubscriptions.length === 0) {
     console.log(`User ${user?._id} not found or has no push subscriptions.`)
     return
@@ -62,13 +72,22 @@ export const publishPushNotification = async (db: Db, user: any, notification: {
   // Get translations using next-intl
   const t = await getTranslations({ locale: userLocale })
   
-  const body = getNotificationMessage(notification, t)
+  let body: string
+  let url: string
+
+  if (notification.type === NotificationType.MessageReceived) {
+    body = `${notification.peerUserName}: ${notification.messageText}`
+    url = `/conversations?with=${notification.senderUserId?.toString()}`
+  } else {
+    body = getNotificationMessage(notification, t)
+    url = `/list?meetingId=${notification.meetingId?.toString()}`
+  }
 
   const payload = {
     title: 'CallMiracle',
     body,
     data: {
-      url: `/list?meetingId=${notification.meetingId.toString()}`
+      url
     }
   }
 

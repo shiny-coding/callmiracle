@@ -15,6 +15,9 @@ const GET_CONVERSATIONS = gql`
       blockedByUser2
       createdAt
       updatedAt
+      lastMessage
+      user1LastSeenMessage
+      user2LastSeenMessage
       user1 {
         _id
         name
@@ -32,6 +35,8 @@ interface ConversationsContextType {
   loading: boolean
   error: any
   refetch: () => Promise<any>
+  hasUnreadConversations: boolean
+  hasUnreadMessages: (conversation: Conversation) => boolean
 }
 
 const ConversationsContext = createContext<ConversationsContextType | null>(null)
@@ -56,8 +61,35 @@ export function ConversationsProvider({ children }: ConversationsProviderProps) 
   })
   const conversations = data?.getConversations || []
 
+  const hasUnreadMessages = (conversation: Conversation) => {
+    if (!currentUser) return false
+    
+    // If there's no lastMessage, there are no messages
+    if (!conversation.lastMessage) return false
+    
+    // Get the correct lastSeenMessage field for the current user
+    const lastSeenMessage = conversation.user1Id === currentUser._id 
+      ? conversation.user1LastSeenMessage 
+      : conversation.user2LastSeenMessage
+    
+    // If there's no lastSeenMessage, there are unread messages
+    if (!lastSeenMessage) return true
+    
+    // If lastMessage is different from lastSeenMessage, there are unread messages
+    return conversation.lastMessage !== lastSeenMessage
+  }
+
+  const hasUnreadConversations = conversations?.some(hasUnreadMessages) || false
+
   return (
-    <ConversationsContext.Provider value={{ conversations, loading, error, refetch }}>
+    <ConversationsContext.Provider value={{ 
+      conversations, 
+      loading, 
+      error, 
+      refetch, 
+      hasUnreadConversations,
+      hasUnreadMessages
+    }}>
       {children}
     </ConversationsContext.Provider>
   )

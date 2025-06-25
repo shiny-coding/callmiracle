@@ -8,6 +8,7 @@ enum NotificationType {
   MEETING_CONNECTED
   MEETING_DISCONNECTED
   MEETING_FINISHED
+  MESSAGE_RECEIVED
 }
 
 enum MeetingTransparency {
@@ -159,6 +160,9 @@ type Conversation {
   blockedByUser2: Boolean!
   createdAt: Float!
   updatedAt: Float!
+  lastMessage: ID
+  user1LastSeenMessage: ID
+  user2LastSeenMessage: ID
   user1: User!
   user2: User!
 }
@@ -301,6 +305,7 @@ type Mutation {
   addMessage(input: AddMessageInput!): Message!
   editMessage(input: EditMessageInput!): Message!
   deleteMessage(messageId: ID!): Boolean!
+  markConversationRead(conversationId: ID!): Boolean!
 }
 
 type Subscription {

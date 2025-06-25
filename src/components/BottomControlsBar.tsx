@@ -8,7 +8,9 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import MessageIcon from '@mui/icons-material/Message'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useRouter, usePathname  } from 'next/navigation'
-import { useLocale } from 'next-intl';
+import { useLocale } from 'next-intl'
+import { useConversations } from '@/store/ConversationsProvider'
+import NotificationBadge from './NotificationBadge'
 
 let mousePosition = { x: 0, y: 0 }
 
@@ -22,6 +24,8 @@ export default function BottomControlsBar() {
     connectionStatus,
     hangup,
   } = useWebRTCContext()
+
+  const { hasUnreadConversations } = useConversations()
 
   const router = useRouter()
   const pathname = usePathname()
@@ -56,7 +60,9 @@ export default function BottomControlsBar() {
             </IconButton>
             
             <IconButton onClick={() => router.push(conversationsPath)} style={{ color: pathname === conversationsPath ? selectedColor : undefined, }} >
-              <MessageIcon />
+              <NotificationBadge show={hasUnreadConversations}>
+                <MessageIcon />
+              </NotificationBadge>
             </IconButton>
             
             <IconButton onClick={() => router.push(callHistoryPath)} style={{ color: pathname === callHistoryPath ? selectedColor : undefined, }} >

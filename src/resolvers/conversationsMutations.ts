@@ -1,6 +1,8 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { MESSAGE_MAX_LENGTH } from './conversationsQueries'
+import { publishPushNotification } from './pushNotifications'
+import { NotificationType } from '@/generated/graphql'
 
 export const conversationsMutations = {
   addMessage: async (
@@ -37,6 +39,12 @@ export const conversationsMutations = {
       throw new Error('Target user not found')
     }
 
+    // Get current user for push notification
+    const currentUser = await db.collection('users').findOne({ _id: userId })
+    if (!currentUser) {
+      throw new Error('Current user not found')
+    }
+
     const now = Date.now()
 
     // Find or create conversation
@@ -55,17 +63,14 @@ export const conversationsMutations = {
         blockedByUser1: false,
         blockedByUser2: false,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        lastMessage: null,
+        user1LastSeenMessage: null,
+        user2LastSeenMessage: null
       }
 
       const result = await db.collection('conversations').insertOne(newConversation)
       conversation = { ...newConversation, _id: result.insertedId }
-    } else {
-      // Update conversation's updatedAt
-      await db.collection('conversations').updateOne(
-        { _id: conversation._id },
-        { $set: { updatedAt: now } }
-      )
     }
 
     // Create new message
@@ -78,11 +83,100 @@ export const conversationsMutations = {
     }
 
     const messageResult = await db.collection('messages').insertOne(newMessage)
+    const messageId = messageResult.insertedId
+
+    // Update conversation with new message and timestamps
+    const updateFields: any = {
+      updatedAt: now,
+      lastMessage: messageId,
+    }
+    
+    // Update lastSeenMessage for the sender
+    if (conversation.user1Id.equals(userId)) {
+      updateFields.user1LastSeenMessage = messageId
+    } else if (conversation.user2Id.equals(userId)) {
+      updateFields.user2LastSeenMessage = messageId
+    }
+
+    await db.collection('conversations').updateOne(
+      { _id: conversation._id },
+      { $set: updateFields }
+    )
+
+    // Send push notification to the target user
+    try {
+      const truncatedMessage = message.length > 100 ? message.substring(0, 100) + '...' : message
+      await publishPushNotification(db, targetUser, {
+        type: NotificationType.MessageReceived,
+        peerUserName: currentUser.name,
+        messageText: truncatedMessage,
+        conversationId: conversation._id,
+        senderUserId: userId
+      })
+    } catch (error) {
+      console.error('Error sending push notification:', error)
+      // Don't fail the message send if push notification fails
+    }
 
     return {
       ...newMessage,
-      _id: messageResult.insertedId
+      _id: messageId
     }
+  },
+
+  markConversationRead: async (
+    _: any,
+    { conversationId }: { conversationId: string },
+    { db, session }: Context
+  ) => {
+    // Check if user is authenticated
+    if (!session?.user?.id) {
+      throw new Error('Authentication required')
+    }
+
+    const userId = new ObjectId(session.user.id)
+    const _conversationId = new ObjectId(conversationId)
+
+    // Find the conversation and check if user is part of it
+    const conversation = await db.collection('conversations').findOne({
+      _id: _conversationId,
+      $or: [
+        { user1Id: userId },
+        { user2Id: userId }
+      ]
+    })
+
+    if (!conversation) {
+      throw new Error('Conversation not found or you are not part of this conversation')
+    }
+
+    // Get the last message in this conversation
+    const lastMessage = await db.collection('messages')
+      .findOne(
+        { conversationId: _conversationId },
+        { sort: { createdAt: -1 } }
+      )
+
+    if (!lastMessage) {
+      // No messages in conversation, nothing to mark as read
+      return true
+    }
+
+    // Update conversation's lastSeenMessage for this user
+    const updateField = conversation.user1Id.equals(userId) 
+      ? 'user1LastSeenMessage' 
+      : 'user2LastSeenMessage'
+
+    await db.collection('conversations').updateOne(
+      { _id: _conversationId },
+      { 
+        $set: { 
+          [updateField]: lastMessage._id
+        } 
+      }
+    )
+
+    return true
   },
 
   editMessage: async (
