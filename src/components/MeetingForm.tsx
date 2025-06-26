@@ -271,7 +271,7 @@ export default function MeetingForm() {
   }
 
   return (
-    <div className="flex flex-col h-full panel-bg relative">
+    <div className="flex flex-col h-full normal-bg relative">
       {loading && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -470,7 +470,7 @@ export default function MeetingForm() {
         )}
       </div>
       {/* Bottom Controls Bar */}
-      <div className="sticky bottom-0 left-0 w-full panel-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10">
+      <div className="sticky bottom-0 left-0 w-full normal-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10">
         {meeting && (
           <Button
             variant="contained"

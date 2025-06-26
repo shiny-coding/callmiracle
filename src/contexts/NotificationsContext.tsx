@@ -115,7 +115,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         if (notificationEvent.type === NotificationType.MessageReceived) {
           const messageText = `${notificationEvent.peerUserName}: ${notificationEvent.messageText}`
           showSnackbar(messageText, 'info', () => {
-            router.push(`/conversations?with=${notificationEvent.user._id}`)
+            router.push(`/conversations?with=${notificationEvent.peerUserId}`)
           })
         } else {
           showSnackbar(getNotificationMessage(notificationEvent, t), 'info', () => {

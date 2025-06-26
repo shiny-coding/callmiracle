@@ -259,15 +259,15 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
           return (
             <Box
               key={message._id}
-              className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-2`}
             >
-              <Paper
-                className={`max-w-[70%] p-3 ${
-                  isOwnMessage 
-                    ? 'bg-blue-500 text-white dark' 
-                    : 'bg-gray-100 text-gray-900'
-                }`}
-                elevation={1}
+              <div
+                className={`
+                  max-w-[70%] p-3 relative brighter-bg
+                  ${isOwnMessage ? 'speech-bubble-right' : 'speech-bubble-left'
+                  }
+                  rounded-xl shadow-lg
+                `}
               >
                 <Typography variant="body2" component="div" className="whitespace-pre-wrap break-words">
                   {formatTextWithLinks(message.message)}
@@ -281,7 +281,7 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
                   {formatMessageTime(message.createdAt)}
                   {message.edited && ` • ${t('edited')}`}
                 </Typography>
-              </Paper>
+              </div>
             </Box>
           )
         })}
@@ -296,13 +296,13 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
       </Box>
 
       {/* Input area */}
-      <Paper className="border-t brighter-border p-4" elevation={0}>
+      <Paper className="border-t brighter-border p-4" elevation={0} sx={{ backgroundColor: 'var(--brighter-color)' }}>
         <Box className="flex gap-2 items-end">
           <Box className="flex-grow">
             <div
               ref={messageInputRef}
               contentEditable
-              className="brighter-border min-h-[2.5rem] max-h-[6rem] overflow-y-auto p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="brighter-border normal-bg min-h-[2.5rem] max-h-[6rem] overflow-y-auto p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               style={{
                 lineHeight: '1.5',
                 wordWrap: 'break-word',

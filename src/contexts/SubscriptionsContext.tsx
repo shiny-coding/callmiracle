@@ -30,10 +30,9 @@ const ON_SUBSCRIPTION_EVENT = gql`
           _id
           userId
         }
-        user {
-          _id
-          name
-        }
+        peerUserId
+        peerUserName
+        messageText
       }
       broadcastEvent {
         type

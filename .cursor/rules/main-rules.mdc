@@ -27,3 +27,4 @@ Follow these rules when you write code:
 - if you add translation strings, put them to src/messages/ru.json and src/messages/en.json
 - do not add defaultValue when using translation strings
 - we have some css variables/classes set in globals.scss, use them where appropriate
+- we have src/components/ThemeRegistry.tsx file for mui styling

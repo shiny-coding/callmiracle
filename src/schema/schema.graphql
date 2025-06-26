@@ -119,7 +119,7 @@ type CallEvent {
 type NotificationEvent {
   type: NotificationType!
   meeting: Meeting
-  user: User
+  peerUserId: String
   peerUserName: String
   messageText: String
 }

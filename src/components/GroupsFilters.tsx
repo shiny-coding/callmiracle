@@ -215,7 +215,7 @@ export default function GroupsFilters({
       {/* Buttons bar, always shown when filters are expanded */}
       {isExpanded && (
         <div
-          className="p-3 panel-bg border-t panel-border flex justify-end gap-2 z-20 shadow-lg rounded-md"
+          className="p-3 normal-bg border-t panel-border flex justify-end gap-2 z-20 shadow-lg rounded-md"
           style={{ backgroundColor: 'var(--mui-palette-background-paper)' }}
         >
           {hasChanges ? (

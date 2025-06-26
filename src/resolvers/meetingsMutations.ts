@@ -2,7 +2,7 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { MeetingStatus, NotificationType } from '@/generated/graphql';
 import { createOrUpdateMeeting } from './createOrUpdateMeeting';
-import { publishMeetingNotification } from './meetingsNotifications';
+import { publishMeetingNotification } from './publishNotifications';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -18,8 +18,6 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
 
     const meeting = await db.collection('meetings').findOne({ _id })
     const _peerMeetingId = meeting?.peerMeetingId
-
-    const peerMeeting = _peerMeetingId ? await db.collection('meetings').findOne({ _id: _peerMeetingId }) : null
 
     // Create update object with only provided fields
     const updateFields: any = {}

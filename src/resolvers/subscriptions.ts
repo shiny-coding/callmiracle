@@ -1,4 +1,4 @@
-import { BroadcastEvent, CallEvent, Meeting, NotificationEvent } from '@/generated/graphql'
+import { BroadcastEvent, CallEvent, Meeting, NotificationEvent, NotificationType } from '@/generated/graphql'
 import { pubsub } from './pubsub'
 import { mergeAsyncIterators } from '@/utils'
 
@@ -27,19 +27,19 @@ export const subscriptions = {
     },
     resolve: (payload: SubscriptionEventPayload) => {
       if ( payload.notificationEvent ) {
-        if (payload.notificationEvent.type === 'MESSAGE_RECEIVED') {
+        if (payload.notificationEvent.type === NotificationType.MessageReceived) {
           console.log('Resolving message notification:', {
             type: payload.notificationEvent.type,
             senderName: payload.notificationEvent.peerUserName,
-            senderId: payload.notificationEvent.user?._id,
-            messagePreview: payload.notificationEvent.messageText
+            senderId: payload.notificationEvent.peerUserId,
+            messageText: payload.notificationEvent.messageText
           })
         } else {
           console.log('Resolving meeting notification:', {
             type: payload.notificationEvent.type,
             meetingId: payload.notificationEvent.meeting?._id,
-            userName: payload.notificationEvent.user?.name,
-            userId: payload.notificationEvent.user?._id
+            userName: payload.notificationEvent.peerUserName,
+            userId: payload.notificationEvent.peerUserId
           })
         }
       } else if ( payload.callEvent ) {

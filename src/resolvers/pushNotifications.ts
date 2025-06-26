@@ -10,7 +10,6 @@ type PushNotification = {
   peerUserName: string, 
   meetingId?: ObjectId,
   messageText?: string,
-  conversationId?: ObjectId,
   senderUserId?: ObjectId
 }
 

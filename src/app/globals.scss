@@ -64,8 +64,15 @@ body:before {
 :root {
   --link-color: rgb(121, 179, 250);
   --border-color: #1f2937;
+  --brighter-color: #1f2937;
   --hover-border-color: #3f618d;
   --link-color-hover: rgb(160, 205, 255);
+  --normal-color: #14202e;
+
+  --input-border-color: #536a88;
+  --hover-input-border-color: #527eb7;
+  --input-bg: #111827;
+  --input-focus-bg: #1f2937;
 }
 
 .link-color {
@@ -75,13 +82,16 @@ body:before {
   }
 }
 
-.panel-bg {
-  // background-color: #1e2b3f;
-  background-color: #111827;
+.brighter-bg {
+  background-color: var(--brighter-color);
+}
+
+.normal-bg {
+  background-color: var(--normal-color);
 }
 
 .input-bg {
-  background-color: #1f2937;
+  background-color: var(--input-bg);
 }
 
 .panel-border {
@@ -207,5 +217,40 @@ body:before {
     .m-#{$i}sp {
       margin: var(--#{$i}sp);
     }
+  }
+}
+
+/* Speech bubble styles for comic-like message bubbles */
+.speech-bubble-left {
+  border-bottom-left-radius: 0;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 10px 10px;
+    border-color: transparent transparent var(--brighter-color) transparent;
+    z-index: 1;
+    left: -7px;
+    bottom: 0px;
+  }
+}
+
+.speech-bubble-right {
+  border-bottom-right-radius: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 10px 10px 0;
+    border-color: transparent transparent var(--brighter-color) transparent;
+    z-index: 1;
+    right: -7px;
+    bottom: 0px;
   }
 }

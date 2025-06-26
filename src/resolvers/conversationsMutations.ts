@@ -2,7 +2,7 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { MESSAGE_MAX_LENGTH } from './conversationsQueries'
 import { publishPushNotification } from './pushNotifications'
-import { publishMessageNotification } from './meetingsNotifications'
+import { publishMessageNotification } from './publishNotifications'
 import { NotificationType } from '@/generated/graphql'
 
 export const conversationsMutations = {
@@ -113,7 +113,6 @@ export const conversationsMutations = {
         type: NotificationType.MessageReceived,
         peerUserName: currentUser.name,
         messageText: truncatedMessage,
-        conversationId: conversation._id,
         senderUserId: userId
       })
       

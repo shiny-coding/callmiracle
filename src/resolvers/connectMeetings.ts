@@ -1,6 +1,6 @@
 import { Meeting, MeetingStatus, NotificationType, User } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
-import { publishMeetingNotification } from "./meetingsNotifications";
+import { publishMeetingNotification } from "./publishNotifications";
 import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
 
 // Helper function to find overlapping time ranges

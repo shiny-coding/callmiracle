@@ -251,7 +251,7 @@ export default function MeetingsCalendar() {
           >
             {/* Absolutely positioned sticky day label */}
             {topDayKey && (
-              <div className="panel-bg panel-border"
+              <div className="normal-bg panel-border"
                 style={{
                   position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
                   gridColumn: '1 / span 2', padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'

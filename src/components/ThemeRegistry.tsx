@@ -12,12 +12,12 @@ const theme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'var(--hover-border-color)',
+          '&:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'var(--hover-input-border-color)',
           },
         },
         notchedOutline: {
-          borderColor: '#444c62' // <-- your desired border color
+          borderColor: 'var(--input-border-color)' // <-- your desired border color
         }
       }
     },
@@ -31,21 +31,21 @@ const theme = createTheme({
     MuiInputBase: {
       styleOverrides: {
         root: {
-          backgroundColor: '#273d58'
+          backgroundColor: 'var(--input-bg)',
         }
       }
     },
     MuiMenu: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#273d58' // your desired popup menu background
+          backgroundColor: 'var(--brighter-color)' // your desired popup menu background
         }
       }
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: '#111827', // your desired Paper background color
+          backgroundColor: 'var(--normal-color)', // your desired Paper background color
           backgroundImage: 'none'
         }
       }
@@ -53,7 +53,7 @@ const theme = createTheme({
     MuiListItem: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1f2937',
+          backgroundColor: 'var(--brighter-color)',
           padding: '1rem'
         }
       }

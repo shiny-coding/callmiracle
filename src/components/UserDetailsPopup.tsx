@@ -311,7 +311,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
           {/* Action buttons - shown when expanded and editing */}
           {isBlockSectionExpanded && isEditing && (
             <div 
-              className="p-3 panel-bg border-t panel-border flex justify-end gap-2 z-20 shadow-lg rounded-md"
+              className="p-3 normal-bg border-t panel-border flex justify-end gap-2 z-20 shadow-lg rounded-md"
               style={{ backgroundColor: 'var(--mui-palette-background-paper)' }}
             >
               <Button onClick={handleCancel} variant="outlined">

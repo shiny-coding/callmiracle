@@ -369,9 +369,9 @@ export type NotificationEvent = {
   __typename?: 'NotificationEvent';
   meeting?: Maybe<Meeting>;
   messageText?: Maybe<Scalars['String']['output']>;
+  peerUserId?: Maybe<Scalars['String']['output']>;
   peerUserName?: Maybe<Scalars['String']['output']>;
   type: NotificationType;
-  user?: Maybe<User>;
 };
 
 export enum NotificationType {

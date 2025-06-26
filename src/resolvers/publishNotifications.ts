@@ -1,7 +1,5 @@
-import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { MeetingStatus, NotificationType } from '@/generated/graphql';
-import { createOrUpdateMeeting } from './createOrUpdateMeeting';
+import { NotificationType } from '@/generated/graphql';
 import { pubsub } from './pubsub';
 import { publishPushNotification } from './pushNotifications';
 
@@ -50,6 +48,8 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
     console.error('Target user not found', { targetUserId })
     return
   }
+
+  console.log( messageText )
   
   // Publish notification event (no DB storage)
   const topic = `SUBSCRIPTION_EVENT:${targetUserId.toString()}`
@@ -57,7 +57,8 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
     notificationEvent: { 
       type: NotificationType.MessageReceived, 
       meeting: null, // No meeting for message notifications
-      user: senderUser,
+      user: null, // Don't send full user object for message notifications
+      peerUserId: senderUser._id.toString(),
       peerUserName: senderUser.name,
       messageText: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText
     }
