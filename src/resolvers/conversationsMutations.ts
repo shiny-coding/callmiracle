@@ -117,7 +117,7 @@ export const conversationsMutations = {
       })
       
       // Send real-time notification (no DB storage)
-      await publishMessageNotification(db, _targetUserId, currentUser, message.trim())
+      await publishMessageNotification(db, _targetUserId, currentUser, message.trim(), conversation._id)
     } catch (error) {
       console.error('Error sending notifications:', error)
       // Don't fail the message send if notifications fail

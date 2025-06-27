@@ -33,6 +33,7 @@ const ON_SUBSCRIPTION_EVENT = gql`
         peerUserId
         peerUserName
         messageText
+        conversationId
       }
       broadcastEvent {
         type

@@ -134,6 +134,7 @@ export const authOptions: NextAuthOptions = {
             updateData.contacts = ''
             updateData.sex = ''
             updateData.birthYear = null
+            updateData.groups = []
           }
 
           await usersCollection.updateOne(

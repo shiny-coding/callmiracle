@@ -39,7 +39,7 @@ export async function publishMeetingNotification(notificationType: NotificationT
 }
 
 // Helper function to publish message notification (no DB storage, just real-time notification)
-export async function publishMessageNotification(db: any, targetUserId: ObjectId, senderUser: any, messageText: string) {
+export async function publishMessageNotification(db: any, targetUserId: ObjectId, senderUser: any, messageText: string, conversationId: ObjectId) {
   
   // Get the target user for notification
   const targetUser = await db.collection('users').findOne({ _id: targetUserId })
@@ -56,7 +56,8 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
       type: NotificationType.MessageReceived, 
       peerUserId: senderUser._id.toString(),
       peerUserName: senderUser.name,
-      messageText: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText
+      messageText: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText,
+      conversationId: conversationId.toString()
     }
   })
   

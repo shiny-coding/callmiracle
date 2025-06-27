@@ -1,10 +1,11 @@
 'use client'
 
 import { createContext, useContext, ReactNode, useEffect } from 'react'
-import { gql, useQuery } from '@apollo/client'
+import { gql, useApolloClient, useQuery } from '@apollo/client'
 import { Conversation, NotificationType } from '@/generated/graphql'
 import { useStore } from './useStore'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
+import { GET_MESSAGES_QUERY } from '@/components/MessagesList'
 
 const GET_CONVERSATIONS = gql`
   query GetConversations {
@@ -56,6 +57,8 @@ interface ConversationsProviderProps {
 
 export function ConversationsProvider({ children }: ConversationsProviderProps) {
   const currentUser = useStore(state => state.currentUser)
+  const client = useApolloClient()
+
   const { subscribeToNotifications } = useSubscriptions()
   const { data, loading, error, refetch } = useQuery(GET_CONVERSATIONS, {
     skip: !currentUser?._id,
@@ -87,6 +90,12 @@ export function ConversationsProvider({ children }: ConversationsProviderProps) 
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((notificationEvent: any) => {
       if (notificationEvent?.type === NotificationType.MessageReceived) {
+        client.cache.evict({
+          id: 'ROOT_QUERY',
+          fieldName: GET_MESSAGES_QUERY, 
+          args: { conversationId: notificationEvent.conversationId }
+        })
+
         console.log('Received message notification, refreshing conversations')
         refetch()
       }

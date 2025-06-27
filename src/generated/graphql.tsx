@@ -367,6 +367,7 @@ export type Notification = {
 
 export type NotificationEvent = {
   __typename?: 'NotificationEvent';
+  conversationId?: Maybe<Scalars['ID']['output']>;
   meeting?: Maybe<Meeting>;
   messageText?: Maybe<Scalars['String']['output']>;
   peerUserId?: Maybe<Scalars['String']['output']>;

@@ -11,17 +11,21 @@ import {
   Paper
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
-import { gql, useQuery, useMutation } from '@apollo/client'
+import { gql, useQuery, useMutation, useApolloClient } from '@apollo/client'
 import { Message, Conversation } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { useConversations } from '@/store/ConversationsProvider'
 import { formatRelativeTime } from '@/utils/formatRelativeTime'
 import { formatTextWithLinks } from '../utils/formatTextWithLinks'
 import { MESSAGES_PER_PAGE } from '@/config/constants'
+import { useSubscriptions } from '@/contexts/SubscriptionsContext'
+import { NotificationType } from '@/generated/graphql'
+
+export const GET_MESSAGES_QUERY = 'getMessages'
 
 const GET_MESSAGES = gql`
   query GetMessages($conversationId: ID!, $beforeId: ID, $afterId: ID) {
-    getMessages(conversationId: $conversationId, beforeId: $beforeId, afterId: $afterId) {
+    ${GET_MESSAGES_QUERY}(conversationId: $conversationId, beforeId: $beforeId, afterId: $afterId) {
       _id
       conversationId
       userId
@@ -62,10 +66,13 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
   const [messageText, setMessageText] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [loadingNewer, setLoadingNewer] = useState(false)
+  const [pendingLoadNewMessages, setPendingLoadNewMessages] = useState(false)
   
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messageInputRef = useRef<HTMLDivElement>(null)
   const isFirstLoad = useRef(true)
+
+  const { subscribeToNotifications } = useSubscriptions()
 
   const isTempConversation = conversationId.startsWith('temp_');
 
@@ -167,7 +174,8 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
               }
               
               const newMessages = fetchMoreResult.getMessages
-              setMessages(prevMessages => [...prevMessages, ...newMessages])
+              const updatedMessages = [...messages, ...newMessages]
+              setMessages(updatedMessages)
               setHasMore(newMessages.length === MESSAGES_PER_PAGE)
               
               // Restore scroll position after new messages are added
@@ -179,7 +187,11 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
                 }
               }, 50)
               
-              return prev // We handle the state update manually
+              // Return the updated query structure
+              return {
+                ...prev,
+                getMessages: updatedMessages
+              }
             }
           })
         } catch (error) {
@@ -192,14 +204,21 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
   }, [messages, loadingMore, hasMore, fetchMore, conversationId, isTempConversation])
 
   const loadNewMessages = useCallback(async () => {
-    if (!messages.length || loadingNewer || isTempConversation) return
+    if (!messages.length || isTempConversation) return
+
+    // If already loading, mark that we need to load again after current load
+    if (loadingNewer) {
+      setPendingLoadNewMessages(true)
+      return
+    }
 
     setLoadingNewer(true)
+    setPendingLoadNewMessages(false)
     
     const newestMessage = messages[0] // Since messages are reversed for display
     if (newestMessage) {
       try {
-        const result = await fetchMore({
+        await fetchMore({
           variables: {
             conversationId,
             afterId: newestMessage._id
@@ -210,12 +229,17 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
             }
             
             const newMessages = fetchMoreResult.getMessages
-            setMessages(prevMessages => [...newMessages, ...prevMessages])
+            const updatedMessages = [...newMessages, ...messages]
+            setMessages(updatedMessages)
             
             // Scroll to bottom to show new messages
             setTimeout(scrollToBottom, 100)
             
-            return prev // We handle the state update manually
+            // Return the updated query structure
+            return {
+              ...prev,
+              getMessages: updatedMessages
+            }
           }
         })
       } catch (error) {
@@ -224,7 +248,14 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
     }
     
     setLoadingNewer(false)
-  }, [messages, loadingNewer, fetchMore, conversationId, isTempConversation])
+    
+    // If there was a pending load request, execute it now
+    if (pendingLoadNewMessages) {
+      setPendingLoadNewMessages(false)
+      // Use setTimeout to avoid immediate recursion
+      setTimeout(() => loadNewMessages(), 100)
+    }
+  }, [messages, loadingNewer, fetchMore, conversationId, isTempConversation, pendingLoadNewMessages])
 
   // Expose loadNewMessages function to parent
   useEffect(() => {
@@ -232,6 +263,26 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       onLoadNewMessages(loadNewMessages)
     }
   }, [onLoadNewMessages, loadNewMessages])
+
+  // Subscribe to message notifications for this conversation
+  useEffect(() => {
+    if (isTempConversation) return
+
+    const unsubscribe = subscribeToNotifications((notificationEvent: any) => {
+      if (notificationEvent?.type === NotificationType.MessageReceived) {
+        // Check if the notification is for this conversation
+        if (notificationEvent.conversationId === conversationId) {
+          console.log('Received message notification for current conversation:', conversationId)
+          // Don't load if we sent the message (it's already added optimistically)
+          if (notificationEvent.peerUserId !== currentUser?._id) {
+            loadNewMessages()
+          }
+        }
+      }
+    })
+
+    return unsubscribe
+  }, [subscribeToNotifications, conversationId, loadNewMessages, currentUser?._id, isTempConversation])
 
   const handleSendMessage = async () => {
     if (!messageText.trim() || isSending || !currentUser || !otherUserId) return

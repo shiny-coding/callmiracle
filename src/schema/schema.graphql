@@ -122,6 +122,7 @@ type NotificationEvent {
   peerUserId: String
   peerUserName: String
   messageText: String
+  conversationId: ID
 }
 
 type BroadcastEvent {

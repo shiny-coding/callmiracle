@@ -24,8 +24,6 @@ export function useCheckImage(userId: string | undefined, refreshTrigger?: numbe
         const response = await fetch(`/api/check-image?userId=${userId}`)
         const data = await response.json()
         setState({ exists: data.exists, checking: false })
-
-        console.log('data', data)
       } catch (error) {
         console.error('Error checking image:', error)
         setState({ exists: false, checking: false })
