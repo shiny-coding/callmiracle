@@ -449,6 +449,7 @@ export type QueryGetGroupsArgs = {
 
 
 export type QueryGetMessagesArgs = {
+  afterId?: InputMaybe<Scalars['ID']['input']>;
   beforeId?: InputMaybe<Scalars['ID']['input']>;
   conversationId: Scalars['ID']['input'];
 };

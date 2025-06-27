@@ -288,7 +288,7 @@ type Query {
     filterGroups: [String!]
   ): [MeetingWithPeer!]!
   getConversations: [Conversation!]!
-  getMessages(conversationId: ID!, beforeId: ID): [Message!]!
+  getMessages(conversationId: ID!, beforeId: ID, afterId: ID): [Message!]!
 }
 
 type Mutation {

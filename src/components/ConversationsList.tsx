@@ -94,6 +94,9 @@ export default function ConversationsList() {
     }
   }, [newUserData, currentUser])
 
+  // TODO: Re-implement message notifications with proper debouncing once type issues are resolved
+  // For now, we'll rely on the existing conversation refetch in ConversationsProvider
+
   if (loading || error || newUserLoading) return <LoadingDialog loading={loading || newUserLoading} error={error} />
 
   const getOtherUser = (conversation: Conversation) => {
@@ -209,6 +212,7 @@ export default function ConversationsList() {
               refetch() // Refetch conversations
               setTempConversation(null) // Clear temp conversation
             }}
+
           />
         ) : (
           <Box className="flex items-center justify-center h-full">

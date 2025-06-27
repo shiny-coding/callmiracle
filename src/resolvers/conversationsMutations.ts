@@ -1,6 +1,6 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { MESSAGE_MAX_LENGTH } from './conversationsQueries'
+import { MESSAGE_MAX_LENGTH } from '@/config/constants'
 import { publishPushNotification } from './pushNotifications'
 import { publishMessageNotification } from './publishNotifications'
 import { NotificationType } from '@/generated/graphql'

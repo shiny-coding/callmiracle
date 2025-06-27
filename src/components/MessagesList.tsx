@@ -17,10 +17,11 @@ import { useStore } from '@/store/useStore'
 import { useConversations } from '@/store/ConversationsProvider'
 import { formatRelativeTime } from '@/utils/formatRelativeTime'
 import { formatTextWithLinks } from '../utils/formatTextWithLinks'
+import { MESSAGES_PER_PAGE } from '@/config/constants'
 
 const GET_MESSAGES = gql`
-  query GetMessages($conversationId: ID!, $beforeId: ID) {
-    getMessages(conversationId: $conversationId, beforeId: $beforeId) {
+  query GetMessages($conversationId: ID!, $beforeId: ID, $afterId: ID) {
+    getMessages(conversationId: $conversationId, beforeId: $beforeId, afterId: $afterId) {
       _id
       conversationId
       userId
@@ -48,9 +49,10 @@ const ADD_MESSAGE = gql`
 interface MessagesListProps {
   conversationId: string;
   onMessageSent?: () => void;
+  onLoadNewMessages?: (loadNewMessages: () => Promise<void>) => void;
 }
 
-export default function MessagesList({ conversationId, onMessageSent }: MessagesListProps) {
+export default function MessagesList({ conversationId, onMessageSent, onLoadNewMessages }: MessagesListProps) {
   const t = useTranslations()
   const currentUser = useStore(state => state.currentUser)
   const { conversations } = useConversations()
@@ -59,6 +61,7 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
   const [loadingMore, setLoadingMore] = useState(false)
   const [messageText, setMessageText] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [loadingNewer, setLoadingNewer] = useState(false)
   
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messageInputRef = useRef<HTMLDivElement>(null)
@@ -85,7 +88,7 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
     onCompleted: (data) => {
       if (data?.getMessages) {
         setMessages(data.getMessages)
-        setHasMore(data.getMessages.length === 50) // Assuming MESSAGES_PER_PAGE = 50
+        setHasMore(data.getMessages.length === MESSAGES_PER_PAGE)
         
         // Scroll to bottom on initial load
         if (isFirstLoad.current) {
@@ -139,11 +142,15 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
   const handleScroll = useCallback(async () => {
     if (!messagesContainerRef.current || loadingMore || !hasMore || isTempConversation) return
 
-    const { scrollTop } = messagesContainerRef.current
+    const container = messagesContainerRef.current
+    const { scrollTop, scrollHeight } = container
     
     // Load more messages when scrolled near the top
     if (scrollTop < 100) {
       setLoadingMore(true)
+      
+      // Store current scroll position for restoration
+      const previousScrollHeight = scrollHeight
       
       const oldestMessage = messages[messages.length - 1]
       if (oldestMessage) {
@@ -161,7 +168,16 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
               
               const newMessages = fetchMoreResult.getMessages
               setMessages(prevMessages => [...prevMessages, ...newMessages])
-              setHasMore(newMessages.length === 50)
+              setHasMore(newMessages.length === MESSAGES_PER_PAGE)
+              
+              // Restore scroll position after new messages are added
+              setTimeout(() => {
+                if (container) {
+                  const newScrollHeight = container.scrollHeight
+                  const scrollDifference = newScrollHeight - previousScrollHeight
+                  container.scrollTop = scrollTop + scrollDifference
+                }
+              }, 50)
               
               return prev // We handle the state update manually
             }
@@ -174,6 +190,48 @@ export default function MessagesList({ conversationId, onMessageSent }: Messages
       setLoadingMore(false)
     }
   }, [messages, loadingMore, hasMore, fetchMore, conversationId, isTempConversation])
+
+  const loadNewMessages = useCallback(async () => {
+    if (!messages.length || loadingNewer || isTempConversation) return
+
+    setLoadingNewer(true)
+    
+    const newestMessage = messages[0] // Since messages are reversed for display
+    if (newestMessage) {
+      try {
+        const result = await fetchMore({
+          variables: {
+            conversationId,
+            afterId: newestMessage._id
+          },
+          updateQuery: (prev, { fetchMoreResult }) => {
+            if (!fetchMoreResult?.getMessages?.length) {
+              return prev
+            }
+            
+            const newMessages = fetchMoreResult.getMessages
+            setMessages(prevMessages => [...newMessages, ...prevMessages])
+            
+            // Scroll to bottom to show new messages
+            setTimeout(scrollToBottom, 100)
+            
+            return prev // We handle the state update manually
+          }
+        })
+      } catch (error) {
+        console.error('Error loading new messages:', error)
+      }
+    }
+    
+    setLoadingNewer(false)
+  }, [messages, loadingNewer, fetchMore, conversationId, isTempConversation])
+
+  // Expose loadNewMessages function to parent
+  useEffect(() => {
+    if (onLoadNewMessages) {
+      onLoadNewMessages(loadNewMessages)
+    }
+  }, [onLoadNewMessages, loadNewMessages])
 
   const handleSendMessage = async () => {
     if (!messageText.trim() || isSending || !currentUser || !otherUserId) return

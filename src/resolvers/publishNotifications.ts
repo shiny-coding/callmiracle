@@ -49,15 +49,11 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
     return
   }
 
-  console.log( messageText )
-  
   // Publish notification event (no DB storage)
   const topic = `SUBSCRIPTION_EVENT:${targetUserId.toString()}`
   pubsub.publish(topic, { 
     notificationEvent: { 
       type: NotificationType.MessageReceived, 
-      meeting: null, // No meeting for message notifications
-      user: null, // Don't send full user object for message notifications
       peerUserId: senderUser._id.toString(),
       peerUserName: senderUser.name,
       messageText: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText

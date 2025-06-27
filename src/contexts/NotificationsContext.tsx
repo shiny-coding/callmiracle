@@ -103,7 +103,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   })
   
   // Update to use isPlaying from the hook
-  const { play: playNotificationSound, isPlaying } = usePlaySound('/sounds/notification.mp3')
+  const { play: playMeetingNotificationSound, isPlaying: isMeetingPlaying } = usePlaySound('/sounds/notification.mp3')
+  const { play: playMessageNotificationSound, isPlaying: isMessagePlaying } = usePlaySound('/sounds/vibrating-message.mp3')
   
   // Update the subscription effect to use isPlaying
   useEffect(() => {
@@ -117,17 +118,21 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           showSnackbar(messageText, 'info', () => {
             router.push(`/conversations?with=${notificationEvent.peerUserId}`)
           })
+
+          if (!isMessagePlaying) {
+            playMessageNotificationSound()
+          }
         } else {
           showSnackbar(getNotificationMessage(notificationEvent, t), 'info', () => {
             if (notificationEvent.meeting?._id) {
               router.push(`/list?meetingId=${notificationEvent.meeting._id}`)
             }
           })
-        }
-        
-        // Play notification sound if not already playing
-        if (!isPlaying) {
-          playNotificationSound()
+
+          // Play notification sound if not already playing
+          if (!isMeetingPlaying) {
+            playMeetingNotificationSound()
+          }
         }
         
         // Only refetch for non-message notifications (since message notifications aren't stored in DB)
@@ -138,7 +143,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     })
     
     return unsubscribe
-  }, [subscribeToNotifications, refetch, playNotificationSound, isPlaying, t, router, showSnackbar])
+  }, [subscribeToNotifications, refetch, playMeetingNotificationSound, isMeetingPlaying, playMessageNotificationSound, isMessagePlaying, t, router, showSnackbar])
   
   const setNotificationSeen = async (id: string) => {
     try {
