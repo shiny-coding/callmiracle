@@ -17,15 +17,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Call Miracle",
+  title: "CallMiracle",
   description: "A miracle communication platform",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Call Miracle",
+    title: "CallMiracle",
   },
-  themeColor: "#3e4255",
 };
 
 export default async function RootLayout({ children, }: { children: React.ReactNode; }) {

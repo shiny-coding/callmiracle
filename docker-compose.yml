@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    # Load all environment variables from .env.local file
+    env_file:
+      - .env.local
+    environment:
+      # Override for production deployment
+      - NODE_ENV=production
+    # Enable connection to host machine services  
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped 

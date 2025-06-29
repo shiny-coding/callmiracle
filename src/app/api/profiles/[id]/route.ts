@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     
     // Remove .jpg extension if present in the id
     const cleanId = id.replace(/\.jpg$/, '')
