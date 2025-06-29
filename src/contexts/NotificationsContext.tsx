@@ -71,7 +71,7 @@ function showBrowserNotification(notificationEvent: any, t: any, router: any) {
   if (!notificationPermissionGranted()) return
 
   const body = getNotificationMessage(notificationEvent, t)
-  const notification = new window.Notification('Commiracle', { body })
+  const notification = new window.Notification('CallMiracle', { body })
   notification.onclick = () => {
     if (notificationEvent.meeting?._id) {
       router.push(`/list?meetingId=${notificationEvent.meeting._id}`)

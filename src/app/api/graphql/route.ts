@@ -33,12 +33,12 @@ export const GET = async (request: Request) => {
   if (request.headers.get('accept')?.includes('text/event-stream')) {
     const url = new URL(request.url)
     const userId = url.searchParams.get('x-user-id')
-    
+
     // Get username from database
     let username = 'unknown'
     if (userId) {
       const client = await clientPromise
-      const db = client.db('commiracle')
+      const db = client.db('callmiracle')
       const user = await db.collection('users').findOne({ _id: new ObjectId(userId) })
       username = user?.name || 'unknown'
     }

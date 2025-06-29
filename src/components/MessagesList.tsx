@@ -383,7 +383,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
                 </Typography>
                 <Typography 
                   variant="caption" 
-                  className={`block mt-1 text-xs ${
+                  className={`block mt-1 text-xs select-none ${
                     isOwnMessage ? 'text-blue-100' : 'text-gray-500'
                   }`}
                 >

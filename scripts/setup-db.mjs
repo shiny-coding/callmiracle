@@ -1,5 +1,5 @@
 // Complete MongoDB database setup script
-// This script creates all collections and sets up optimal indexes for the commiracle application
+// This script creates all collections and sets up optimal indexes for the callmiracle application
 
 import { MongoClient } from 'mongodb'
 

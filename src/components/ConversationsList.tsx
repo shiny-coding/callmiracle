@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { Paper, Typography, IconButton, Avatar, Box } from '@mui/material'
 import MessageIcon from '@mui/icons-material/Message'
@@ -12,7 +12,7 @@ import LoadingDialog from '@/components/LoadingDialog'
 import PageHeader from '@/components/PageHeader'
 import MessagesList from '@/components/MessagesList'
 import NotificationBadge from '@/components/NotificationBadge'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { gql, useLazyQuery, useMutation } from '@apollo/client'
 
 const GET_USER = gql`
@@ -34,11 +34,18 @@ export default function ConversationsList() {
   const { conversations, loading, error, refetch, hasUnreadMessages } = useConversations()
   const t = useTranslations()
   const currentUser = useStore(state => state.currentUser)
+  const lastConversationId = useStore(state => state.lastConversationId)
+  const setLastConversationId = useStore(state => state.setLastConversationId)
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [tempConversation, setTempConversation] = useState<Conversation | null>(null)
   
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const withUserId = searchParams.get('with')
+  
+  // Track if we've done initial selection
+  const hasInitializedRef = useRef(false)
 
   const allConversations = [...(conversations || [])]
   if (tempConversation && !allConversations.find(c => c.user1Id === tempConversation.user2Id || c.user2Id === tempConversation.user2Id)) {
@@ -50,12 +57,31 @@ export default function ConversationsList() {
   const [markConversationRead] = useMutation(MARK_CONVERSATION_READ)
 
   useEffect(() => {
-    // If there's no selected conversation and there are conversations available,
-    // and no specific user is requested, select the first conversation.
-    if (!withUserId && !selectedConversationId && sortedConversations.length > 0) {
-      setSelectedConversationId(sortedConversations[0]._id);
+    // Only auto-select a conversation on initial load
+    if (!hasInitializedRef.current && !withUserId && sortedConversations.length > 0) {
+      hasInitializedRef.current = true
+      
+      // Check if the stored lastConversationId exists in current conversations
+      const lastConversation = lastConversationId 
+        ? sortedConversations.find(c => c._id === lastConversationId)
+        : null
+      
+      if (lastConversation) {
+        setSelectedConversationId(lastConversationId)
+      } else {
+        setSelectedConversationId(sortedConversations[0]._id)
+      }
     }
-  }, [conversations, selectedConversationId, sortedConversations, withUserId]);
+    
+    // If a conversation is selected but no longer exists in the list, clear the selection
+    // (but don't auto-select another one to avoid unwanted switching)
+    if (selectedConversationId && !selectedConversationId.startsWith('temp_') && sortedConversations.length > 0) {
+      const selectedExists = sortedConversations.find(c => c._id === selectedConversationId)
+      if (!selectedExists) {
+        setSelectedConversationId(null)
+      }
+    }
+  }, [sortedConversations, withUserId, lastConversationId, selectedConversationId])
 
   useEffect(() => {
     if (withUserId && conversations) {
@@ -66,6 +92,8 @@ export default function ConversationsList() {
       if (existingConvo) {
         setSelectedConversationId(existingConvo._id)
         setTempConversation(null)
+        // Mark this as initialized since we're selecting based on URL param
+        hasInitializedRef.current = true
       } else if (currentUser?._id !== withUserId) {
         getUser({ variables: { userId: withUserId } })
       }
@@ -91,6 +119,8 @@ export default function ConversationsList() {
       }
       setTempConversation(tempConvo)
       setSelectedConversationId(tempConvo._id)
+      // Mark as initialized when creating temp conversation from URL param
+      hasInitializedRef.current = true
     }
   }, [newUserData, currentUser])
 
@@ -104,10 +134,23 @@ export default function ConversationsList() {
     return conversation.user1Id === currentUser._id ? conversation.user2 : conversation.user1
   }
 
-
-
   const handleConversationSelect = async (conversationId: string) => {
     setSelectedConversationId(conversationId)
+    
+    // Store the selected conversation ID for future use (only for real conversations, not temp ones)
+    if (!conversationId.startsWith('temp_')) {
+      setLastConversationId(conversationId)
+    }
+    
+    // Remove the 'with' parameter from URL when manually selecting a conversation
+    if (withUserId) {
+      const newSearchParams = new URLSearchParams(searchParams.toString())
+      newSearchParams.delete('with')
+      const newUrl = newSearchParams.toString() 
+        ? `${pathname}?${newSearchParams.toString()}`
+        : pathname
+      router.replace(newUrl)
+    }
     
     // Mark conversation as read if it's not a temp conversation
     if (!conversationId.startsWith('temp_')) {
