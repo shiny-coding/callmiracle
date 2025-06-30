@@ -1,7 +1,8 @@
 import createNextIntlPlugin from 'next-intl/plugin';
  
 const withNextIntl = createNextIntlPlugin();
- 
+
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // save this just in case
@@ -18,7 +19,6 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
-        port: '3000',
         pathname: '/profiles/**',
       },
     ],

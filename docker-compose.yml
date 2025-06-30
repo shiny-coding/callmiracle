@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3003:3000"
     # Load all environment variables from .env.local file
     env_file:
       - .env.local
