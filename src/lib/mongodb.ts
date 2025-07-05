@@ -1,7 +1,10 @@
 import { MongoClient } from 'mongodb'
 
 const uri = process.env.MONGODB_URI
-const options = {}
+const options = {
+  directConnection: true,
+}
+console.log('🔍 Mongodb options:', options)
 
 let client
 let clientPromise: Promise<MongoClient>
