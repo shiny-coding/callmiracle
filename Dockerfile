@@ -19,9 +19,11 @@ RUN \
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy .env.local first for build-time environment variables
+COPY .env.local ./.env.local
+# Copy the rest of the application
 COPY . .
-
-
 
 # Generate GraphQL types if needed (only if generated files don't exist)
 RUN if [ ! -f "src/generated/graphql.tsx" ]; then yarn codegen; fi
