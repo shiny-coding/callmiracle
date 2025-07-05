@@ -9,6 +9,7 @@
     "dev": "cross-env NODE_OPTIONS='--inspect' next dev",
     "build": "next build",
     "start": "next start",
+    "debug-prod": "cross-env NODE_OPTIONS='--inspect-brk' next start",
     "lint": "next lint",
     "start:graphql": "ts-node src/server/index.ts",
     "codegen": "graphql-codegen --config codegen.ts"

@@ -28,11 +28,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children, }: { children: React.ReactNode; }) {
-  const cookieStore = await cookies()
-  const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en'
+  // const cookieStore = await cookies()
+  // const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en'
 
   return (
-    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="dark:text-gray-100">
         <ViewportHeightSetter />
         <SessionProvider>

@@ -21,6 +21,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+
+
 # Generate GraphQL types if needed (only if generated files don't exist)
 RUN if [ ! -f "src/generated/graphql.tsx" ]; then yarn codegen; fi
 

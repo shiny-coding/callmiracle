@@ -1,3 +1,4 @@
+'use client'
 import { Typography, Chip, Button, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'

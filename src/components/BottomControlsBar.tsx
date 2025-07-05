@@ -1,3 +1,5 @@
+'use client'
+
 import { IconButton } from '@mui/material'
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import HistoryIcon from '@mui/icons-material/History'
@@ -11,12 +13,6 @@ import { useRouter, usePathname  } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useConversations } from '@/store/ConversationsProvider'
 import NotificationBadge from './NotificationBadge'
-
-let mousePosition = { x: 0, y: 0 }
-
-document.addEventListener("mousemove", function (event) {
-  mousePosition = { x: event.clientX, y: event.clientY }
-});
 
 export default function BottomControlsBar() {
   

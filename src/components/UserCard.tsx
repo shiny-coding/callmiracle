@@ -1,3 +1,5 @@
+'use client'
+
 import { Typography, Chip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { User, Group } from '@/generated/graphql'

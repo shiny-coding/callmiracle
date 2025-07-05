@@ -1,34 +1,39 @@
 import { createYoga } from 'graphql-yoga'
 import { schema } from '@/schema/schema'
-import clientPromise from '@/lib/mongodb'
+import clientPromise, { getDatabaseName } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 
-const dbName = process.env.DB_NAME
+// Lazy yoga creation to avoid immediate database connection during build
+let yogaInstance: any = null
 
-if (!dbName) {
-  throw new Error('Please define the DB_NAME environment variable')
+function getYoga() {
+  if (!yogaInstance) {
+    yogaInstance = createYoga({
+      schema,
+      context: async ({ request }) => {
+        const client = await clientPromise
+        const dbName = getDatabaseName()
+        const db = client.db(dbName)
+        const session = await getServerSession(authOptions)
+        return { db, session }
+      },
+      graphqlEndpoint: '/api/graphql',
+      fetchAPI: { Response },
+      // Enable GraphiQL with SSE support
+      graphiql: {
+        subscriptionsProtocol: 'SSE'
+      },
+    })
+  }
+  return yogaInstance
 }
-
-const yoga = createYoga({
-  schema,
-  context: async ({ request }) => {
-    const client = await clientPromise
-    const db = client.db(dbName)
-    const session = await getServerSession(authOptions)
-    return { db, session }
-  },
-  graphqlEndpoint: '/api/graphql',
-  fetchAPI: { Response },
-  // Enable GraphiQL with SSE support
-  graphiql: {
-    subscriptionsProtocol: 'SSE'
-  },
-})
 
 // Export request handlers
 export const GET = async (request: Request) => {
+  const yoga = getYoga()
+  
   // Log SSE requests with minimal info
   if (request.headers.get('accept')?.includes('text/event-stream')) {
     const url = new URL(request.url)
@@ -38,7 +43,8 @@ export const GET = async (request: Request) => {
     let username = 'unknown'
     if (userId) {
       const client = await clientPromise
-      const db = client.db('callmiracle')
+      const dbName = getDatabaseName()
+      const db = client.db(dbName)
       const user = await db.collection('users').findOne({ _id: new ObjectId(userId) })
       username = user?.name || 'unknown'
     }
@@ -64,6 +70,8 @@ export const GET = async (request: Request) => {
 }
 
 export const POST = async (request: Request) => {
+  const yoga = getYoga()
+  
   // Optional: Enhanced logging for POST requests
   if (request.headers.get('content-type')?.includes('application/json')) {
     try {

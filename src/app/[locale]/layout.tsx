@@ -4,13 +4,22 @@ import { ApolloWrapper } from '@/lib/apollo-provider';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import ThemeRegistry from '@/components/ThemeRegistry';
 import {StoreInitializer } from '@/components/AppContent';
-import { cookies } from 'next/headers';
 import { ClientLayout } from './ClientLayout';
+import { locales } from '@/config';
 
+// Generate static params for all locales
+export function generateStaticParams() {
+  return locales.map(locale => ({ locale }));
+}
 
-export default async function LocaleLayout({ children, }: { children: React.ReactNode; }) {
-  const cookieStore = await cookies()
-  const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en'
+export default async function LocaleLayout({ 
+  children, 
+  params 
+}: { 
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
 
   let messages;
   try {

@@ -10,9 +10,30 @@ import { ObjectId } from 'mongodb'
 import NextAuth from "next-auth"
 import { cookies } from 'next/headers'
 
+// Check if we're in build mode (same pattern as mongodb.ts)
+const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || process.argv.includes('build')
+
+// Build-time mock adapter
+const mockAdapter = {
+  createUser: async () => null,
+  getUser: async () => null,
+  getUserByEmail: async () => null,
+  getUserByAccount: async () => null,
+  updateUser: async () => null,
+  deleteUser: async () => null,
+  linkAccount: async () => null,
+  unlinkAccount: async () => null,
+  createSession: async () => null,
+  getSessionAndUser: async () => null,
+  updateSession: async () => null,
+  deleteSession: async () => null,
+  createVerificationToken: async () => null,
+  useVerificationToken: async () => null,
+}
+
 export const authOptions: NextAuthOptions = {
   debug: false,
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: isBuilding ? mockAdapter as any : MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -39,6 +60,10 @@ export const authOptions: NextAuthOptions = {
         try {
           // Connect to the database
           const client = await clientPromise;
+          if (!client) {
+            console.log("MongoDB client not available during build");
+            return null;
+          }
           const usersCollection = client.db().collection("users");
           
           // Find the user by email
@@ -115,6 +140,10 @@ export const authOptions: NextAuthOptions = {
       if (user.id) {
         try {
           const client = await clientPromise;
+          if (!client) {
+            console.log("MongoDB client not available during build");
+            return;
+          }
           const usersCollection = client.db().collection("users");
           const now = new Date();
 

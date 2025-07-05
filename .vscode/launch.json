@@ -11,7 +11,7 @@
       "name": "Next.js: attach server-side",
       "type": "node",
       "request": "attach",
-      "port": 9230,
+      "port": 9229,
       "address": "localhost",
     },
     {

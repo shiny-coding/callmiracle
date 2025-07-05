@@ -1,14 +1,8 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
-import clientPromise from '@/lib/mongodb'
+import clientPromise, { getDatabaseName } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { NextRequest, NextResponse } from 'next/server'
-
-const dbName = process.env.DB_NAME
-
-if (!dbName) {
-  throw new Error('Please define the DB_NAME environment variable')
-}
 
 function getLocaleFromRequest(request: NextRequest): string {
   // Try to get locale from Accept-Language header or cookies
@@ -46,6 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     const client = await clientPromise
+    const dbName = getDatabaseName()
     const db = client.db(dbName)
     const _userId = new ObjectId(session.user.id)
     const _groupId = new ObjectId(groupId)
