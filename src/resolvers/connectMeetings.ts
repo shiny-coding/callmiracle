@@ -1,13 +1,14 @@
 import { Meeting, MeetingStatus, NotificationType, User } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./publishNotifications";
-import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
+import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, getLateAllowance, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
 
 // Helper function to find overlapping time ranges
 export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[], minDurationM: number): TimeRange[] => {
   const overlaps: TimeRange[] = [];
 
   const minDuration = minDurationM * 60 * 1000;
+  const allowance = getLateAllowance(minDurationM)
   
   for (const range1 of ranges1) {
     for (const range2 of ranges2) {
@@ -15,7 +16,7 @@ export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[]
       const overlapEnd = Math.min(range1.end, range2.end);
       const duration = overlapEnd - overlapStart;
       
-      if (duration >= minDuration) {
+      if (duration >= minDuration - allowance) {
         overlaps.push({ start: overlapStart, end: overlapEnd });
       }
     }
@@ -120,6 +121,7 @@ export const determineBestStartTime = (overlappingRanges: TimeRange[], meeting1:
 // Define error symbols
 export const MeetingAlreadyConnected = Symbol('MeetingAlreadyConnected');
 export const PeerAlreadyConnected = Symbol('PeerAlreadyConnected');
+export const MeetingDoNotSufficientlyOverlap = Symbol('MeetingDoNotSufficientlyOverlap');
 
 export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectId) {
   // Try to find a matching meeting

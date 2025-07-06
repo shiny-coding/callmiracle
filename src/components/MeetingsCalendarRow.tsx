@@ -363,7 +363,7 @@ export default function MeetingsCalendarRow({
                     onUserClick={onUserClick}
                     slot={slot}
                     group={group}
-                    meetingColor={isMyMeeting ? class2Hex(getMeetingColorClass(meeting)) : undefined}
+                    meetingColor={isMyMeeting ? meetingColor : undefined}
                     myOccupiedSlots={myOccupiedSlots}
                     t={t}
                   />

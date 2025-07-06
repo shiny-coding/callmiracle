@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb"
-import { canConnectMeetings, MeetingAlreadyConnected, NofitySelf, PeerAlreadyConnected, tryConnectTwoMeetings } from "./connectMeetings"
+import { canConnectMeetings, MeetingAlreadyConnected, MeetingDoNotSufficientlyOverlap, NofitySelf, PeerAlreadyConnected, tryConnectTwoMeetings } from "./connectMeetings"
 import { Context } from "@apollo/client/react/types/types"
 import { BroadcastType, Meeting, MeetingOutput, MeetingStatus } from "@/generated/graphql"
 import { SLOT_DURATION } from "@/utils/meetingUtils"
@@ -155,10 +155,6 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
           linkedToPeer: true
         });
         myMeeting = await db.collection('meetings').findOne({ _id: insertResult.insertedId });
-        if (!myMeeting) {
-          // This case should ideally not happen if insertOne succeeded
-          throw new Error('Failed to retrieve the newly created meeting');
-        }
 
         const _userIds = [_userId, peerMeeting.userId];
         const users = await db.collection('users').find({
@@ -167,7 +163,7 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
 
         const overlap = canConnectMeetings(myMeeting, peerMeeting, users)
         if (!overlap) {
-          return { error: MeetingError.MeetingDoNotSufficientlyOverlapError }
+          throw MeetingDoNotSufficientlyOverlap
         }
 
         myMeeting = await tryConnectTwoMeetings(myMeeting, peerMeeting, overlap, db, session, NofitySelf.No)
@@ -183,6 +179,9 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
       } else if (err === PeerAlreadyConnected) {
         console.info('Peer meeting is already connected by someone else')
         return { error: MeetingError.MeetingAlreadyConnectedError }
+      } else if (err === MeetingDoNotSufficientlyOverlap) {
+        console.info('Meetings do not sufficiently overlap')
+        return { error: MeetingError.MeetingDoNotSufficientlyOverlapError }
       } else {
         console.error('Error connecting meeting:', err)
         return { error: MeetingError.CannotConnectMeetingInternalError }
