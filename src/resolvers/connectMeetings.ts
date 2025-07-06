@@ -178,46 +178,48 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
   // Use session for transaction
   const session = db.client.startSession();
   let updatedMeeting = meeting;
-  const maxTries = 10;
+  try {
+    const maxTries = 10;
 
-  for (let i = 0; i < maxTries; i++) {
-    const randomIndex = Math.floor(Math.random() * (peersToChooseFrom.length - 1));
-    try {
-      await session.withTransaction(async () => {
+    for (let i = 0; i < maxTries; i++) {
+      const randomIndex = Math.floor(Math.random() * (peersToChooseFrom.length - 1));
+      try {
+        await session.withTransaction(async () => {
 
-        const { peer: peerMeeting, overlap } = peersToChooseFrom[randomIndex];
-        updatedMeeting = await tryConnectTwoMeetings(updatedMeeting, peerMeeting, overlap, db, session, NofitySelf.Yes)
-      });
-      break;
-    } catch (err) {
-      
-      if (err === MeetingAlreadyConnected) {
-        // Our meeting was already connected, get the new data
-        updatedMeeting = await db.collection('meetings').findOne({ _id: meeting._id });
-
-        console.log('Meeting was connected by another process: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
+          const { peer: peerMeeting, overlap } = peersToChooseFrom[randomIndex];
+          updatedMeeting = await tryConnectTwoMeetings(updatedMeeting, peerMeeting, overlap, db, session, NofitySelf.Yes)
+        });
         break;
-
-      } else if (err === PeerAlreadyConnected) {
-
-        const peerIdToRemove = peersToChooseFrom[randomIndex].peer._id;
-        console.log('Peer was connected by another process, removing it from consideration: ', peerIdToRemove.toString());
-
-        peersWithHourOverlap = peersWithHourOverlap.filter(p => !p.peer._id.equals(peerIdToRemove));
-        peersWithAnyOverlap = peersWithAnyOverlap.filter(p => !p.peer._id.equals(peerIdToRemove));
+      } catch (err) {
         
-        // Update the list we're choosing from
-        peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
-        
-        // If all peers are exhausted, break the loop
-        if (peersToChooseFrom.length === 0) break;
+        if (err === MeetingAlreadyConnected) {
+          // Our meeting was already connected, get the new data
+          updatedMeeting = await db.collection('meetings').findOne({ _id: meeting._id });
 
-      } else {
-        throw err;
+          console.log('Meeting was connected by another process: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
+          break;
+
+        } else if (err === PeerAlreadyConnected) {
+
+          const peerIdToRemove = peersToChooseFrom[randomIndex].peer._id;
+          console.log('Peer was connected by another process, removing it from consideration: ', peerIdToRemove.toString());
+
+          peersWithHourOverlap = peersWithHourOverlap.filter(p => !p.peer._id.equals(peerIdToRemove));
+          peersWithAnyOverlap = peersWithAnyOverlap.filter(p => !p.peer._id.equals(peerIdToRemove));
+          
+          // Update the list we're choosing from
+          peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
+          
+          // If all peers are exhausted, break the loop
+          if (peersToChooseFrom.length === 0) break;
+
+        } else {
+          throw err;
+        }
       }
-    } finally {
-      await session.endSession();
     }
+  } finally {
+    await session.endSession();
   }
 
   return updatedMeeting;
