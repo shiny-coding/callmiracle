@@ -3,6 +3,8 @@ import clientPromise from '@/lib/mongodb'
 import nodemailer from 'nodemailer'
 
 const transporter = nodemailer.createTransport({
+  sendmail: process.env.SMTP_SENDMAIL === 'true',
+  path: process.env.SMTP_SENDMAIL_PATH,
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
   secure: process.env.SMTP_SECURE === 'true',
@@ -10,7 +12,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-})
+} as any)
 
 async function sendMail({ to, subject, text }: { to: string, subject: string, text: string }) {
   await transporter.sendMail({

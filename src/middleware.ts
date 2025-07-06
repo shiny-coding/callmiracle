@@ -31,6 +31,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
   
+  // Check if this is an auth route (allow access without authentication)
+  const isAuthRoute = pathname.includes('/auth/')
+  
+  // Check for authentication token for all non-auth routes
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  })
+
+  if (!token && !isAuthRoute) {
+    // Not authenticated: redirect to sign-in
+    const locale = getCurrentLocale(request) || pathname.split('/')[1] || defaultLocale
+    const signInPath = `/${locale}/auth/signin`
+    return NextResponse.redirect(new URL(signInPath, request.url))
+  }
+  
   // Check if the path is root or a locale root (e.g. /, /en, /fr)
   const isRoot = pathname === '/'
   const isLocaleRoot = locales.some(locale => pathname === `/${locale}`)
@@ -39,24 +55,16 @@ export async function middleware(request: NextRequest) {
     // Figure out the locale to use
     const locale = getCurrentLocale(request) || pathname.split('/')[1] || defaultLocale
 
-    // Check for authentication token
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    })
-
-    if (!token) {
-      // Not authenticated: redirect to sign-in
-      const signInPath = locales.includes(locale as Locale)
-        ? `/${locale}/auth/signin`
-        : '/auth/signin'
-      return NextResponse.redirect(new URL(signInPath, request.url))
-    } else {
+    if (token) {
       // Authenticated: redirect to calendar
       const calendarPath = locales.includes(locale as Locale)
         ? `/${locale}/calendar`
         : `/${defaultLocale}/calendar`
       return NextResponse.redirect(new URL(calendarPath, request.url))
+    } else {
+      // Not authenticated: redirect to sign-in
+      const signInPath = `/${locale}/auth/signin`
+      return NextResponse.redirect(new URL(signInPath, request.url))
     }
   }
 

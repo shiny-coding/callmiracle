@@ -111,7 +111,9 @@ export default function TopControlsBar() {
 
   const handleLogout = () => {
     handleProfileMenuClose()
-    signOut({ callbackUrl: '/auth/signin' })
+    signOut({ redirect: false }).then(() => {
+      router.push('/auth/signin')
+    })
   }
 
   return (

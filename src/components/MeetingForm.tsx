@@ -526,7 +526,7 @@ export default function MeetingForm() {
         onConfirm={() => meeting?._id && handleConfirmCancelMeeting(meeting._id)}
         onCancel={handleCloseCancelDialog}
       />
-      {meetingWithPeerToConnect?.peerUser && (
+      {meetingWithPeerToConnect?.peerUser?._id && (
         <UserDetailsPopup
           user={meetingWithPeerToConnect.peerUser}
           open={userDetailsPopupOpen}

@@ -20,7 +20,7 @@ export default function InterestSelector({ value, onChange, interestsPairs, inte
     // If interestsToMatch is provided, show only the other interest in the pair
     // If the pair interest is in interestsToMatch, show this interest
     // If this interest is in interestsToMatch, don't show it (show the pair instead)
-    return interestsToMatch.includes(pairInterest) && !interestsToMatch.includes(interest)
+    return interestsToMatch.includes(pairInterest) && (!interestsToMatch.includes(interest) || interest == pairInterest)
   }
 
   const handleInterestClick = (interest: string) => {

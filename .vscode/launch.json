@@ -8,7 +8,14 @@
       "command": "yarn debug-dev"
     },
     {
-      "name": "Next.js: attach server-side",
+      "name": "Next.js: attach server-side DEV",
+      "type": "node",
+      "request": "attach",
+      "port": 9230,
+      "address": "localhost",
+    },
+    {
+      "name": "Next.js: attach server-side PROD",
       "type": "node",
       "request": "attach",
       "port": 9229,

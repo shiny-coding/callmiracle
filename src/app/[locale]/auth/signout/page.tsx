@@ -1,23 +1,26 @@
 'use client'
 
 import { signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 
 export default function SignOut() {
   const router = useRouter()
+  const pathname = usePathname()
   const t = useTranslations('Auth')
 
   useEffect(() => {
     // Automatically sign out when the page loads
     const handleSignOut = async () => {
       await signOut({ redirect: false })
-      router.push('/auth/signin')
+      // Extract locale from pathname and redirect to localized signin
+      const locale = pathname.split('/')[1] || 'en'
+      router.push(`/${locale}/auth/signin`)
     }
     
     handleSignOut()
-  }, [router])
+  }, [router, pathname])
 
   // Show a simple loading message while signing out
   return (

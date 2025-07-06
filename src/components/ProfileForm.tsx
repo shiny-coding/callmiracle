@@ -185,7 +185,9 @@ export default function ProfileForm() {
   const handleDeleteAccount = async () => {
     try {
       await deleteUser({ variables: { userId: currentUserId } })
-      signOut({ callbackUrl: '/auth/signin' })
+      signOut({ redirect: false }).then(() => {
+        router.push('/auth/signin')
+      })
     } catch (error) {
       console.error('Error deleting account:', error)
     }

@@ -178,10 +178,6 @@ export const authOptions: NextAuthOptions = {
     }
     // You can add other events like signOut, createUser, updateUser, linkAccount, session
   },
-  pages: {
-    signIn: '/auth/signin',
-    signOut: '/auth/signout',
-  },
   cookies: {
     pkceCodeVerifier: {
       name: '__Secure-next-auth.pkce.code_verifier',

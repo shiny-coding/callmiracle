@@ -39,6 +39,7 @@
     "deletePhotoConfirmMessage": "Are you sure you want to delete your profile photo?",
     "deletePhotoConfirmTitle": "Delete Photo"
   },
+  "cancel": "Cancel",
   "connect": "Find Partner",
   "filterByLanguages": "Filter by languages",
   "cameraDisabled": "Camera disabled",

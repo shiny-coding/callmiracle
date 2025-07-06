@@ -51,7 +51,9 @@ export function useInitUser() {
       const user = data.getUser
       if ( !user ) {
         console.log('User not found in database, signing out')
-        signOut({ redirect: true, callbackUrl: '/auth/signin' })
+        signOut({ redirect: false }).then(() => {
+          window.location.href = '/auth/signin'
+        })
       } else {
         setCurrentUser(user)
       }
