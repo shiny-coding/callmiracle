@@ -1,23 +1,115 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useRef } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react'
 import Cookies from 'js-cookie'
 import { 
   Button, TextField, Typography, Card, CardContent, Divider, Box, 
-  Tabs, Tab, FormControl, FormLabel, RadioGroup, FormControlLabel, 
-  Radio, Select, MenuItem, InputLabel, Tooltip, IconButton, FormHelperText
+  Tabs, Tab, Dialog, DialogContent, DialogTitle
 } from '@mui/material'
 import GoogleIcon from '@mui/icons-material/Google'
 import AppleIcon from '@mui/icons-material/Apple'
-import InfoIcon from '@mui/icons-material/Info'
 import { getBrowserLanguage } from '@/utils/language'
 import LocaleSelector from '@/components/LocaleSelector'
 import { useTranslations } from 'next-intl'
 import PasswordResetTab from '@/components/PasswordResetTab'
+import { locales } from '@/config'
+import { LANGUAGES } from '@/config/languages'
+
+interface LocaleSelectionDialogProps {
+  open: boolean
+  onSelect: (locale: string) => void
+}
+
+function LocaleSelectionDialog({ open, onSelect }: LocaleSelectionDialogProps) {
+  const t = useTranslations()
+  
+  // Get language names for available locales
+  const availableLanguages = locales.map(locale => {
+    const lang = LANGUAGES.find(l => l.code === locale)
+    return {
+      code: locale,
+      name: lang?.name || locale.toUpperCase()
+    }
+  })
+
+  return (
+    <Dialog open={open} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ textAlign: 'center', marginTop: 2 }}>
+          {t('selectInterfaceLanguage')}
+      </DialogTitle>
+      <DialogContent>
+        <div className="grid grid-cols-2 gap-4 p-4">
+          {availableLanguages.map((language) => (
+            <Button
+              key={language.code}
+              variant="outlined"
+              onClick={() => onSelect(language.code)}
+              sx={{
+                minHeight: '80px',
+                fontSize: '1.1rem',
+                textTransform: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0.5,
+                borderWidth: 2,
+                '&:hover': {
+                  borderWidth: 2,
+                  backgroundColor: 'primary.dark',
+                  color: 'white'
+                }
+              }}
+            >
+              {language.name}
+            </Button>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default function SignInContent() {
+  const [showLocaleDialog, setShowLocaleDialog] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    // Check if user has already selected a locale
+    const hasSelectedLocale = localStorage.getItem('locale-selected')
+    if (!hasSelectedLocale) {
+      setShowLocaleDialog(true)
+    }
+  }, [])
+
+  const handleLocaleSelect = async (newLocale: string) => {
+    // Mark that user has selected a locale
+    localStorage.setItem('locale-selected', 'true')
+    
+    // Set cookie with 1 year expiry
+    Cookies.set('NEXT_LOCALE', newLocale, { expires: 365 })
+
+    // Update the URL to the new locale
+    const pathWithoutLocale = pathname?.split('/').slice(2).join('/')
+    const newPath = `/${newLocale}/${pathWithoutLocale}`
+    
+    setShowLocaleDialog(false)
+    router.push(newPath)
+  }
+
+  return (
+    <>
+      <LocaleSelectionDialog 
+        open={showLocaleDialog} 
+        onSelect={handleLocaleSelect}
+      />
+      {!showLocaleDialog && <SignInForm />}
+    </>
+  )
+}
+
+function SignInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams?.get('callbackUrl') || '/'

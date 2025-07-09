@@ -162,6 +162,7 @@
   "yes": "Yes",
   "no": "No",
   "markAllAsSeen": "Mark All As Seen",
+  "selectInterfaceLanguage": "Select interface language",
   "Auth": {
     "signIn": "Sign In",
     "register": "Register",

@@ -153,6 +153,7 @@
   "onlyFriends": "Только друзья",
   "friend": "Друг",
   "addFriend": "Добавить в друзья",
+  "selectInterfaceLanguage": "Выберите язык интерфейса",
   "Auth": {
     "signIn": "Вход",
     "register": "Регистрация",

@@ -8,7 +8,7 @@ const nextConfig = {
   // save this just in case
   productionBrowserSourceMaps: true,
   webpack: (config) => {
-    if (!config.dev) {
+    if (config.mode !== 'development') {
       config.devtool = 'source-map';
     }
     return config;
