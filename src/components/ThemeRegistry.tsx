@@ -9,18 +9,6 @@ const theme = createTheme({
     mode: 'dark'
   },
   components: {
-    MuiOutlinedInput: {
-      styleOverrides: {
-        root: {
-          '&:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'var(--hover-input-border-color)',
-          },
-        },
-        notchedOutline: {
-          borderColor: 'var(--input-border-color)' // <-- your desired border color
-        }
-      }
-    },
     MuiFilledInput: {
       styleOverrides: {
         root: {
@@ -101,6 +89,78 @@ const theme = createTheme({
           padding: '0.35rem',
         },
       }
+    },
+    MuiFormControl: {
+      styleOverrides: {
+        root: {
+          // Ensure Select components create proper notch for labels
+          '& .MuiInputLabel-outlined + .MuiInput-formControl .MuiOutlinedInput-notchedOutline': {
+            '& legend': {
+              maxWidth: '1000px',
+            },
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      defaultProps: {
+        // Ensure all selects use the notched prop when they have labels
+        MenuProps: {
+          PaperProps: {
+            style: {
+              marginTop: 8,
+            },
+          },
+        },
+      },
+      styleOverrides: {
+        root: {
+          // When Select is used with FormControl and InputLabel, ensure notched outline
+          '.MuiFormControl-root &': {
+            '& .MuiOutlinedInput-notchedOutline': {
+              '& legend': {
+                maxWidth: '1000px',
+              },
+            },
+          },
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          '&:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'var(--hover-input-border-color)',
+          },
+          // Force notched outline to create legend space for labels
+          '& .MuiOutlinedInput-notchedOutline': {
+            '& legend': {
+              maxWidth: '1000px',
+              // Force the legend to always have some width when there's a label
+              '&:not(:empty)': {
+                width: 'auto',
+                maxWidth: '1000px',
+              },
+            },
+          },
+        },
+        notchedOutline: {
+          borderColor: 'var(--input-border-color)',
+        }
+      }
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        outlined: {
+          // Ensure proper positioning
+          '&.MuiInputLabel-shrink': {
+            transform: 'translate(14px, -6px) scale(0.75)',
+            backgroundColor: 'var(--input-bg)',
+            padding: '0 4px',
+            zIndex: 1,
+          },
+        },
+      },
     },
   }
 })
