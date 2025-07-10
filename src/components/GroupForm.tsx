@@ -21,6 +21,7 @@ import PageHeader from './PageHeader'
 import GroupIcon from '@mui/icons-material/Group'
 import InterestsPairsEditor from './InterestsPairsEditor'
 import InterestsDescriptionsEditor from './InterestsDescriptionsEditor'
+import LanguageSelector from './LanguageSelector'
 
 interface InterestDescription {
   interest: string
@@ -47,6 +48,10 @@ export default function GroupForm() {
   const [open, setOpen] = useState(true)
   const [transparency, setTransparency] = useState<MeetingTransparency>(MeetingTransparency.Transparent)
   const [selectedAdmins, setSelectedAdmins] = useState<User[]>([])
+  const [language, setLanguage] = useState<string>(() => {
+    // Default to current user's first language if available, otherwise 'ru'
+    return currentUser?.languages?.[0] || locale || 'ru'
+  })
   const [interestsPairs, setInterestsPairs] = useState<string[][]>([])
   const [interestsDescriptions, setInterestsDescriptions] = useState<InterestDescription[]>([])
   const [isGeneratingToken, setIsGeneratingToken] = useState(false)
@@ -62,6 +67,7 @@ export default function GroupForm() {
       setDescription(group.description || '')
       setOpen(group.open !== undefined ? group.open : true)
       setTransparency(group.transparency || MeetingTransparency.Transparent)
+      setLanguage(group.language || 'ru')
       setInterestsPairs(group.interestsPairs || [])
       setInterestsDescriptions(group.interestsDescriptions || [])
       
@@ -73,6 +79,8 @@ export default function GroupForm() {
       setDescription('')
       setOpen(true)
       setTransparency(MeetingTransparency.Transparent)
+      // Use current user's first language or interface locale for new groups
+      setLanguage(currentUser?.languages?.[0] || locale || 'ru')
       setInterestsPairs([])
       setInterestsDescriptions([])
       // For new groups, set current user as default admin
@@ -110,6 +118,7 @@ export default function GroupForm() {
       open,
       transparency,
       admins: selectedAdmins.map(admin => admin._id),
+      language,
       interestsPairs: validPairs,
       interestsDescriptions: validDescriptions
     }
@@ -237,7 +246,7 @@ export default function GroupForm() {
     }
   }
 
-  const isFormValid = name.trim().length > 0
+  const isFormValid = name.trim().length > 0 && language.length > 0
 
   return (
     <div className="h-full flex flex-col bg-gray-900 text-white">
@@ -343,6 +352,17 @@ export default function GroupForm() {
               </MenuItem>
             </Select>
           </FormControl>
+
+          <div className="space-y-2">
+            <LanguageSelector
+              value={[language]}
+              onChange={(languages) => setLanguage(languages[0] || 'ru')}
+              label={t('groupLanguage')}
+            />
+            <div className="text-sm text-gray-400">
+              {t('groupLanguageDescription')}
+            </div>
+          </div>
 
           <div className="space-y-2">
             <label className="text-white text-sm font-medium">

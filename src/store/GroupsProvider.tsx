@@ -15,6 +15,7 @@ const GET_GROUPS = gql`
       transparency
       owner
       admins
+      language
       joinToken
       usersCount
       interestsPairs

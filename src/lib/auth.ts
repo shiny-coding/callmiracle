@@ -124,8 +124,28 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async jwt({ token, user, account, profile }) {
+      console.log("jwt", token)
       if (user) {
         token.id = user.id
+        token.languages = (user as any).languages || []
+      } else if (token.id && !token.languages) {
+        // For existing tokens without languages, fetch from database
+        try {
+          const client = await clientPromise;
+          if (client) {
+            const usersCollection = client.db().collection("users");
+            const dbUser = await usersCollection.findOne({ 
+              _id: new ObjectId(token.id as string) 
+            });
+            
+            if (dbUser) {
+              token.languages = dbUser.languages || [];
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user languages in JWT callback:', error);
+          token.languages = [];
+        }
       }
       return token
     }

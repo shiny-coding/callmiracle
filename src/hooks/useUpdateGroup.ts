@@ -12,6 +12,7 @@ const CREATE_OR_UPDATE_GROUP = gql`
       open
       transparency
       admins
+      language
       joinToken
       interestsPairs
       interestsDescriptions {

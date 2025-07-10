@@ -37,6 +37,7 @@ type Group {
   transparency: MeetingTransparency!
   owner: ID!
   admins: [ID!]!
+  language: String!
   joinToken: String
   interestsPairs: [[String!]!]!
   interestsDescriptions: [InterestDescription!]!
@@ -227,6 +228,7 @@ input GroupInput {
   open: Boolean!
   transparency: MeetingTransparency!
   admins: [ID!]!
+  language: String!
   interestsPairs: [[String!]!]!
   interestsDescriptions: [InterestDescriptionInput!]!
 }

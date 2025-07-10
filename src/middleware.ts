@@ -34,6 +34,9 @@ export async function middleware(request: NextRequest) {
   // Check if this is an auth route (allow access without authentication)
   const isAuthRoute = pathname.includes('/auth/')
   
+  // Check if this is the first-time setup route
+  const isFirstTimeRoute = pathname.includes('/first-time')
+  
   // Check for authentication token for all non-auth routes
   const token = await getToken({
     req: request,
@@ -45,6 +48,16 @@ export async function middleware(request: NextRequest) {
     const locale = getCurrentLocale(request) || pathname.split('/')[1] || defaultLocale
     const signInPath = `/${locale}/auth/signin`
     return NextResponse.redirect(new URL(signInPath, request.url))
+  }
+  console.log( 'token', token)
+  // If authenticated, check if user has completed first-time setup
+  if (token && !isAuthRoute && !isFirstTimeRoute) {
+    const userLanguages = token.languages as string[] | undefined
+    if (!userLanguages || userLanguages.length === 0) {
+      const locale = getCurrentLocale(request) || pathname.split('/')[1] || defaultLocale
+      const firstTimePath = `/${locale}/first-time`
+      return NextResponse.redirect(new URL(firstTimePath, request.url))
+    }
   }
   
   // Check if the path is root or a locale root (e.g. /, /en, /fr)

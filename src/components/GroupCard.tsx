@@ -1,6 +1,6 @@
 'use client'
 
-import { Typography, Button, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from '@mui/material'
+import { Typography, Button, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Chip } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Group } from '@/generated/graphql'
 import GroupIcon from '@mui/icons-material/Group'
@@ -18,6 +18,7 @@ import { useLocale } from 'next-intl'
 import { useSnackbar } from '@/contexts/SnackContext'
 import { useGroups } from '@/store/GroupsProvider'
 import ConfirmationDialog from './ConfirmationDialog'
+import { LANGUAGES } from '@/config/languages'
 
 interface GroupCardProps {
   group: Group
@@ -148,6 +149,13 @@ export default function GroupCard({ group }: GroupCardProps) {
               <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
                 {t('admin')}
               </Typography>
+            )}
+            {group.language && (
+              <Chip
+                label={LANGUAGES.find(lang => lang.code === group.language)?.name || group.language}
+                size="small"
+                className="text-xs text-white bg-purple-600"
+              />
             )}
           </div>
           
