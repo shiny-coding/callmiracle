@@ -15,6 +15,9 @@ const eslintConfig = [
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off', // Allow Function type
+      '@typescript-eslint/no-wrapper-object-types': 'off', // Allow Object type
+      '@typescript-eslint/no-empty-object-type': 'off', // Allow {} type
       // or to keep warnings but ignore specific patterns:
       // '@typescript-eslint/no-unused-vars': ['warn', { 
       //   argsIgnorePattern: '^_',

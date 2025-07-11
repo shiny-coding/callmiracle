@@ -4,6 +4,8 @@ import clientPromise, { getDatabaseName } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
+import { withContext } from '@/utils/logger'
+import { randomUUID } from 'crypto'
 
 // Lazy yoga creation to avoid immediate database connection during build
 let yogaInstance: any = null
@@ -12,12 +14,18 @@ function getYoga() {
   if (!yogaInstance) {
     yogaInstance = createYoga({
       schema,
-      context: async ({ request }) => {
+      context: async ({ request }): Promise<{ db: any, session: any, logger: any, requestId: string }> => {
         const client = await clientPromise
         const dbName = getDatabaseName()
         const db = client.db(dbName)
         const session = await getServerSession(authOptions)
-        return { db, session }
+        const requestId = randomUUID()
+        const logger = withContext({
+          requestId,
+          userId: session?.user?.id || 'anonymous',
+          path: new URL(request.url).pathname
+        })
+        return { db, session, logger, requestId }
       },
       graphqlEndpoint: '/api/graphql',
       fetchAPI: { Response },

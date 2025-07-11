@@ -51,3 +51,4 @@ next-env.d.ts
 /public/design/output-4x.mp4
 /public/design/output-8x.mp4
 /notes
+"logs/" 
