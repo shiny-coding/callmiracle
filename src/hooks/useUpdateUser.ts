@@ -1,6 +1,7 @@
 import { gql, useMutation } from '@apollo/client'
 import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { UserInput } from '@/generated/graphql'
+import { useSession } from 'next-auth/react'
 
 const UPDATE_USER = gql`
   mutation UpdateUser($input: UserInput!) {
@@ -60,11 +61,13 @@ export const useUpdateUser = () => {
     const result = await updateUser({
       variables: { input: removeTypename(input) }
     })
+    
     if (result.data?.updateUser) {
-      setCurrentUser({
+      const updatedUser = {
         ...currentUser,
         ...result.data.updateUser
-      })
+      }
+      setCurrentUser(updatedUser)
     }
   }
 

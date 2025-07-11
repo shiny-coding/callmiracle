@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
     const signInPath = `/${locale}/auth/signin`
     return NextResponse.redirect(new URL(signInPath, request.url))
   }
-  console.log( 'token', token)
+  console.log( 'token in middleware', token)
   // If authenticated, check if user has completed first-time setup
   if (token && !isAuthRoute && !isFirstTimeRoute) {
     const userLanguages = token.languages as string[] | undefined

@@ -19,6 +19,7 @@ import { gql, useMutation } from '@apollo/client'
 import { useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress'
 import PageHeader from './PageHeader'
+import Typography from '@mui/material/Typography'
 
 const DELETE_USER = gql`
   mutation DeleteUser($userId: ID!) {
@@ -363,19 +364,27 @@ export default function ProfileForm() {
 
       {/* Bottom Controls Bar */}
       <div className="sticky bottom-0 left-0 w-full normal-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10">
+        <div className="flex flex-col justify-start gap-2 mr-auto">
+          {tempLanguages.length === 0 && (
+            <Typography color="warning" className="text-sm">
+              {tRoot('pleaseSelectLanguages')}
+            </Typography>
+          )}
+        </div>
         <Button onClick={handleCancel}>{t('cancel')}</Button>
         <Button 
           onClick={handleApply}
           variant="contained" 
           disabled={
-            tempName === name && 
+            (tempName === name && 
             JSON.stringify(tempLanguages) === JSON.stringify(languages) && 
             tempAbout === about &&
             tempContacts === contacts &&
             tempSex === sex &&
             tempBirthYear === birthYear &&
             !selectedFile &&
-            !imageDeleted
+            !imageDeleted) ||
+            tempLanguages.length === 0
           }
         >
           {tRoot('apply')}

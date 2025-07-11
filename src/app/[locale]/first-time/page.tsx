@@ -20,6 +20,7 @@ import { useStore } from '@/store/useStore'
 import { useGroups } from '@/store/GroupsProvider'
 import { Group } from '@/generated/graphql'
 import { LANGUAGES } from '@/config/languages'
+import { useSession } from 'next-auth/react'
 
 export default function FirstTimePage() {
   const t = useTranslations('FirstTime')
@@ -31,6 +32,8 @@ export default function FirstTimePage() {
   }))
   const { updateUserData, loading: updateLoading } = useUpdateUser()
   const { groups, loading: groupsLoading } = useGroups()
+  const { update: updateSession } = useSession()
+  
 
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
@@ -124,10 +127,17 @@ export default function FirstTimePage() {
       }
       
       setCurrentUser(updatedUser)
-      await updateUserData()
+      await updateUserData() // This will now automatically update the session/JWT token
+
+      try {
+        await updateSession()
+      } catch (error) {
+        console.error('Error updating session:', error)
+      }
       
-      // Redirect to calendar
+      // Navigate to calendar - the JWT token should now have the updated languages
       router.push(`/${locale}/calendar`)
+      
     } catch (error) {
       console.error('Error updating user:', error)
     }

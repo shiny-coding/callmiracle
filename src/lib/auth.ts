@@ -124,11 +124,10 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async jwt({ token, user, account, profile }) {
-      console.log("jwt", token)
       if (user) {
         token.id = user.id
         token.languages = (user as any).languages || []
-      } else if (token.id && !token.languages) {
+      } else if (token.id && (!token.languages || token.languages.length === 0)) {
         // For existing tokens without languages, fetch from database
         try {
           const client = await clientPromise;
