@@ -11,170 +11,136 @@ const logDir = process.env.LOG_DIR || 'logs'
 
 export const defaultLogLevel = 'info'
 
-// Define custom log format for better readability
-const logFormat = format.printf(({ level, message, timestamp, service, requestId, userId, userName, path: reqPath, ...metadata }) => {
-  let baseLog = `${timestamp} [${level.toUpperCase()}]`
-  
-  // Add service context
-  if (service) {
-    baseLog += ` [${service}]`
-  }
-  
-  // Add request context if available
-  if (requestId) {
-    baseLog += ` [${requestId}]`
-  }
-  
-  // Add user context if available
-  if (userId && userId !== 'anonymous') {
-    if (userName && userName !== 'anonymous') {
-      baseLog += ` [user:${userName}(${userId})]`
-    } else {
-      baseLog += ` [user:${userId}]`
-    }
-  }
-  
-  // Add path if available
-  if (reqPath) {
-    baseLog += ` [${reqPath}]`
-  }
-  
-  baseLog += `: ${message}`
-  
-  // Include additional metadata as JSON if present
-  const metaKeys = Object.keys(metadata)
-  if (metaKeys.length > 0) {
-    baseLog += ` ${JSON.stringify(metadata)}`
-  }
-  
-  return baseLog
-})
-
-// Create base transports array
-const logTransports: any[] = [
-  // Console transport for development
-  new transports.Console({
-    format: format.combine(
-      format.colorize(),
-      format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      logFormat
-    ),
-    silent: process.env.NODE_ENV === 'test'
-  }),
-  
-  // Rotating file transport for all logs
-  new transports.DailyRotateFile({
-    filename: path.join(logDir, 'application-%DATE%.log'),
-    datePattern: 'YYYY-MM-DD',
-    maxSize: '20m',
-    maxFiles: '14d',
-    zippedArchive: true,
-    format: format.combine(
-      format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      format.json()
-    )
-  }),
-  
-  // Separate error log
-  new transports.DailyRotateFile({
-    filename: path.join(logDir, 'error-%DATE%.log'),
-    datePattern: 'YYYY-MM-DD',
-    maxSize: '20m',
-    maxFiles: '30d',
-    level: 'error',
-    zippedArchive: true,
-    format: format.combine(
-      format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      format.json()
-    )
-  })
-]
-
-// Function to add Elasticsearch transport asynchronously (optional)
-const addElasticsearchTransport = async () => {
-  if (process.env.ELASTICSEARCH_URL && process.env.NODE_ENV === 'production') {
-    try {
-      // Dynamic import for optional dependency
-      const { ElasticsearchTransport } = await import('winston-elasticsearch')
-      
-      const esTransport = new ElasticsearchTransport({
-        level: 'info',
-        clientOpts: { 
-          node: process.env.ELASTICSEARCH_URL,
-          auth: process.env.ELASTICSEARCH_USERNAME && process.env.ELASTICSEARCH_PASSWORD ? {
-            username: process.env.ELASTICSEARCH_USERNAME,
-            password: process.env.ELASTICSEARCH_PASSWORD
-          } : undefined
-        },
-        indexPrefix: process.env.ELASTICSEARCH_INDEX_PREFIX || 'callmiracle',
-        indexSuffixPattern: 'YYYY.MM.DD',
-        transformer: (logData: any) => {
-          // Transform the log data for better Elasticsearch indexing
-          return {
-            '@timestamp': new Date().toISOString(),
-            level: logData.level,
-            message: logData.message,
-            service: logData.meta?.service || 'callmiracle',
-            requestId: logData.meta?.requestId,
-            userId: logData.meta?.userId,
-            userName: logData.meta?.userName,
-            userLogLevel: logData.meta?.userLogLevel,
-            path: logData.meta?.path,
-            metadata: logData.meta
-          }
-        }
-      })
-      
-      logger.add(esTransport)
-      console.log('Elasticsearch logging transport enabled')
-    } catch (error) {
-      console.warn('Elasticsearch transport not available:', (error as Error).message)
-    }
-  }
+// ANSI color codes
+const colors = {
+  gray: '\x1b[90m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  green: '\x1b[32m',
+  blue: '\x1b[34m',
+  reset: '\x1b[0m'
 }
 
-// Create the logger
+// Create log format function with options
+function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
+  return format.printf(({ level, message, timestamp, userAgent, service, userLogLevel, requestId, userId, userName, path: reqPath, ...metadata }) => {
+    // Handle timestamp formatting
+    let logTimestamp = (timestamp as string) || new Date().toISOString().replace('T', ' ').substring(0, 19)
+    
+    if (!fullDates) {
+      const today = new Date().toISOString().substring(0, 10) // YYYY-MM-DD
+      const timestampDate = logTimestamp.substring(0, 10)
+      
+      if (timestampDate === today) {
+        // For today's logs, show only time (HH:mm:ss)
+        logTimestamp = logTimestamp.substring(11, 19)
+      }
+    }
+    
+    // Handle level colorization
+    let levelStr = `[${level.toUpperCase()}]`
+    if (colorize) {
+      switch (level.toLowerCase()) {
+        case 'error':
+          levelStr = `${colors.red}${levelStr}${colors.reset}`
+          break
+        case 'warn':
+          levelStr = `${colors.yellow}${levelStr}${colors.reset}`
+          break
+        case 'info':
+          levelStr = `${colors.green}${levelStr}${colors.reset}`
+          break
+        case 'debug':
+          levelStr = `${colors.blue}${levelStr}${colors.reset}`
+          break
+      }
+    }
+    
+    let baseLog = `${logTimestamp} ${levelStr}`
+    
+    // Add user context if available
+    if (userId && userId !== 'anonymous') {
+      if (userName && userName !== 'anonymous') {
+        baseLog += ` [user:${userName}(${userId})]`
+      } else {
+        baseLog += ` [user:${userId}]`
+      }
+    }
+    
+    // Add path if available
+    if (reqPath) {
+      baseLog += ` [${reqPath}]`
+    }
+    
+    // Add request context if available
+    if (requestId) {
+      const requestIdStr = colorize ? `${colors.gray}[${requestId}]${colors.reset}` : `[${requestId}]`
+      baseLog += ` ${requestIdStr}`
+    }
+    
+    // Add service context (moved to the end as requested)
+    if (service) {
+      const serviceStr = colorize ? `${colors.gray}[${service}]${colors.reset}` : `[${service}]`
+      baseLog += ` ${serviceStr}`
+    }
+    
+    baseLog += `:\n${message}`
+    
+    // Include additional metadata as JSON if present
+    const metaKeys = Object.keys(metadata)
+    if (metaKeys.length > 0) {
+      baseLog += ` ${JSON.stringify(metadata)}`
+    }
+    
+    return baseLog
+  })
+}
+
+// Create the main logger instance
 const logger = createLogger({
-  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+  level: defaultLogLevel,
   format: format.combine(
     format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    format.errors({ stack: true })
+    createLogFormat(false, true) // Non-colorized, full dates for main logger
   ),
-  defaultMeta: { service: 'main' },
-  transports: logTransports,
-  // Don't exit on handled exceptions
-  exitOnError: false
+  transports: [
+    // Console transport for development (colorized, short dates)
+    new transports.Console({
+      format: format.combine(
+        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        createLogFormat(true, false) // Colorized, short dates for console
+      )
+    }),
+    
+    // File transport for all logs (non-colorized, full dates)
+    new transports.DailyRotateFile({
+      filename: path.join(logDir, 'application-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d',
+      format: format.combine(
+        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        createLogFormat(false, true) // Non-colorized, full dates for files
+      )
+    }),
+    
+    // Separate file for errors (non-colorized, full dates)
+    new transports.DailyRotateFile({
+      filename: path.join(logDir, 'error-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      level: 'error',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d',
+      format: format.combine(
+        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        createLogFormat(false, true) // Non-colorized, full dates for files
+      )
+    })
+  ]
 })
 
-// Initialize Elasticsearch transport asynchronously if configured
-addElasticsearchTransport().catch((error) => {
-  console.warn('Failed to initialize Elasticsearch transport:', (error as Error).message)
-})
-
-// Handle uncaught exceptions and unhandled rejections
-if (process.env.NODE_ENV === 'production') {
-  logger.exceptions.handle(
-    new transports.DailyRotateFile({
-      filename: path.join(logDir, 'exceptions-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '30d',
-      zippedArchive: true
-    })
-  )
-  
-  logger.rejections.handle(
-    new transports.DailyRotateFile({
-      filename: path.join(logDir, 'rejections-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '30d',
-      zippedArchive: true
-    })
-  )
-}
-
-// Context logger for requests
 interface LogContext {
   requestId?: string
   userId?: string
@@ -183,85 +149,70 @@ interface LogContext {
   path?: string
   userAgent?: string
   ip?: string
+  service?: string
 }
 
-// Helper function to check if a log level should be logged
 function shouldLog(userLogLevel: string, currentLevel: string): boolean {
   const levels = ['debug', 'info', 'warn', 'error']
-  const userIndex = levels.indexOf(userLogLevel)
-  const currentIndex = levels.indexOf(currentLevel)
-  return currentIndex >= userIndex
-}
-
-// Enhanced context logger that can work with centralized request context
-export const withRequestContext = (context: LogContext) => {
-  return withContext(context)
+  const userLevelIndex = levels.indexOf(userLogLevel)
+  const currentLevelIndex = levels.indexOf(currentLevel)
+  return currentLevelIndex >= userLevelIndex
 }
 
 export const withContext = (context: LogContext) => {
-  const userLogLevel = context.userLogLevel || defaultLogLevel
-  
   return {
-    debug: (message: string, meta: object = {}) => {
-      if (shouldLog(userLogLevel, 'debug')) {
+    debug: (message: string, meta?: any) => {
+      if (shouldLog(context.userLogLevel || defaultLogLevel, 'debug')) {
         logger.debug(message, { ...context, ...meta })
       }
     },
-    info: (message: string, meta: object = {}) => {
-      if (shouldLog(userLogLevel, 'info')) {
+    info: (message: string, meta?: any) => {
+      if (shouldLog(context.userLogLevel || defaultLogLevel, 'info')) {
         logger.info(message, { ...context, ...meta })
       }
     },
-    warn: (message: string, meta: object = {}) => {
-      if (shouldLog(userLogLevel, 'warn')) {
+    warn: (message: string, meta?: any) => {
+      if (shouldLog(context.userLogLevel || defaultLogLevel, 'warn')) {
         logger.warn(message, { ...context, ...meta })
       }
     },
-    error: (message: string, meta: object = {}) => {
-      if (shouldLog(userLogLevel, 'error')) {
+    error: (message: string, meta?: any) => {
+      if (shouldLog(context.userLogLevel || defaultLogLevel, 'error')) {
         logger.error(message, { ...context, ...meta })
       }
     }
   }
 }
 
-// Request logger helper (legacy - for old Pages API)
 export const withRequest = (req: NextApiRequest) => {
-  const context: LogContext = {
-    requestId: (req.headers['x-request-id'] as string) || 'no-request-id',
-    path: req.url,
-    userAgent: req.headers['user-agent'],
-    ip: (req.headers['x-forwarded-for'] as string) || req.socket?.remoteAddress || 'unknown'
-  }
+  const requestId = req.headers['x-request-id'] as string || 'unknown'
+  const path = req.url || 'unknown'
+  const userAgent = req.headers['user-agent']
+  const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection.remoteAddress
   
-  // Try to get user ID from session if available
-  try {
-    const session = (req as any).session
-    if (session?.user?.id) {
-      context.userId = session.user.id
-    }
-  } catch (error) {
-    // Session not available, that's ok
-  }
-  
-  return withContext(context)
+  return withContext({
+    requestId,
+    path,
+    userAgent,
+    ip: typeof ip === 'string' ? ip : ip?.[0]
+  })
 }
 
 /**
- * Unified logger function that automatically gets request context and session context
- * This is the primary function API routes should use - no need to manually create context
+ * Unified logger function that automatically gets request context from headers and session context
+ * This is the primary function API routes should use
  * 
  * Usage:
  * ```typescript
  * export async function POST(request: NextRequest) {
- *   const logger = await getLogger() // Gets context from AsyncLocalStorage
+ *   const logger = await getLogger()
  *   logger.info('Processing request')
  * }
  * ```
  */
-export async function getLogger(request?: Request) {
-  // Get request context from AsyncLocalStorage
-  const requestContext = getRequestContext()
+export async function getLogger() {
+  // Get request context from headers (set by middleware)
+  const requestContext = await getRequestContext()
 
   // Get session context (userId, userName, userLogLevel)
   const session = await getServerSession(authOptions)
@@ -274,10 +225,15 @@ export async function getLogger(request?: Request) {
     ip: requestContext.ip,
     userId: session?.user?.id || 'anonymous',
     userName: session?.user?.name || 'anonymous',
-    userLogLevel: session?.user?.logLevel || defaultLogLevel
+    userLogLevel: (session?.user as any)?.logLevel || defaultLogLevel,
+    service: 'main'
   })
 
   return logger
+}
+
+export const getLoggerWithRequestId = (requestId: string) => {
+  return withContext({ requestId, service: 'main' })
 }
 
 export default logger

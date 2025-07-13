@@ -6,7 +6,7 @@ import { getCurrentLocale } from '@/utils'
 import { getLogger } from '@/utils/logger'
 
 export async function POST(req: NextRequest) {
-  // Get logger from AsyncLocalStorage context - no need to pass request
+  // Get logger (reads context from headers set by middleware)
   const logger = await getLogger()
   
   logger.debug('Registration request received')

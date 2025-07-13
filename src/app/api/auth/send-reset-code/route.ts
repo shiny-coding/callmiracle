@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import clientPromise from '@/lib/mongodb'
 import nodemailer from 'nodemailer'
-import { getLogger, withRequestContext } from '@/utils/logger'
+import { getLogger } from '@/utils/logger'
 
 const transporter = nodemailer.createTransport({
   sendmail: process.env.SMTP_SENDMAIL === 'true',

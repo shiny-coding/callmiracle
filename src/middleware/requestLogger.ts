@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { v4 as uuidv4 } from 'uuid'
-import { withRequest } from '@/utils/logger'
+import { getLogger, withContext } from '@/utils/logger'
 
 // Extend NextApiRequest to include our custom properties
 interface ExtendedRequest extends NextApiRequest {
@@ -9,21 +9,13 @@ interface ExtendedRequest extends NextApiRequest {
 }
 
 // Request logging middleware
-export function requestLogger(
+export async function requestLogger(
   req: ExtendedRequest,
   res: NextApiResponse,
   next: () => void
 ) {
-  // Generate unique request ID
-  const requestId = uuidv4()
-  req.requestId = requestId
-  req.startTime = Date.now()
-  
-  // Add request ID to headers for client correlation
-  req.headers['x-request-id'] = requestId
-  
   // Create logger with request context
-  const log = withRequest(req)
+  const log = await getLogger()
   
   // Determine if we should log the body (avoid logging sensitive data)
   const shouldLogBody = !req.url?.includes('/auth/') && 
@@ -97,7 +89,14 @@ export function requestLogger(
       }
     }
     
-    log[logLevel](`Response: ${req.method} ${req.url} - ${res.statusCode}`, responseLog)
+    // Use the log instance with the correct level
+    if (logLevel === 'error') {
+      log.error(`Response: ${req.method} ${req.url} - ${res.statusCode}`, responseLog);
+    } else if (logLevel === 'warn') {
+      log.warn(`Response: ${req.method} ${req.url} - ${res.statusCode}`, responseLog);
+    } else {
+      log.info(`Response: ${req.method} ${req.url} - ${res.statusCode}`, responseLog);
+    }
     
     // Call original end
     // eslint-disable-next-line prefer-rest-params
@@ -143,8 +142,8 @@ function sanitizeRequestBody(body: any): any {
 
 // Wrapper function to easily apply the middleware
 export function withRequestLogging(handler: Function) {
-  return (req: NextApiRequest, res: NextApiResponse) => {
-    requestLogger(req as ExtendedRequest, res, () => {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
+    await requestLogger(req as ExtendedRequest, res, () => {
       handler(req, res)
     })
   }
