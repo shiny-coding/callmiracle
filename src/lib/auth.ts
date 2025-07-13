@@ -121,14 +121,18 @@ export const authOptions: NextAuthOptions = {
       if (token.sub) {
         session.user.id = token.sub
       }
+      if (token.name) {
+        session.user.name = token.name
+      }
       return session
     },
     async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id
+        token.name = user.name || user.email || 'Unknown User'
         token.languages = (user as any).languages || []
-      } else if (token.id && (!token.languages || token.languages.length === 0)) {
-        // For existing tokens without languages, fetch from database
+      } else if (token.id && (!token.name || !token.languages || token.languages.length === 0)) {
+        // For existing tokens without name or languages, fetch from database
         try {
           const client = await clientPromise;
           if (client) {
@@ -138,12 +142,14 @@ export const authOptions: NextAuthOptions = {
             });
             
             if (dbUser) {
-              token.languages = dbUser.languages || [];
+              token.name = dbUser.name;
+              token.languages = dbUser.languages;
             }
           }
         } catch (error) {
-          console.error('Error fetching user languages in JWT callback:', error);
-          token.languages = [];
+          console.error('Error fetching user data in JWT callback:', error);
+          token.languages = token.languages || [];
+          token.name = token.name || 'Unknown User';
         }
       }
       return token

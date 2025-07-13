@@ -4,64 +4,47 @@ import clientPromise, { getDatabaseName } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
-import { withContext } from '@/utils/logger'
-import { randomUUID } from 'crypto'
+import { getLogger } from '@/utils/logger'
 
-// Lazy yoga creation to avoid immediate database connection during build
-let yogaInstance: any = null
-
-function getYoga() {
-  if (!yogaInstance) {
-    yogaInstance = createYoga({
-      schema,
-      context: async ({ request }): Promise<{ db: any, session: any, logger: any, requestId: string }> => {
-        const client = await clientPromise
-        const dbName = getDatabaseName()
-        const db = client.db(dbName)
-        const session = await getServerSession(authOptions)
-        const requestId = randomUUID()
-        const logger = withContext({
-          requestId,
-          userId: session?.user?.id || 'anonymous',
-          path: new URL(request.url).pathname
-        })
-        return { db, session, logger, requestId }
-      },
-      graphqlEndpoint: '/api/graphql',
-      fetchAPI: { Response },
-      // Enable GraphiQL with SSE support
-      graphiql: {
-        subscriptionsProtocol: 'SSE'
-      },
-    })
-  }
-  return yogaInstance
+// Create yoga instance with logger passed from handler
+function createYogaWithLogger(logger: any) {
+  return createYoga({
+    schema,
+    context: async ({ request }): Promise<{ db: any, session: any, logger: any }> => {
+      const client = await clientPromise
+      const dbName = getDatabaseName()
+      const db = client.db(dbName)
+      const session = await getServerSession(authOptions)
+      
+      // Use the logger passed from the handler (no duplication)
+      return { db, session, logger }
+    },
+    graphqlEndpoint: '/api/graphql',
+    fetchAPI: { Response },
+    // Enable GraphiQL with SSE support
+    graphiql: {
+      subscriptionsProtocol: 'SSE'
+    },
+  })
 }
 
 // Export request handlers
 export const GET = async (request: Request) => {
-  const yoga = getYoga()
+  // Use unified logger with automatic context from AsyncLocalStorage
+  const logger = await getLogger()
   
-  // Log SSE requests with minimal info
+  // Create yoga instance with the logger (no duplication in context)
+  const yoga = createYogaWithLogger(logger)
+  
+  // Log SSE requests with centralized logging
   if (request.headers.get('accept')?.includes('text/event-stream')) {
     const url = new URL(request.url)
-    const userId = url.searchParams.get('x-user-id')
-
-    // Get username from database
-    let username = 'unknown'
-    if (userId) {
-      const client = await clientPromise
-      const dbName = getDatabaseName()
-      const db = client.db(dbName)
-      const user = await db.collection('users').findOne({ _id: new ObjectId(userId) })
-      username = user?.name || 'unknown'
-    }
-
-    console.log('SSE GET Request:', {
-      operationName: url.searchParams.get('operationName'),
-      userId,
-      username,
-      timestamp: new Date().toISOString()
+    const operationName = url.searchParams.get('operationName')
+    
+    logger.info('SSE GET Request', {
+      operationName,
+      isSSE: true,
+      accept: request.headers.get('accept')
     })
   }
 
@@ -78,9 +61,13 @@ export const GET = async (request: Request) => {
 }
 
 export const POST = async (request: Request) => {
-  const yoga = getYoga()
+  // Use unified logger with automatic context from AsyncLocalStorage
+  const logger = await getLogger()
   
-  // Optional: Enhanced logging for POST requests
+  // Create yoga instance with the logger (no duplication in context)
+  const yoga = createYogaWithLogger(logger)
+  
+  // Enhanced logging for POST requests
   if (request.headers.get('content-type')?.includes('application/json')) {
     try {
       const clone = request.clone()
@@ -88,15 +75,17 @@ export const POST = async (request: Request) => {
       const query = body.query?.substring(0, 100) // Truncate long queries
       const operationName = body.operationName || 'unnamed'
 
-      // Get user session for logging
-      const session = await getServerSession(authOptions)
-      const userPart = session?.user ? `User: ${session.user.name} (${session.user.id})` : 'Unauthenticated'
-
-      console.log(
-        `[${new Date().toLocaleTimeString()}] GraphQL Request: ${operationName} | ${userPart}`
-      )
+      logger.info('GraphQL Request', {
+        operationName,
+        hasVariables: !!body.variables,
+        queryLength: body.query?.length || 0,
+        queryPreview: query
+      })
     } catch (e) {
-      // Silently continue if we can't parse the body
+      logger.warn('Failed to parse GraphQL request body', {
+        contentType: request.headers.get('content-type'),
+        error: e instanceof Error ? e.message : String(e)
+      })
     }
   }
   
@@ -120,18 +109,18 @@ export const POST = async (request: Request) => {
       
       try {
         const parsedBody = JSON.parse(requestBody)
-        console.error('GraphQL Error:', {
+        logger.error('GraphQL Error Response', {
           status: response.status,
           operationName: parsedBody.operationName,
-          variables: parsedBody.variables,
-          query: parsedBody.query?.slice(0, 100) + '...',
-          response: responseBody
+          hasVariables: !!parsedBody.variables,
+          queryPreview: parsedBody.query?.slice(0, 100) + '...',
+          responseBody
         })
       } catch (e) {
-        console.error('GraphQL Error:', {
+        logger.error('GraphQL Error Response (unparseable)', {
           status: response.status,
-          body: requestBody,
-          response: responseBody
+          requestBody,
+          responseBody
         })
       }
     }
@@ -142,8 +131,10 @@ export const POST = async (request: Request) => {
     if (!requestBody) {
       requestBody = await clonedRequest.text()
     }
-    console.error('Error in POST handler:', error, {
-      body: requestBody
+    logger.error('GraphQL POST handler error', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      requestBody
     })
     throw error
   }

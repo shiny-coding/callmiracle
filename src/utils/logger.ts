@@ -7,7 +7,7 @@ import type { NextApiRequest } from 'next'
 const logDir = process.env.LOG_DIR || 'logs'
 
 // Define custom log format for better readability
-const logFormat = format.printf(({ level, message, timestamp, service, requestId, userId, path: reqPath, ...metadata }) => {
+const logFormat = format.printf(({ level, message, timestamp, service, requestId, userId, userName, path: reqPath, ...metadata }) => {
   let baseLog = `${timestamp} [${level.toUpperCase()}]`
   
   // Add service context
@@ -22,7 +22,11 @@ const logFormat = format.printf(({ level, message, timestamp, service, requestId
   
   // Add user context if available
   if (userId && userId !== 'anonymous') {
-    baseLog += ` [user:${userId}]`
+    if (userName && userName !== 'anonymous') {
+      baseLog += ` [user:${userName}(${userId})]`
+    } else {
+      baseLog += ` [user:${userId}]`
+    }
   }
   
   // Add path if available
@@ -105,9 +109,10 @@ const addElasticsearchTransport = async () => {
             '@timestamp': new Date().toISOString(),
             level: logData.level,
             message: logData.message,
-            service: logData.meta?.service || 'callmiracle',
+            service: logData.meta?.service || 'main',
             requestId: logData.meta?.requestId,
             userId: logData.meta?.userId,
+            userName: logData.meta?.userName,
             path: logData.meta?.path,
             metadata: logData.meta
           }
@@ -129,7 +134,7 @@ const logger = createLogger({
     format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     format.errors({ stack: true })
   ),
-  defaultMeta: { service: 'callmiracle' },
+  defaultMeta: { service: 'main' },
   transports: logTransports,
   // Don't exit on handled exceptions
   exitOnError: false
@@ -167,6 +172,7 @@ if (process.env.NODE_ENV === 'production') {
 interface LogContext {
   requestId?: string
   userId?: string
+  userName?: string
   path?: string
   userAgent?: string
   ip?: string
