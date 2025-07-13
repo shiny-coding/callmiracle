@@ -408,26 +408,27 @@ export type PushSubscriptionKeysInput = {
 
 export type Query = {
   __typename?: 'Query';
-  getCalls: Array<CallEvent>;
+  getCallHistory: Array<CallHistoryEntry>;
+  getCalls: Array<Call>;
   getConversations: Array<Conversation>;
+  getDetailedCallHistory: Array<Call>;
   getFutureMeetingsWithPeers: Array<MeetingWithPeer>;
   getGroups: Array<Group>;
-  getMeetings: Array<Meeting>;
   getMessages: Array<Message>;
   getMyMeetingsWithPeers: Array<MeetingWithPeer>;
-  getPublicGroupsByLanguages: Array<Group>;
+  getNotifications: Array<Notification>;
   getUser?: Maybe<User>;
-  getUserMeetings: Array<Meeting>;
   getUsers: Array<User>;
 };
 
 
-export type QueryGetCallsArgs = {
+export type QueryGetCallHistoryArgs = {
   userId: Scalars['ID']['input'];
 };
 
 
-export type QueryGetConversationsArgs = {
+export type QueryGetDetailedCallHistoryArgs = {
+  targetUserId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
 
@@ -450,16 +451,10 @@ export type QueryGetGroupsArgs = {
 };
 
 
-export type QueryGetMeetingsArgs = {
-  userId: Scalars['ID']['input'];
-};
-
-
 export type QueryGetMessagesArgs = {
+  afterId?: InputMaybe<Scalars['ID']['input']>;
+  beforeId?: InputMaybe<Scalars['ID']['input']>;
   conversationId: Scalars['ID']['input'];
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  offset?: InputMaybe<Scalars['Int']['input']>;
-  userId: Scalars['ID']['input'];
 };
 
 
@@ -468,30 +463,12 @@ export type QueryGetMyMeetingsWithPeersArgs = {
 };
 
 
-export type QueryGetPublicGroupsByLanguagesArgs = {
-  languages: Array<Scalars['String']['input']>;
+export type QueryGetNotificationsArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
 export type QueryGetUserArgs = {
-  userId: Scalars['ID']['input'];
-};
-
-
-export type QueryGetUserMeetingsArgs = {
-  filterAllowedFemales?: InputMaybe<Scalars['Boolean']['input']>;
-  filterAllowedMales?: InputMaybe<Scalars['Boolean']['input']>;
-  filterGroups?: InputMaybe<Array<Scalars['String']['input']>>;
-  filterInterests?: InputMaybe<Array<Scalars['String']['input']>>;
-  filterLanguages?: InputMaybe<Array<Scalars['String']['input']>>;
-  filterMaxAge?: InputMaybe<Scalars['Int']['input']>;
-  filterMinAge?: InputMaybe<Scalars['Int']['input']>;
-  filterMinDurationM?: InputMaybe<Scalars['Int']['input']>;
-  userId: Scalars['ID']['input'];
-};
-
-
-export type QueryGetUsersArgs = {
   userId: Scalars['ID']['input'];
 };
 
@@ -525,6 +502,7 @@ export type User = {
   about: Scalars['String']['output'];
   birthYear?: Maybe<Scalars['Int']['output']>;
   blocks: Array<Block>;
+  clientLogLevel?: Maybe<Scalars['String']['output']>;
   contacts: Scalars['String']['output'];
   createdAt: Scalars['Float']['output'];
   deleted?: Maybe<Scalars['Boolean']['output']>;
@@ -533,6 +511,7 @@ export type User = {
   friends?: Maybe<Array<Scalars['ID']['output']>>;
   groups: Array<Scalars['ID']['output']>;
   languages: Array<Scalars['String']['output']>;
+  logLevel?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   pushSubscriptions?: Maybe<Array<Maybe<PushSubscription>>>;
   sex: Scalars['String']['output'];
@@ -544,10 +523,12 @@ export type UserInput = {
   about: Scalars['String']['input'];
   birthYear?: InputMaybe<Scalars['Int']['input']>;
   blocks: Array<BlockInput>;
+  clientLogLevel?: InputMaybe<Scalars['String']['input']>;
   contacts: Scalars['String']['input'];
   friends?: InputMaybe<Array<Scalars['ID']['input']>>;
   groups?: InputMaybe<Array<Scalars['ID']['input']>>;
   languages: Array<Scalars['String']['input']>;
+  logLevel?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   sex: Scalars['String']['input'];
 };

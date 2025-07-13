@@ -9,6 +9,7 @@ import { compare } from "bcrypt"
 import { ObjectId } from 'mongodb'
 import NextAuth from "next-auth"
 import { cookies } from 'next/headers'
+import { defaultClientLogLevel, defaultLogLevel } from "@/utils/logger"
 
 // Check if we're in build mode (same pattern as mongodb.ts)
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || process.argv.includes('build')
@@ -124,32 +125,53 @@ export const authOptions: NextAuthOptions = {
       if (token.name) {
         session.user.name = token.name
       }
+      if (token.logLevel) {
+        session.user.logLevel = token.logLevel
+      }
+      if (token.clientLogLevel) {
+        session.user.clientLogLevel = token.clientLogLevel
+      }
       return session
     },
     async jwt({ token, user, account, profile }) {
+      const REFRESH_FROM_DB_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
+      
       if (user) {
         token.id = user.id
         token.name = user.name || user.email || 'Unknown User'
         token.languages = (user as any).languages || []
-      } else if (token.id && (!token.name || !token.languages || token.languages.length === 0)) {
-        // For existing tokens without name or languages, fetch from database
-        try {
-          const client = await clientPromise;
-          if (client) {
-            const usersCollection = client.db().collection("users");
-            const dbUser = await usersCollection.findOne({ 
-              _id: new ObjectId(token.id as string) 
-            });
-            
-            if (dbUser) {
-              token.name = dbUser.name;
-              token.languages = dbUser.languages;
+        token.logLevel = (user as any).logLevel || 'info'
+        token.clientLogLevel = (user as any).clientLogLevel || 'warn'
+        token.lastDbRefresh = Date.now()
+      } else if (token.id) {
+        const now = Date.now()
+        const lastRefresh = token.lastDbRefresh as number || 0
+        const shouldRefreshFromDb = now - lastRefresh > REFRESH_FROM_DB_INTERVAL
+        
+        // Check if we need to fetch missing fields or refresh log levels
+        const needsBasicFields = !token.name || !token.languages || token.languages.length === 0 || !token.logLevel || !token.clientLogLevel
+        
+        if (needsBasicFields || shouldRefreshFromDb) {
+          try {
+            const client = await clientPromise;
+            if (client) {
+              const usersCollection = client.db().collection("users");
+              const dbUser = await usersCollection.findOne({ 
+                _id: new ObjectId(token.id as string) 
+              });
+              
+              if (dbUser) {
+                token.name = dbUser.name;
+                token.languages = dbUser.languages;
+                token.logLevel = dbUser.logLevel || defaultLogLevel;
+                token.clientLogLevel = dbUser.clientLogLevel || defaultClientLogLevel;
+                
+                token.lastDbRefresh = now;
+              }
             }
+          } catch (error) {
+            console.error('Error fetching user data in JWT callback:', error);
           }
-        } catch (error) {
-          console.error('Error fetching user data in JWT callback:', error);
-          token.languages = token.languages || [];
-          token.name = token.name || 'Unknown User';
         }
       }
       return token
@@ -189,6 +211,8 @@ export const authOptions: NextAuthOptions = {
             updateData.sex = ''
             updateData.birthYear = null
             updateData.groups = []
+            updateData.logLevel = defaultLogLevel
+            updateData.clientLogLevel = defaultClientLogLevel
           }
 
           await usersCollection.updateOne(

@@ -2,9 +2,15 @@ import { createLogger, format, transports } from 'winston'
 import 'winston-daily-rotate-file'
 import path from 'path'
 import type { NextApiRequest } from 'next'
+import { getRequestContext } from './requestContext'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
 // Define log directory and ensure it exists
 const logDir = process.env.LOG_DIR || 'logs'
+
+export const defaultLogLevel = 'info'
+export const defaultClientLogLevel = 'warn'
 
 // Define custom log format for better readability
 const logFormat = format.printf(({ level, message, timestamp, service, requestId, userId, userName, path: reqPath, ...metadata }) => {
@@ -109,10 +115,11 @@ const addElasticsearchTransport = async () => {
             '@timestamp': new Date().toISOString(),
             level: logData.level,
             message: logData.message,
-            service: logData.meta?.service || 'main',
+            service: logData.meta?.service || 'callmiracle',
             requestId: logData.meta?.requestId,
             userId: logData.meta?.userId,
             userName: logData.meta?.userName,
+            userLogLevel: logData.meta?.userLogLevel,
             path: logData.meta?.path,
             metadata: logData.meta
           }
@@ -173,29 +180,53 @@ interface LogContext {
   requestId?: string
   userId?: string
   userName?: string
+  userLogLevel?: string
   path?: string
   userAgent?: string
   ip?: string
 }
 
+// Helper function to check if a log level should be logged
+function shouldLog(userLogLevel: string, currentLevel: string): boolean {
+  const levels = ['debug', 'info', 'warn', 'error']
+  const userIndex = levels.indexOf(userLogLevel)
+  const currentIndex = levels.indexOf(currentLevel)
+  return currentIndex >= userIndex
+}
+
+// Enhanced context logger that can work with centralized request context
+export const withRequestContext = (context: LogContext) => {
+  return withContext(context)
+}
+
 export const withContext = (context: LogContext) => {
+  const userLogLevel = context.userLogLevel || defaultLogLevel
+  
   return {
     debug: (message: string, meta: object = {}) => {
-      logger.debug(message, { ...context, ...meta })
+      if (shouldLog(userLogLevel, 'debug')) {
+        logger.debug(message, { ...context, ...meta })
+      }
     },
     info: (message: string, meta: object = {}) => {
-      logger.info(message, { ...context, ...meta })
+      if (shouldLog(userLogLevel, 'info')) {
+        logger.info(message, { ...context, ...meta })
+      }
     },
     warn: (message: string, meta: object = {}) => {
-      logger.warn(message, { ...context, ...meta })
+      if (shouldLog(userLogLevel, 'warn')) {
+        logger.warn(message, { ...context, ...meta })
+      }
     },
     error: (message: string, meta: object = {}) => {
-      logger.error(message, { ...context, ...meta })
+      if (shouldLog(userLogLevel, 'error')) {
+        logger.error(message, { ...context, ...meta })
+      }
     }
   }
 }
 
-// Request logger helper
+// Request logger helper (legacy - for old Pages API)
 export const withRequest = (req: NextApiRequest) => {
   const context: LogContext = {
     requestId: (req.headers['x-request-id'] as string) || 'no-request-id',
@@ -217,4 +248,37 @@ export const withRequest = (req: NextApiRequest) => {
   return withContext(context)
 }
 
-export default logger 
+/**
+ * Unified logger function that automatically gets request context and session context
+ * This is the primary function API routes should use - no need to manually create context
+ * 
+ * Usage:
+ * ```typescript
+ * export async function POST(request: NextRequest) {
+ *   const logger = await getLogger() // Gets context from AsyncLocalStorage
+ *   logger.info('Processing request')
+ * }
+ * ```
+ */
+export async function getLogger(request?: Request) {
+  // Get request context from AsyncLocalStorage
+  const requestContext = getRequestContext()
+
+  // Get session context (userId, userName, userLogLevel)
+  const session = await getServerSession(authOptions)
+  
+  // Create logger with full context
+  const logger = withContext({
+    requestId: requestContext.requestId,
+    path: requestContext.path,
+    userAgent: requestContext.userAgent,
+    ip: requestContext.ip,
+    userId: session?.user?.id || 'anonymous',
+    userName: session?.user?.name || 'anonymous',
+    userLogLevel: session?.user?.logLevel || defaultLogLevel
+  })
+
+  return logger
+}
+
+export default logger

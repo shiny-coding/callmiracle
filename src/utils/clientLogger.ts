@@ -8,22 +8,32 @@ interface LogMeta {
 class ClientLogger {
   private isDevelopment = process.env.NODE_ENV === 'development'
   private isEnabled = typeof window !== 'undefined'
+  private clientLogLevel = 'warn' // Default level
   
   private formatMessage(level: string, message: string, meta?: LogMeta): string {
     const timestamp = new Date().toISOString()
     const metaStr = meta && Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : ''
     return `${timestamp} [${level.toUpperCase()}]: ${message}${metaStr}`
   }
+
+  // Set the client log level (called when session is available)
+  setLogLevel(level: string) {
+    this.clientLogLevel = level
+  }
+
+  private shouldLog(messageLevel: string): boolean {
+    const levels = ['debug', 'info', 'warn', 'error']
+    const currentIndex = levels.indexOf(this.clientLogLevel)
+    const messageIndex = levels.indexOf(messageLevel)
+    return messageIndex >= currentIndex
+  }
   
   private sendToServer = async (level: string, message: string, meta: LogMeta = {}) => {
     if (!this.isEnabled) return
     
     try {
-      // Only send errors and warnings to server by default
-      // Can be configured via environment variable
-      const shouldSend = level === 'error' || 
-                        level === 'warn' || 
-                        process.env.NEXT_PUBLIC_CLIENT_LOGGING === 'true'
+      // Use user's clientLogLevel to determine what to send to server
+      const shouldSend = this.shouldLog(level)
       
       if (shouldSend) {
         fetch('/api/log', {
@@ -49,36 +59,44 @@ class ClientLogger {
   }
   
   debug = (message: string, meta: LogMeta = {}) => {
+    if (!this.shouldLog('debug')) return
+
     if (this.isDevelopment) {
       console.debug(this.formatMessage('debug', message, meta))
     }
-    // Don't send debug logs to server by default
+    
+    // Send to server based on user's clientLogLevel
+    this.sendToServer('debug', message, meta)
   }
   
   info = (message: string, meta: LogMeta = {}) => {
+    if (!this.shouldLog('info')) return
+
     if (this.isDevelopment) {
       console.info(this.formatMessage('info', message, meta))
     }
     
-    // Send to server if explicitly enabled
-    if (process.env.NEXT_PUBLIC_CLIENT_LOGGING === 'true') {
-      this.sendToServer('info', message, meta)
-    }
+    // Send to server based on user's clientLogLevel
+    this.sendToServer('info', message, meta)
   }
   
   warn = (message: string, meta: LogMeta = {}) => {
+    if (!this.shouldLog('warn')) return
+
     if (this.isDevelopment) {
       console.warn(this.formatMessage('warn', message, meta))
     }
     
-    // Always send warnings to server
+    // Send to server based on user's clientLogLevel
     this.sendToServer('warn', message, meta)
   }
   
   error = (message: string, meta: LogMeta = {}) => {
+    if (!this.shouldLog('error')) return
+
     console.error(this.formatMessage('error', message, meta))
     
-    // Always send errors to server
+    // Send to server based on user's clientLogLevel
     this.sendToServer('error', message, meta)
   }
   
