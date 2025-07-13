@@ -31,6 +31,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next()
     }
     
+    // Handle API routes - just set up AsyncLocalStorage context, no auth checks
+    if (pathname.startsWith('/api/')) {
+      // API routes get AsyncLocalStorage context but skip auth/intl logic
+      return NextResponse.next()
+    }
+    
     // Handle signin and signout redirects 
     if (pathname === '/auth/signin' || pathname === '/auth/signout') {
       // Allow the route handler to process the request
@@ -55,9 +61,7 @@ export async function middleware(request: NextRequest) {
       const signInPath = `/${locale}/auth/signin`
       return NextResponse.redirect(new URL(signInPath, request.url))
     }
-    
-    console.log('token in middleware', token)
-    
+        
     // If authenticated, check if user has completed first-time setup
     if (token && !isAuthRoute && !isFirstTimeRoute) {
       const userLanguages = token.languages as string[] | undefined
@@ -100,16 +104,15 @@ export async function middleware(request: NextRequest) {
   })
 }
 
-// Update the matcher to include profile images but exclude sound files
+// Update the matcher to include API routes but exclude static files
 export const config = {
   matcher: [
     // Match all paths except:
-    // - API routes
     // - Next.js static files
     // - Next.js image optimization files
     // - Favicon
     // - PNG files
-    // - Sound files (new exclusion)
-    '/((?!api|_next/static|_next/image|favicon.ico|sounds).*)' 
+    // - Sound files
+    '/((?!_next/static|_next/image|favicon.ico|sounds).*)' 
   ]
 }

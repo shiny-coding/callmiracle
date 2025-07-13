@@ -10,7 +10,6 @@ import { authOptions } from '@/lib/auth'
 const logDir = process.env.LOG_DIR || 'logs'
 
 export const defaultLogLevel = 'info'
-export const defaultClientLogLevel = 'warn'
 
 // Define custom log format for better readability
 const logFormat = format.printf(({ level, message, timestamp, service, requestId, userId, userName, path: reqPath, ...metadata }) => {

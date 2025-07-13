@@ -6,37 +6,33 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 import { getLogger } from '@/utils/logger'
 
-// Create yoga instance with logger passed from handler
-function createYogaWithLogger(logger: any) {
-  return createYoga({
-    schema,
-    context: async ({ request }): Promise<{ db: any, session: any, logger: any }> => {
-      const client = await clientPromise
-      const dbName = getDatabaseName()
-      const db = client.db(dbName)
-      const session = await getServerSession(authOptions)
-      
-      // Use the logger passed from the handler (no duplication)
-      return { db, session, logger }
-    },
-    graphqlEndpoint: '/api/graphql',
-    fetchAPI: { Response },
-    // Enable GraphiQL with SSE support
-    graphiql: {
-      subscriptionsProtocol: 'SSE'
-    },
-  })
-}
+// Create yoga instance
+const yoga = createYoga({
+  schema,
+  context: async ({ request }): Promise<{ db: any, session: any, logger: any }> => {
+    const client = await clientPromise
+    const dbName = getDatabaseName()
+    const db = client.db(dbName)
+    const session = await getServerSession(authOptions)
+    
+    // Get logger from AsyncLocalStorage context (set by middleware)
+    const logger = await getLogger()
+    
+    return { db, session, logger }
+  },
+  graphqlEndpoint: '/api/graphql',
+  fetchAPI: { Response },
+  // Enable GraphiQL with SSE support
+  graphiql: {
+    subscriptionsProtocol: 'SSE'
+  },
+})
 
 // Export request handlers
 export const GET = async (request: Request) => {
-  // Use unified logger with automatic context from AsyncLocalStorage
   const logger = await getLogger()
   
-  // Create yoga instance with the logger (no duplication in context)
-  const yoga = createYogaWithLogger(logger)
-  
-  // Log SSE requests with centralized logging
+  // Log SSE requests
   if (request.headers.get('accept')?.includes('text/event-stream')) {
     const url = new URL(request.url)
     const operationName = url.searchParams.get('operationName')
@@ -61,11 +57,7 @@ export const GET = async (request: Request) => {
 }
 
 export const POST = async (request: Request) => {
-  // Use unified logger with automatic context from AsyncLocalStorage
   const logger = await getLogger()
-  
-  // Create yoga instance with the logger (no duplication in context)
-  const yoga = createYogaWithLogger(logger)
   
   // Enhanced logging for POST requests
   if (request.headers.get('content-type')?.includes('application/json')) {
@@ -131,7 +123,7 @@ export const POST = async (request: Request) => {
     if (!requestBody) {
       requestBody = await clonedRequest.text()
     }
-    logger.error('GraphQL POST handler error', {
+    logger.error('GraphQL handler error', {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       requestBody
