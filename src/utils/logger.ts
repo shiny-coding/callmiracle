@@ -1,10 +1,12 @@
 import { createLogger, format, transports } from 'winston'
 import 'winston-daily-rotate-file'
+import LokiTransport from 'winston-loki'
 import path from 'path'
 import type { NextApiRequest } from 'next'
 import { getRequestContext } from './requestContext'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { trace } from '@opentelemetry/api'
 
 // Define log directory and ensure it exists
 const logDir = process.env.LOG_DIR || 'logs'
@@ -37,6 +39,10 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
       }
     }
     
+    // Get current trace ID for correlation
+    const span = trace.getActiveSpan()
+    const traceId = span?.spanContext().traceId || 'no-trace'
+    
     // Handle level colorization
     let levelStr = `[${level.toUpperCase()}]`
     if (colorize) {
@@ -58,6 +64,12 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
     
     let baseLog = `${logTimestamp} ${levelStr}`
     
+    // Add trace ID for correlation
+    if (traceId !== 'no-trace') {
+      const traceIdStr = colorize ? `${colors.gray}[trace:${traceId}]${colors.reset}` : `[trace:${traceId}]`
+      baseLog += ` ${traceIdStr}`
+    }
+    
     // Add user context if available
     if (userId && userId !== 'anonymous') {
       if (userName && userName !== 'anonymous') {
@@ -72,13 +84,13 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
       baseLog += ` [${reqPath}]`
     }
     
-    // Add request context if available
+    // Add request ID if available
     if (requestId) {
-      const requestIdStr = colorize ? `${colors.gray}[${requestId}]${colors.reset}` : `[${requestId}]`
+      const requestIdStr = colorize ? `${colors.gray}[req:${requestId}]${colors.reset}` : `[req:${requestId}]`
       baseLog += ` ${requestIdStr}`
     }
     
-    // Add service context (moved to the end as requested)
+    // Add service if available
     if (service) {
       const serviceStr = colorize ? `${colors.gray}[${service}]${colors.reset}` : `[${service}]`
       baseLog += ` ${serviceStr}`
@@ -86,15 +98,44 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
     
     baseLog += `:\n${message}`
     
-    // Include additional metadata as JSON if present
-    const metaKeys = Object.keys(metadata)
-    if (metaKeys.length > 0) {
-      baseLog += ` ${JSON.stringify(metadata)}`
+    // Add metadata if present
+    if (Object.keys(metadata).length > 0) {
+      const filteredMeta = Object.fromEntries(
+        Object.entries(metadata).filter(([key]) => 
+          !['timestamp', 'level', 'message', 'userAgent', 'service', 'userLogLevel', 'requestId', 'userId', 'userName', 'path'].includes(key)
+        )
+      )
+      if (Object.keys(filteredMeta).length > 0) {
+        baseLog += ` ${JSON.stringify(filteredMeta)}`
+      }
     }
     
     return baseLog
   })
 }
+
+// Create Loki format for structured logs
+const lokiFormat = format.combine(
+  format.timestamp(),
+  format.json(),
+  format.printf(({ timestamp, level, message, service, userId, userName, requestId, path: reqPath, ...metadata }) => {
+    const span = trace.getActiveSpan()
+    const traceId = span?.spanContext().traceId || undefined
+    
+    return JSON.stringify({
+      timestamp,
+      level,
+      message,
+      service: service || 'callmiracle',
+      userId,
+      userName,
+      requestId,
+      path: reqPath,
+      traceId,
+      ...metadata
+    })
+  })
+)
 
 // Create the main logger instance
 const logger = createLogger({
@@ -137,7 +178,25 @@ const logger = createLogger({
         format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         createLogFormat(false, true) // Non-colorized, full dates for files
       )
-    })
+    }),
+    
+    // Loki transport for log aggregation (only in production or when explicitly enabled)
+    ...(process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true' ? [
+      new LokiTransport({
+        host: process.env.LOKI_HOST || 'http://localhost:3100',
+        labels: { 
+          app: 'callmiracle',
+          environment: process.env.NODE_ENV || 'development',
+          service: 'main'
+        },
+        json: true,
+        format: lokiFormat,
+        replaceTimestamp: true,
+        onConnectionError: (err) => {
+          console.error('Loki connection error:', err)
+        }
+      })
+    ] : [])
   ]
 })
 
@@ -152,11 +211,12 @@ interface LogContext {
   service?: string
 }
 
-function shouldLog(userLogLevel: string, currentLevel: string): boolean {
-  const levels = ['debug', 'info', 'warn', 'error']
+function shouldLog(userLogLevel: string, messageLevel: string): boolean {
+  const levels = ['error', 'warn', 'info', 'debug']
   const userLevelIndex = levels.indexOf(userLogLevel)
-  const currentLevelIndex = levels.indexOf(currentLevel)
-  return currentLevelIndex >= userLevelIndex
+  const messageLevelIndex = levels.indexOf(messageLevel)
+  
+  return messageLevelIndex <= userLevelIndex
 }
 
 export const withContext = (context: LogContext) => {
@@ -184,19 +244,8 @@ export const withContext = (context: LogContext) => {
   }
 }
 
-export const withRequest = (req: NextApiRequest) => {
-  const requestId = req.headers['x-request-id'] as string || 'unknown'
-  const path = req.url || 'unknown'
-  const userAgent = req.headers['user-agent']
-  const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection.remoteAddress
-  
-  return withContext({
-    requestId,
-    path,
-    userAgent,
-    ip: typeof ip === 'string' ? ip : ip?.[0]
-  })
-}
+// Export the base logger for direct use
+export { logger }
 
 /**
  * Unified logger function that automatically gets request context from headers and session context
@@ -232,8 +281,16 @@ export async function getLogger() {
   return logger
 }
 
-export const getLoggerWithRequestId = (requestId: string) => {
-  return withContext({ requestId, service: 'main' })
+// Helper function to add trace context to logs
+export function addTraceToLog(meta: any = {}) {
+  const span = trace.getActiveSpan()
+  if (span) {
+    const spanContext = span.spanContext()
+    return {
+      ...meta,
+      traceId: spanContext.traceId,
+      spanId: spanContext.spanId
+    }
+  }
+  return meta
 }
-
-export default logger

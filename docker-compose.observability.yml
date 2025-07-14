@@ -1,8 +1,6 @@
 version: '3.8'
 
 networks:
-  app-network:
-    driver: bridge
   observability:
     driver: bridge
 
@@ -12,33 +10,6 @@ volumes:
   loki-data:
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3003:3000"
-    # Load all environment variables from .env.local file for runtime
-    env_file:
-      - .env.local
-      - .env.observability
-    environment:
-      # Override for production deployment
-      - NODE_ENV=production
-    # Enable connection to host machine services  
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - app-network
-      - observability
-    volumes:
-      - ./logs:/app/logs
-    depends_on:
-      - loki
-      - tempo
-      - otel-collector
-    restart: unless-stopped
-
   # Grafana - Visualization
   grafana:
     image: grafana/grafana:latest
@@ -67,6 +38,9 @@ services:
       - tempo-data:/var/tempo
     ports:
       - "3200:3200"   # tempo
+      - "4317:4317"   # otlp grpc
+      - "4318:4318"   # otlp http
+      - "9411:9411"   # zipkin
     networks:
       - observability
     restart: unless-stopped
@@ -85,7 +59,7 @@ services:
       - observability
     restart: unless-stopped
 
-  # Promtail - Log Collection
+  # Promtail - Log Collection (optional, if you want file-based log collection)
   promtail:
     image: grafana/promtail:latest
     container_name: callmiracle-promtail
@@ -99,7 +73,7 @@ services:
     depends_on:
       - loki
 
-  # OTEL Collector
+  # OTEL Collector (for better telemetry collection)
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: callmiracle-otel-collector
