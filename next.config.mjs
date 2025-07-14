@@ -2,12 +2,11 @@ import createNextIntlPlugin from 'next-intl/plugin';
  
 const withNextIntl = createNextIntlPlugin();
 
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // save this just in case
   productionBrowserSourceMaps: true,
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     if (config.mode !== 'development') {
       config.devtool = 'source-map';
     }
@@ -15,6 +14,7 @@ const nextConfig = {
   },
   reactStrictMode: false,
   output: 'standalone',
+  serverExternalPackages: ['winston-loki', 'snappy', '@napi-rs/snappy-win32-x64-msvc'],
   images: {
     unoptimized: true,
     remotePatterns: [

@@ -9,8 +9,7 @@ import { compare } from "bcrypt"
 import { ObjectId } from 'mongodb'
 import NextAuth from "next-auth"
 import { cookies } from 'next/headers'
-import { defaultLogLevel } from "@/utils/logger"
-import { defaultClientLogLevel } from "@/components/ClientLoggerConfig"
+import { defaultLogLevel, defaultClientLogLevel } from "@/utils/logUtils"
 
 // Check if we're in build mode (same pattern as mongodb.ts)
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || process.argv.includes('build')

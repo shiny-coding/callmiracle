@@ -3,8 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useEffect } from 'react'
 import clientLogger from '@/utils/clientLogger'
-
-export const defaultClientLogLevel = 'warn'
+import { defaultClientLogLevel } from '@/utils/logUtils'
 
 export default function ClientLoggerConfig() {
   const { data: session, status } = useSession()

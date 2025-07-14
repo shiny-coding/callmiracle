@@ -1,4 +1,4 @@
-import logger, { withContext } from './logger'
+import { withContext, getLogger } from './logger'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 // Custom application error class
@@ -72,13 +72,56 @@ interface ErrorResponse {
   details?: any
 }
 
-// Handle and log errors with context
-export const handleError = (
+// Synchronous error handler (fallback without logging)
+export const handleErrorSync = (
   error: Error | AppError, 
   req?: NextApiRequest,
   additionalContext?: Record<string, any>
 ): ErrorResponse => {
+  // Use console.error as fallback since we can't await getLogger()
+  const logMessage = error instanceof AppError ? 
+    `${error.code}: ${error.message}` : 
+    `Unhandled error: ${error.message}`
   
+  console.error(logMessage, {
+    ...(error instanceof AppError ? {
+      statusCode: error.statusCode,
+      code: error.code,
+      isOperational: error.isOperational
+    } : {
+      name: error.name
+    }),
+    stack: error.stack,
+    ...additionalContext
+  })
+  
+  if (error instanceof AppError) {
+    return {
+      statusCode: error.statusCode,
+      code: error.code,
+      message: error.message
+    }
+  }
+  
+  // Don't expose internal error details in production
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal server error' 
+    : error.message
+  
+  return {
+    statusCode: 500,
+    code: 'INTERNAL_ERROR',
+    message
+  }
+}
+
+// Handle and log errors with context (now async)
+export const handleError = async (
+  error: Error | AppError, 
+  req?: NextApiRequest,
+  additionalContext?: Record<string, any>
+): Promise<ErrorResponse> => {
+  const logger = await getLogger()
   // Create logger with request context if available
   const log = req ? 
     withContext({
@@ -131,17 +174,20 @@ export const handleError = (
 
 // Async error wrapper for API routes
 export const asyncHandler = (fn: Function) => {
-  return (req: NextApiRequest, res: any, next?: Function) => {
-    Promise.resolve(fn(req, res, next)).catch((error) => {
-      const errorResponse = handleError(error, req)
+  return async (req: NextApiRequest, res: any, next?: Function) => {
+    try {
+      await fn(req, res, next)
+    } catch (error) {
+      const errorResponse = await handleError(error as Error, req)
       res.status(errorResponse.statusCode).json(errorResponse)
-    })
+    }
   }
 }
 
 // GraphQL error formatter
-export const formatGraphQLError = (error: any) => {
+export const formatGraphQLError = async (error: any) => {
   // Log the error
+  const logger = await getLogger()
   logger.error('GraphQL Error', {
     message: error.message,
     locations: error.locations,
@@ -174,7 +220,7 @@ export const formatGraphQLError = (error: any) => {
 }
 
 // Database operation error handler
-export const handleDatabaseError = (error: any, operation: string, collection?: string) => {
+export const handleDatabaseError = async (error: any, operation: string, collection?: string) => {
   // MongoDB specific errors
   if (error.code === 11000) {
     throw new ConflictError('Duplicate key error')
@@ -189,6 +235,7 @@ export const handleDatabaseError = (error: any, operation: string, collection?: 
   }
   
   // Log and throw generic error
+  const logger = await getLogger()
   logger.error('Database operation failed', {
     operation,
     collection,
@@ -208,12 +255,14 @@ export const withPerformanceLogging = (name: string, fn: Function) => {
       const result = await fn(...args)
       const duration = Date.now() - start
       
+      const logger = await getLogger()
       const logLevel = duration > 1000 ? 'warn' : 'info'
       logger[logLevel](`Performance: ${name}`, { duration, name, type: 'performance' })
       
       return result
     } catch (error) {
       const duration = Date.now() - start
+      const logger = await getLogger()
       logger.error(`Performance: ${name} failed`, { 
         duration, 
         name, 

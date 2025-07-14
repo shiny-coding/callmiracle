@@ -51,7 +51,7 @@ export const usersQueries = {
       
       return activeUsers
     } catch (error) {
-      handleDatabaseError(error, 'getUsers', 'users')
+      await handleDatabaseError(error, 'getUsers', 'users')
     }
   },
 

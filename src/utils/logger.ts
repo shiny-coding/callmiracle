@@ -1,6 +1,6 @@
 import { createLogger, format, transports } from 'winston'
 import 'winston-daily-rotate-file'
-import LokiTransport from 'winston-loki'
+// winston-loki will be dynamically imported below
 import path from 'path'
 import type { NextApiRequest } from 'next'
 import { getRequestContext } from './requestContext'
@@ -114,28 +114,6 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
   })
 }
 
-// Create Loki format for structured logs
-const lokiFormat = format.combine(
-  format.timestamp(),
-  format.json(),
-  format.printf(({ timestamp, level, message, service, userId, userName, requestId, path: reqPath, ...metadata }) => {
-    const span = trace.getActiveSpan()
-    const traceId = span?.spanContext().traceId || undefined
-    
-    return JSON.stringify({
-      timestamp,
-      level,
-      message,
-      service: service || 'callmiracle',
-      userId,
-      userName,
-      requestId,
-      path: reqPath,
-      traceId,
-      ...metadata
-    })
-  })
-)
 
 // Create the main logger instance
 const logger = createLogger({
@@ -178,27 +156,25 @@ const logger = createLogger({
         format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         createLogFormat(false, true) // Non-colorized, full dates for files
       )
-    }),
-    
-    // Loki transport for log aggregation (only in production or when explicitly enabled)
-    ...(process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true' ? [
-      new LokiTransport({
-        host: process.env.LOKI_HOST || 'http://localhost:3100',
-        labels: { 
-          app: 'callmiracle',
-          environment: process.env.NODE_ENV || 'development',
-          service: 'main'
-        },
-        json: true,
-        format: lokiFormat,
-        replaceTimestamp: true,
-        onConnectionError: (err) => {
-          console.error('Loki connection error:', err)
-        }
-      })
-    ] : [])
+    })
   ]
 })
+
+// Dynamically add Loki transport if enabled
+if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true') {
+  // Import and add Loki transport dynamically to avoid webpack bundling issues
+  import('./logger-loki').then(({ createLokiTransport }) => {
+    try {
+      const lokiTransport = createLokiTransport()
+      logger.add(lokiTransport)
+      logger.info('Loki transport added successfully')
+    } catch (error) {
+      logger.error('Failed to add Loki transport:', error)
+    }
+  }).catch((error) => {
+    logger.error('Failed to import Loki transport:', error)
+  })
+}
 
 interface LogContext {
   requestId?: string
@@ -294,3 +270,4 @@ export function addTraceToLog(meta: any = {}) {
   }
   return meta
 }
+
