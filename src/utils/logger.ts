@@ -39,9 +39,9 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
       }
     }
     
-    // Get current trace ID for correlation
-    const span = trace.getActiveSpan()
-    const traceId = span?.spanContext().traceId || 'no-trace'
+    // Remove traceId from log output
+    // const span = trace.getActiveSpan()
+    // const traceId = span?.spanContext().traceId || 'no-trace'
     
     // Handle level colorization
     let levelStr = `[${level.toUpperCase()}]`
@@ -64,11 +64,11 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
     
     let baseLog = `${logTimestamp} ${levelStr}`
     
-    // Add trace ID for correlation
-    if (traceId !== 'no-trace') {
-      const traceIdStr = colorize ? `${colors.gray}[trace:${traceId}]${colors.reset}` : `[trace:${traceId}]`
-      baseLog += ` ${traceIdStr}`
-    }
+    // Do NOT add traceId to log output
+    // if (traceId !== 'no-trace') {
+    //   const traceIdStr = colorize ? `${colors.gray}[trace:${traceId}]${colors.reset}` : `[trace:${traceId}]`
+    //   baseLog += ` ${traceIdStr}`
+    // }
     
     // Add user context if available
     if (userId && userId !== 'anonymous') {
@@ -96,7 +96,7 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
       baseLog += ` ${serviceStr}`
     }
     
-    baseLog += `:\n${message}`
+    baseLog += `: ${message}`
     
     // Add metadata if present
     if (Object.keys(metadata).length > 0) {
@@ -174,6 +174,8 @@ if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true')
   }).catch((error) => {
     logger.error('Failed to import Loki transport:', error)
   })
+} else {
+  logger.info('Loki transport not added')
 }
 
 interface LogContext {

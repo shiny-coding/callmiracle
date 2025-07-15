@@ -59,20 +59,6 @@ services:
       - observability
     restart: unless-stopped
 
-  # Promtail - Log Collection (optional, if you want file-based log collection)
-  promtail:
-    image: grafana/promtail:latest
-    container_name: callmiracle-promtail
-    command: -config.file=/etc/promtail/config.yml
-    volumes:
-      - ./observability/promtail/promtail.yaml:/etc/promtail/config.yml
-      - ./logs:/var/log/app:ro
-    networks:
-      - observability
-    restart: unless-stopped
-    depends_on:
-      - loki
-
   # OTEL Collector (for better telemetry collection)
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
