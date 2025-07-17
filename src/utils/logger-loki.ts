@@ -5,40 +5,65 @@ import { trace } from '@opentelemetry/api'
 
 // Create Loki format for structured logs
 const lokiFormat = format.combine(
-  format.timestamp(),
-  format.json(),
-  format.printf(({ timestamp, level, message, service, userId, userName, requestId, path: reqPath, ...metadata }) => {
+  // format.timestamp(),
+  // format.json(),
+  // Add trace information as metadata but let format.json() handle serialization
+  format((info) => {
     const span = trace.getActiveSpan()
-    const traceId = span?.spanContext().traceId || undefined
-    
-    return JSON.stringify({
-      timestamp,
-      level,
-      message,
-      service: service || 'callmiracle',
-      userId,
-      userName,
-      requestId,
-      path: reqPath,
-      traceId,
-      ...metadata
-    })
-  })
+    if (span) {
+      info.traceId = span.spanContext().traceId
+      info.spanId = span.spanContext().spanId
+    }
+
+    const { userId, userName, ip, path, requestId, userAgent, service, level, ...nonLabelInfo } = info as any
+
+    const ordered = {
+      message: info.message,
+      path: info.path,
+      requestId: info.requestId,
+      userName: info.userName,
+      userId: info.userId,
+      // Add any other fields you want, in order
+      ...nonLabelInfo, // This will add any remaining fields at the end
+      userAgent: info.userAgent,
+      service: info.service,
+      level: info.level,
+    }
+    // Serialize to JSON string
+    nonLabelInfo[Symbol.for('message')] = JSON.stringify(ordered)
+
+    return {
+      ...nonLabelInfo,
+      labels: { userId, userName, ip, path, requestId }
+    }
+  })()
 )
 
 export function createLokiTransport() {
-  return new LokiTransport({
-    host: process.env.LOKI_HOST || 'http://localhost:3100',
+  const lokiHost = process.env.LOKI_HOST || 'http://localhost:3100'
+  const transport = new LokiTransport({
+    host: lokiHost,
     labels: { 
-      app: 'callmiracle',
       environment: process.env.NODE_ENV || 'development',
-      service: 'main'
+      service: 'callmiracle',
     },
     json: true,
     format: lokiFormat,
-    replaceTimestamp: true,
+    batching: true,
+    interval: 2, // 2 second
     onConnectionError: (err: any) => {
-      console.error('Loki connection error:', err)
-    }
+      console.error('❌ Loki connection error:', err.message || err)
+    },
+    // Add more event handlers for debugging
+    handleExceptions: false,
+    handleRejections: false
   })
+  
+  // Add event listeners for debugging
+  transport.on('error', (err: any) => {
+    console.error('❌ Loki transport error:', err.message || err)
+  })
+  
+  console.log('✅ Loki transport created successfully')
+  return transport
 } 

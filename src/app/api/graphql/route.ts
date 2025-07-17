@@ -67,10 +67,8 @@ export const POST = async (request: Request) => {
       const query = body.query?.substring(0, 100) // Truncate long queries
       const operationName = body.operationName || 'unnamed'
 
-      logger.info('GraphQL Request', {
+      logger.info('GraphQL Request: ' + operationName, {
         operationName,
-        hasVariables: !!body.variables,
-        queryLength: body.query?.length || 0,
         queryPreview: query
       })
     } catch (e) {
@@ -104,7 +102,6 @@ export const POST = async (request: Request) => {
         logger.error('GraphQL Error Response', {
           status: response.status,
           operationName: parsedBody.operationName,
-          hasVariables: !!parsedBody.variables,
           queryPreview: parsedBody.query?.slice(0, 100) + '...',
           responseBody
         })

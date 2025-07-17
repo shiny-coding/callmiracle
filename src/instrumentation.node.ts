@@ -1,6 +1,8 @@
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
+import { resourceFromAttributes } from '@opentelemetry/resources'
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 
@@ -9,15 +11,35 @@ const serviceName = process.env.OTEL_SERVICE_NAME || 'callmiracle'
 const serviceVersion = process.env.OTEL_SERVICE_VERSION || '1.0.0'
 const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318'
 
+console.log('🔧 Initializing OpenTelemetry with:', {
+  serviceName,
+  serviceVersion,
+  otlpEndpoint,
+  nodeEnv: process.env.NODE_ENV
+})
+
 // Configure trace exporter
 const traceExporter = new OTLPTraceExporter({
   url: `${otlpEndpoint}/v1/traces`,
   headers: {},
 })
 
+// Configure resource with proper attributes
+const resource = resourceFromAttributes({
+  [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
+  [SemanticResourceAttributes.SERVICE_VERSION]: serviceVersion,
+  [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
+})
+
 // Initialize OpenTelemetry SDK with advanced configuration
 const sdk = new NodeSDK({
-  spanProcessor: new BatchSpanProcessor(traceExporter),
+  resource: resource,
+  spanProcessor: new BatchSpanProcessor(traceExporter, {
+    maxExportBatchSize: 100,
+    maxQueueSize: 1000,
+    exportTimeoutMillis: 30000,
+    scheduledDelayMillis: 5000,
+  }),
   instrumentations: [
     getNodeAutoInstrumentations({
       // Disable some instrumentations if needed
@@ -56,14 +78,15 @@ const sdk = new NodeSDK({
 })
 
 // Start the SDK
+console.log('🚀 Starting OpenTelemetry SDK...')
 sdk.start()
-
-console.log('Advanced OpenTelemetry instrumentation initialized for', serviceName)
+console.log('✅ OpenTelemetry SDK started successfully')
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
+  console.log('🛑 Shutting down OpenTelemetry...')
   sdk.shutdown()
-    .then(() => console.log('OpenTelemetry terminated'))
-    .catch((error) => console.log('Error terminating OpenTelemetry', error))
+    .then(() => console.log('✅ OpenTelemetry terminated'))
+    .catch((error) => console.log('❌ Error terminating OpenTelemetry', error))
     .finally(() => process.exit(0))
 }) 

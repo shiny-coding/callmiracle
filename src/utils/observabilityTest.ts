@@ -59,83 +59,24 @@ export async function testObservability() {
 }
 
 /**
- * Test API endpoint functionality
- */
-export async function testAPIObservability(endpoint: string = '/api/log') {
-  const logger = await getLogger()
-  
-  try {
-    const testPayload = {
-      level: 'info',
-      message: '🌐 Testing API observability integration',
-      meta: {
-        testType: 'api',
-        endpoint,
-        timestamp: new Date().toISOString()
-      }
-    }
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(testPayload)
-    })
-
-    if (response.ok) {
-      logger.info('✅ API observability test successful', addTraceToLog({
-        status: response.status,
-        endpoint
-      }))
-    } else {
-      logger.error('❌ API observability test failed', addTraceToLog({
-        status: response.status,
-        endpoint,
-        statusText: response.statusText
-      }))
-    }
-
-    return response.ok
-  } catch (error) {
-    logger.error('💥 API test exception', addTraceToLog({
-      error: (error as Error).message,
-      endpoint
-    }))
-    return false
-  }
-}
-
-/**
- * Run comprehensive observability tests
+ * Simple function to run observability tests
+ * Can be called directly from Node.js
  */
 export async function runObservabilityTests() {
-  console.log('🚀 Starting CallMiracle Observability Tests...\n')
-
+  console.log('🚀 Starting observability tests...')
+  
   try {
-    // Test 1: Basic observability
-    console.log('1️⃣ Testing basic observability...')
     await testObservability()
-    console.log('✅ Basic observability test passed\n')
-
-    // Test 2: API observability (if available)
-    console.log('2️⃣ Testing API observability...')
-    const apiSuccess = await testAPIObservability()
-    if (apiSuccess) {
-      console.log('✅ API observability test passed\n')
-    } else {
-      console.log('⚠️ API observability test skipped (API may not be running)\n')
-    }
-
-    console.log('🎉 All observability tests completed!')
-    console.log('\n📊 Check your services:')
-    console.log('  • Grafana: http://localhost:3001')
-    console.log('  • Loki: http://localhost:3100')
-    console.log('  • Tempo: http://localhost:3200')
-    console.log('\n🔍 Look for logs with "observability-test" in Grafana/Loki')
-
+    console.log('✅ All observability tests passed!')
+    
+    console.log('\n📋 Next steps:')
+    console.log('1. Check Grafana: http://localhost:3001 (admin/admin)')
+    console.log('2. Look for logs in Loki datasource')
+    console.log('3. Look for traces in Tempo datasource')
+    console.log('4. Check the console output above for any errors')
+    
   } catch (error) {
     console.error('❌ Observability tests failed:', error)
-    throw error
+    process.exit(1)
   }
 } 

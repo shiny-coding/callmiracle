@@ -1,4 +1,4 @@
-import { createLogger, format, transports } from 'winston'
+import { createLogger, format, Logger, transports } from 'winston'
 import 'winston-daily-rotate-file'
 // winston-loki will be dynamically imported below
 import path from 'path'
@@ -6,7 +6,7 @@ import type { NextApiRequest } from 'next'
 import { getRequestContext } from './requestContext'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { trace } from '@opentelemetry/api'
+import { context, trace } from '@opentelemetry/api'
 
 // Define log directory and ensure it exists
 const logDir = process.env.LOG_DIR || 'logs'
@@ -90,12 +90,6 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
       baseLog += ` ${requestIdStr}`
     }
     
-    // Add service if available
-    if (service) {
-      const serviceStr = colorize ? `${colors.gray}[${service}]${colors.reset}` : `[${service}]`
-      baseLog += ` ${serviceStr}`
-    }
-    
     baseLog += `: ${message}`
     
     // Add metadata if present
@@ -114,19 +108,21 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
   })
 }
 
+const datePattern = 'YYYY-MM-DD'
+const timestampFormat = 'YYYY-MM-DD HH:mm:ss'
 
 // Create the main logger instance
 const logger = createLogger({
   level: defaultLogLevel,
-  format: format.combine(
-    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    createLogFormat(false, true) // Non-colorized, full dates for main logger
-  ),
+  // format: format.combine(
+  //   format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  //   createLogFormat(false, true) // Non-colorized, full dates for main logger
+  // ),
   transports: [
     // Console transport for development (colorized, short dates)
     new transports.Console({
       format: format.combine(
-        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        format.timestamp({ format: timestampFormat }),
         createLogFormat(true, false) // Colorized, short dates for console
       )
     }),
@@ -134,12 +130,12 @@ const logger = createLogger({
     // File transport for all logs (non-colorized, full dates)
     new transports.DailyRotateFile({
       filename: path.join(logDir, 'application-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
+      datePattern: datePattern,
       zippedArchive: true,
       maxSize: '20m',
       maxFiles: '14d',
       format: format.combine(
-        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        format.timestamp({ format: timestampFormat }),
         createLogFormat(false, true) // Non-colorized, full dates for files
       )
     }),
@@ -147,13 +143,13 @@ const logger = createLogger({
     // Separate file for errors (non-colorized, full dates)
     new transports.DailyRotateFile({
       filename: path.join(logDir, 'error-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
+      datePattern: datePattern,
       level: 'error',
       zippedArchive: true,
       maxSize: '20m',
       maxFiles: '14d',
       format: format.combine(
-        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        format.timestamp({ format: timestampFormat }),
         createLogFormat(false, true) // Non-colorized, full dates for files
       )
     })
@@ -167,7 +163,6 @@ if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true')
     try {
       const lokiTransport = createLokiTransport()
       logger.add(lokiTransport)
-      logger.info('Loki transport added successfully')
     } catch (error) {
       logger.error('Failed to add Loki transport:', error)
     }
@@ -197,28 +192,28 @@ function shouldLog(userLogLevel: string, messageLevel: string): boolean {
   return messageLevelIndex <= userLevelIndex
 }
 
+const logImpl = (context: LogContext, level: string, message: string, meta?: any) => {
+  if (!shouldLog(context.userLogLevel || defaultLogLevel, level)) {
+    return
+  }
+  const { userLogLevel, ...filteredContext } = context
+  logger[level as keyof Logger](message, { ...filteredContext, ...meta })
+}
+
 export const withContext = (context: LogContext) => {
   return {
     debug: (message: string, meta?: any) => {
-      if (shouldLog(context.userLogLevel || defaultLogLevel, 'debug')) {
-        logger.debug(message, { ...context, ...meta })
-      }
+      logImpl(context, 'debug', message, meta)
     },
     info: (message: string, meta?: any) => {
-      if (shouldLog(context.userLogLevel || defaultLogLevel, 'info')) {
-        logger.info(message, { ...context, ...meta })
-      }
+      logImpl(context, 'info', message, meta)
     },
     warn: (message: string, meta?: any) => {
-      if (shouldLog(context.userLogLevel || defaultLogLevel, 'warn')) {
-        logger.warn(message, { ...context, ...meta })
-      }
+      logImpl(context, 'warn', message, meta)
     },
     error: (message: string, meta?: any) => {
-      if (shouldLog(context.userLogLevel || defaultLogLevel, 'error')) {
-        logger.error(message, { ...context, ...meta })
-      }
-    }
+      logImpl(context, 'error', message, meta)
+    },
   }
 }
 
@@ -253,7 +248,7 @@ export async function getLogger() {
     userId: session?.user?.id || 'anonymous',
     userName: session?.user?.name || 'anonymous',
     userLogLevel: (session?.user as any)?.logLevel || defaultLogLevel,
-    service: 'main'
+    service: 'callmiracle'
   })
 
   return logger

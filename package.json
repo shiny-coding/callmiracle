@@ -6,8 +6,7 @@
     "dev-ssl": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 next dev --turbopack --experimental-https --experimental-https-key ./certs/localhost-key.pem --experimental-https-cert ./certs/localhost.pem",
     "debug-dev-ssl": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 next dev --experimental-https --experimental-https-key ./certs/localhost-key.pem --experimental-https-cert ./certs/localhost.pem",
     "dev-fast": "next dev --turbopack",
-    "dev": "cross-env NODE_OPTIONS='--inspect' ENABLE_LOKI=true next dev -p 3003",
-    "dev:observability": "cross-env NODE_OPTIONS='--inspect' ENABLE_LOKI=true next dev -p 3003",
+    "dev": "dotenv -e .env.observability -- cross-env NODE_OPTIONS='--inspect' next dev -p 3003",
     "build": "next build",
     "start": "next start",
     "debug-prod": "cross-env NODE_OPTIONS='--inspect-brk' next start",
@@ -22,7 +21,7 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f app",
     "docker:restart": "docker-compose restart app",
-    "test:observability": "node -e \"import('./src/utils/observabilityTest.js').then(m => m.runObservabilityTests())\""
+    "test:observability": "node --loader ts-node/esm -e \"import('./src/utils/observabilityTest.ts').then(m => m.runObservabilityTests())\""
   },
   "dependencies": {
     "@apollo/client": "^3.12.5",
@@ -51,9 +50,9 @@
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
     "@opentelemetry/semantic-conventions": "^1.36.0",
+    "@opentelemetry/winston-transport": "^0.14.0",
     "@types/js-cookie": "^3.0.6",
     "@types/uuid": "^10.0.0",
-    "@vercel/otel": "^1.13.0",
     "apollo-server": "^3.13.0",
     "apollo-server-micro": "^3.13.0",
     "bcrypt": "^5.1.1",

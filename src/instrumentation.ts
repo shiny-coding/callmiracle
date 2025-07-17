@@ -1,4 +1,3 @@
-import { registerOTel } from '@vercel/otel'
 
 export async function register() {
   // Skip instrumentation on client side
@@ -8,12 +7,10 @@ export async function register() {
 
   // Handle different runtimes
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    // Initialize OpenTelemetry in Node.js runtime
-    registerOTel({
-      serviceName: process.env.OTEL_SERVICE_NAME || 'callmiracle',
-    })
-    
-    console.log('OpenTelemetry instrumentation initialized with @vercel/otel (Node.js)')
+    // Use our custom instrumentation for better control
+    // console.log('Loading custom OpenTelemetry instrumentation...')
+
+    await import('./instrumentation.node')
   } else if (process.env.NEXT_RUNTIME === 'edge') {
     // Import edge-specific instrumentation
     await import('./instrumentation-edge')
