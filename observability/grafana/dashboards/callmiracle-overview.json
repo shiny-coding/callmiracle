@@ -63,7 +63,7 @@
       },
       "targets": [
         {
-          "expr": "{service=\"callmiracle\"}",
+          "expr": "{service_name=\"callmiracle\"}",
           "refId": "A"
         }
       ],
@@ -115,7 +115,7 @@
       },
       "targets": [
         {
-          "expr": "{service=\"callmiracle\", level=\"error\"}",
+          "expr": "{service_name=\"callmiracle\", level=\"error\"}",
           "refId": "A"
         }
       ],
@@ -167,7 +167,7 @@
       },
       "targets": [
         {
-          "expr": "{service=\"callmiracle\"} |= \"API\"",
+          "expr": "{service_name=\"callmiracle\"} |= \"API\"",
           "refId": "A"
         }
       ],
@@ -175,7 +175,14 @@
       "type": "logs"
     },
     {
-      "datasource": "Tempo",
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -183,9 +190,18 @@
         "y": 24
       },
       "id": 6,
+      "options": {
+        "showTraceId": true,
+        "showSpanName": true,
+        "showTime": true
+      },
       "targets": [
         {
-          "query": "{service.name=\"callmiracle\"}",
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "query": "{.service.name=\"callmiracle\"}",
           "refId": "A"
         }
       ],
