@@ -27,18 +27,18 @@ datasources:
     editable: true
     jsonData:
       httpMethod: GET
-      tracesToLogs:
+      tracesToLogsV2:
         datasourceUid: loki
-        tags: ['service_name', 'level', 'path', 'userId', 'userName']
-        mappedTags: 
-          - key: 'service.name'
-            value: 'service_name'
-        mapTagNamesEnabled: true
-        spanStartTimeShift: '5m'
-        spanEndTimeShift: '5m'
-        filterByTraceID: true
-        filterBySpanID: false
-        customQuery: '{traceId="${__span.traceId}", service_name="callmiracle"}'
+        #tags: ['service_name']
+        #mappedTags: 
+        #  - key: 'service.name'
+        #    value: 'service_name'
+        spanStartTimeShift: '-10m'
+        spanEndTimeShift: '10m'
+        #filterByTraceID: false
+        #filterBySpanID: false
+        customQuery: true
+        query: '{traceId="$${__span.traceId}"}'
       serviceMap:
         datasourceUid: prometheus
       nodeGraph:

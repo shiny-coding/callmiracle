@@ -1,0 +1,2 @@
+traces to logs conf
+https://github.com/grafana/grafana/issues/64659
