@@ -167,7 +167,7 @@
       },
       "targets": [
         {
-          "expr": "{service_name=\"callmiracle\"} |= \"API\"",
+          "expr": "{service_name=\"callmiracle\", path=~\"/api/.*\"}",
           "refId": "A"
         }
       ],
@@ -201,7 +201,7 @@
             "type": "tempo",
             "uid": "tempo"
           },
-          "query": "{.service.name=\"callmiracle\"}",
+          "query": "{resource.service.name=\"callmiracle\"}",
           "refId": "A"
         }
       ],

@@ -10,12 +10,14 @@ const lokiFormat = format.combine(
   // Add trace information as metadata but let format.json() handle serialization
   format((info) => {
     const span = trace.getActiveSpan()
+    let traceId = undefined
+    let spanId = undefined
     if (span) {
-      info.traceId = span.spanContext().traceId
-      info.spanId = span.spanContext().spanId
+      traceId = span.spanContext().traceId
+      spanId = span.spanContext().spanId
     }
 
-    const { userId, userName, ip, path, requestId, userAgent, service, level, ...nonLabelInfo } = info as any
+    const { userId, userName, ip, path, requestId, userAgent, service, level, operationName, ...nonLabelInfo } = info as any
 
     const ordered = {
       message: info.message,
@@ -34,7 +36,7 @@ const lokiFormat = format.combine(
 
     return {
       ...nonLabelInfo,
-      labels: { userId, userName, ip, path, requestId }
+      labels: { userId, userName, ip, path, requestId, operationName, traceId, spanId }
     }
   })()
 )

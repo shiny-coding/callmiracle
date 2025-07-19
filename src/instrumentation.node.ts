@@ -26,9 +26,9 @@ const traceExporter = new OTLPTraceExporter({
 
 // Configure resource with proper attributes
 const resource = resourceFromAttributes({
-  ATTR_SERVICE_NAME: serviceName,
-  ATTR_SERVICE_VERSION: serviceVersion,
-  SEMRESATTRS_DEPLOYMENT_ENVIRONMENT: process.env.NODE_ENV || 'development',
+  [ATTR_SERVICE_NAME]: serviceName,
+  [ATTR_SERVICE_VERSION]: serviceVersion,
+  [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
 })
 
 // Initialize OpenTelemetry SDK with advanced configuration
