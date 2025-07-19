@@ -2,7 +2,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
 import { resourceFromAttributes } from '@opentelemetry/resources'
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions'
 
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 
@@ -26,9 +26,9 @@ const traceExporter = new OTLPTraceExporter({
 
 // Configure resource with proper attributes
 const resource = resourceFromAttributes({
-  [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
-  [SemanticResourceAttributes.SERVICE_VERSION]: serviceVersion,
-  [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
+  ATTR_SERVICE_NAME: serviceName,
+  ATTR_SERVICE_VERSION: serviceVersion,
+  SEMRESATTRS_DEPLOYMENT_ENVIRONMENT: process.env.NODE_ENV || 'development',
 })
 
 // Initialize OpenTelemetry SDK with advanced configuration

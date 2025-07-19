@@ -38,6 +38,10 @@ metrics_generator:
       cluster: docker-compose
   storage:
     path: /var/tempo/generator/wal
+  traces_storage:
+    path: /var/tempo/generator/traces
+  processor:
+    local_blocks: {}
 
 storage:
   trace:
@@ -63,4 +67,4 @@ querier:
 overrides:
   defaults:
     metrics_generator:
-      processors: [service-graphs, span-metrics] 
+      processors: [service-graphs, span-metrics, local-blocks] 
