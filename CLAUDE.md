@@ -66,6 +66,9 @@ CallMiracle is a Next.js application with real-time communication capabilities, 
 - Tempo for tracing
 - Custom logging utilities in `src/utils/`
 
+##
+- While developing I'm running the app in dev-mode on port 3003, not in a container
+
 ## Recent Changes
 Based on commit history:
 - Enhanced observability setup and logging features
