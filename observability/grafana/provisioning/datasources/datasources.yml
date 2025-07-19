@@ -12,10 +12,11 @@ datasources:
       maxLines: 1000
       derivedFields:
         - datasourceUid: tempo
-          matcherRegex: 'traceID=(\w+)'
           name: TraceID
           url: '$${__value.raw}'
           urlDisplayLabel: 'View Trace'
+          matcherType: 'label'
+          matcherRegex: 'traceId'
 
   - name: Tempo
     type: tempo
@@ -28,13 +29,16 @@ datasources:
       httpMethod: GET
       tracesToLogs:
         datasourceUid: loki
-        tags: ['job', 'instance', 'pod', 'namespace']
-        mappedTags: [{ key: 'service.name', value: 'service' }]
-        mapTagNamesEnabled: true
-        spanStartTimeShift: '1h'
-        spanEndTimeShift: '1h'
-        filterByTraceID: false
+        tags: ['service_name']
+        mappedTags: 
+          - key: 'service.name'
+            value: 'service_name'
+        mapTagNamesEnabled: false
+        spanStartTimeShift: '5m'
+        spanEndTimeShift: '5m'
+        filterByTraceID: true
         filterBySpanID: false
+        customQuery: '{traceId="${__span.traceId}", service_name="callmiracle"}'
       serviceMap:
         datasourceUid: prometheus
       nodeGraph:
