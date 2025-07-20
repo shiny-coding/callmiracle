@@ -3,11 +3,15 @@ version: '3.8'
 networks:
   app-network:
     driver: bridge
+  observability:
+    external: true
+    name: callmiracle_observability
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     ports:
       - "3003:3000"
     # Load all environment variables from .env.local file for runtime
@@ -17,11 +21,17 @@ services:
     environment:
       # Override for production deployment
       - NODE_ENV=production
+      # Override observability endpoints for container networking
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://callmiracle-otel-collector:4318
+      - LOKI_HOST=http://callmiracle-loki:3100
+      # MongoDB connection to host machine
+      - MONGODB_URI=mongodb://host.docker.internal:27017/callmiracle
     # Enable connection to host machine services  
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - app-network
+      - observability
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
