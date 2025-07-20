@@ -3,14 +3,6 @@ version: '3.8'
 networks:
   app-network:
     driver: bridge
-  observability:
-    driver: bridge
-
-volumes:
-  grafana-storage:
-  tempo-data:
-  loki-data:
-
 services:
   app:
     build:
@@ -30,90 +22,6 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - app-network
-      - observability
     volumes:
       - ./logs:/app/logs
-    depends_on:
-      - loki
-      - tempo
-      - otel-collector
     restart: unless-stopped
-
-  # Grafana - Visualization
-  grafana:
-    image: grafana/grafana:latest
-    container_name: callmiracle-grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
-    volumes:
-      - grafana-storage:/var/lib/grafana
-      - ./observability/grafana/provisioning:/etc/grafana/provisioning
-      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
-    networks:
-      - observability
-    restart: unless-stopped
-
-  # Tempo - Distributed Tracing
-  tempo:
-    image: grafana/tempo:latest
-    container_name: callmiracle-tempo
-    command: [ "-config.file=/etc/tempo.yaml" ]
-    volumes:
-      - ./observability/tempo/tempo.yaml:/etc/tempo.yaml
-      - tempo-data:/var/tempo
-    ports:
-      - "3200:3200"   # tempo
-    networks:
-      - observability
-    restart: unless-stopped
-
-  # Loki - Log Aggregation
-  loki:
-    image: grafana/loki:latest
-    container_name: callmiracle-loki
-    command: -config.file=/etc/loki/local-config.yaml
-    volumes:
-      - ./observability/loki/loki.yaml:/etc/loki/local-config.yaml
-      - loki-data:/loki
-    ports:
-      - "3100:3100"
-    networks:
-      - observability
-    restart: unless-stopped
-
-  # Promtail - Log Collection
-  promtail:
-    image: grafana/promtail:latest
-    container_name: callmiracle-promtail
-    command: -config.file=/etc/promtail/config.yml
-    volumes:
-      - ./observability/promtail/promtail.yaml:/etc/promtail/config.yml
-      - ./logs:/var/log/app:ro
-    networks:
-      - observability
-    restart: unless-stopped
-    depends_on:
-      - loki
-
-  # OTEL Collector
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: callmiracle-otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./observability/otel-collector/config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8888:8888"   # Prometheus metrics
-      - "8889:8889"   # Prometheus exporter metrics
-    networks:
-      - observability
-    depends_on:
-      - tempo
-      - loki
-    restart: unless-stopped 
