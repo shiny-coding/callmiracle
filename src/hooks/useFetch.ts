@@ -26,8 +26,6 @@ function patchGlobalFetch() {
       }
     }
 
-    console.log('hasRequestId', hasRequestId)
-    
     // Only add request ID if one doesn't already exist
     const enhancedInit: RequestInit = {
       ...init,

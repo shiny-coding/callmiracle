@@ -50,12 +50,26 @@ const loggingLink = new ApolloLink((operation, forward) => {
   })
 })
 
-const httpLink = new HttpLink({
-  uri: '/api/graphql',
-  credentials: 'include',
-  headers: {
-    'x-user-id': getUserId()
-  }
+// Custom HTTP link that adds operationName and requestId to URL
+const httpLink = new ApolloLink((operation, forward) => {
+  const reqId = operation.getContext().requestId || 'unknown'
+  const operationName = operation.operationName || 'unnamed'
+  
+  // Build URL with query parameters for visibility
+  const params = new URLSearchParams({
+    operationName,
+    reqId
+  })
+  
+  const httpLinkWithDynamicUri = new HttpLink({
+    uri: `/api/graphql?${params.toString()}`,
+    credentials: 'include',
+    headers: {
+      'x-user-id': getUserId()
+    }
+  })
+  
+  return httpLinkWithDynamicUri.request(operation, forward)
 })
 
 const sseLink = new ApolloLink((operation) => {
@@ -67,8 +81,14 @@ const sseLink = new ApolloLink((operation) => {
     // Create an AbortController to cancel the fetch if needed.
     const controller = new AbortController()
 
+    // Build URL with query parameters for visibility
+    const fetchParams = new URLSearchParams({
+      operationName,
+      reqId: requestId
+    })
+    
     // Initiate the request to set up the SSE connection
-    fetch('/api/graphql', {
+    fetch(`/api/graphql?${fetchParams.toString()}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -103,6 +123,7 @@ const sseLink = new ApolloLink((operation) => {
         query: operation.query.loc?.source.body || '',
         variables: JSON.stringify(operation.variables || {}),
         operationName: operation.operationName || '',
+        requestId: requestId,
         extensions: JSON.stringify({
           subscription: { protocol: 'SSE' }
         }),
