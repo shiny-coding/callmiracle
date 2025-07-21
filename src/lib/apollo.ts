@@ -40,7 +40,7 @@ const loggingLink = new ApolloLink((operation, forward) => {
     // Only log if there are GraphQL errors
     if (response.errors && response.errors.length > 0) {
       const errorMessage = response.errors.map((error: any) => error.extensions?.originalError?.message).join(', ')
-      console.error(`GraphQL Error (${operation.operationName || 'unnamed'}): ${errorMessage} (reqId: ${requestId})`, {
+      console.error(`GraphQL Error (${operation.operationName || 'unnamed'}): ${errorMessage} (requestId: ${requestId})`, {
         errors: response.errors,
         query: operation.query.loc?.source.body,
         variables: operation.variables
@@ -52,13 +52,13 @@ const loggingLink = new ApolloLink((operation, forward) => {
 
 // Custom HTTP link that adds operationName and requestId to URL
 const httpLink = new ApolloLink((operation, forward) => {
-  const reqId = operation.getContext().requestId || 'unknown'
+  const requestId = operation.getContext().requestId || 'unknown'
   const operationName = operation.operationName || 'unnamed'
   
   // Build URL with query parameters for visibility
   const params = new URLSearchParams({
     operationName,
-    reqId
+    requestId
   })
   
   const httpLinkWithDynamicUri = new HttpLink({
@@ -84,7 +84,7 @@ const sseLink = new ApolloLink((operation) => {
     // Build URL with query parameters for visibility
     const fetchParams = new URLSearchParams({
       operationName,
-      reqId: requestId
+      requestId: requestId
     })
     
     // Initiate the request to set up the SSE connection
@@ -123,7 +123,6 @@ const sseLink = new ApolloLink((operation) => {
         query: operation.query.loc?.source.body || '',
         variables: JSON.stringify(operation.variables || {}),
         operationName: operation.operationName || '',
-        requestId: requestId,
         extensions: JSON.stringify({
           subscription: { protocol: 'SSE' }
         }),
