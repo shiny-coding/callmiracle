@@ -43,6 +43,7 @@ export const GET = async (request: Request) => {
       accept: request.headers.get('accept')
     })
   }
+  
 
   const response = await yoga.fetch(request)
 

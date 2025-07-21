@@ -4,7 +4,7 @@ import createIntlMiddleware from 'next-intl/middleware'
 import { Locale, locales, defaultLocale } from './config'
 import { getCurrentLocale } from './utils'
 import { routing } from './i18n/routing'
-import { generateShortRequestId } from './utils/requestContext'
+import { generateShortRequestId } from './utils/commonUtils'
 
 // Create internationalization middleware
 const intlMiddleware = createIntlMiddleware(routing)
@@ -15,8 +15,8 @@ const PUBLIC_FILE = /\.(.*)$/i
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Generate request context
-  const requestId = generateShortRequestId()
+  // Generate request context - use existing requestId from headers if present
+  const requestId = request.headers.get('x-request-id') || generateShortRequestId()
   const requestPath = pathname
   const requestMethod = request.method
   const requestTimestamp = Date.now().toString()
