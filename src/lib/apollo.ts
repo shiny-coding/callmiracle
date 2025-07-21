@@ -3,6 +3,7 @@ import { getMainDefinition } from '@apollo/client/utilities'
 import { Observable } from '@apollo/client/utilities'
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev"
 import { syncStore, vanillaStore} from '@/store/useStore'
+import { generateShortRequestId } from '@/utils/commonUtils'
 
 function getUserId() {
   return syncStore().currentUser?._id || ''
@@ -14,13 +15,32 @@ if (process.env.NODE_ENV !== 'production') {
   loadErrorMessages()
 }
 
+// Request ID injection link - adds requestId to context and headers
+const requestIdLink = new ApolloLink((operation, forward) => {
+  const requestId = generateShortRequestId()
+  
+  // Add requestId to operation context
+  operation.setContext(({ headers = {} }) => ({
+    headers: {
+      ...headers,
+      'x-request-id': requestId
+    },
+    requestId
+  }))
+  
+  return forward(operation)
+})
+
 // Logging link to intercept all requests
 const loggingLink = new ApolloLink((operation, forward) => {
+  // Get requestId from operation context
+  const requestId = operation.getContext().requestId || 'unknown'
+
   return forward(operation).map(response => {
     // Only log if there are GraphQL errors
     if (response.errors && response.errors.length > 0) {
       const errorMessage = response.errors.map((error: any) => error.extensions?.originalError?.message).join(', ')
-      console.error(`GraphQL Error (${operation.operationName || 'unnamed'}): ${errorMessage}`, {
+      console.error(`GraphQL Error (${operation.operationName || 'unnamed'}): ${errorMessage} (reqId: ${requestId})`, {
         errors: response.errors,
         query: operation.query.loc?.source.body,
         variables: operation.variables
@@ -41,6 +61,7 @@ const httpLink = new HttpLink({
 const sseLink = new ApolloLink((operation) => {
   return new Observable((observer) => {
     const operationName = operation.operationName || 'unnamed'
+    const requestId = operation.getContext().requestId || generateShortRequestId()
     let eventSource: EventSource | null = null
     let unsubscribed = false
     // Create an AbortController to cancel the fetch if needed.
@@ -52,7 +73,8 @@ const sseLink = new ApolloLink((operation) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'text/event-stream',
-        'x-user-id': getUserId()
+        'x-user-id': getUserId(),
+        'x-request-id': requestId
       },
       body: JSON.stringify({
         query: operation.query.loc?.source.body,
@@ -147,8 +169,8 @@ const splitLink = split(
 )
 
 export const client = new ApolloClient({
-  // Compose links: logging -> split(http/sse)
-  link: ApolloLink.from([loggingLink, splitLink]),
+  // Compose links: requestId -> logging -> split(http/sse)
+  link: ApolloLink.from([requestIdLink, loggingLink, splitLink]),
   cache: new InMemoryCache(),
   credentials: 'include'
 }) 

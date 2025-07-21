@@ -12,15 +12,28 @@ function patchGlobalFetch() {
   const originalFetch = window.fetch
   
   window.fetch = function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    // Generate a unique request ID for this request
-    const requestId = generateShortRequestId()
+    // Check if x-request-id is already present in headers
+    const existingHeaders = init?.headers
+    let hasRequestId = false
     
-    // Merge headers with the request ID
+    if (existingHeaders) {
+      if (existingHeaders instanceof Headers) {
+        hasRequestId = existingHeaders.has('x-request-id')
+      } else if (Array.isArray(existingHeaders)) {
+        hasRequestId = existingHeaders.some(([key]) => key.toLowerCase() === 'x-request-id')
+      } else {
+        hasRequestId = Object.keys(existingHeaders).some(key => key.toLowerCase() === 'x-request-id')
+      }
+    }
+
+    console.log('hasRequestId', hasRequestId)
+    
+    // Only add request ID if one doesn't already exist
     const enhancedInit: RequestInit = {
       ...init,
       headers: {
         ...init?.headers,
-        'x-request-id': requestId
+        ...(hasRequestId ? {} : { 'x-request-id': generateShortRequestId() })
       }
     }
     
