@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 import { getLogger } from '@/utils/logger'
+import { formatGraphQLResponseError } from '@/utils/commonUtils'
 
 // Helper function to extract operation name from request
 async function getOperationName(request: Request): Promise<string> {
@@ -44,16 +45,7 @@ async function handleGraphQLResponse(
       const responseData = await clonedResponse.json()
       if (responseData.errors && responseData.errors.length > 0) {
         const operationName = await getOperationName(request)
-        
-        logger.error(`GraphQL Errors in ${method} Response`, {
-          operationName,
-          errors: responseData.errors.map((err: any) => ({
-            message: err.message,
-            locations: err.locations,
-            path: err.path,
-            code: err.extensions?.code
-          }))
-        })
+        logger.error(...formatGraphQLResponseError(responseData, operationName))
       }
     } catch (e) {
       // Ignore JSON parsing errors for non-JSON responses

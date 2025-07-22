@@ -10,3 +10,16 @@ export function generateShortRequestId(): string {
   }
   return result
 }
+
+export function formatGraphQLResponseError(responseData: any, operationName: string) {
+  const errorMessage = responseData.errors.map((error: any) => error.extensions?.originalError?.message).join(', ')
+  return [ `GraphQL ${operationName}: ${errorMessage}`, {
+    operationName,
+    errors: responseData.errors.map((err: any) => ({
+      message: err.message,
+      locations: err.locations,
+      path: err.path,
+      code: err.extensions?.code
+    }))
+  }]
+}

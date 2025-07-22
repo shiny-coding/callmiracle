@@ -3,7 +3,7 @@ import { getMainDefinition } from '@apollo/client/utilities'
 import { Observable } from '@apollo/client/utilities'
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev"
 import { syncStore, vanillaStore} from '@/store/useStore'
-import { generateShortRequestId } from '@/utils/commonUtils'
+import { formatGraphQLResponseError, generateShortRequestId } from '@/utils/commonUtils'
 
 function getUserId() {
   return syncStore().currentUser?._id || ''
@@ -39,12 +39,8 @@ const loggingLink = new ApolloLink((operation, forward) => {
   return forward(operation).map(response => {
     // Only log if there are GraphQL errors
     if (response.errors && response.errors.length > 0) {
-      const errorMessage = response.errors.map((error: any) => error.extensions?.originalError?.message).join(', ')
-      console.error(`GraphQL Error (${operation.operationName || 'unnamed'}): ${errorMessage} (req: ${requestId})`, {
-        errors: response.errors,
-        query: operation.query.loc?.source.body,
-        variables: operation.variables
-      })
+      const [message, params] = formatGraphQLResponseError(response, operation.operationName || 'unnamed')
+      console.error(message + `(req: ${requestId})`, params)
     }
     return response
   })
