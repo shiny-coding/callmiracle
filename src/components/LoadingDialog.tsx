@@ -12,7 +12,7 @@ export default function LoadingDialog({ loading, error }: { loading: boolean, er
     >
       <DialogContent className="flex items-center justify-center min-h-[120px]">
         <Typography className="text-white text-center text-lg">
-          {loading ? 'Loading...' : error}
+          {loading ? 'Loading...' : (error?.message || error || 'An error occurred')}
         </Typography>
       </DialogContent>
     </Dialog>
