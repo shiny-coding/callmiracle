@@ -40,7 +40,7 @@ const loggingLink = new ApolloLink((operation, forward) => {
     // Only log if there are GraphQL errors
     if (response.errors && response.errors.length > 0) {
       const errorMessage = response.errors.map((error: any) => error.extensions?.originalError?.message).join(', ')
-      console.error(`GraphQL Error (${operation.operationName || 'unnamed'}): ${errorMessage} (requestId: ${requestId})`, {
+      console.error(`GraphQL Error (${operation.operationName || 'unnamed'}): ${errorMessage} (req: ${requestId})`, {
         errors: response.errors,
         query: operation.query.loc?.source.body,
         variables: operation.variables

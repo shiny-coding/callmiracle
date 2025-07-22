@@ -6,6 +6,77 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 import { getLogger } from '@/utils/logger'
 
+// Helper function to extract operation name from request
+async function getOperationName(request: Request): Promise<string> {
+  const url = new URL(request.url)
+  
+  // Try GET params first
+  const getOperationName = url.searchParams.get('operationName')
+  if (getOperationName) {
+    return getOperationName
+  }
+  
+  // Try POST body for JSON requests
+  if (request.headers.get('content-type')?.includes('application/json')) {
+    try {
+      const clone = request.clone()
+      const body = await clone.json()
+      return body.operationName || 'unnamed'
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  }
+  
+  return request.method === 'GET' ? 'GET query' : 'unnamed'
+}
+
+// Helper function to handle GraphQL errors in responses
+async function handleGraphQLResponse(
+  response: Response, 
+  request: Request, 
+  logger: any,
+  method: 'GET' | 'POST'
+): Promise<Response> {
+  // Check for GraphQL errors in response body (even with 200 status)
+  if (response.headers.get('content-type')?.includes('application/json')) {
+    const clonedResponse = response.clone()
+    try {
+      const responseData = await clonedResponse.json()
+      if (responseData.errors && responseData.errors.length > 0) {
+        const operationName = await getOperationName(request)
+        
+        logger.error(`GraphQL Errors in ${method} Response`, {
+          operationName,
+          errors: responseData.errors.map((err: any) => ({
+            message: err.message,
+            locations: err.locations,
+            path: err.path,
+            code: err.extensions?.code
+          }))
+        })
+      }
+    } catch (e) {
+      // Ignore JSON parsing errors for non-JSON responses
+    }
+  }
+  
+  // Log HTTP-level errors (non-200 responses)
+  if (!response.ok) {
+    const clonedResponse = response.clone()
+    const responseBody = await clonedResponse.text()
+    const operationName = await getOperationName(request)
+    
+    logger.error(`GraphQL HTTP Error Response`, {
+      method,
+      status: response.status,
+      operationName,
+      responseBody
+    })
+  }
+  
+  return response
+}
+
 // Create yoga instance
 const yoga = createYoga({
   schema,
@@ -34,8 +105,7 @@ export const GET = async (request: Request) => {
   
   // Log SSE requests
   if (request.headers.get('accept')?.includes('text/event-stream')) {
-    const url = new URL(request.url)
-    const operationName = url.searchParams.get('operationName')
+    const operationName = await getOperationName(request)
     
     logger.info('SSE GET Request', {
       operationName,
@@ -44,17 +114,30 @@ export const GET = async (request: Request) => {
     })
   }
   
+  try {
+    const response = await yoga.fetch(request)
+    
+    // Handle GraphQL errors using unified helper
+    const handledResponse = await handleGraphQLResponse(response, request, logger, 'GET')
 
-  const response = await yoga.fetch(request)
+    // Add SSE headers if needed
+    if (request.headers.get('accept')?.includes('text/event-stream')) {
+      handledResponse.headers.set('Content-Type', 'text/event-stream')
+      handledResponse.headers.set('Connection', 'keep-alive')
+      handledResponse.headers.set('Cache-Control', 'no-cache')
+    }
 
-  // Add SSE headers if needed
-  if (request.headers.get('accept')?.includes('text/event-stream')) {
-    response.headers.set('Content-Type', 'text/event-stream')
-    response.headers.set('Connection', 'keep-alive')
-    response.headers.set('Cache-Control', 'no-cache')
+    return handledResponse
+  } catch (error) {
+    const operationName = await getOperationName(request)
+    logger.error('GraphQL GET handler error', {
+      operationName,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      url: request.url
+    })
+    throw error
   }
-
-  return response
 }
 
 export const POST = async (request: Request) => {
@@ -79,52 +162,18 @@ export const POST = async (request: Request) => {
       })
     }
   }
-  
-  // Clone request early for error logging if needed
-  const clonedRequest = request.clone()
-  let requestBody: string | undefined
 
   try {
     const response = await yoga.fetch(request)
     
-    // Only log non-200 responses
-    if (!response.ok) {
-      // Clone response to read body
-      const clonedResponse = response.clone()
-      const responseBody = await clonedResponse.text()
-
-      // Read body only if we need it for error logging
-      if (!requestBody) {
-        requestBody = await clonedRequest.text()
-      }
-      
-      try {
-        const parsedBody = JSON.parse(requestBody)
-        logger.error('GraphQL Error Response', {
-          status: response.status,
-          operationName: parsedBody.operationName,
-          queryPreview: parsedBody.query?.slice(0, 100) + '...',
-          responseBody
-        })
-      } catch (e) {
-        logger.error('GraphQL Error Response (unparseable)', {
-          status: response.status,
-          requestBody,
-          responseBody
-        })
-      }
-    }
-
-    return response
+    // Handle GraphQL errors using unified helper
+    return await handleGraphQLResponse(response, request, logger, 'POST')
   } catch (error) {
-    // For unhandled errors, also include request context
-    if (!requestBody) {
-      requestBody = await clonedRequest.text()
-    }
-    logger.error('GraphQL handler error', {
+    const operationName = await getOperationName(request)
+    logger.error('GraphQL POST handler error', {
+      operationName,
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      requestBody
+      stack: error instanceof Error ? error.stack : undefined
     })
     throw error
   }
