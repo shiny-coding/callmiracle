@@ -1,7 +1,6 @@
 import { createYoga } from 'graphql-yoga'
 import { schema } from '@/schema/schema'
 import clientPromise, { getDatabaseName } from '@/lib/mongodb'
-import { ObjectId } from 'mongodb'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 import { getLogger } from '@/utils/logger'

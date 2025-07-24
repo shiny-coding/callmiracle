@@ -3,8 +3,10 @@ import { NodeSDK } from '@opentelemetry/sdk-node'
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions'
+import { trace, context as otelContext } from '@opentelemetry/api'
 
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
+import { createMiddlewareSpanName } from './utils/middleware-tracing'
 
 // Get configuration from environment variables
 const serviceName = process.env.OTEL_SERVICE_NAME || 'callmiracle'
@@ -31,6 +33,14 @@ const resource = resourceFromAttributes({
   [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
 })
 
+function addTraceAttribute(header: string, attribute: string, headers: any, span: any) {
+  if (headers[header]) {
+    span.setAttributes({
+      [attribute]: headers[header]
+    })
+  }
+}
+
 // Initialize OpenTelemetry SDK with advanced configuration
 const sdk = new NodeSDK({
   resource: resource,
@@ -48,18 +58,20 @@ const sdk = new NodeSDK({
       },
       '@opentelemetry/instrumentation-http': {
         enabled: true,
-        requestHook: (span: any, request: any) => {
-          // Add custom attributes to HTTP spans
-          span.setAttributes({
-            'http.request.body.size': request.headers['content-length'] || 0,
-            'http.user_agent': request.headers['user-agent'] || '',
-          })
-        },
-        responseHook: (span: any, response: any) => {
-          // Add response attributes
-          span.setAttributes({
-            'http.response.body.size': response.headers['content-length'] || 0,
-          })
+        applyCustomAttributesOnSpan: (span: any, request: any, response: any) => {
+
+          if (request.url) {
+            span.updateName(createMiddlewareSpanName(request))
+            const headers = response.getHeaders()
+            if (headers) {
+              addTraceAttribute('user-agent', 'http.user_agent', headers, span)
+              addTraceAttribute('x-request-id', 'callmiracle.request_id', headers, span)
+              addTraceAttribute('x-request-path', 'callmiracle.request_path', headers, span)
+              addTraceAttribute('x-request-ip', 'callmiracle.client_ip', headers, span)
+              addTraceAttribute('x-user-id', 'callmiracle.user_id', headers, span)
+              addTraceAttribute('x-user-name', 'callmiracle.user_name', headers, span)
+            }
+          }
         },
       },
       '@opentelemetry/instrumentation-express': {

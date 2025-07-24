@@ -15,6 +15,24 @@ const PUBLIC_FILE = /\.(.*)$/i
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Handle profile image requests FIRST - rewrite /profiles/{id}.jpg to /api/profiles/{id}.jpg
+  if (pathname.startsWith('/profiles/') && pathname.endsWith('.jpg')) {
+    const rewriteUrl = new URL(`/api${pathname}`, request.url)
+    return NextResponse.rewrite(rewriteUrl)
+  }
+
+  // Skip middleware for public files (e.g. .jpg, .png, .css, .js, .ico, etc)
+  // Don't add headers to these since we don't need logging for static files
+  if (PUBLIC_FILE.test(pathname)) {
+    return NextResponse.next()
+  }
+  
+  // Check for authentication token for all non-auth routes
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  })
+
   // Generate request context - use existing requestId from headers if present
   const requestId = request.headers.get('x-request-id') || generateShortRequestId()
   const requestPath = pathname
@@ -38,19 +56,15 @@ export async function middleware(request: NextRequest) {
     if (ip) {
       response.headers.set('x-request-ip', ip)
     }
+    if (token) {
+      if (token.id) {
+        response.headers.set('x-user-id', token.id)
+      }
+      if (token.name) {
+        response.headers.set('x-user-name', token.name)
+      }
+    }
     return response
-  }
-
-  // Handle profile image requests FIRST - rewrite /profiles/{id}.jpg to /api/profiles/{id}.jpg
-  if (pathname.startsWith('/profiles/') && pathname.endsWith('.jpg')) {
-    const rewriteUrl = new URL(`/api${pathname}`, request.url)
-    return addRequestHeaders(NextResponse.rewrite(rewriteUrl))
-  }
-
-  // Skip middleware for public files (e.g. .jpg, .png, .css, .js, .ico, etc)
-  // Don't add headers to these since we don't need logging for static files
-  if (PUBLIC_FILE.test(pathname)) {
-    return NextResponse.next()
   }
   
   // Handle API routes - pass context through headers
@@ -69,12 +83,8 @@ export async function middleware(request: NextRequest) {
   
   // Check if this is the first-time setup route
   const isFirstTimeRoute = pathname.includes('/first-time')
-  
-  // Check for authentication token for all non-auth routes
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  })
+ 
+
 
   if (!token && !isAuthRoute) {
     // Not authenticated: redirect to sign-in
