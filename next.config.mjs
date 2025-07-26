@@ -10,6 +10,12 @@ const nextConfig = {
     if (config.mode !== 'development') {
       config.devtool = 'source-map';
     }
+    config.ignoreWarnings = [
+      {
+        module: /node_modules\/@whatwg-node\/fetch/,
+        message: /Critical dependency: the request of a dependency is an expression/
+      }
+    ];
     return config;
   },
   reactStrictMode: false,

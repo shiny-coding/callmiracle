@@ -69,12 +69,11 @@ const lokiFormat = format.combine(
 
 function handleConnectionError(err: any, context: string) {
   const now = Date.now()
-  const timeSinceLastError = now - globalConnectionState.lastErrorTime
   
   // Only log the very first error, then stay silent until connection is restored
   if (!globalConnectionState.hasLoggedError) {
     console.error(`❌ Loki ${context}:`, err.message || err)
-    console.warn('⚠️  Loki observability stack appears to be down. Logs will continue to be processed but not sent to Loki.')
+    console.warn('❌  Loki observability stack appears to be down. Logs will continue to be processed but not sent to Loki.')
     
     globalConnectionState.hasLoggedError = true
     globalConnectionState.hasLoggedReconnect = false // Reset reconnect flag
