@@ -30,6 +30,13 @@
     "scale:logs:app3": "docker-compose -f docker-compose.scale.yml logs -f app3",
     "scale:logs:nginx": "docker-compose -f docker-compose.scale.yml logs -f nginx",
     "scale:logs:redis": "docker-compose -f docker-compose.scale.yml logs -f redis",
+    "redis:up": "docker-compose -f docker-compose.redis.yml up -d",
+    "redis:down": "docker-compose -f docker-compose.redis.yml down",
+    "redis:logs": "docker-compose -f docker-compose.redis.yml logs -f",
+    "redis:cli": "docker exec -it callmiracle-redis redis-cli",
+    "scale:external-redis": "docker-compose -f docker-compose.scale-no-redis.yml up -d",
+    "scale:external-redis:down": "docker-compose -f docker-compose.scale-no-redis.yml down",
+    "scale:external-redis:logs": "docker-compose -f docker-compose.scale-no-redis.yml logs -f",
     "test:observability": "node --loader ts-node/esm -e \"import('./src/utils/observabilityTest.ts').then(m => m.runObservabilityTests())\""
   },
   "dependencies": {

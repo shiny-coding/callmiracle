@@ -3,6 +3,15 @@ import LokiTransport from 'winston-loki'
 import { format } from 'winston'
 import { trace } from '@opentelemetry/api'
 
+// Connection state tracking
+const connectionState = {
+  isConnected: true, // Start optimistic
+  hasLoggedError: false,
+  hasLoggedReconnect: false,
+  lastErrorTime: 0,
+  errorCount: 0
+}
+
 // Create Loki format for structured logs
 const lokiFormat = format.combine(
   // format.timestamp(),
@@ -41,6 +50,40 @@ const lokiFormat = format.combine(
   })()
 )
 
+function handleConnectionError(err: any, context: string) {
+  const now = Date.now()
+  const timeSinceLastError = now - connectionState.lastErrorTime
+  
+  // Only log if we haven't logged an error recently (within 30 seconds) or this is the first error
+  if (!connectionState.hasLoggedError || timeSinceLastError > 30000) {
+    console.error(`❌ Loki ${context}:`, err.message || err)
+    connectionState.hasLoggedError = true
+    connectionState.hasLoggedReconnect = false // Reset reconnect flag
+    connectionState.lastErrorTime = now
+    connectionState.errorCount++
+    
+    if (connectionState.errorCount === 1) {
+      console.warn('⚠️  Loki observability stack appears to be down. Logs will continue to be processed but not sent to Loki.')
+    }
+  }
+  
+  connectionState.isConnected = false
+}
+
+function handleConnectionSuccess(context: string) {
+  const wasDisconnected = !connectionState.isConnected || connectionState.hasLoggedError
+  
+  connectionState.isConnected = true
+  
+  // Only log reconnection once
+  if (wasDisconnected && !connectionState.hasLoggedReconnect) {
+    console.log(`✅ Loki ${context}: Connection restored`)
+    connectionState.hasLoggedError = false
+    connectionState.hasLoggedReconnect = true
+    connectionState.errorCount = 0
+  }
+}
+
 export function createLokiTransport() {
   const lokiHost = process.env.LOKI_HOST || 'http://localhost:3100'
   const transport = new LokiTransport({
@@ -54,7 +97,7 @@ export function createLokiTransport() {
     batching: true,
     interval: 2, // 2 second
     onConnectionError: (err: any) => {
-      console.error('❌ Loki connection error:', err.message || err)
+      handleConnectionError(err, 'connection error')
     },
     // Add more event handlers for debugging
     handleExceptions: false,
@@ -63,8 +106,26 @@ export function createLokiTransport() {
   
   // Add event listeners for debugging
   transport.on('error', (err: any) => {
-    console.error('❌ Loki transport error:', err.message || err)
+    handleConnectionError(err, 'transport error')
   })
+  
+  // Listen for successful operations to detect reconnection
+  transport.on('finish', () => {
+    handleConnectionSuccess('batch sent')
+  })
+  
+  // Also check on log attempts
+  const originalLog = transport.log
+  if (originalLog) {
+    transport.log = function(info: any, callback: any) {
+      // Call original log method with proper callback handling
+      const result = originalLog.call(this, info, () => {
+        handleConnectionSuccess('log operation')
+        if (callback) callback()
+      })
+      return result
+    }
+  }
   
   console.log('✅ Loki transport created successfully')
   return transport

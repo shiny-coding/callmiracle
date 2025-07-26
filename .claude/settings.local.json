@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(docker compose:*)",
-      "Bash(yarn add:*)"
+      "Bash(yarn add:*)",
+      "Bash(yarn typecheck)",
+      "Bash(npx tsc:*)"
     ],
     "deny": []
   }

@@ -15,7 +15,8 @@ This document explains how to deploy CallMiracle with multiple instances and loa
 
 ## Quick Start
 
-1. **Start the scaled deployment:**
+### Option 1: Full Stack (Redis + Apps + Nginx)
+1. **Start everything:**
    ```bash
    yarn scale:up
    ```
@@ -24,23 +25,66 @@ This document explains how to deploy CallMiracle with multiple instances and loa
    - Main URL: http://localhost:3003
    - Health check: http://localhost:3003/health
 
-3. **Monitor logs:**
-   ```bash
-   # All services
-   yarn scale:logs
-   
-   # Individual services
-   yarn scale:logs:app1
-   yarn scale:logs:app2
-   yarn scale:logs:app3
-   yarn scale:logs:nginx
-   yarn scale:logs:redis
-   ```
-
-4. **Stop the deployment:**
+3. **Stop deployment:**
    ```bash
    yarn scale:down
    ```
+
+### Option 2: External Redis + Scaled Apps
+Perfect for development where you want to run the app locally but use containers for scaling.
+
+1. **Start Redis separately:**
+   ```bash
+   yarn redis:up
+   ```
+
+2. **Start scaled apps (without Redis):**
+   ```bash
+   yarn scale:external-redis
+   ```
+
+3. **Run local development:**
+   ```bash
+   yarn dev  # Connects to containerized Redis
+   ```
+
+4. **Access options:**
+   - Scaled deployment: http://localhost:3003 (Nginx → 3 containers)
+   - Local development: http://localhost:3003 (direct to your dev server)
+
+5. **Stop services:**
+   ```bash
+   yarn scale:external-redis:down  # Stop app containers
+   yarn redis:down                 # Stop Redis
+   ```
+
+### Option 3: Redis Only
+If you just want Redis for local development:
+
+```bash
+yarn redis:up    # Start Redis
+yarn redis:logs  # Monitor Redis
+yarn redis:cli   # Access Redis CLI
+yarn redis:down  # Stop Redis
+```
+
+## Monitoring
+
+```bash
+# All services
+yarn scale:logs
+
+# Individual services  
+yarn scale:logs:app1
+yarn scale:logs:app2
+yarn scale:logs:app3
+yarn scale:logs:nginx
+yarn scale:logs:redis
+
+# External Redis setup
+yarn scale:external-redis:logs
+yarn redis:logs
+```
 
 ## Server Selection
 

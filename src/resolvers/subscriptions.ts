@@ -21,8 +21,8 @@ export const subscriptions = {
       const globalTopic = `SUBSCRIPTION_EVENT:ALL`
       console.log('Subscribing to topics:', userTopic, globalTopic)
       return mergeAsyncIterators([
-        pubsub.subscribe(userTopic),
-        pubsub.subscribe(globalTopic)
+        pubsub.asyncIterator(userTopic),
+        pubsub.asyncIterator(globalTopic)
       ])
     },
     resolve: (payload: SubscriptionEventPayload) => {
