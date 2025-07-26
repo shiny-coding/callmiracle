@@ -13,13 +13,6 @@ x-app-common: &app-common
     context: .
     dockerfile: Dockerfile
     network: host
-  environment: &app-env
-    - NODE_ENV=production
-    - REDIS_HOST=redis
-    - REDIS_PORT=6379
-    - OTEL_EXPORTER_OTLP_ENDPOINT=http://callmiracle-otel-collector:4318
-    - LOKI_HOST=http://callmiracle-loki:3100
-    - MONGODB_URI=mongodb://host.docker.internal:27017/callmiracle
   env_file:
     - .env.local
     - .env.observability
@@ -33,6 +26,15 @@ x-app-common: &app-common
   restart: unless-stopped
   depends_on:
     - redis
+
+# Common environment variables
+x-common-env: &common-env
+  NODE_ENV: production
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://callmiracle-otel-collector:4318
+  LOKI_HOST: http://callmiracle-loki:3100
+  MONGODB_URI: mongodb://host.docker.internal:27017/callmiracle
 
 services:
   # Redis for shared pubsub
@@ -51,20 +53,20 @@ services:
   app1:
     <<: *app-common
     environment:
-      <<: *app-env
-      - SERVER_ID=1
+      <<: *common-env
+      SERVER_ID: 1
 
   app2:
     <<: *app-common
     environment:
-      <<: *app-env
-      - SERVER_ID=2
+      <<: *common-env
+      SERVER_ID: 2
 
   app3:
     <<: *app-common
     environment:
-      <<: *app-env
-      - SERVER_ID=3
+      <<: *common-env
+      SERVER_ID: 3
 
   # Nginx load balancer
   nginx:
