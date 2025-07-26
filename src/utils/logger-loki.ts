@@ -3,14 +3,31 @@ import LokiTransport from 'winston-loki'
 import { format } from 'winston'
 import { trace } from '@opentelemetry/api'
 
-// Connection state tracking
-const connectionState = {
-  isConnected: true, // Start optimistic
-  hasLoggedError: false,
-  hasLoggedReconnect: false,
-  lastErrorTime: 0,
-  errorCount: 0
+// Global connection state tracking - shared across all transport instances
+// Use global object to persist across module reloads in development
+declare global {
+  var __lokiConnectionState: {
+    isConnected: boolean
+    hasLoggedError: boolean
+    hasLoggedReconnect: boolean
+    lastErrorTime: number
+    errorCount: number
+    transportCount: number
+  } | undefined
 }
+
+if (!global.__lokiConnectionState) {
+  global.__lokiConnectionState = {
+    isConnected: true, // Start optimistic
+    hasLoggedError: false,
+    hasLoggedReconnect: false,
+    lastErrorTime: 0,
+    errorCount: 0,
+    transportCount: 0 // Track how many transports exist
+  }
+}
+
+const globalConnectionState = global.__lokiConnectionState
 
 // Create Loki format for structured logs
 const lokiFormat = format.combine(
@@ -52,39 +69,40 @@ const lokiFormat = format.combine(
 
 function handleConnectionError(err: any, context: string) {
   const now = Date.now()
-  const timeSinceLastError = now - connectionState.lastErrorTime
+  const timeSinceLastError = now - globalConnectionState.lastErrorTime
   
-  // Only log if we haven't logged an error recently (within 30 seconds) or this is the first error
-  if (!connectionState.hasLoggedError || timeSinceLastError > 30000) {
+  // Only log the very first error, then stay silent until connection is restored
+  if (!globalConnectionState.hasLoggedError) {
     console.error(`❌ Loki ${context}:`, err.message || err)
-    connectionState.hasLoggedError = true
-    connectionState.hasLoggedReconnect = false // Reset reconnect flag
-    connectionState.lastErrorTime = now
-    connectionState.errorCount++
+    console.warn('⚠️  Loki observability stack appears to be down. Logs will continue to be processed but not sent to Loki.')
     
-    if (connectionState.errorCount === 1) {
-      console.warn('⚠️  Loki observability stack appears to be down. Logs will continue to be processed but not sent to Loki.')
-    }
+    globalConnectionState.hasLoggedError = true
+    globalConnectionState.hasLoggedReconnect = false // Reset reconnect flag
+    globalConnectionState.lastErrorTime = now
+    globalConnectionState.errorCount++
   }
   
-  connectionState.isConnected = false
+  globalConnectionState.isConnected = false
 }
 
 function handleConnectionSuccess(context: string) {
-  const wasDisconnected = !connectionState.isConnected || connectionState.hasLoggedError
+  const wasDisconnected = !globalConnectionState.isConnected || globalConnectionState.hasLoggedError
   
-  connectionState.isConnected = true
+  globalConnectionState.isConnected = true
   
   // Only log reconnection once
-  if (wasDisconnected && !connectionState.hasLoggedReconnect) {
+  if (wasDisconnected && !globalConnectionState.hasLoggedReconnect) {
     console.log(`✅ Loki ${context}: Connection restored`)
-    connectionState.hasLoggedError = false
-    connectionState.hasLoggedReconnect = true
-    connectionState.errorCount = 0
+    globalConnectionState.hasLoggedError = false
+    globalConnectionState.hasLoggedReconnect = true
+    globalConnectionState.errorCount = 0
   }
 }
 
 export function createLokiTransport() {
+  globalConnectionState.transportCount++
+  const transportId = globalConnectionState.transportCount
+  
   const lokiHost = process.env.LOKI_HOST || 'http://localhost:3100'
   const transport = new LokiTransport({
     host: lokiHost,
@@ -127,6 +145,12 @@ export function createLokiTransport() {
     }
   }
   
-  console.log('✅ Loki transport created successfully')
+  // Only log transport creation for the first one, or if this is unexpected
+  if (transportId === 1) {
+    console.log('✅ Loki transport created successfully')
+  } else {
+    console.warn(`⚠️  Multiple Loki transports detected (${transportId}). This may cause duplicate logging.`)
+  }
+  
   return transport
 } 

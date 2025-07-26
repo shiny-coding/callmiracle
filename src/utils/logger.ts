@@ -156,19 +156,34 @@ const logger = createLogger({
   ]
 })
 
+// Track if Loki transport has been added to prevent duplicates
+// Use global to persist across module reloads in development
+declare global {
+  var __lokiTransportAdded: boolean | undefined
+}
+
+if (global.__lokiTransportAdded === undefined) {
+  global.__lokiTransportAdded = false
+}
+
 // Dynamically add Loki transport if enabled
 if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true') {
-  // Import and add Loki transport dynamically to avoid webpack bundling issues
-  import('./logger-loki').then(({ createLokiTransport }) => {
-    try {
-      const lokiTransport = createLokiTransport()
-      logger.add(lokiTransport)
-    } catch (error) {
-      logger.error('Failed to add Loki transport:', error)
-    }
-  }).catch((error) => {
-    logger.error('Failed to import Loki transport:', error)
-  })
+  if (!global.__lokiTransportAdded) {
+    global.__lokiTransportAdded = true
+    // Import and add Loki transport dynamically to avoid webpack bundling issues
+    import('./logger-loki').then(({ createLokiTransport }) => {
+      try {
+        const lokiTransport = createLokiTransport()
+        logger.add(lokiTransport)
+      } catch (error) {
+        logger.error('Failed to add Loki transport:', error)
+        global.__lokiTransportAdded = false // Reset flag on failure
+      }
+    }).catch((error) => {
+      logger.error('Failed to import Loki transport:', error)
+      global.__lokiTransportAdded = false // Reset flag on failure
+    })
+  }
 } else {
   logger.info('Loki transport not added')
 }
