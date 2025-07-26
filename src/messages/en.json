@@ -37,7 +37,12 @@
     "deleteAccountConfirmTitle": "Delete Account",
     "deletePhoto": "Delete Photo",
     "deletePhotoConfirmMessage": "Are you sure you want to delete your profile photo?",
-    "deletePhotoConfirmTitle": "Delete Photo"
+    "deletePhotoConfirmTitle": "Delete Photo",
+    "preferredServer": "Preferred Server",
+    "server": "Server",
+    "serverAuto": "Auto (Load Balanced)",
+    "currentlyConnectedTo": "Currently connected to",
+    "unknown": "Unknown"
   },
   "cancel": "Cancel",
   "connect": "Find Partner",

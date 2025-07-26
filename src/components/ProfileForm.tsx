@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress'
 import PageHeader from './PageHeader'
 import Typography from '@mui/material/Typography'
+import { useServer } from '@/contexts/ServerContext'
 
 const DELETE_USER = gql`
   mutation DeleteUser($userId: ID!) {
@@ -46,6 +47,7 @@ export default function ProfileForm() {
   const [timestamp, setTimestamp] = useState(Date.now())
   const { updateUserData } = useUpdateUser()
   const { localStream } = useWebRTCContext()
+  const { serverId, preferredServerId, setPreferredServerId, availableServers } = useServer()
   const [showCameraPreview, setShowCameraPreview] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const currentUserId = currentUser?._id || ''
@@ -348,6 +350,27 @@ export default function ProfileForm() {
               <MenuItem key={year} value={year}>{year}</MenuItem>
             ))}
           </Select>
+        </FormControl>
+
+        <FormControl fullWidth>
+          <FormLabel id="server-select">{t('preferredServer')}</FormLabel>
+          <Select
+            value={preferredServerId || 'auto'}
+            onChange={(e) => setPreferredServerId(e.target.value === 'auto' ? null : e.target.value)}
+            displayEmpty
+          >
+            {availableServers.map(server => (
+              <MenuItem key={server} value={server}>
+                {server === 'auto' ? t('serverAuto') : `${t('server')} ${server}`}
+                {serverId === server && server !== 'auto' && ' (current)'}
+              </MenuItem>
+            ))}
+          </Select>
+          {serverId && (
+            <Typography variant="caption" color="text.secondary" className="mt-1">
+              {t('currentlyConnectedTo')}: {serverId === 'unknown' ? t('unknown') : `${t('server')} ${serverId}`}
+            </Typography>
+          )}
         </FormControl>
         
         <div className="mt-4 pt-4 border-t panel-border">

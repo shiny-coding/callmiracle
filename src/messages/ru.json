@@ -37,7 +37,12 @@
     "deleteAccountConfirmTitle": "Удалить аккаунт",
     "deletePhoto": "Удалить фото",
     "deletePhotoConfirmMessage": "Вы уверены, что хотите удалить фото профиля?",
-    "deletePhotoConfirmTitle": "Удалить фото"
+    "deletePhotoConfirmTitle": "Удалить фото",
+    "preferredServer": "Предпочитаемый сервер",
+    "server": "Сервер",
+    "serverAuto": "Авто (балансировка нагрузки)",
+    "currentlyConnectedTo": "Подключен к",
+    "unknown": "Неизвестно"
   },
   "connect": "Найти собеседника",
   "filterByLanguages": "Фильтр по языкам",

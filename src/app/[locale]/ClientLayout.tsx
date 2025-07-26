@@ -5,6 +5,7 @@ import { WebRTCProvider } from "@/hooks/webrtc/WebRTCProvider";
 import { DetailedCallHistoryProvider } from "@/store/DetailedCallHistoryProvider";
 import { ConversationsProvider } from "@/store/ConversationsProvider";
 import { useWebRTCContext } from "@/hooks/webrtc/WebRTCProvider";
+import { ServerProvider } from "@/contexts/ServerContext";
 import TopControlsBar from "@/components/TopControlsBar";
 import RemoteVideo from "@/components/RemoteVideo";
 import BottomControlsBar from "@/components/BottomControlsBar";
@@ -19,15 +20,17 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   return pathname.includes(authRoute) ?
     children : 
     <AppContent>
-      <WebRTCProvider>
-        <DetailedCallHistoryProvider>
-          <ConversationsProvider>
-            <MainContent>
-              {children}
-            </MainContent>
-          </ConversationsProvider>
-        </DetailedCallHistoryProvider>
-      </WebRTCProvider>
+      <ServerProvider>
+        <WebRTCProvider>
+          <DetailedCallHistoryProvider>
+            <ConversationsProvider>
+              <MainContent>
+                {children}
+              </MainContent>
+            </ConversationsProvider>
+          </DetailedCallHistoryProvider>
+        </WebRTCProvider>
+      </ServerProvider>
     </AppContent>
 }
 

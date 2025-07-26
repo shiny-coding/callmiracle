@@ -33,8 +33,13 @@ export default async function RootLayout({ children, }: { children: React.ReactN
   // const cookieStore = await cookies()
   // const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en'
 
+  const serverId = process.env.SERVER_ID || (process.env.NODE_ENV === 'development' ? 'dev' : 'unknown')
+
   return (
     <html className={`${geistSans.variable} ${geistMono.variable}`}>
+      <head>
+        <meta name="server-id" content={serverId} />
+      </head>
       <body className="dark:text-gray-100">
         <ViewportHeightSetter />
         <SessionProvider>
