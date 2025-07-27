@@ -1,11 +1,11 @@
 import { RedisPubSub } from 'graphql-redis-subscriptions'
 import { PubSubEvents } from './subscriptions'
-import Redis from 'ioredis'
 
-// Check if we're in build mode
+// Check if we're in build mode or browser environment
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || process.argv.includes('build')
+const isBrowser = typeof window !== 'undefined'
 
-// Mock pubsub for build time
+// Mock pubsub for build time and browser
 const mockPubSub = {
   publish: async () => Promise.resolve(),
   subscribe: async () => Promise.resolve(() => {}),
@@ -17,19 +17,35 @@ const mockPubSub = {
   })
 }
 
-// Create Redis connection options
-const redisOptions = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  retryDelayOnFailover: 100,
-  enableReadyCheck: false,
-  maxRetriesPerRequest: null,
-}
+// Initialize pubsub synchronously
+let pubsub: any
 
-// Create pubsub instance
-export const pubsub = isBuilding 
-  ? mockPubSub as any
-  : new RedisPubSub({
+if (isBuilding || isBrowser) {
+  pubsub = mockPubSub
+} else {
+  try {
+    // Synchronous initialization for server environment
+    /* eslint-disable */
+    const Redis = require('ioredis')
+    
+    const redisOptions = {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      retryDelayOnFailover: 100,
+      enableReadyCheck: false,
+      maxRetriesPerRequest: null,
+    }
+
+    pubsub = new RedisPubSub({
       publisher: new Redis(redisOptions),
       subscriber: new Redis(redisOptions),
-    }) as any 
+    })
+    
+    console.log('Redis PubSub initialized synchronously')
+  } catch (error) {
+    console.warn('Failed to initialize Redis pubsub, using mock:', error)
+    pubsub = mockPubSub
+  }
+}
+
+export { pubsub } 

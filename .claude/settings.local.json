@@ -4,7 +4,11 @@
       "Bash(docker compose:*)",
       "Bash(yarn add:*)",
       "Bash(yarn typecheck)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(chmod:*)",
+      "Bash(rm:*)",
+      "WebFetch(domain:nextjs.org)",
+      "mcp__sequential-thinking__sequentialthinking"
     ],
     "deny": []
   }

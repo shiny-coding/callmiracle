@@ -16,11 +16,28 @@ const nextConfig = {
         message: /Critical dependency: the request of a dependency is an expression/
       }
     ];
+    
+    // Exclude ioredis from client bundle
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        stream: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        fs: false,
+        path: false,
+        os: false,
+      };
+      config.externals = config.externals || [];
+      config.externals.push('ioredis');
+    }
+    
     return config;
   },
   reactStrictMode: false,
   output: 'standalone',
-  serverExternalPackages: ['winston-loki', 'snappy', '@napi-rs/snappy-win32-x64-msvc'],
+  serverExternalPackages: ['winston-loki', 'snappy', '@napi-rs/snappy-win32-x64-msvc', 'ioredis'],
   images: {
     unoptimized: true,
     remotePatterns: [

@@ -5,6 +5,10 @@ export async function register() {
     return
   }
 
+  console.log('🚀 Starting CallMiracle application...')
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`)
+  console.log(`🆔 Server ID: ${process.env.SERVER_ID || 'unknown'}`)
+
   // Handle different runtimes
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // Use our custom instrumentation for better control
