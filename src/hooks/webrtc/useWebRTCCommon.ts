@@ -11,8 +11,6 @@ export const CALL_USER = gql`
       type
       offer
       answer
-      targetUserId
-      initiatorUserId
       quality
       callId
       meetingId
