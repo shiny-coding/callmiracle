@@ -1,9 +1,5 @@
 import { RedisPubSub } from 'graphql-redis-subscriptions'
-import { PubSubEvents } from './subscriptions'
-
-// Check if we're in build mode or browser environment
-const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || process.argv.includes('build')
-const isBrowser = typeof window !== 'undefined'
+import { isBuilding } from '@/utils'
 
 // Mock pubsub for build time and browser
 const mockPubSub = {
@@ -17,23 +13,13 @@ const mockPubSub = {
   })
 }
 
-// Initialize pubsub synchronously - use global to prevent multiple initializations
-declare global {
-  var __pubsub: any
-}
-
 let pubsub: any
 
-if (isBuilding || isBrowser) {
+if (isBuilding) {
   pubsub = mockPubSub
-} else if (global.__pubsub) {
-  // Use already initialized pubsub
-  pubsub = global.__pubsub
-  console.log('Using existing Redis PubSub connection')
 } else {
   try {
     // Synchronous initialization for server environment
-    /* eslint-disable */
     const Redis = require('ioredis')
     const { logger } = require('../utils/logger')
     
@@ -88,8 +74,6 @@ if (isBuilding || isBrowser) {
     
     logger.info('Redis PubSub initialized - testing connectivity')
     
-    // Store in global to prevent re-initialization
-    global.__pubsub = pubsub
   } catch (error) {
     const { logger } = require('../utils/logger')
     logger.error('Failed to initialize Redis pubsub - shutting down server', { 

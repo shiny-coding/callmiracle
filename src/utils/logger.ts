@@ -2,11 +2,11 @@ import { createLogger, format, Logger, transports } from 'winston'
 import 'winston-daily-rotate-file'
 // winston-loki will be dynamically imported below
 import path from 'path'
-import type { NextApiRequest } from 'next'
 import { getRequestContext } from './requestContext'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { context, trace } from '@opentelemetry/api'
+import { isBuilding } from '@/utils'
 
 // Define log directory and ensure it exists
 const logDir = process.env.LOG_DIR || 'logs'
@@ -167,25 +167,27 @@ if (global.__lokiTransportAdded === undefined) {
 }
 
 // Dynamically add Loki transport if enabled
-if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true') {
-  if (!global.__lokiTransportAdded) {
-    global.__lokiTransportAdded = true
-    // Import and add Loki transport dynamically to avoid webpack bundling issues
-    import('./logger-loki').then(({ createLokiTransport }) => {
-      try {
-        const lokiTransport = createLokiTransport()
-        logger.add(lokiTransport)
-      } catch (error) {
-        logger.error('Failed to add Loki transport:', error)
+if (!isBuilding) {
+  if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true') {
+    if (!global.__lokiTransportAdded) {
+      global.__lokiTransportAdded = true
+      // Import and add Loki transport dynamically to avoid webpack bundling issues
+      import('./logger-loki').then(({ createLokiTransport }) => {
+        try {
+          const lokiTransport = createLokiTransport()
+          logger.add(lokiTransport)
+        } catch (error) {
+          logger.error('Failed to add Loki transport:', error)
+          global.__lokiTransportAdded = false // Reset flag on failure
+        }
+      }).catch((error) => {
+        logger.error('Failed to import Loki transport:', error)
         global.__lokiTransportAdded = false // Reset flag on failure
-      }
-    }).catch((error) => {
-      logger.error('Failed to import Loki transport:', error)
-      global.__lokiTransportAdded = false // Reset flag on failure
-    })
+      })
+    }
+  } else {
+    logger.info('Loki transport not added')
   }
-} else {
-  logger.info('Loki transport not added')
 }
 
 interface LogContext {

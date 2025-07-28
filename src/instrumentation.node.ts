@@ -54,7 +54,7 @@ const sdk = new NodeSDK({
     getNodeAutoInstrumentations({
       // Disable some instrumentations if needed
       '@opentelemetry/instrumentation-fs': {
-        enabled: false, // Disable file system instrumentation to reduce noise
+        enabled: false, // Disabfile system instrumentation to reduce noise
       },
       '@opentelemetry/instrumentation-http': {
         enabled: true,

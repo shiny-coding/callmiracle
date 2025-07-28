@@ -46,6 +46,7 @@ CallMiracle is a Next.js application with real-time communication capabilities, 
 - `src/instrumentation.ts` - OpenTelemetry setup
 - `docker-compose.yml` - Main Docker setup
 - `docker-compose.observability.yml` - Observability stack
+- `next.config.mjs` - Next.js configuration file
 
 ## Database
 - MongoDB connection configured in `src/lib/mongodb.ts`

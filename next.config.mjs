@@ -40,7 +40,7 @@ const nextConfig = {
       type: 'asset/source'
     });
     
-    // Exclude ioredis from client bundle
+    // Exclude server-only packages from client bundle
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -51,9 +51,28 @@ const nextConfig = {
         fs: false,
         path: false,
         os: false,
+        http: false,
+        https: false,
+        util: false,
+        url: false,
+        querystring: false,
+        buffer: false,
+        events: false,
       };
       config.externals = config.externals || [];
-      config.externals.push('ioredis');
+      config.externals.push(
+        'ioredis',
+        'bcrypt',
+        'winston',
+        'winston-daily-rotate-file',
+        'winston-loki',
+        '@colors/colors',
+        'mongodb',
+        'snappy',
+        '@napi-rs/snappy-win32-x64-msvc',
+        'graphql-redis-subscriptions',
+        '@mapbox/node-pre-gyp'
+      );
     }
     
     return config;

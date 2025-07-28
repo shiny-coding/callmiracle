@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb'
+import { isBuilding } from '@/utils'
 
 const uri = process.env.MONGODB_URI
 const options = {
@@ -23,9 +24,6 @@ export function getDatabaseName(): string {
   // Fallback to default database name if not found in URI
   return 'callmiracle'
 }
-
-// Check if we're in a build context
-const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || process.argv.includes('build')
 
 // Function to create connection promise with error checking
 function createConnection(): Promise<MongoClient> {
