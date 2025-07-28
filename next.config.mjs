@@ -14,8 +14,31 @@ const nextConfig = {
       {
         module: /node_modules\/@whatwg-node\/fetch/,
         message: /Critical dependency: the request of a dependency is an expression/
+      },
+      {
+        module: /node_modules\/@mapbox\/node-pre-gyp/,
+        message: /.*\.html$/
       }
     ];
+
+    // Ignore problematic bcrypt/node-pre-gyp files by excluding from resolution
+    const originalResolveLoader = config.resolveLoader;
+    config.resolveLoader = {
+      ...originalResolveLoader,
+      alias: {
+        ...originalResolveLoader?.alias,
+        'ignore-loader': false
+      }
+    };
+    
+    // Add rule to handle HTML files from node-pre-gyp
+    config.module = config.module || {};
+    config.module.rules = config.module.rules || [];
+    config.module.rules.push({
+      test: /\.html$/,
+      issuer: /node_modules\/@mapbox\/node-pre-gyp/,
+      type: 'asset/source'
+    });
     
     // Exclude ioredis from client bundle
     if (!isServer) {
@@ -37,7 +60,7 @@ const nextConfig = {
   },
   reactStrictMode: false,
   output: 'standalone',
-  serverExternalPackages: ['winston-loki', 'snappy', '@napi-rs/snappy-win32-x64-msvc', 'ioredis'],
+  serverExternalPackages: ['winston-loki', 'snappy', '@napi-rs/snappy-win32-x64-msvc', 'ioredis', 'bcrypt', '@mapbox/node-pre-gyp'],
   images: {
     unoptimized: true,
     remotePatterns: [

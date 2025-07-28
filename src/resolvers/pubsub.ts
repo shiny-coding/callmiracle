@@ -17,11 +17,19 @@ const mockPubSub = {
   })
 }
 
-// Initialize pubsub synchronously
+// Initialize pubsub synchronously - use global to prevent multiple initializations
+declare global {
+  var __pubsub: any
+}
+
 let pubsub: any
 
 if (isBuilding || isBrowser) {
   pubsub = mockPubSub
+} else if (global.__pubsub) {
+  // Use already initialized pubsub
+  pubsub = global.__pubsub
+  console.log('Using existing Redis PubSub connection')
 } else {
   try {
     // Synchronous initialization for server environment
@@ -32,46 +40,45 @@ if (isBuilding || isBrowser) {
     const redisOptions = {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
-      retryDelayOnFailover: 100,
-      enableReadyCheck: false,
-      // Limit connection retries to prevent spam
       connectTimeout: 5000,
-      lazyConnect: true, // Don't connect immediately
-      maxRetriesPerRequest: 3,
+      lazyConnect: false, // Connect immediately to test connectivity
+      maxRetriesPerRequest: 0, // No retries
+      retryDelayOnFailover: false, // No retry on failover
       enableOfflineQueue: false, // Don't queue commands when disconnected
+      enableReadyCheck: true, // Ensure connection is ready
     }
+
+    logger.info(`Attempting to connect to Redis at ${redisOptions.host}:${redisOptions.port}`)
 
     const publisher = new Redis(redisOptions)
     const subscriber = new Redis(redisOptions)
 
-    // Track error logging to prevent spam
-    let lastErrorTime = 0
-    const ERROR_LOG_THROTTLE = 30000 // Log errors max once per 30 seconds
-
-    // Add error handlers to intercept connection errors
+    // Set up error handlers that will exit the process
     publisher.on('error', (error: any) => {
-      const now = Date.now()
-      if (now - lastErrorTime > ERROR_LOG_THROTTLE) {
-        logger.error('Redis publisher connection error (throttled)', { error: error.message })
-        lastErrorTime = now
-      }
+      logger.error('Redis publisher connection failed - shutting down server', { 
+        error: error.message,
+        host: redisOptions.host,
+        port: redisOptions.port
+      })
+      process.exit(1)
     })
     
     subscriber.on('error', (error: any) => {
-      const now = Date.now()
-      if (now - lastErrorTime > ERROR_LOG_THROTTLE) {
-        logger.error('Redis subscriber connection error (throttled)', { error: error.message })
-        lastErrorTime = now
-      }
+      logger.error('Redis subscriber connection failed - shutting down server', { 
+        error: error.message,
+        host: redisOptions.host,
+        port: redisOptions.port
+      })
+      process.exit(1)
     })
 
-    // Add connection event handlers for better debugging
+    // Add success handlers
     publisher.on('connect', () => {
-      logger.info('Redis publisher connected')
+      logger.info('Redis publisher connected successfully')
     })
     
     subscriber.on('connect', () => {
-      logger.info('Redis subscriber connected')
+      logger.info('Redis subscriber connected successfully')
     })
 
     pubsub = new RedisPubSub({
@@ -79,11 +86,17 @@ if (isBuilding || isBrowser) {
       subscriber,
     })
     
-    logger.info('Redis PubSub initialized (connections will be established lazily)')
+    logger.info('Redis PubSub initialized - testing connectivity')
+    
+    // Store in global to prevent re-initialization
+    global.__pubsub = pubsub
   } catch (error) {
     const { logger } = require('../utils/logger')
-    logger.warn('Failed to initialize Redis pubsub, using mock', { error: (error as Error).message, stack: (error as Error).stack })
-    pubsub = mockPubSub
+    logger.error('Failed to initialize Redis pubsub - shutting down server', { 
+      error: (error as Error).message, 
+      stack: (error as Error).stack 
+    })
+    process.exit(1)
   }
 }
 
