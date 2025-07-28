@@ -1,5 +1,5 @@
 import { Context } from './types'
-import { pubsub } from './pubsub'
+import { pubsub } from '@/lib/pubsub'
 import { ObjectId } from 'mongodb'
 import { Call, CallEvent, User } from '@/generated/graphql'
 

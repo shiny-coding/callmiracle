@@ -1,4 +1,4 @@
-import { RedisPubSub } from 'graphql-redis-subscriptions'
+// import { RedisPubSub } from 'graphql-redis-subscriptions'
 import { isBuilding } from '@/utils'
 
 // Mock pubsub for build time and browser
@@ -67,10 +67,10 @@ if (isBuilding) {
       logger.info('Redis subscriber connected successfully')
     })
 
-    pubsub = new RedisPubSub({
-      publisher,
-      subscriber,
-    })
+    // pubsub = new RedisPubSub({
+    //   publisher,
+    //   subscriber,
+    // })
     
     logger.info('Redis PubSub initialized - testing connectivity')
     

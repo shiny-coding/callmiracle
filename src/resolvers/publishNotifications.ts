@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { NotificationType } from '@/generated/graphql';
-import { pubsub } from './pubsub';
+import { pubsub } from '@/lib/pubsub';
 import { publishPushNotification } from './pushNotifications';
 
 

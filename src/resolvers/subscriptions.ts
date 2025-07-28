@@ -1,5 +1,5 @@
 import { BroadcastEvent, CallEvent, Meeting, NotificationEvent, NotificationType } from '@/generated/graphql'
-import { pubsub } from './pubsub'
+import { pubsub } from '@/lib/pubsub'
 import { mergeAsyncIterators } from '@/utils'
 
 export type SubscriptionEventPayload = {

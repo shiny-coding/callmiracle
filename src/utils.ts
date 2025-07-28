@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { defaultLocale, locales } from '@/config'
 import { PHASE_PRODUCTION_BUILD } from 'next/dist/shared/lib/constants'
 
-export const isBuilding = process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD || process.argv.includes('build')
+export const isBuilding = process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD
 
 export function getCurrentLocale(req: NextRequest): string {
 

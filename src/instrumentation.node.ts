@@ -4,6 +4,7 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions'
 import { trace, context as otelContext } from '@opentelemetry/api'
+import '@/lib/pubsub' // No exports imported, just execute the module
 
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 import { createMiddlewareSpanName } from './utils/middleware-tracing'

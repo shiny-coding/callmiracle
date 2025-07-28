@@ -1,6 +1,6 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { pubsub } from './pubsub'
+import { pubsub } from '@/lib/pubsub'
 import { BroadcastType } from '@/generated/graphql'
 
 export function publishBroadcastEvent(broadcastType: BroadcastType) {
