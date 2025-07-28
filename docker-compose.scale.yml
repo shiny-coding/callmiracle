@@ -6,6 +6,9 @@ networks:
   observability:
     external: true
     name: callmiracle_observability
+  redis-network:
+    external: true
+    name: callmiracle_redis-network
 
 # Reusable configuration template
 x-app-common: &app-common
@@ -21,34 +24,21 @@ x-app-common: &app-common
   networks:
     - app-network
     - observability
+    - redis-network
   volumes:
     - ./logs:/app/logs
   restart: unless-stopped
-  depends_on:
-    - redis
 
 # Common environment variables
 x-common-env: &common-env
   NODE_ENV: production
-  REDIS_HOST: redis
+  REDIS_HOST: callmiracle-redis
   REDIS_PORT: 6379
   OTEL_EXPORTER_OTLP_ENDPOINT: http://callmiracle-otel-collector:4318
   LOKI_HOST: http://callmiracle-loki:3100
   MONGODB_URI: mongodb://host.docker.internal:27017/callmiracle
 
 services:
-  # Redis for shared pubsub
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    networks:
-      - app-network
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-
   # App instances with shared configuration
   app1:
     <<: *app-common
@@ -82,6 +72,3 @@ services:
       - app2
       - app3
     restart: unless-stopped
-
-volumes:
-  redis_data:
