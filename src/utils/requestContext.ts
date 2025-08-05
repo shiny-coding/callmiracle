@@ -9,6 +9,8 @@ export interface RequestContext {
   timestamp: string
   userAgent?: string
   ip?: string
+  userId?: string
+  userName?: string
 }
 
 /**
@@ -25,7 +27,9 @@ export async function getRequestContext(): Promise<RequestContext> {
       method: headersList.get('x-request-method') || 'unknown',
       timestamp: headersList.get('x-request-timestamp') || Date.now().toString(),
       userAgent: headersList.get('x-request-user-agent') || undefined,
-      ip: headersList.get('x-request-ip') || undefined
+      ip: headersList.get('x-request-ip') || undefined,
+      userId: headersList.get('x-user-id') || undefined,
+      userName: headersList.get('x-user-name') || undefined
     }
   } catch (error) {
     // Fallback context for when called outside of request scope
@@ -35,7 +39,9 @@ export async function getRequestContext(): Promise<RequestContext> {
       method: 'unknown',
       timestamp: Date.now().toString(),
       userAgent: undefined,
-      ip: undefined
+      ip: undefined,
+      userId: undefined,
+      userName: undefined
     }
   }
 }

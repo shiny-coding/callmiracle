@@ -1,9 +1,12 @@
-import { BatchSpanProcessor, BatchSpanProcessorConfig } from '@opentelemetry/sdk-trace-node'
+import { 
+  BatchSpanProcessor,
+  BufferConfig,
+} from '@opentelemetry/sdk-trace-node'
 import { ReadableSpan, Span, SpanExporter } from '@opentelemetry/sdk-trace-base'
-import { Context } from '@opentelemetry/api'
+import { Context, ROOT_CONTEXT } from '@opentelemetry/api'
 import { getUserInstrumentationConfig, getCurrentUserId, UserInstrumentationConfig } from '@/utils/user-instrumentation'
 
-interface UserAwareSpanProcessorConfig extends BatchSpanProcessorConfig {
+interface UserAwareSpanProcessorConfig extends BufferConfig {
   // Additional config options for user-aware processing
   enableUserSampling?: boolean
   fallbackSamplingRate?: number
@@ -16,9 +19,11 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
   private readonly CACHE_TTL_MS = 2 * 60 * 1000 // 2 minutes - shorter than main cache
 
   constructor(exporter: SpanExporter, config: UserAwareSpanProcessorConfig = {}) {
-    super(exporter, config)
-    this.enableUserSampling = config.enableUserSampling ?? true
-    this.fallbackSamplingRate = config.fallbackSamplingRate ?? 0.1
+    // Extract user-specific config and pass buffer config to parent
+    const { enableUserSampling, fallbackSamplingRate, ...bufferConfig } = config
+    super(exporter, bufferConfig)
+    this.enableUserSampling = enableUserSampling ?? true
+    this.fallbackSamplingRate = fallbackSamplingRate ?? 0.1
   }
 
   /**
@@ -31,7 +36,7 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
     }
 
     // Set up async sampling decision
-    this.applySamplingDecision(span).catch(error => {
+    this.applySamplingDecision(span, parentContext).catch(error => {
       console.error('Error in user-aware sampling:', error)
       // Fall back to default behavior on error
       super.onStart(span, parentContext)
@@ -41,7 +46,7 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
   /**
    * Apply sampling decision based on user configuration
    */
-  private async applySamplingDecision(span: Span): Promise<void> {
+  private async applySamplingDecision(span: Span, parentContext: Context): Promise<void> {
     try {
       const userId = await this.getUserIdFromSpan(span)
       
@@ -51,7 +56,7 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
           span.end()
           return
         }
-        super.onStart(span, Context.active())
+        super.onStart(span, parentContext)
         return
       }
 
@@ -77,7 +82,7 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
       }
 
       // Span passed all checks - process it normally
-      super.onStart(span, Context.active())
+      super.onStart(span, parentContext)
 
       // Add user context attributes
       span.setAttributes({
@@ -89,7 +94,7 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
     } catch (error) {
       console.error('Error in sampling decision:', error)
       // Default to processing the span on error
-      super.onStart(span, Context.active())
+      super.onStart(span, parentContext)
     }
   }
 

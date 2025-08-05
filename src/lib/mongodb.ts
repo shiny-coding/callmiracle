@@ -61,4 +61,13 @@ if (isBuilding) {
   clientPromise = createConnection()
 }
 
-export default clientPromise 
+export default clientPromise
+
+// Helper function to get a collection
+export async function getCollection(collectionName: string) {
+  const client = await clientPromise
+  if (!client) {
+    throw new Error('MongoDB client not available')
+  }
+  return client.db().collection(collectionName)
+} 

@@ -1,4 +1,5 @@
 import { trace, context as otelContext } from '@opentelemetry/api'
+import { ObjectId } from 'mongodb'
 import { getCollection } from '@/lib/mongodb'
 import { getRequestContext } from './requestContext'
 import { getServerSession } from 'next-auth/next'
@@ -61,7 +62,7 @@ export async function getUserInstrumentationConfig(userId: string): Promise<User
   try {
     const usersCollection = await getCollection('users')
     const user = await usersCollection.findOne(
-      { _id: userId },
+      { _id: new ObjectId(userId) },
       { projection: { instrumentationConfig: 1 } }
     )
 
@@ -127,7 +128,7 @@ export async function updateUserInstrumentationConfig(
     }
 
     await usersCollection.updateOne(
-      { _id: userId },
+      { _id: new ObjectId(userId) },
       { 
         $set: { 
           instrumentationConfig: updatedConfig,
@@ -155,25 +156,8 @@ export async function shouldSampleCurrentSpan(): Promise<boolean> {
       return false
     }
 
-    // Always sample errors and slow operations
-    const span = trace.getActiveSpan()
-    if (span) {
-      const attributes = span.attributes
-      const statusCode = attributes['http.status_code'] as number
-      const duration = attributes['http.request.duration'] as number
-      
-      // Always sample errors
-      if (statusCode && statusCode >= 400) {
-        return true
-      }
-      
-      // Always sample slow requests (>2s)
-      if (duration && duration > 2000) {
-        return true
-      }
-    }
-
     // Use sampling rate for normal operations
+    // Note: Error and slow request sampling is handled in the span processor
     return Math.random() < config.samplingRate
   } catch (error) {
     console.error('Failed to determine sampling:', error)
@@ -211,14 +195,8 @@ export async function getCurrentUserId(): Promise<string | null> {
       return requestContext.userId
     }
 
-    // Try to get from active span attributes
-    const span = trace.getActiveSpan()
-    if (span) {
-      const userId = span.attributes['callmiracle.user_id'] as string
-      if (userId && userId !== 'anonymous') {
-        return userId
-      }
-    }
+    // Try to get from active span context (if available)
+    // Note: Direct attribute access not available, handled elsewhere
 
     return null
   } catch (error) {

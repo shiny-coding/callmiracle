@@ -1,3 +1,4 @@
+import { ObjectId } from 'mongodb'
 import { getCollection } from '@/lib/mongodb'
 import { 
   UserInstrumentationConfig, 
@@ -102,10 +103,10 @@ export async function bulkApplyInstrumentationPreset(
   }
 
   const usersCollection = await getCollection('users')
-  let query: any = {}
+  const query: any = {}
 
   if (criteria.userIds) {
-    query._id = { $in: criteria.userIds }
+    query._id = { $in: criteria.userIds.map(id => new ObjectId(id)) }
   } else if (criteria.emailPattern) {
     query.email = { $regex: criteria.emailPattern, $options: 'i' }
   } else if (criteria.adminUsers) {
@@ -120,7 +121,7 @@ export async function bulkApplyInstrumentationPreset(
 
   for (const user of users) {
     try {
-      await updateUserInstrumentationConfig(user._id, preset.config)
+      await updateUserInstrumentationConfig(user._id.toString(), preset.config)
       applied++
       console.log(`Applied ${preset.name} preset to ${user.email} (${user._id})`)
     } catch (error) {
@@ -219,7 +220,7 @@ export async function getUsersWithHighInstrumentation(): Promise<Array<{
     projection: { _id: 1, email: 1, instrumentationConfig: 1 }
   }).toArray()
 
-  return highInstrumentationUsers.map(user => {
+  return highInstrumentationUsers.map((user: any) => {
     const config = user.instrumentationConfig as UserInstrumentationConfig
     const enabledInstrumentations = Object.entries(config.instrumentations)
       .filter(([, enabled]) => enabled)
@@ -255,7 +256,7 @@ export async function resetUserInstrumentationConfig(userId: string): Promise<vo
   const usersCollection = await getCollection('users')
   
   await usersCollection.updateOne(
-    { _id: userId },
+    { _id: new ObjectId(userId) },
     { 
       $unset: { instrumentationConfig: 1 },
       $set: { updatedAt: Date.now() }
@@ -277,7 +278,7 @@ export async function batchResetInstrumentationConfigs(userIds: string[]): Promi
   for (const userId of userIds) {
     try {
       await usersCollection.updateOne(
-        { _id: userId },
+        { _id: new ObjectId(userId) },
         { 
           $unset: { instrumentationConfig: 1 },
           $set: { updatedAt: Date.now() }
