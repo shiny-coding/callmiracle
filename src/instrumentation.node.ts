@@ -8,6 +8,7 @@ import '@/lib/pubsub' // No exports imported, just execute the module
 
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 import { createMiddlewareSpanName } from './utils/middleware-tracing'
+import { UserAwareSpanProcessor } from './instrumentation/user-span-processor'
 
 // Get configuration from environment variables
 const serviceName = process.env.OTEL_SERVICE_NAME || 'callmiracle'
@@ -42,14 +43,16 @@ function addTraceAttribute(header: string, attribute: string, headers: any, span
   }
 }
 
-// Initialize OpenTelemetry SDK with advanced configuration
+// Initialize OpenTelemetry SDK with user-aware span processor
 const sdk = new NodeSDK({
   resource: resource,
-  spanProcessor: new BatchSpanProcessor(traceExporter, {
+  spanProcessor: new UserAwareSpanProcessor(traceExporter, {
     maxExportBatchSize: 100,
     maxQueueSize: 1000,
     exportTimeoutMillis: 30000,
     scheduledDelayMillis: 5000,
+    enableUserSampling: true,
+    fallbackSamplingRate: 0.1, // 10% sampling for anonymous users
   }),
   instrumentations: [
     getNodeAutoInstrumentations({

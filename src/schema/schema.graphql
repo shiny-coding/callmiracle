@@ -102,6 +102,28 @@ type User {
   pushSubscriptions: [PushSubscription]
   logLevel: String
   clientLogLevel: String
+  instrumentationConfig: InstrumentationConfig
+}
+
+type InstrumentationConfig {
+  samplingRate: Float!
+  enableTracing: Boolean!
+  enableMetrics: Boolean!
+  verbosityLevel: InstrumentationVerbosity!
+  instrumentations: InstrumentationComponents!
+}
+
+type InstrumentationComponents {
+  http: Boolean!
+  graphql: Boolean!
+  mongodb: Boolean!
+  webrtc: Boolean!
+}
+
+enum InstrumentationVerbosity {
+  MINIMAL
+  STANDARD
+  DETAILED
 }
 
 type CallEvent {

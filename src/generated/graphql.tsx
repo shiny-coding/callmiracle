@@ -145,6 +145,29 @@ export type GroupInput = {
   transparency: MeetingTransparency;
 };
 
+export type InstrumentationComponents = {
+  __typename?: 'InstrumentationComponents';
+  graphql: Scalars['Boolean']['output'];
+  http: Scalars['Boolean']['output'];
+  mongodb: Scalars['Boolean']['output'];
+  webrtc: Scalars['Boolean']['output'];
+};
+
+export type InstrumentationConfig = {
+  __typename?: 'InstrumentationConfig';
+  enableMetrics: Scalars['Boolean']['output'];
+  enableTracing: Scalars['Boolean']['output'];
+  instrumentations: InstrumentationComponents;
+  samplingRate: Scalars['Float']['output'];
+  verbosityLevel: InstrumentationVerbosity;
+};
+
+export enum InstrumentationVerbosity {
+  Detailed = 'DETAILED',
+  Minimal = 'MINIMAL',
+  Standard = 'STANDARD'
+}
+
 export type InterestDescription = {
   __typename?: 'InterestDescription';
   description: Scalars['String']['output'];
@@ -510,6 +533,7 @@ export type User = {
   email: Scalars['String']['output'];
   friends?: Maybe<Array<Scalars['ID']['output']>>;
   groups: Array<Scalars['ID']['output']>;
+  instrumentationConfig?: Maybe<InstrumentationConfig>;
   languages: Array<Scalars['String']['output']>;
   logLevel?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
