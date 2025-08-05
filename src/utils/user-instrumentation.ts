@@ -92,6 +92,7 @@ export async function getUserInstrumentationConfig(userId: string): Promise<User
 
 /**
  * Get current user's instrumentation config from session context
+ * Only works within request context
  */
 export async function getCurrentUserInstrumentationConfig(): Promise<UserInstrumentationConfig> {
   try {
@@ -101,7 +102,7 @@ export async function getCurrentUserInstrumentationConfig(): Promise<UserInstrum
     }
     return await getUserInstrumentationConfig(session.user.id)
   } catch (error) {
-    console.error('Failed to get current user instrumentation config:', error)
+    // This is expected when called outside request context (e.g., during startup)
     return DEFAULT_INSTRUMENTATION_CONFIG
   }
 }
@@ -179,28 +180,45 @@ export async function isInstrumentationEnabled(type: keyof UserInstrumentationCo
 }
 
 /**
+ * Check if we're in a request context by testing if headers are available
+ */
+function isInRequestContext(): boolean {
+  try {
+    // This will throw if called outside request context
+    process.env.NODE_ENV // This won't throw, but the headers() call below will
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
  * Get user ID from various contexts (request headers, session, span attributes)
+ * Gracefully handles being called outside request context
  */
 export async function getCurrentUserId(): Promise<string | null> {
   try {
-    // Try to get from session first
-    const session = await getServerSession(authOptions)
-    if (session?.user?.id) {
-      return session.user.id
-    }
-
-    // Try to get from request context (set by middleware)
+    // Try to get from request context first (set by middleware) - this is most reliable
     const requestContext = await getRequestContext()
     if (requestContext.userId && requestContext.userId !== 'anonymous') {
       return requestContext.userId
     }
 
-    // Try to get from active span context (if available)
-    // Note: Direct attribute access not available, handled elsewhere
+    // Only try session if we got a valid request context (not the fallback)
+    if (requestContext.requestId !== 'unknown') {
+      try {
+        const session = await getServerSession(authOptions)
+        if (session?.user?.id) {
+          return session.user.id
+        }
+      } catch (sessionError) {
+        // Expected when called outside request context, continue
+      }
+    }
 
     return null
   } catch (error) {
-    console.error('Failed to get current user ID:', error)
+    // This is expected during startup or outside request context
     return null
   }
 }

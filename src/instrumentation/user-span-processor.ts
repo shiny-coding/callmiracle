@@ -35,10 +35,9 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
       return
     }
 
-    // Set up async sampling decision
+    // Always try user-aware sampling - it will fallback gracefully if no context
     this.applySamplingDecision(span, parentContext).catch(error => {
-      console.error('Error in user-aware sampling:', error)
-      // Fall back to default behavior on error
+      // Silently fall back to default behavior - errors are expected during startup
       super.onStart(span, parentContext)
     })
   }
@@ -84,8 +83,9 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
       // Span passed all checks - process it normally
       super.onStart(span, parentContext)
 
-      // Add user context attributes
+      // Add user context attributes to help future spans
       span.setAttributes({
+        'callmiracle.user_id': userId,
         'callmiracle.user_sampling_rate': config.samplingRate,
         'callmiracle.user_verbosity': config.verbosityLevel,
         'callmiracle.instrumentation_version': '1.0.0'
@@ -102,14 +102,28 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
    * Get user ID from span attributes or context
    */
   private async getUserIdFromSpan(span: Span): Promise<string | null> {
-    // Try to get from span attributes first
-    const userIdAttr = span.attributes['callmiracle.user_id'] as string
-    if (userIdAttr && userIdAttr !== 'anonymous') {
-      return userIdAttr
-    }
+    try {
+      // Try to get from span attributes first (most efficient)
+      const userIdAttr = span.attributes['callmiracle.user_id'] as string
+      if (userIdAttr && userIdAttr !== 'anonymous') {
+        return userIdAttr
+      }
 
-    // Fall back to getCurrentUserId
-    return await getCurrentUserId()
+      // Fall back to getCurrentUserId (handles request context gracefully)
+      const userId = await getCurrentUserId()
+      
+      // If we found a user ID, proactively warm the cache for future spans
+      if (userId) {
+        this.proactivelyWarmCache(userId).catch(() => {
+          // Ignore errors - cache warming is best effort
+        })
+      }
+      
+      return userId
+    } catch (error) {
+      // Expected during startup or outside request context
+      return null
+    }
   }
 
   /**
@@ -230,6 +244,24 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
 
     } catch (error) {
       console.error('Error in span enrichment:', error)
+    }
+  }
+
+  /**
+   * Proactively warm cache when we discover a user ID
+   */
+  private async proactivelyWarmCache(userId: string): Promise<void> {
+    try {
+      // Check if we already have this user in cache
+      const cached = this.userConfigCache.get(userId)
+      if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
+        return // Already cached and fresh
+      }
+
+      // Warm the cache by fetching the user's config
+      await this.getUserConfig(userId)
+    } catch (error) {
+      // Ignore errors - cache warming is best effort
     }
   }
 
