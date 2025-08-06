@@ -19,6 +19,7 @@ const eslintConfig = [
       '@typescript-eslint/no-wrapper-object-types': 'off', // Allow Object type
       '@typescript-eslint/no-empty-object-type': 'off', // Allow {} type
       '@typescript-eslint/no-require-imports': 'off', // Allow require
+      "@typescript-eslint/no-unused-expressions": "off",
       // or to keep warnings but ignore specific patterns:
       // '@typescript-eslint/no-unused-vars': ['warn', { 
       //   argsIgnorePattern: '^_',

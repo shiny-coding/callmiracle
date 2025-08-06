@@ -50,8 +50,10 @@ export class UserAwareSpanProcessor extends BatchSpanProcessor {
       const userId = await this.getUserIdFromSpan(span)
       
       if (!userId) {
+        console.log('No user context - using fallback sampling')
         // No user context - use fallback sampling
         if (Math.random() >= this.fallbackSamplingRate) {
+          console.log('Fallback sampling rate exceeded - skipping span')
           span.end()
           return
         }

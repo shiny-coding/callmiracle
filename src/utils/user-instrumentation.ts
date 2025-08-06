@@ -47,7 +47,7 @@ export const ADMIN_INSTRUMENTATION_CONFIG: UserInstrumentationConfig = {
 
 // Cache for user configs to avoid frequent DB queries
 const configCache = new Map<string, { config: UserInstrumentationConfig; timestamp: number }>()
-const CACHE_TTL_MS = 15 * 60 * 1000 // 5 minutes
+const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes
 
 /**
  * Get instrumentation configuration for a specific user
