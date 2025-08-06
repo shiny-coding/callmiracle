@@ -11,6 +11,7 @@ export interface RequestContext {
   ip?: string
   userId?: string
   userName?: string
+  userInstrumentationConfig?: string
 }
 
 /**
@@ -29,7 +30,8 @@ export async function getRequestContext(): Promise<RequestContext> {
       userAgent: headersList.get('x-request-user-agent') || undefined,
       ip: headersList.get('x-request-ip') || undefined,
       userId: headersList.get('x-user-id') || undefined,
-      userName: headersList.get('x-user-name') || undefined
+      userName: headersList.get('x-user-name') || undefined,
+      userInstrumentationConfig: headersList.get('x-user-instrumentation-config') || undefined
     }
   } catch (error) {
     // Fallback context for when called outside of request scope
@@ -41,7 +43,8 @@ export async function getRequestContext(): Promise<RequestContext> {
       userAgent: undefined,
       ip: undefined,
       userId: undefined,
-      userName: undefined
+      userName: undefined,
+      userInstrumentationConfig: undefined
     }
   }
 }

@@ -47,7 +47,24 @@ export const ADMIN_INSTRUMENTATION_CONFIG: UserInstrumentationConfig = {
 
 // Cache for user configs to avoid frequent DB queries
 const configCache = new Map<string, { config: UserInstrumentationConfig; timestamp: number }>()
-const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes
+// Track ongoing cache warming operations to prevent duplicates
+const cacheWarming = new Set<string>()
+
+function isValidObjectId(id: string): boolean {
+  return /^[0-9a-fA-F]{24}$/.test(id)
+}
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+const CACHE_CLEANUP_INTERVAL_MS = 10 * 60 * 1000 // 10 minutes
+
+// Auto-cleanup expired cache entries
+setInterval(() => {
+  const now = Date.now()
+  for (const [userId, data] of configCache.entries()) {
+    if (now - data.timestamp > CACHE_TTL_MS) {
+      configCache.delete(userId)
+    }
+  }
+}, CACHE_CLEANUP_INTERVAL_MS)
 
 /**
  * Get instrumentation configuration for a specific user
@@ -147,83 +164,6 @@ export async function updateUserInstrumentationConfig(
 }
 
 /**
- * Check if current span should be sampled based on user config
- */
-export async function shouldSampleCurrentSpan(): Promise<boolean> {
-  try {
-    const config = await getCurrentUserInstrumentationConfig()
-    
-    if (!config.enableTracing) {
-      return false
-    }
-
-    // Use sampling rate for normal operations
-    // Note: Error and slow request sampling is handled in the span processor
-    return Math.random() < config.samplingRate
-  } catch (error) {
-    console.error('Failed to determine sampling:', error)
-    return true // Default to sampling on error
-  }
-}
-
-/**
- * Check if specific instrumentation is enabled for current user
- */
-export async function isInstrumentationEnabled(type: keyof UserInstrumentationConfig['instrumentations']): Promise<boolean> {
-  try {
-    const config = await getCurrentUserInstrumentationConfig()
-    return config.instrumentations[type]
-  } catch (error) {
-    console.error('Failed to check instrumentation enabled:', error)
-    return DEFAULT_INSTRUMENTATION_CONFIG.instrumentations[type]
-  }
-}
-
-/**
- * Check if we're in a request context by testing if headers are available
- */
-function isInRequestContext(): boolean {
-  try {
-    // This will throw if called outside request context
-    process.env.NODE_ENV // This won't throw, but the headers() call below will
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * Get user ID from various contexts (request headers, session, span attributes)
- * Gracefully handles being called outside request context
- */
-export async function getCurrentUserId(): Promise<string | null> {
-  try {
-    // Try to get from request context first (set by middleware) - this is most reliable
-    const requestContext = await getRequestContext()
-    if (requestContext.userId && requestContext.userId !== 'anonymous') {
-      return requestContext.userId
-    }
-
-    // Only try session if we got a valid request context (not the fallback)
-    if (requestContext.requestId !== 'unknown') {
-      try {
-        const session = await getServerSession(authOptions)
-        if (session?.user?.id) {
-          return session.user.id
-        }
-      } catch (sessionError) {
-        // Expected when called outside request context, continue
-      }
-    }
-
-    return null
-  } catch (error) {
-    // This is expected during startup or outside request context
-    return null
-  }
-}
-
-/**
  * Clear config cache for a user (useful after updates)
  */
 export function clearUserConfigCache(userId: string): void {
@@ -235,6 +175,46 @@ export function clearUserConfigCache(userId: string): void {
  */
 export function clearAllConfigCache(): void {
   configCache.clear()
+}
+
+/**
+ * Get user instrumentation config synchronously from cache only
+ * Used by sampler for fast lookups
+ */
+export function getUserInstrumentationConfigSync(userId: string): UserInstrumentationConfig {
+  if (!isValidObjectId(userId)) return DEFAULT_INSTRUMENTATION_CONFIG
+  
+  const cached = configCache.get(userId)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.config
+  }
+
+  // Cache miss - trigger async warming and return admin config (full instrumentation)
+  if (!cacheWarming.has(userId)) {
+    warmUserConfigCache(userId)
+  }
+
+  return ADMIN_INSTRUMENTATION_CONFIG // Full instrumentation until cache is ready
+}
+
+/**
+ * Warm cache for user config in background
+ */
+function warmUserConfigCache(userId: string): void {
+  if (cacheWarming.has(userId)) return
+  
+  cacheWarming.add(userId)
+  
+  getUserInstrumentationConfig(userId)
+    .then(() => {
+      // Config is now cached for future requests
+    })
+    .catch(error => {
+      console.warn(`Failed to warm cache for user ${userId}:`, error)
+    })
+    .finally(() => {
+      cacheWarming.delete(userId)
+    })
 }
 
 /**
