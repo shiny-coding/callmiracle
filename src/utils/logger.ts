@@ -111,8 +111,8 @@ function createLogFormat(colorize: boolean = false, fullDates: boolean = true) {
 const datePattern = 'YYYY-MM-DD'
 const timestampFormat = 'YYYY-MM-DD HH:mm:ss'
 
-// Create the main logger instance
-const logger = createLogger({
+// Create the main logger instance or use global shared instance
+const logger = global.__sharedLogger || createLogger({
   level: defaultLogLevel,
   // format: format.combine(
   //   format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -156,37 +156,55 @@ const logger = createLogger({
   ]
 })
 
+// Store logger globally to ensure all instances share the same transports
+if (!global.__sharedLogger) {
+  global.__sharedLogger = logger
+}
+
 // Track if Loki transport has been added to prevent duplicates
 // Use global to persist across module reloads in development
 declare global {
   var __lokiTransportAdded: boolean | undefined
+  var __sharedLogger: Logger | undefined
 }
 
 if (global.__lokiTransportAdded === undefined) {
   global.__lokiTransportAdded = false
 }
 
-// Dynamically add Loki transport if enabled
-if (!isBuilding) {
+// Use a promise to add Loki transport and ensure shared state
+let lokiTransportPromise: Promise<void> | null = null
+
+if (!isBuilding && !global.__lokiTransportAdded) {
   if (process.env.NODE_ENV === 'production' || process.env.ENABLE_LOKI === 'true') {
-    if (!global.__lokiTransportAdded) {
+    lokiTransportPromise = (async () => {
+      if (global.__lokiTransportAdded) return // Double-check to prevent race conditions
+      
       global.__lokiTransportAdded = true
-      // Import and add Loki transport dynamically to avoid webpack bundling issues
-      import('./logger-loki').then(({ createLokiTransport }) => {
-        try {
-          const lokiTransport = createLokiTransport()
-          logger.add(lokiTransport)
-        } catch (error) {
-          logger.error('Failed to add Loki transport:', error)
-          global.__lokiTransportAdded = false // Reset flag on failure
+      try {
+        const { createLokiTransport } = await import('./logger-loki')
+        const lokiTransport = createLokiTransport()
+        
+        // Add to both current logger and global shared logger
+        logger.add(lokiTransport)
+        if (global.__sharedLogger && global.__sharedLogger !== logger) {
+          global.__sharedLogger.add(lokiTransport)
         }
-      }).catch((error) => {
-        logger.error('Failed to import Loki transport:', error)
-        global.__lokiTransportAdded = false // Reset flag on failure
-      })
-    }
+        
+      } catch (error) {
+        console.error('❌ Failed to add Loki transport:', error)
+        global.__lokiTransportAdded = false
+      }
+    })()
   } else {
     logger.info('Loki transport not added')
+  }
+}
+
+// Ensure Loki transport is ready before logging
+async function ensureLokiTransport() {
+  if (lokiTransportPromise) {
+    await lokiTransportPromise
   }
 }
 
@@ -214,6 +232,8 @@ const logImpl = (context: LogContext, level: string, message: string, meta?: any
     return
   }
   const { userLogLevel, ...filteredContext } = context
+  
+  
   logger[level as keyof Logger](message, { ...filteredContext, ...meta })
 }
 
@@ -250,6 +270,9 @@ export { logger }
  * ```
  */
 export async function getLogger() {
+  // Ensure Loki transport is ready
+  await ensureLokiTransport()
+  
   // Get request context from headers (set by middleware)
   const requestContext = await getRequestContext()
 

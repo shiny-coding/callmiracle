@@ -103,6 +103,8 @@ export function createLokiTransport() {
   const transportId = globalConnectionState.transportCount
   
   const lokiHost = process.env.LOKI_HOST || 'http://localhost:3100'
+  
+  
   const transport = new LokiTransport({
     host: lokiHost,
     labels: { 
@@ -126,12 +128,11 @@ export function createLokiTransport() {
     handleConnectionError(err, 'transport error')
   })
   
-  // Listen for successful operations to detect reconnection
   transport.on('finish', () => {
     handleConnectionSuccess('batch sent')
   })
   
-  // Also check on log attempts
+  // Check on log attempts
   const originalLog = transport.log
   if (originalLog) {
     transport.log = function(info: any, callback: any) {
@@ -152,4 +153,6 @@ export function createLokiTransport() {
   }
   
   return transport
-} 
+}
+
+ 

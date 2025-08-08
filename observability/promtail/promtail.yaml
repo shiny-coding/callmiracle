@@ -16,7 +16,7 @@ scrape_configs:
         labels:
           job: callmiracle
           service: callmiracle
-          __path__: /var/log/app/*.log
+          __path__: /app/logs/*.log
     
     # Parse structured JSON logs
     pipeline_stages:
@@ -54,7 +54,7 @@ scrape_configs:
           job: callmiracle-errors
           service: callmiracle
           level: error
-          __path__: /var/log/app/error-*.log
+          __path__: /app/logs/error-*.log
     
     pipeline_stages:
       - json:
