@@ -25,6 +25,7 @@ function checkPort(port) {
         }
       })
       .once('listening', () => {
+        console.log(`Port ${port} is available`);
         tester.once('close', () => resolve(true)).close();
       })
       .listen(port);
@@ -36,15 +37,15 @@ async function killProcessOnPort(port) {
   try {
     // For Windows
     if (process.platform === 'win32') {
-      // Find the process using the port
-      const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
-      const lines = stdout.trim().split('\n');
+      // Find the process using the port - look for LISTENING state
+      const { stdout } = await execAsync(`netstat -ano | findstr :${port} | findstr LISTENING`);
+      const lines = stdout.trim().split('\n').filter(line => line.includes('LISTENING'));
       
       for (const line of lines) {
         const parts = line.trim().split(/\s+/);
         const pid = parts[parts.length - 1];
         
-        if (pid && pid !== '0') {
+        if (pid && pid !== '0' && !isNaN(pid)) {
           try {
             console.log(`Killing process ${pid} using port ${port}...`);
             await execAsync(`taskkill /F /PID ${pid}`);
@@ -113,7 +114,7 @@ async function main() {
   const nextProcess = spawn('npx', [
     'next',
     'dev',
-    '--turbopack',
+    // '--turbopack',
     '-p',
     PORT.toString()
   ], {
