@@ -33,6 +33,37 @@ const mockAdapter = {
 export const authOptions: NextAuthOptions = {
   debug: false,
   adapter: isBuilding ? mockAdapter as any : MongoDBAdapter(clientPromise),
+  jwt: {
+    // Use signed JWTs instead of encrypted JWE for better OpenTelemetry integration
+    encode: async ({ token, secret }) => {
+      if (!token) return ''
+      
+      const { SignJWT } = await import('jose')
+      const secretString = typeof secret === 'string' ? secret : secret.toString()
+      const encodedSecret = new TextEncoder().encode(secretString)
+      
+      return await new SignJWT(token)
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime('30d')
+        .sign(encodedSecret)
+    },
+    decode: async ({ token, secret }) => {
+      if (!token) return null
+      
+      const { jwtVerify } = await import('jose')
+      const secretString = typeof secret === 'string' ? secret : secret.toString()
+      const encodedSecret = new TextEncoder().encode(secretString)
+      
+      try {
+        const { payload } = await jwtVerify(token, encodedSecret)
+        return payload as any // NextAuth expects JWT type, but jose returns JWTPayload
+      } catch (error) {
+        console.error('JWT decode error:', error)
+        return null
+      }
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -110,6 +141,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async signIn({ user, account, profile }) {

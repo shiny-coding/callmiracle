@@ -44,6 +44,7 @@ export async function middleware(request: NextRequest) {
              request.headers.get('x-client-ip') || 
              undefined
 
+
   // Helper function to add request context headers to any response
   function addRequestHeaders(response: NextResponse): NextResponse {
     response.headers.set('x-request-id', requestId)

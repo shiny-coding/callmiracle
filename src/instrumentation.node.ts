@@ -43,6 +43,44 @@ function addTraceAttribute(header: string, attribute: string, headers: any, span
   }
 }
 
+function extractUserIdFromCookie(cookieHeader: string): string | null {
+  try {
+    // Parse cookies
+    const cookies: Record<string, string> = {}
+    cookieHeader.split(';').forEach(cookie => {
+      const [key, value] = cookie.trim().split('=')
+      if (key && value) {
+        cookies[key] = decodeURIComponent(value)
+      }
+    })
+
+    // Get NextAuth session token
+    const sessionToken = cookies['next-auth.session-token'] || cookies['__Secure-next-auth.session-token']
+    if (!sessionToken) return null
+
+    // Now that we're using signed JWTs, decode the standard JWT format
+    const parts = sessionToken.split('.')
+    if (parts.length !== 3) {
+      console.log('Invalid JWT format, expected 3 parts, got:', parts.length)
+      return null
+    }
+
+    // Decode JWT payload (base64url -> base64 -> utf8)
+    const base64Payload = parts[1]
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(parts[1].length + (4 - parts[1].length % 4) % 4, '=')
+    
+    const payload = Buffer.from(base64Payload, 'base64').toString('utf-8')
+    const data = JSON.parse(payload)
+    
+    return data.sub || data.id || null
+  } catch (error) {
+    console.log('Cookie extraction error:', error)
+    return null
+  }
+}
+
 // Initialize OpenTelemetry SDK with user-aware sampler
 const sdk = new NodeSDK({
   resource: resource,
@@ -64,7 +102,6 @@ const sdk = new NodeSDK({
       '@opentelemetry/instrumentation-http': {
         enabled: true,
         applyCustomAttributesOnSpan: (span: any, request: any, response: any) => {
-
           if (request.url) {
             span.updateName(createMiddlewareSpanName(request))
             const headers = response.getHeaders()

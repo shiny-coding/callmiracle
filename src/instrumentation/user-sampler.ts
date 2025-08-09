@@ -1,7 +1,6 @@
 import { Context, SpanKind, Attributes, Link } from '@opentelemetry/api'
 import { Sampler, SamplingResult, SamplingDecision } from '@opentelemetry/sdk-trace-base'
 import { getUserInstrumentationConfigSync } from '@/utils/user-instrumentation'
-import { decode } from 'next-auth/jwt'
 
 interface UserSamplerConfig {
   fallbackSamplingRate?: number
@@ -26,7 +25,8 @@ export class UserSampler implements Sampler {
     const url = attributes['http.url'] as string
     if (!url) return { decision: SamplingDecision.NOT_RECORD }
 
-    const userId = this.extractUserIdFromCookies(attributes)
+    // Get user ID from attributes (set by requestHook in HTTP instrumentation)
+    const userId = attributes['callmiracle.user_id'] as string
     
     if (!userId || userId === 'anonymous') {
       // No user context - use fallback sampling
@@ -80,56 +80,6 @@ export class UserSampler implements Sampler {
       : { decision: SamplingDecision.NOT_RECORD }
   }
 
-  private extractUserIdFromCookies(attributes: Attributes): string | null {
-    try {
-      const cookieHeader = attributes['http.request.header.cookie'] as string
-      if (!cookieHeader) return null
-
-      // Parse NextAuth session token
-      const cookies = this.parseCookies(cookieHeader)
-      const sessionToken = cookies['next-auth.session-token'] || cookies['__Secure-next-auth.session-token']
-      
-      if (!sessionToken) return null
-
-      // Decode NextAuth JWT token synchronously (this is a simplified version)
-      // In production, you might want to cache decoded tokens
-      const secret = process.env.NEXTAUTH_SECRET
-      if (!secret) return null
-
-      // Note: This is a synchronous decode attempt - may not work with all tokens
-      // You might need to implement a simple JWT decode for the user ID claim
-      return this.extractUserIdFromJWT(sessionToken)
-    } catch (error) {
-      // Silently fail and use fallback sampling
-      return null
-    }
-  }
-
-  private parseCookies(cookieHeader: string): Record<string, string> {
-    const cookies: Record<string, string> = {}
-    cookieHeader.split(';').forEach(cookie => {
-      const [key, value] = cookie.trim().split('=')
-      if (key && value) {
-        cookies[key] = decodeURIComponent(value)
-      }
-    })
-    return cookies
-  }
-
-  private extractUserIdFromJWT(token: string): string | null {
-    try {
-      // Simple JWT decode (without verification for performance)
-      const parts = token.split('.')
-      if (parts.length !== 3) return null
-      
-      const payload = Buffer.from(parts[1], 'base64').toString('utf-8')
-      const data = JSON.parse(payload)
-      
-      return data.sub || data.id || null
-    } catch {
-      return null
-    }
-  }
 
   private isInstrumentationAllowed(spanName: string, config: any): boolean {
     const name = spanName.toLowerCase()
