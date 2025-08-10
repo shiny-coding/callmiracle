@@ -25,7 +25,6 @@ function checkPort(port) {
         }
       })
       .once('listening', () => {
-        console.log(`Port ${port} is available`);
         tester.once('close', () => resolve(true)).close();
       })
       .listen(port);
@@ -114,7 +113,7 @@ async function main() {
   const nextProcess = spawn('npx', [
     'next',
     'dev',
-    // '--turbopack',
+    '--turbopack',
     '-p',
     PORT.toString()
   ], {

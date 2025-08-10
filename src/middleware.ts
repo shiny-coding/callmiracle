@@ -16,8 +16,6 @@ const PUBLIC_FILE = /\.(.*)$/i
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  console.log('middleware pathname', pathname)
-
   // Handle profile image requests FIRST - rewrite /profiles/{id}.jpg to /api/profiles/{id}.jpg
   if (pathname.startsWith('/profiles/') && pathname.endsWith('.jpg')) {
     const rewriteUrl = new URL(`/api${pathname}`, request.url)
