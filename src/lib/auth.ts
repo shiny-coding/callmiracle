@@ -34,30 +34,29 @@ export const authOptions: NextAuthOptions = {
   debug: false,
   adapter: isBuilding ? mockAdapter as any : MongoDBAdapter(clientPromise),
   jwt: {
-    // Use signed JWTs instead of encrypted JWE for better OpenTelemetry integration
-    encode: async ({ token, secret }) => {
+    // Use standard JWT (signed only) instead of JWE for OpenTelemetry compatibility
+    encode: async ({ secret, token }) => {
       if (!token) return ''
+      const jwt = await import('jsonwebtoken')
       
-      const { SignJWT } = await import('jose')
-      const secretString = typeof secret === 'string' ? secret : secret.toString()
-      const encodedSecret = new TextEncoder().encode(secretString)
+      // Check if token already has exp property to avoid conflict
+      const signOptions: any = {
+        algorithm: "HS256"
+      }
       
-      return await new SignJWT(token)
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('30d')
-        .sign(encodedSecret)
+      // Only set expiresIn if token doesn't already have exp
+      if (!token.exp) {
+        signOptions.expiresIn = 30 * 24 * 60 * 60 // 30 days
+      }
+      
+      return jwt.sign({ ...token }, secret, signOptions)
     },
-    decode: async ({ token, secret }) => {
+    decode: async ({ secret, token }) => {
       if (!token) return null
-      
-      const { jwtVerify } = await import('jose')
-      const secretString = typeof secret === 'string' ? secret : secret.toString()
-      const encodedSecret = new TextEncoder().encode(secretString)
-      
       try {
-        const { payload } = await jwtVerify(token, encodedSecret)
-        return payload as any // NextAuth expects JWT type, but jose returns JWTPayload
+        const jwt = await import('jsonwebtoken')
+        const decoded = jwt.verify(token, secret, { algorithms: ["HS256"] })
+        return decoded as any
       } catch (error) {
         console.error('JWT decode error:', error)
         return null
@@ -86,7 +85,6 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        console.log("authorize")
         try {
           // Connect to the database
           const client = await clientPromise;
@@ -209,7 +207,6 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account, profile, isNewUser }) {
-      console.log(`[Event: signIn] User: ${user.id}, Email: ${user.email}, New User: ${isNewUser}`);
       
       const cookieStore = await cookies()
       const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en'
@@ -249,7 +246,6 @@ export const authOptions: NextAuthOptions = {
             { _id: new ObjectId(user.id) },
             { $set: updateData }
           );
-          console.log(`[Event: signIn] Successfully augmented user ${user.id}`);
         } catch (error) {
           console.error(`[Event: signIn] Error augmenting user ${user.id}:`, error);
         }

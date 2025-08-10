@@ -1,6 +1,7 @@
 import { Context, SpanKind, Attributes, Link } from '@opentelemetry/api'
 import { Sampler, SamplingResult, SamplingDecision } from '@opentelemetry/sdk-trace-base'
 import { getUserInstrumentationConfigSync } from '@/utils/user-instrumentation'
+import { extractJWTFromCookieHeader, getUserIdFromJWT } from '@/utils/jwt'
 
 interface UserSamplerConfig {
   fallbackSamplingRate?: number
@@ -25,8 +26,17 @@ export class UserSampler implements Sampler {
     const url = attributes['http.url'] as string
     if (!url) return { decision: SamplingDecision.NOT_RECORD }
 
-    // Get user ID from attributes (set by requestHook in HTTP instrumentation)
-    const userId = attributes['callmiracle.user_id'] as string
+    // Extract user ID from cookie header directly in shouldSample
+    let userId: string | null = null
+    const cookieHeader = attributes['http.request.header.cookie'] as string
+    if (cookieHeader) {
+      try {
+        const token = extractJWTFromCookieHeader(cookieHeader)
+        userId = getUserIdFromJWT(token)
+      } catch (error) {
+        // Ignore cookie parsing errors
+      }
+    }
     
     if (!userId || userId === 'anonymous') {
       // No user context - use fallback sampling

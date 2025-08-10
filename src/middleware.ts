@@ -5,6 +5,7 @@ import { Locale, locales, defaultLocale } from './config'
 import { getCurrentLocale } from './utils'
 import { routing } from './i18n/routing'
 import { generateShortRequestId } from './utils/commonUtils'
+import { decodeJWTPayload, isJWTExpired } from './utils/jwt'
 
 // Create internationalization middleware
 const intlMiddleware = createIntlMiddleware(routing)
@@ -28,10 +29,22 @@ export async function middleware(request: NextRequest) {
   }
   
   // Check for authentication token for all non-auth routes
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  })
+  let token: any = null
+  let sessionCookie: any = null
+  
+  const cookies = request.cookies
+  sessionCookie = cookies.get('next-auth.session-token') || cookies.get('__Secure-next-auth.session-token')
+  
+  // Decode JWT for middleware using common utility
+  if (sessionCookie) {
+    token = decodeJWTPayload(sessionCookie.value)
+    
+    // Check if token is expired
+    if (token && isJWTExpired(token)) {
+      token = null
+    }
+  }
+  
 
   // Generate request context - use existing requestId from headers if present
   const requestId = request.headers.get('x-request-id') || generateShortRequestId()

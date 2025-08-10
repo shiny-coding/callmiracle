@@ -38,7 +38,8 @@
     "scale:external-redis": "docker-compose -f docker-compose.scale-no-redis.yml up -d",
     "scale:external-redis:down": "docker-compose -f docker-compose.scale-no-redis.yml down",
     "scale:external-redis:logs": "docker-compose -f docker-compose.scale-no-redis.yml logs -f",
-    "test:observability": "node --loader ts-node/esm -e \"import('./src/utils/observabilityTest.ts').then(m => m.runObservabilityTests())\""
+    "test:observability": "node --loader ts-node/esm -e \"import('./src/utils/observabilityTest.ts').then(m => m.runObservabilityTests())\"",
+    "kill-port": "node scripts/kill-port.js 3003 9229 9230"
   },
   "dependencies": {
     "@apollo/client": "^3.12.5",
@@ -83,6 +84,7 @@
     "graphql-yoga": "^5.10.9",
     "ioredis": "^5.6.1",
     "js-cookie": "^3.0.5",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.12.0",
     "next": "15.1.4",
     "next-auth": "^4.24.11",
@@ -111,6 +113,7 @@
     "@graphql-codegen/typescript": "^4.1.2",
     "@graphql-codegen/typescript-operations": "^4.4.0",
     "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",
