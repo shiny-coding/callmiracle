@@ -1,6 +1,8 @@
-import { Context, SpanKind, Attributes, Link } from '@opentelemetry/api'
+import { Context, SpanKind, Attributes, Link, context as otelContext } from '@opentelemetry/api'
 import { Sampler, SamplingResult, SamplingDecision } from '@opentelemetry/sdk-trace-base'
 import { getUserInstrumentationConfigSync } from '@/utils/user-instrumentation'
+import { USER_ID_CONTEXT_KEY } from './context-keys'
+import { shouldSamplePath } from '@/utils/middleware-tracing'
 
 interface UserSamplerConfig {
   fallbackSamplingRate?: number
@@ -22,14 +24,19 @@ export class UserSampler implements Sampler {
     links: Link[]
   ): SamplingResult {
     
-    const url = attributes['http.url'] as string
-    if (!url) return { decision: SamplingDecision.NOT_RECORD }
+    // Check if this is an HTTP span
+    const url = attributes['http.target'] as string
+    if ( !url ) return { decision: SamplingDecision.NOT_RECORD }
+    if ( !shouldSamplePath(url) ) return { decision: SamplingDecision.NOT_RECORD }
 
-    // Get user ID from attributes (should now be available from startIncomingSpanHook)
+    return { decision: SamplingDecision.RECORD_AND_SAMPLED }
+
+    // Get user ID from attributes (available for HTTP spans from startIncomingSpanHook)
     const userId = attributes['callmiracle.user_id'] as string
+
     if (!userId || userId === 'anonymous') {
-      // No user context - no sampling
-      return { decision: SamplingDecision.NOT_RECORD }
+      // No user context - use fallback sampling
+      return this.traceBasedSampling(traceId, this.fallbackSamplingRate)
     }
 
     // Get user config from cache

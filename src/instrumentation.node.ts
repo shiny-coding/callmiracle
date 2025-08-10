@@ -3,13 +3,14 @@ import { NodeSDK } from '@opentelemetry/sdk-node'
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions'
-import { trace, context as otelContext } from '@opentelemetry/api'
+import { trace, context as otelContext, createContextKey } from '@opentelemetry/api'
 import '@/lib/pubsub' // No exports imported, just execute the module
 
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 import { createMiddlewareSpanName } from './utils/middleware-tracing'
 import { UserSampler } from './instrumentation/user-sampler'
 import { extractJWTFromCookieHeader, getUserIdFromJWT } from './utils/jwt'
+import { USER_ID_CONTEXT_KEY } from './instrumentation/context-keys'
 
 // Get configuration from environment variables
 const serviceName = process.env.OTEL_SERVICE_NAME || 'callmiracle'
@@ -57,9 +58,9 @@ function extractUserIdFromCookie(cookieHeader: string): string | null {
 // Initialize OpenTelemetry SDK with user-aware sampler
 const sdk = new NodeSDK({
   resource: resource,
-  sampler: new UserSampler({
-    fallbackSamplingRate: 0.1, // 10% sampling for anonymous users
-  }),
+  // sampler: new UserSampler({
+  //   fallbackSamplingRate: 0.1, // 10% sampling for anonymous users
+  // }),
   spanProcessor: new BatchSpanProcessor(traceExporter, {
     maxExportBatchSize: 100,
     maxQueueSize: 1000,
@@ -76,10 +77,17 @@ const sdk = new NodeSDK({
         enabled: true,
         startIncomingSpanHook: (request: any) => {
           // This runs BEFORE sampling decision - extract user ID from cookies
-          const cookieHeader = request.headers['cookie']
+          const cookieHeader = request.headers?.['cookie']
           if (cookieHeader) {
             const userId = extractUserIdFromCookie(cookieHeader)
             if (userId) {
+              // Set user ID in OpenTelemetry context for child spans
+              const currentContext = otelContext.active()
+              const contextWithUserId = currentContext.setValue(USER_ID_CONTEXT_KEY, userId)
+              otelContext.with(contextWithUserId, () => {
+                // Context is now available for child spans
+              })
+              
               return {
                 'callmiracle.user_id': userId
               }
