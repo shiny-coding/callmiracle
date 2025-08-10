@@ -9,6 +9,7 @@ import '@/lib/pubsub' // No exports imported, just execute the module
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 import { createMiddlewareSpanName } from './utils/middleware-tracing'
 import { UserSampler } from './instrumentation/user-sampler'
+import { extractJWTFromCookieHeader, getUserIdFromJWT } from './utils/jwt'
 
 // Get configuration from environment variables
 const serviceName = process.env.OTEL_SERVICE_NAME || 'callmiracle'
@@ -43,6 +44,15 @@ function addTraceAttribute(header: string, attribute: string, headers: any, span
   }
 }
 
+function extractUserIdFromCookie(cookieHeader: string): string | null {
+  try {
+    const token = extractJWTFromCookieHeader(cookieHeader)
+    return getUserIdFromJWT(token)
+  } catch (error) {
+    return null
+  }
+}
+
 
 // Initialize OpenTelemetry SDK with user-aware sampler
 const sdk = new NodeSDK({
@@ -64,6 +74,21 @@ const sdk = new NodeSDK({
       },
       '@opentelemetry/instrumentation-http': {
         enabled: true,
+        startIncomingSpanHook: (request: any) => {
+          // This runs BEFORE sampling decision - extract user ID from cookies
+          const cookieHeader = request.headers['cookie']
+          if (cookieHeader) {
+            const userId = extractUserIdFromCookie(cookieHeader)
+            if (userId) {
+              return {
+                'callmiracle.user_id': userId
+              }
+            }
+          }
+          return {}
+        },
+        // requestHook is called after sampling decision is made (so not helpful for injecting user id)
+        // requestHook: (span: any, request: any) => {},
         applyCustomAttributesOnSpan: (span: any, request: any, response: any) => {
           if (request.url) {
             span.updateName(createMiddlewareSpanName(request))
