@@ -12,6 +12,7 @@ require('dotenv').config({ path: '.env.local' });
 require('dotenv').config({ path: '.env.observability' });
 
 const PORT = process.env.PORT || 3003;
+const DEBUG_PORTS = [9229, 9230, 9231, 9232];
 
 // Check if port is in use
 function checkPort(port) {
@@ -40,16 +41,26 @@ async function killProcessOnPort(port) {
       const { stdout } = await execAsync(`netstat -ano | findstr :${port} | findstr LISTENING`);
       const lines = stdout.trim().split('\n').filter(line => line.includes('LISTENING'));
       
+      if (lines.length === 0) {
+        console.log(`No processes found listening on port ${port}`);
+        return;
+      }
+      
       for (const line of lines) {
         const parts = line.trim().split(/\s+/);
         const pid = parts[parts.length - 1];
         
         if (pid && pid !== '0' && !isNaN(pid)) {
           try {
-            console.log(`Killing process ${pid} using port ${port}...`);
+            // Get process name for better logging
+            const { stdout: processInfo } = await execAsync(`tasklist /FI "PID eq ${pid}" /FO CSV /NH`);
+            const processName = processInfo.split(',')[0].replace(/"/g, '');
+            
+            console.log(`🎯 Killing process ${pid} (${processName}) using port ${port}...`);
             await execAsync(`taskkill /F /PID ${pid}`);
+            console.log(`✅ Successfully killed process ${pid}`);
           } catch (err) {
-            // Process might have already exited
+            console.log(`⚠️ Failed to kill process ${pid}: ${err.message}`);
           }
         }
       }
@@ -59,34 +70,48 @@ async function killProcessOnPort(port) {
         const { stdout } = await execAsync(`lsof -ti:${port}`);
         const pids = stdout.trim().split('\n').filter(Boolean);
         
+        if (pids.length === 0) {
+          console.log(`No processes found using port ${port}`);
+          return;
+        }
+        
         for (const pid of pids) {
-          console.log(`Killing process ${pid} using port ${port}...`);
+          console.log(`🎯 Killing process ${pid} using port ${port}...`);
           await execAsync(`kill -9 ${pid}`);
+          console.log(`✅ Successfully killed process ${pid}`);
         }
       } catch (err) {
-        // No process found using the port
+        console.log(`⚠️ No process found using port ${port}`);
       }
     }
     
     // Wait a bit for the port to be released
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
   } catch (error) {
-    // Ignore errors - port might not be in use
+    console.log(`⚠️ Error checking port ${port}: ${error.message}`);
   }
 }
 
 async function main() {
-  // Debug ports that Next.js commonly uses
-  const debugPorts = [9229, 9230];
   
-  // Check and kill debug ports first
-  for (const debugPort of debugPorts) {
-    const isDebugPortAvailable = await checkPort(debugPort);
-    if (!isDebugPortAvailable) {
-      console.log(`\x1b[33mDebug port ${debugPort} is in use. Killing process...\x1b[0m`);
-      await killProcessOnPort(debugPort);
+  // More aggressive debug port cleanup - kill ALL node processes using any debug port
+  console.log('🔍 Checking for Node.js processes on debug ports...');
+  for (const debugPort of DEBUG_PORTS) {
+    let attempts = 0;
+    while (attempts < 3) {
+      const isDebugPortAvailable = await checkPort(debugPort);
+      if (!isDebugPortAvailable) {
+        console.log(`\x1b[33mDebug port ${debugPort} is in use (attempt ${attempts + 1}). Killing process...\x1b[0m`);
+        await killProcessOnPort(debugPort);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer
+        attempts++;
+      } else {
+        break;
+      }
     }
   }
+  
+  // No aggressive cleanup - only kill processes we specifically detected on ports
   
   // Check main application port
   let isPortAvailable = await checkPort(PORT);
@@ -127,6 +152,58 @@ async function main() {
     }
   });
   
+  // Handle process termination signals
+  let isShuttingDown = false;
+  
+  const shutdown = () => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    
+    console.log('\n🛑 Shutting down dev server...');
+    
+    // Try graceful shutdown first
+    nextProcess.kill('SIGINT');
+  
+    const shutdownScriptPath = path.join(__dirname, 'scripts', 'shutdown-dev.js');
+    
+    // Spawn shutdown script with detached process to avoid signal inheritance
+    // IMPORTANT: detached: true is crucial - without it, the child process receives
+    // the same SIGINT signal that triggered this shutdown, causing it to terminate
+    // before it can execute the cleanup logic
+    const shutdownScript = spawn('node', [
+      shutdownScriptPath,
+      nextProcess.pid.toString()
+    ], {
+      stdio: ['ignore', 'inherit', 'inherit'], // Ignore stdin to prevent signal inheritance
+      shell: true,
+      detached: true, // Detach from parent process group to avoid signal inheritance
+      env: { ...process.env, PORT: PORT.toString() }
+    });
+    
+    shutdownScript.on('exit', (code) => {
+      process.exit(0);
+    });
+    
+    shutdownScript.on('error', (error) => {
+      console.log(`❌ Shutdown script error: ${error.message}`);
+      process.exit(1);
+    });
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+  
+  // Windows-specific: Handle console close events
+  if (process.platform === 'win32') {
+    const readline = require('readline');
+    if (process.stdin.isTTY) {
+      readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      }).on('SIGINT', shutdown);
+    }
+  }
+
   nextProcess.on('exit', (code) => {
     process.exit(code);
   });

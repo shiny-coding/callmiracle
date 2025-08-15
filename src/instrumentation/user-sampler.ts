@@ -15,8 +15,6 @@ export class UserSampler implements Sampler {
     links: Link[]
   ): SamplingResult {
 
-    console.log('🔍 UserSampler: shouldSample: spanName:', spanName)
-    
     // Check if this is an HTTP span
     const url = attributes['http.target'] as string
     if ( !url ) return { decision: SamplingDecision.NOT_RECORD }
@@ -55,12 +53,7 @@ export class UserSampler implements Sampler {
     }
 
     // Use user's sampling rate
-    if (this.traceBasedSampling(traceId, config.samplingRate)) {
-      console.log('🔍 UserSampler: traceBasedSampling: true')
-      return { decision: SamplingDecision.RECORD_AND_SAMPLED }
-    }
-    console.log('🔍 UserSampler: traceBasedSampling: false')
-    return { decision: SamplingDecision.NOT_RECORD }
+    return this.traceBasedSampling(traceId, config.samplingRate)
   }
 
   private traceBasedSampling(traceId: string, samplingRate: number): SamplingResult {
