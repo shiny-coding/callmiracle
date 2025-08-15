@@ -4,16 +4,7 @@ import { getUserInstrumentationConfigSync } from '@/utils/user-instrumentation'
 import { USER_ID_CONTEXT_KEY } from './context-keys'
 import { shouldSamplePath } from '@/utils/middleware-tracing'
 
-interface UserSamplerConfig {
-  fallbackSamplingRate?: number
-}
-
 export class UserSampler implements Sampler {
-  private readonly fallbackSamplingRate: number
-
-  constructor(config: UserSamplerConfig = {}) {
-    this.fallbackSamplingRate = config.fallbackSamplingRate ?? 0.1
-  }
 
   shouldSample(
     context: Context,
@@ -23,6 +14,8 @@ export class UserSampler implements Sampler {
     attributes: Attributes,
     links: Link[]
   ): SamplingResult {
+
+    console.log('🔍 UserSampler: shouldSample: spanName:', spanName)
     
     // Check if this is an HTTP span
     const url = attributes['http.target'] as string
@@ -33,8 +26,8 @@ export class UserSampler implements Sampler {
     const userId = attributes['callmiracle.user_id'] as string
 
     if (!userId || userId === 'anonymous') {
-      // No user context - use fallback sampling
-      return this.traceBasedSampling(traceId, this.fallbackSamplingRate)
+      // No user context - no tracing
+      return { decision: SamplingDecision.NOT_RECORD }
     }
 
     // Get user config from cache
@@ -62,7 +55,12 @@ export class UserSampler implements Sampler {
     }
 
     // Use user's sampling rate
-    return this.traceBasedSampling(traceId, config.samplingRate)
+    if (this.traceBasedSampling(traceId, config.samplingRate)) {
+      console.log('🔍 UserSampler: traceBasedSampling: true')
+      return { decision: SamplingDecision.RECORD_AND_SAMPLED }
+    }
+    console.log('🔍 UserSampler: traceBasedSampling: false')
+    return { decision: SamplingDecision.NOT_RECORD }
   }
 
   private traceBasedSampling(traceId: string, samplingRate: number): SamplingResult {
@@ -88,14 +86,7 @@ export class UserSampler implements Sampler {
   private isInstrumentationAllowed(spanName: string, config: any): boolean {
     const name = spanName.toLowerCase()
 
-    if (name.includes('http') || name.includes('request')) return config.instrumentations.http
     if (name.includes('mongo')) return config.instrumentations.mongodb
-    if (name.includes('webrtc') || name.includes('rtc')) return config.instrumentations.webrtc
-
-    return true
-  }
-
-  toString(): string {
-    return `UserSampler{fallbackRate=${this.fallbackSamplingRate}}`
+    return config.instrumentations.http
   }
 }

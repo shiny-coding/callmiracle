@@ -59,9 +59,7 @@ function extractUserIdFromCookie(cookieHeader: string): string | null {
 // Initialize OpenTelemetry SDK with user-aware sampler
 const sdk = new NodeSDK({
   resource: resource,
-  sampler: new UserSampler({
-    fallbackSamplingRate: 0.1, // 10% sampling for anonymous users
-  }),
+  sampler: new UserSampler(),
   spanProcessor: new BatchSpanProcessor(traceExporter, {
     maxExportBatchSize: 100,
     maxQueueSize: 1000,
