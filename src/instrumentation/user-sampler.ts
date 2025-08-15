@@ -29,8 +29,6 @@ export class UserSampler implements Sampler {
     if ( !url ) return { decision: SamplingDecision.NOT_RECORD }
     if ( !shouldSamplePath(url) ) return { decision: SamplingDecision.NOT_RECORD }
 
-    return { decision: SamplingDecision.RECORD_AND_SAMPLED }
-
     // Get user ID from attributes (available for HTTP spans from startIncomingSpanHook)
     const userId = attributes['callmiracle.user_id'] as string
 
@@ -91,7 +89,6 @@ export class UserSampler implements Sampler {
     const name = spanName.toLowerCase()
 
     if (name.includes('http') || name.includes('request')) return config.instrumentations.http
-    if (name.includes('graphql') || name.includes('query')) return config.instrumentations.graphql
     if (name.includes('mongo')) return config.instrumentations.mongodb
     if (name.includes('webrtc') || name.includes('rtc')) return config.instrumentations.webrtc
 

@@ -12,7 +12,6 @@ export interface UserInstrumentationConfig {
   verbosityLevel: 'MINIMAL' | 'STANDARD' | 'DETAILED'
   instrumentations: {
     http: boolean
-    graphql: boolean
     mongodb: boolean
     webrtc: boolean
   }
@@ -25,7 +24,6 @@ export const DEFAULT_INSTRUMENTATION_CONFIG: UserInstrumentationConfig = {
   verbosityLevel: 'STANDARD',
   instrumentations: {
     http: true,
-    graphql: true,
     mongodb: false,           // Expensive, off by default
     webrtc: false            // Very noisy, off by default
   }
@@ -39,7 +37,6 @@ export const ADMIN_INSTRUMENTATION_CONFIG: UserInstrumentationConfig = {
   verbosityLevel: 'DETAILED',
   instrumentations: {
     http: true,
-    graphql: true,
     mongodb: true,
     webrtc: true
   }

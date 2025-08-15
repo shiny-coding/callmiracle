@@ -4,7 +4,8 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions'
 import { trace, context as otelContext, createContextKey } from '@opentelemetry/api'
-import '@/lib/pubsub' // No exports imported, just execute the module
+// Don't import anything that might load MongoDB before SDK starts!
+// import '@/lib/pubsub' // Moved to after SDK starts
 
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 import { createMiddlewareSpanName } from './utils/middleware-tracing'
@@ -58,9 +59,9 @@ function extractUserIdFromCookie(cookieHeader: string): string | null {
 // Initialize OpenTelemetry SDK with user-aware sampler
 const sdk = new NodeSDK({
   resource: resource,
-  // sampler: new UserSampler({
-  //   fallbackSamplingRate: 0.1, // 10% sampling for anonymous users
-  // }),
+  sampler: new UserSampler({
+    fallbackSamplingRate: 0.1, // 10% sampling for anonymous users
+  }),
   spanProcessor: new BatchSpanProcessor(traceExporter, {
     maxExportBatchSize: 100,
     maxQueueSize: 1000,
@@ -132,6 +133,14 @@ const sdk = new NodeSDK({
 console.log('🚀 Starting OpenTelemetry SDK...')
 sdk.start()
 console.log('✅ OpenTelemetry SDK started successfully')
+
+// NOW import anything that might load MongoDB
+try {
+  require('@/lib/pubsub')
+  console.log('📦 pubsub imported AFTER SDK start')
+} catch (error: any) {
+  console.log('⚠️ pubsub import failed (this is OK):', error.message)
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

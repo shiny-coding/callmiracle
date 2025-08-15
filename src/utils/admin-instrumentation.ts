@@ -27,7 +27,6 @@ export const INSTRUMENTATION_PRESETS: Record<string, InstrumentationPreset> = {
       verbosityLevel: 'MINIMAL',
       instrumentations: {
         http: true,
-        graphql: false,
         mongodb: false,
         webrtc: false
       }
@@ -48,7 +47,6 @@ export const INSTRUMENTATION_PRESETS: Record<string, InstrumentationPreset> = {
       verbosityLevel: 'DETAILED',
       instrumentations: {
         http: true,
-        graphql: true,
         mongodb: true,
         webrtc: false
       }
@@ -69,7 +67,6 @@ export const INSTRUMENTATION_PRESETS: Record<string, InstrumentationPreset> = {
       verbosityLevel: 'DETAILED',
       instrumentations: {
         http: true,
-        graphql: true,
         mongodb: true,
         webrtc: true
       }
@@ -157,7 +154,6 @@ export async function getInstrumentationStats(): Promise<{
   const presetDistribution: Record<string, number> = {}
   const enabledInstrumentations = {
     http: 0,
-    graphql: 0,
     mongodb: 0,
     webrtc: 0
   }
