@@ -47,6 +47,13 @@ exporters:
       exporter: false
       job: true
     
+  # Export metrics in Prometheus format
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      service: "callmiracle"
+      environment: "development"
+    
   # Debug exporter for development
   debug:
     verbosity: detailed
@@ -74,4 +81,4 @@ service:
     metrics:
       receivers: [otlp, prometheus]
       processors: [memory_limiter, resource, batch]
-      exporters: [debug] 
+      exporters: [prometheus, debug] 

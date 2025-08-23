@@ -46,4 +46,16 @@ datasources:
       search:
         hide: false
       lokiSearch:
-        datasourceUid: loki 
+        datasourceUid: loki
+
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://otel-collector:8889
+    uid: prometheus
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: GET
+      queryTimeout: 60s
+      timeInterval: 15s 

@@ -1,6 +1,8 @@
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions'
 import { trace, context as otelContext, createContextKey } from '@opentelemetry/api'
@@ -29,6 +31,19 @@ console.log('🔧 Initializing OpenTelemetry with:', {
 const traceExporter = new OTLPTraceExporter({
   url: `${otlpEndpoint}/v1/traces`,
   headers: {},
+})
+
+// Configure metrics exporter
+const metricExporter = new OTLPMetricExporter({
+  url: `${otlpEndpoint}/v1/metrics`,
+  headers: {},
+})
+
+// Configure metrics reader with 15 second interval
+const metricReader = new PeriodicExportingMetricReader({
+  exporter: metricExporter,
+  exportIntervalMillis: 15000, // Export metrics every 15 seconds
+  exportTimeoutMillis: 5000,
 })
 
 // Configure resource with proper attributes
@@ -66,6 +81,7 @@ const sdk = new NodeSDK({
     exportTimeoutMillis: 30000,
     scheduledDelayMillis: 5000,
   }),
+  metricReader: metricReader,
   instrumentations: [
     getNodeAutoInstrumentations({
       // Disable some instrumentations if needed
