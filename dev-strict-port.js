@@ -1,117 +1,19 @@
 #!/usr/bin/env node
 
-const { spawn, exec } = require('child_process');
-const net = require('net');
+const { spawn } = require('child_process');
 const path = require('path');
-const { promisify } = require('util');
-
-const execAsync = promisify(exec);
+const { checkPort, killProcessOnPort, cleanupDebugPorts, DEFAULT_DEBUG_PORTS } = require('./scripts/dev-utils');
 
 // Load environment variables
 require('dotenv').config({ path: '.env.local' });
 require('dotenv').config({ path: '.env.observability' });
 
 const PORT = process.env.PORT || 3003;
-const DEBUG_PORTS = [9229, 9230, 9231, 9232];
-
-// Check if port is in use
-function checkPort(port) {
-  return new Promise((resolve) => {
-    const tester = net.createServer()
-      .once('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-          resolve(false);
-        } else {
-          resolve(true);
-        }
-      })
-      .once('listening', () => {
-        tester.once('close', () => resolve(true)).close();
-      })
-      .listen(port);
-  });
-}
-
-// Kill process using the specified port
-async function killProcessOnPort(port) {
-  try {
-    // For Windows
-    if (process.platform === 'win32') {
-      // Find the process using the port - look for LISTENING state
-      const { stdout } = await execAsync(`netstat -ano | findstr :${port} | findstr LISTENING`);
-      const lines = stdout.trim().split('\n').filter(line => line.includes('LISTENING'));
-      
-      if (lines.length === 0) {
-        console.log(`No processes found listening on port ${port}`);
-        return;
-      }
-      
-      for (const line of lines) {
-        const parts = line.trim().split(/\s+/);
-        const pid = parts[parts.length - 1];
-        
-        if (pid && pid !== '0' && !isNaN(pid)) {
-          try {
-            // Get process name for better logging
-            const { stdout: processInfo } = await execAsync(`tasklist /FI "PID eq ${pid}" /FO CSV /NH`);
-            const processName = processInfo.split(',')[0].replace(/"/g, '');
-            
-            console.log(`🎯 Killing process ${pid} (${processName}) using port ${port}...`);
-            await execAsync(`taskkill /F /PID ${pid}`);
-            console.log(`✅ Successfully killed process ${pid}`);
-          } catch (err) {
-            console.log(`⚠️ Failed to kill process ${pid}: ${err.message}`);
-          }
-        }
-      }
-    } else {
-      // For Unix-like systems (Mac, Linux)
-      try {
-        const { stdout } = await execAsync(`lsof -ti:${port}`);
-        const pids = stdout.trim().split('\n').filter(Boolean);
-        
-        if (pids.length === 0) {
-          console.log(`No processes found using port ${port}`);
-          return;
-        }
-        
-        for (const pid of pids) {
-          console.log(`🎯 Killing process ${pid} using port ${port}...`);
-          await execAsync(`kill -9 ${pid}`);
-          console.log(`✅ Successfully killed process ${pid}`);
-        }
-      } catch (err) {
-        console.log(`⚠️ No process found using port ${port}`);
-      }
-    }
-    
-    // Wait a bit for the port to be released
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  } catch (error) {
-    console.log(`⚠️ Error checking port ${port}: ${error.message}`);
-  }
-}
 
 async function main() {
-  
-  // More aggressive debug port cleanup - kill ALL node processes using any debug port
+  // Clean up debug ports before starting
   console.log('🔍 Checking for Node.js processes on debug ports...');
-  for (const debugPort of DEBUG_PORTS) {
-    let attempts = 0;
-    while (attempts < 3) {
-      const isDebugPortAvailable = await checkPort(debugPort);
-      if (!isDebugPortAvailable) {
-        console.log(`\x1b[33mDebug port ${debugPort} is in use (attempt ${attempts + 1}). Killing process...\x1b[0m`);
-        await killProcessOnPort(debugPort);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer
-        attempts++;
-      } else {
-        break;
-      }
-    }
-  }
-  
-  // No aggressive cleanup - only kill processes we specifically detected on ports
+  await cleanupDebugPorts(DEFAULT_DEBUG_PORTS);
   
   // Check main application port
   let isPortAvailable = await checkPort(PORT);

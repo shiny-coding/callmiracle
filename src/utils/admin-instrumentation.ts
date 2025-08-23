@@ -24,7 +24,6 @@ export const INSTRUMENTATION_PRESETS: Record<string, InstrumentationPreset> = {
       samplingRate: 0.05,
       enableTracing: true,
       enableMetrics: false,
-      verbosityLevel: 'MINIMAL',
       instrumentations: {
         http: true,
         mongodb: false,
@@ -44,7 +43,6 @@ export const INSTRUMENTATION_PRESETS: Record<string, InstrumentationPreset> = {
       samplingRate: 0.5,
       enableTracing: true,
       enableMetrics: true,
-      verbosityLevel: 'DETAILED',
       instrumentations: {
         http: true,
         mongodb: true,
@@ -64,7 +62,6 @@ export const INSTRUMENTATION_PRESETS: Record<string, InstrumentationPreset> = {
       samplingRate: 1.0,
       enableTracing: true,
       enableMetrics: true,
-      verbosityLevel: 'DETAILED',
       instrumentations: {
         http: true,
         mongodb: true,
@@ -199,7 +196,6 @@ export async function getUsersWithHighInstrumentation(): Promise<Array<{
   userId: string
   email: string
   samplingRate: number
-  verbosityLevel: string
   enabledInstrumentations: string[]
   estimatedDataVolume: string
 }>> {
@@ -208,7 +204,6 @@ export async function getUsersWithHighInstrumentation(): Promise<Array<{
   const highInstrumentationUsers = await usersCollection.find({
     $or: [
       { 'instrumentationConfig.samplingRate': { $gte: 0.5 } },
-      { 'instrumentationConfig.verbosityLevel': 'DETAILED' },
       { 'instrumentationConfig.instrumentations.webrtc': true },
       { 'instrumentationConfig.instrumentations.mongodb': true }
     ]
@@ -224,7 +219,7 @@ export async function getUsersWithHighInstrumentation(): Promise<Array<{
     
     // Estimate data volume per hour
     let volumeEstimate = 'Unknown'
-    if (config.samplingRate >= 0.8 && config.verbosityLevel === 'DETAILED') {
+    if (config.samplingRate >= 0.8) {
       volumeEstimate = '2-5MB/hour'
     } else if (config.samplingRate >= 0.5) {
       volumeEstimate = '500KB-1MB/hour'
@@ -238,7 +233,6 @@ export async function getUsersWithHighInstrumentation(): Promise<Array<{
       userId: user._id,
       email: user.email,
       samplingRate: config.samplingRate,
-      verbosityLevel: config.verbosityLevel,
       enabledInstrumentations,
       estimatedDataVolume: volumeEstimate
     }
@@ -334,11 +328,6 @@ export function validateInstrumentationConfig(config: Partial<UserInstrumentatio
     }
   }
   
-  if (config.verbosityLevel !== undefined) {
-    if (!['MINIMAL', 'STANDARD', 'DETAILED'].includes(config.verbosityLevel)) {
-      errors.push('verbosityLevel must be MINIMAL, STANDARD, or DETAILED')
-    }
-  }
   
   return errors
 }

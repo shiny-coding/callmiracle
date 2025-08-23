@@ -24,28 +24,24 @@ const PRESETS = {
     samplingRate: 0.05,
     enableTracing: true,
     enableMetrics: false,
-    verbosityLevel: 'MINIMAL',
     instrumentations: { http: true, graphql: false, mongodb: false, webrtc: false }
   },
   standard: {
     samplingRate: 0.1,
     enableTracing: true,
     enableMetrics: false,
-    verbosityLevel: 'STANDARD',
     instrumentations: { http: true, graphql: true, mongodb: false, webrtc: false }
   },
   detailed: {
     samplingRate: 0.5,
     enableTracing: true,
     enableMetrics: true,
-    verbosityLevel: 'DETAILED',
     instrumentations: { http: true, graphql: true, mongodb: true, webrtc: false }
   },
   admin: {
     samplingRate: 1.0,
     enableTracing: true,
     enableMetrics: true,
-    verbosityLevel: 'DETAILED',
     instrumentations: { http: true, graphql: true, mongodb: true, webrtc: true }
   }
 }
@@ -206,7 +202,6 @@ async function getHighVolumeUsers() {
   const highVolumeUsers = await usersCollection.find({
     $or: [
       { 'instrumentationConfig.samplingRate': { $gte: 0.5 } },
-      { 'instrumentationConfig.verbosityLevel': 'DETAILED' },
       { 'instrumentationConfig.instrumentations.webrtc': true },
       { 'instrumentationConfig.instrumentations.mongodb': true }
     ]
@@ -225,7 +220,6 @@ async function getHighVolumeUsers() {
     
     console.log(`\n📧 ${user.email} (${user._id})`)
     console.log(`   Sampling: ${(config.samplingRate * 100).toFixed(1)}%`)
-    console.log(`   Verbosity: ${config.verbosityLevel}`)
     console.log(`   Enabled: ${enabled.join(', ')}`)
   })
 }

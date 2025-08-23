@@ -159,14 +159,7 @@ export type InstrumentationConfig = {
   enableTracing: Scalars['Boolean']['output'];
   instrumentations: InstrumentationComponents;
   samplingRate: Scalars['Float']['output'];
-  verbosityLevel: InstrumentationVerbosity;
 };
-
-export enum InstrumentationVerbosity {
-  Detailed = 'DETAILED',
-  Minimal = 'MINIMAL',
-  Standard = 'STANDARD'
-}
 
 export type InterestDescription = {
   __typename?: 'InterestDescription';

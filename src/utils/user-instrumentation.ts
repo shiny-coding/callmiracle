@@ -9,7 +9,6 @@ export interface UserInstrumentationConfig {
   samplingRate: number         // 0.0-1.0
   enableTracing: boolean
   enableMetrics: boolean
-  verbosityLevel: 'MINIMAL' | 'STANDARD' | 'DETAILED'
   instrumentations: {
     http: boolean
     mongodb: boolean
@@ -21,7 +20,6 @@ export const DEFAULT_INSTRUMENTATION_CONFIG: UserInstrumentationConfig = {
   samplingRate: 0.1,          // 10% sampling by default
   enableTracing: true,
   enableMetrics: false,
-  verbosityLevel: 'STANDARD',
   instrumentations: {
     http: true,
     mongodb: false,           // Expensive, off by default
@@ -34,7 +32,6 @@ export const ADMIN_INSTRUMENTATION_CONFIG: UserInstrumentationConfig = {
   samplingRate: 1.0,          // 100% sampling for admins
   enableTracing: true,
   enableMetrics: true,
-  verbosityLevel: 'DETAILED',
   instrumentations: {
     http: true,
     mongodb: true,

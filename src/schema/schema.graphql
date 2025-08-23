@@ -109,7 +109,6 @@ type InstrumentationConfig {
   samplingRate: Float!
   enableTracing: Boolean!
   enableMetrics: Boolean!
-  verbosityLevel: InstrumentationVerbosity!
   instrumentations: InstrumentationComponents!
 }
 
@@ -120,11 +119,6 @@ type InstrumentationComponents {
   webrtc: Boolean!
 }
 
-enum InstrumentationVerbosity {
-  MINIMAL
-  STANDARD
-  DETAILED
-}
 
 type CallEvent {
   type: String!
