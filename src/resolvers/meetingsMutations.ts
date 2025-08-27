@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb'
 import { MeetingStatus, NotificationType } from '@/generated/graphql';
 import { createOrUpdateMeeting } from './createOrUpdateMeeting';
 import { publishMeetingNotification } from './publishNotifications';
+import { calledMeetingsMetric } from '@/utils/metrics';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -18,6 +19,7 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
 
     const meeting = await db.collection('meetings').findOne({ _id })
     const _peerMeetingId = meeting?.peerMeetingId
+    const currentStatus = meeting?.status
 
     // Create update object with only provided fields
     const updateFields: any = {}
@@ -43,6 +45,11 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
     }
 
     console.log('Updated meeting:', updatedMeeting._id.toString(), status, lastCallTime)
+
+    // Track when meetings transition to Called status
+    if (status !== undefined && currentStatus !== status && status === MeetingStatus.Called) {
+      calledMeetingsMetric.add(1)
+    }
 
     const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Finished
     

@@ -1,9 +1,9 @@
 const { execSync } = require('child_process');
 
-// Get ports from command line arguments, default to '3000'
+// Get ports from command line arguments, default to '3003'
 const ports = process.argv.slice(2);
 if (ports.length === 0) {
-  ports.push('3000');
+  ports.push('3003');
 }
 
 console.log(`Checking for processes on ports: ${ports.join(', ')}...`);

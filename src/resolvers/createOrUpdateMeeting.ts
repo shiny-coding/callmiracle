@@ -5,6 +5,7 @@ import { BroadcastType, Meeting, MeetingOutput, MeetingStatus } from "@/generate
 import { SLOT_DURATION } from "@/utils/meetingUtils"
 import { publishBroadcastEvent } from "./notificationsMutations"
 import { tryConnectMeetings } from "./connectMeetings"
+import { createdMeetingsMetric, matchedMeetingsMetric } from "@/utils/metrics"
 
 export enum MeetingError {
   CannotCreateMeetingInternalError = 'CannotCreateMeetingInternalError',
@@ -80,11 +81,11 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
   if ( _meetingToConnectId ) {
     return await tryCreateMeetingAndConnect(_meetingToConnectId, _userId, $set, db)
   } else {
-    return await createOrUpdateMeetingAndTryJoin(_meetingId, _userId, $set, db)
+    return await createOrUpdateMeetingAndTryJoin(!input._id, _meetingId, _userId, $set, db)
   }
 }
 
-async function createOrUpdateMeetingAndTryJoin(_meetingId: ObjectId, _userId: ObjectId, $set: any, db: any): Promise<MeetingOutput> {
+async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: ObjectId, _userId: ObjectId, $set: any, db: any): Promise<MeetingOutput> {
   try {
     // Use upsert to either update existing or create new
     let meeting = await db.collection('meetings').findOneAndUpdate(
@@ -101,9 +102,19 @@ async function createOrUpdateMeetingAndTryJoin(_meetingId: ObjectId, _userId: Ob
       }
     );
     
+    if (isNew) {
+      createdMeetingsMetric.add(1)
+    }
+    
     // If this meeting doesn't have a peer yet, try to find a match
     console.log('Trying to find match for meeting: ', meeting?._id)
+    const beforeMatchStatus = meeting.status
     meeting = await tryConnectMeetings(meeting, db, _userId)
+    
+    // Track when meetings get matched
+    if (beforeMatchStatus === MeetingStatus.Seeking && meeting.status === MeetingStatus.Found) {
+      matchedMeetingsMetric.add(1)
+    }
 
     publishBroadcastEvent(BroadcastType.MeetingUpdated)
 
@@ -128,6 +139,7 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
       const meetingOutput = await doOneTry()
       if (meetingOutput) {
         if (meetingOutput.meeting) {
+          createdMeetingsMetric.add(1)
           publishBroadcastEvent(BroadcastType.MeetingUpdated)
         }
         return meetingOutput
@@ -167,6 +179,9 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
         }
 
         myMeeting = await tryConnectTwoMeetings(myMeeting, peerMeeting, overlap, db, session, NofitySelf.No)
+        
+        // Track matched meetings - both meetings are now matched
+        matchedMeetingsMetric.add(2) // Both our meeting and peer meeting
       });
 
       return { meeting: myMeeting }
