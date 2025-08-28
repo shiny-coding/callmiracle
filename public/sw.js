@@ -19,6 +19,12 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close()
 
+  // Track notification click
+  fetch('/api/track-notification-click', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }).catch(err => console.error('Failed to track notification click:', err))
+
   const targetUrl = event.notification.data?.url || '/'
   
   event.waitUntil(

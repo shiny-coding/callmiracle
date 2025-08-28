@@ -3,6 +3,11 @@ import { getNotificationMessage } from '@/utils/notificationUtils'
 import { Db, ObjectId } from 'mongodb'
 import { NotificationType } from '@/generated/graphql'
 import { getTranslations } from 'next-intl/server'
+import { 
+  pushNotificationsSentMetric, 
+  pushNotificationsDeliveredMetric, 
+  pushNotificationsFailedMetric 
+} from '@/utils/metrics'
 
 
 type PushNotification = {
@@ -44,9 +49,11 @@ const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription
 
   try {
     await webpush.sendNotification(subscription, JSON.stringify(payload))
-    console.log('Push notification sent successfully.')
+    pushNotificationsDeliveredMetric.add(1)
+    console.log('📊 Push notification delivered successfully')
   } catch (error: any) {
-    console.error('Error sending push notification:', error)
+    pushNotificationsFailedMetric.add(1)
+    console.error('📊 Push notification failed:', error)
     // Here you might want to handle expired subscriptions, for example,
     // if error.statusCode is 410, the subscription is gone and should be removed from the database.
     if (error.statusCode === 410) {
@@ -92,6 +99,7 @@ export const publishPushNotification = async (db: Db, user: any, notification: P
 
   console.log('Sending push notifications to user:', user.name + " (" + user._id.toString() + ")", body)
   for (const subscription of user.pushSubscriptions) {
+    pushNotificationsSentMetric.add(1)
     await sendSinglePushNotification(db, user._id, subscription, payload)
   }
 } 

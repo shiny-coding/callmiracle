@@ -63,6 +63,37 @@ export const totalSessionsMetric = meter.createUpDownCounter('total_sessions', {
   valueType: ValueType.INT
 })
 
+// Push Notification Metrics
+export const pushNotificationsSentMetric = meter.createUpDownCounter('push_notifications_sent', {
+  description: 'Total push notifications sent',
+  valueType: ValueType.INT
+})
+
+export const pushNotificationsDeliveredMetric = meter.createUpDownCounter('push_notifications_delivered', {
+  description: 'Push notifications successfully delivered',
+  valueType: ValueType.INT
+})
+
+export const pushNotificationsFailedMetric = meter.createUpDownCounter('push_notifications_failed', {
+  description: 'Push notifications failed to deliver',
+  valueType: ValueType.INT
+})
+
+export const pushNotificationsClickedMetric = meter.createUpDownCounter('push_notifications_clicked', {
+  description: 'Push notifications clicked/opened by users',
+  valueType: ValueType.INT
+})
+
+export const fcmTokenRegistrationsMetric = meter.createUpDownCounter('fcm_token_registrations', {
+  description: 'FCM token registration attempts',
+  valueType: ValueType.INT
+})
+
+export const fcmTokenRegistrationFailuresMetric = meter.createUpDownCounter('fcm_token_registration_failures', {
+  description: 'Failed FCM token registrations',
+  valueType: ValueType.INT
+})
+
 
 
 // Graceful shutdown handler
