@@ -4,15 +4,23 @@ import { authOptions } from '@/lib/auth'
 import clientPromise from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 import { fcmTokenRegistrationsMetric, fcmTokenRegistrationFailuresMetric } from '@/utils/metrics'
+import { getLogger } from '@/utils/logger'
 
 export async function POST(request: NextRequest) {
+  const logger = await getLogger()
+  
   try {
     fcmTokenRegistrationsMetric.add(1)
+    logger.info('FCM token registration attempt', { source: 'fcm_registration' })
     
     const session = await getServerSession(authOptions)
 
     if (!session || !session.user) {
       fcmTokenRegistrationFailuresMetric.add(1)
+      logger.warn('FCM token registration unauthorized', { 
+        hasSession: !!session, 
+        hasUser: !!session?.user 
+      })
       return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
     }
 
@@ -21,6 +29,7 @@ export async function POST(request: NextRequest) {
 
     if (!subscription) {
       fcmTokenRegistrationFailuresMetric.add(1)
+      logger.warn('FCM token registration missing subscription', { userId })
       return new NextResponse(JSON.stringify({ message: 'Subscription object is required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
     }
 
@@ -34,13 +43,17 @@ export async function POST(request: NextRequest) {
 
     if (result.modifiedCount === 0 && result.matchedCount === 0) {
       fcmTokenRegistrationFailuresMetric.add(1)
+      logger.warn('FCM token registration user not found', { userId })
       return new NextResponse(JSON.stringify({ message: 'User not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
 
     return new NextResponse(JSON.stringify({ success: true, message: 'Subscription saved.' }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   } catch (error) {
     fcmTokenRegistrationFailuresMetric.add(1)
-    console.error('📊 FCM token registration failed:', error)
+    logger.error('FCM token registration failed', { 
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return new NextResponse(JSON.stringify({ message: 'Internal Server Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 } 

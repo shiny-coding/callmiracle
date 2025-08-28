@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getLogger } from '@/utils/logger'
 
 export async function POST(request: NextRequest) {
+  const logger = await getLogger()
+  
   try {
     const { preferredServerId } = await request.json()
     
@@ -14,14 +17,19 @@ export async function POST(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'
       })
+      logger.info('Server preference set', { preferredServerId })
     } else {
       // Remove cookie for auto selection
       response.cookies.delete('preferred_server')
+      logger.info('Server preference cleared (auto mode)')
     }
     
     return response
   } catch (error) {
-    console.error('Error setting server preference:', error)
+    logger.error('Error setting server preference', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
       { error: 'Failed to set server preference' },
       { status: 500 }

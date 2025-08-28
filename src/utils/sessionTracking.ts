@@ -1,4 +1,5 @@
 import { sessionDurationHistogram, dailyActiveUsersMetric, weeklyActiveUsersMetric, totalSessionsMetric, hourlyActiveUsersMetric, timezoneUsageMetric, peakUsageWindowMetric } from './metrics'
+import { getLogger } from './logger'
 
 // In-memory session tracking (for simple implementation)
 const userSessions = new Map<string, { startTime: number, lastActivity: number }>()
@@ -55,7 +56,6 @@ export function trackUserActivity(userId: string) {
     // New session
     userSessions.set(userId, { startTime: now, lastActivity: now })
     totalSessionsMetric.add(1)
-    console.log(`📊 New session started for user: ${userId}`)
   } else {
     // Update existing session
     existingSession.lastActivity = now
@@ -90,7 +90,6 @@ export function endUserSession(userId: string) {
     const sessionDuration = (Date.now() - session.startTime) / 1000 // Convert to seconds
     sessionDurationHistogram.record(sessionDuration)
     userSessions.delete(userId)
-    console.log(`📊 Session ended for user: ${userId}, duration: ${sessionDuration}s`)
   }
 }
 

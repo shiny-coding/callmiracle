@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { getLogger } from '@/utils/logger'
 
 // 1x1 transparent PNG as base64
 const TRANSPARENT_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI/hRxuOAAAAASUVORK5CYII='
@@ -42,7 +43,12 @@ export async function GET(
       })
     }
   } catch (error) {
-    console.error('Error serving profile image:', error)
+    const logger = await getLogger()
+  
+    logger.error('Error serving profile image', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     
     // On error, also serve transparent PNG
     const transparentBuffer = Buffer.from(TRANSPARENT_PNG_BASE64, 'base64')

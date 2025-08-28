@@ -121,7 +121,7 @@ export const peakUsageWindowMetric = meter.createGauge('peak_usage_window_score'
 
 
 
-// Graceful shutdown handler
+// Graceful shutdown handler - keep console.log as logger may not be available during shutdown
 process.on('SIGTERM', () => {
   console.log('📊 Flushing metrics before shutdown...')
 })
