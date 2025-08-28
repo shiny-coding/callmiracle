@@ -5,7 +5,7 @@ import { BroadcastType, Meeting, MeetingOutput, MeetingStatus } from "@/generate
 import { SLOT_DURATION } from "@/utils/meetingUtils"
 import { publishBroadcastEvent } from "./notificationsMutations"
 import { tryConnectMeetings } from "./connectMeetings"
-import { createdMeetingsMetric, matchedMeetingsMetric } from "@/utils/metrics"
+import { createdMeetingsMetric, matchedMeetingsMetric, hourlyMeetingCreationsMetric, hourlyMatchingSuccessMetric } from "@/utils/metrics"
 
 export enum MeetingError {
   CannotCreateMeetingInternalError = 'CannotCreateMeetingInternalError',
@@ -103,7 +103,9 @@ async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: Object
     );
     
     if (isNew) {
+      const currentHour = new Date().getHours()
       createdMeetingsMetric.add(1)
+      hourlyMeetingCreationsMetric.add(1, { hour: currentHour.toString() })
     }
     
     // If this meeting doesn't have a peer yet, try to find a match
@@ -113,7 +115,9 @@ async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: Object
     
     // Track when meetings get matched
     if (beforeMatchStatus === MeetingStatus.Seeking && meeting.status === MeetingStatus.Found) {
+      const currentHour = new Date().getHours()
       matchedMeetingsMetric.add(1)
+      hourlyMatchingSuccessMetric.add(1, { hour: currentHour.toString() })
     }
 
     publishBroadcastEvent(BroadcastType.MeetingUpdated)
@@ -139,7 +143,9 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
       const meetingOutput = await doOneTry()
       if (meetingOutput) {
         if (meetingOutput.meeting) {
+          const currentHour = new Date().getHours()
           createdMeetingsMetric.add(1)
+          hourlyMeetingCreationsMetric.add(1, { hour: currentHour.toString() })
           publishBroadcastEvent(BroadcastType.MeetingUpdated)
         }
         return meetingOutput
@@ -181,7 +187,9 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
         myMeeting = await tryConnectTwoMeetings(myMeeting, peerMeeting, overlap, db, session, NofitySelf.No)
         
         // Track matched meetings - both meetings are now matched
+        const currentHour = new Date().getHours()
         matchedMeetingsMetric.add(2) // Both our meeting and peer meeting
+        hourlyMatchingSuccessMetric.add(2, { hour: currentHour.toString() })
       });
 
       return { meeting: myMeeting }

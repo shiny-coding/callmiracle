@@ -25,7 +25,6 @@ export const calledMeetingsMetric = meter.createUpDownCounter('called_meetings',
 export const callDurationHistogram = meter.createHistogram('call_duration_seconds', {
   description: 'Duration of completed calls in seconds',
   valueType: ValueType.DOUBLE,
-  boundaries: [5, 10, 30, 60, 120, 300, 600, 1800, 3600] // 5s, 10s, 30s, 1m, 2m, 5m, 10m, 30m, 1h
 })
 
 export const totalCallDurationMetric = meter.createUpDownCounter('total_call_duration_seconds', {
@@ -92,6 +91,32 @@ export const fcmTokenRegistrationsMetric = meter.createUpDownCounter('fcm_token_
 export const fcmTokenRegistrationFailuresMetric = meter.createUpDownCounter('fcm_token_registration_failures', {
   description: 'Failed FCM token registrations',
   valueType: ValueType.INT
+})
+
+// Peak Usage Time Metrics
+export const hourlyActiveUsersMetric = meter.createUpDownCounter('hourly_active_users', {
+  description: 'Number of active users by hour of day (0-23)',
+  valueType: ValueType.INT
+})
+
+export const hourlyMeetingCreationsMetric = meter.createUpDownCounter('hourly_meeting_creations', {
+  description: 'Number of meetings created by hour of day (0-23)',
+  valueType: ValueType.INT
+})
+
+export const hourlyMatchingSuccessMetric = meter.createUpDownCounter('hourly_matching_success', {
+  description: 'Number of successful matches by hour of day (0-23)',
+  valueType: ValueType.INT
+})
+
+export const timezoneUsageMetric = meter.createUpDownCounter('timezone_usage', {
+  description: 'User activity by timezone',
+  valueType: ValueType.INT
+})
+
+export const peakUsageWindowMetric = meter.createGauge('peak_usage_window_score', {
+  description: 'Peak usage window optimization score by hour',
+  valueType: ValueType.DOUBLE
 })
 
 
