@@ -6,6 +6,7 @@ import { SLOT_DURATION } from "@/utils/meetingUtils"
 import { publishBroadcastEvent } from "./notificationsMutations"
 import { tryConnectMeetings } from "./connectMeetings"
 import { createdMeetingsMetric, matchedMeetingsMetric, hourlyMeetingCreationsMetric, hourlyMatchingSuccessMetric } from "@/utils/metrics"
+import { getLogger } from "@/utils/logger"
 
 export enum MeetingError {
   CannotCreateMeetingInternalError = 'CannotCreateMeetingInternalError',
@@ -17,6 +18,7 @@ export enum MeetingError {
 }
 
 export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, { db }: Context) : Promise<MeetingOutput> => {
+  const logger = await getLogger()
   const { 
     groupId,
     userName,
@@ -86,6 +88,7 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
 }
 
 async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: ObjectId, _userId: ObjectId, $set: any, db: any): Promise<MeetingOutput> {
+  const logger = await getLogger()
   try {
     // Use upsert to either update existing or create new
     let meeting = await db.collection('meetings').findOneAndUpdate(
@@ -109,7 +112,11 @@ async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: Object
     }
     
     // If this meeting doesn't have a peer yet, try to find a match
-    console.log('Trying to find match for meeting: ', meeting?._id)
+    logger.info('Trying to find match for meeting', { 
+      meetingId: meeting?._id?.toString(),
+      userId: _userId.toString(),
+      status: meeting?.status
+    })
     const beforeMatchStatus = meeting.status
     meeting = await tryConnectMeetings(meeting, db, _userId)
     
@@ -127,7 +134,13 @@ async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: Object
       error: undefined
     }
   } catch (error) {
-    console.error('Error creating/updating meeting:', error);
+    logger.error('Error creating/updating meeting', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      meetingId: _meetingId?.toString(),
+      userId: _userId.toString(),
+      groupId: $set.groupId?.toString()
+    })
     return {
       meeting: undefined,
       error: _meetingId ? MeetingError.CannotUpdateMeetingInternalError : MeetingError.CannotCreateMeetingInternalError
@@ -136,6 +149,7 @@ async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: Object
 }
 
 async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId: ObjectId, $set: any, db: any): Promise<MeetingOutput> {
+  const logger = await getLogger()
   const session = db.client.startSession();
   const maxRetries = 5
   try {
@@ -151,7 +165,11 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
         return meetingOutput
       }
     }
-    console.error(`Failed to connect meeting after ${maxRetries} retries`)
+    logger.error('Failed to connect meeting after retries', {
+      maxRetries,
+      meetingToConnectId: _meetingToConnectId.toString(),
+      userId: _userId.toString()
+    })
     return {
       error: MeetingError.CannotConnectMeetingInternalError
     }
@@ -196,17 +214,31 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
 
     } catch (err) {
       if (err === MeetingAlreadyConnected) {
-        console.info('Our meeting was connected by someone else, retrying...')
+        logger.info('Meeting was connected by someone else, retrying', {
+          meetingToConnectId: _meetingToConnectId.toString(),
+          userId: _userId.toString()
+        })
         // our meeting was stolen by someone else, this is unlikely, but still might happen, lets retry again then
         return null;
       } else if (err === PeerAlreadyConnected) {
-        console.info('Peer meeting is already connected by someone else')
+        logger.info('Peer meeting is already connected by someone else', {
+          meetingToConnectId: _meetingToConnectId.toString(),
+          userId: _userId.toString()
+        })
         return { error: MeetingError.MeetingAlreadyConnectedError }
       } else if (err === MeetingDoNotSufficientlyOverlap) {
-        console.info('Meetings do not sufficiently overlap')
+        logger.info('Meetings do not sufficiently overlap', {
+          meetingToConnectId: _meetingToConnectId.toString(),
+          userId: _userId.toString()
+        })
         return { error: MeetingError.MeetingDoNotSufficientlyOverlapError }
       } else {
-        console.error('Error connecting meeting:', err)
+        logger.error('Error connecting meeting', {
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+          meetingToConnectId: _meetingToConnectId.toString(),
+          userId: _userId.toString()
+        })
         return { error: MeetingError.CannotConnectMeetingInternalError }
       }
     }

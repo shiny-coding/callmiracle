@@ -1,6 +1,7 @@
 import { BroadcastEvent, CallEvent, Meeting, NotificationEvent, NotificationType } from '@/generated/graphql'
 import { pubsub } from '@/lib/pubsub'
 import { mergeAsyncIterators } from '@/utils'
+import { getLogger } from '@/utils/logger'
 
 export type SubscriptionEventPayload = {
   callEvent: CallEvent
@@ -15,11 +16,16 @@ export type PubSubEvents = {
 
 export const subscriptions = {
   onSubscriptionEvent: {
-    subscribe: (_: any, { userId }: { userId: string }) => {
+    subscribe: async (_: any, { userId }: { userId: string }) => {
+      const logger = await getLogger()
       // Subscribe to user-specific topic
       const userTopic = `SUBSCRIPTION_EVENT:${userId}`
       const globalTopic = `SUBSCRIPTION_EVENT:ALL`
-      console.log('Subscribing to topics:', userTopic, globalTopic)
+      logger.info('User subscribing to real-time events', {
+        userId,
+        userTopic,
+        globalTopic
+      })
       
       // Create async iterators for both topics
       const userIterator = pubsub.asyncIterator(userTopic)
@@ -27,36 +33,45 @@ export const subscriptions = {
       
       return mergeAsyncIterators([userIterator, globalIterator])
     },
-    resolve: (payload: SubscriptionEventPayload) => {
+    resolve: async (payload: SubscriptionEventPayload) => {
+      const logger = await getLogger()
       if ( payload.notificationEvent ) {
         if (payload.notificationEvent.type === NotificationType.MessageReceived) {
-          console.log('Resolving message notification:', {
-            type: payload.notificationEvent.type,
+          logger.info('Resolving message notification event', {
+            notificationType: payload.notificationEvent.type,
             senderName: payload.notificationEvent.peerUserName,
-            senderId: payload.notificationEvent.peerUserId,
-            messageText: payload.notificationEvent.messageText
+            senderId: payload.notificationEvent.peerUserId?.toString(),
+            messageLength: payload.notificationEvent.messageText?.length,
+            conversationId: payload.notificationEvent.conversationId?.toString()
           })
         } else {
-          console.log('Resolving meeting notification:', {
-            type: payload.notificationEvent.type,
-            meetingId: payload.notificationEvent.meeting?._id,
-            userName: payload.notificationEvent.peerUserName,
-            userId: payload.notificationEvent.peerUserId
+          logger.info('Resolving meeting notification event', {
+            notificationType: payload.notificationEvent.type,
+            meetingId: payload.notificationEvent.meeting?._id?.toString(),
+            peerUserName: payload.notificationEvent.peerUserName,
+            peerUserId: payload.notificationEvent.peerUserId?.toString()
           })
         }
       } else if ( payload.callEvent ) {
-        console.log('Resolving call request:', {
-          type: payload.callEvent.type,
-          fromUser: payload.callEvent.from?.name,
-          toUser: payload.callEvent.userId,
-          callId: payload.callEvent.callId
+        logger.info('Resolving call event', {
+          callType: payload.callEvent.type,
+          fromUserName: payload.callEvent.from?.name,
+          fromUserId: payload.callEvent.from?._id?.toString(),
+          targetUserId: payload.callEvent.userId?.toString(),
+          callId: payload.callEvent.callId?.toString(),
+          meetingId: payload.callEvent.meetingId?.toString()
         })
       } else if ( payload.broadcastEvent ) {
-        console.log('Resolving broadcast event:', {
-          type: payload.broadcastEvent.type
+        logger.info('Resolving broadcast event', {
+          broadcastType: payload.broadcastEvent.type
         })
       } else {
-        console.log('Resolving unknown event:', payload)
+        logger.warn('Resolving unknown subscription event', {
+          hasNotificationEvent: !!payload.notificationEvent,
+          hasCallEvent: !!payload.callEvent,
+          hasBroadcastEvent: !!payload.broadcastEvent,
+          payloadKeys: Object.keys(payload)
+        })
       }
       return payload
     }

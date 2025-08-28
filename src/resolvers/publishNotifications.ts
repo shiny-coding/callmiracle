@@ -2,10 +2,12 @@ import { ObjectId } from 'mongodb'
 import { NotificationType } from '@/generated/graphql';
 import { pubsub } from '@/lib/pubsub';
 import { publishPushNotification } from './pushNotifications';
+import { getLogger } from '@/utils/logger';
 
 
 // Helper function to publish meeting disconnection notification
 export async function publishMeetingNotification(notificationType: NotificationType, db: any, peerMeeting: any, meeting: any) {
+  const logger = await getLogger()
   
   // Get the peer user for notification
   const peerUser = await db.collection('users').findOne({ _id: peerMeeting.userId })
@@ -29,7 +31,13 @@ export async function publishMeetingNotification(notificationType: NotificationT
   const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
   pubsub.publish(topic, { notificationEvent: { type: notificationType, meeting: peerMeeting, user: peerUser, peerUserName: meeting.userName } })
   
-  console.log(`Published ${notificationType} event for peer:`, { name: peerUser.name, userId: peerMeeting.userId.toString() })
+  logger.info('Published meeting notification event', {
+    notificationType,
+    peerUserName: peerUser.name,
+    peerUserId: peerMeeting.userId.toString(),
+    meetingId: peerMeeting._id.toString(),
+    initiatorUserName: meeting.userName
+  })
 
   await publishPushNotification(db, peerUser, {
     type: notificationType,
@@ -40,6 +48,7 @@ export async function publishMeetingNotification(notificationType: NotificationT
 
 // Helper function to publish message notification (no DB storage, just real-time notification)
 export async function publishMessageNotification(db: any, targetUserId: ObjectId, senderUser: any, messageText: string, conversationId: ObjectId) {
+  const logger = await getLogger()
   
   // Get the target user for notification
   const targetUser = await db.collection('users').findOne({ _id: targetUserId })
@@ -61,5 +70,12 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
     }
   })
   
-  console.log(`Published MESSAGE_RECEIVED event for user:`, { name: targetUser.name, userId: targetUserId.toString() })
+  logger.info('Published message notification event', {
+    targetUserName: targetUser.name,
+    targetUserId: targetUserId.toString(),
+    senderUserName: senderUser.name,
+    senderId: senderUser._id.toString(),
+    messageLength: messageText.length,
+    conversationId: conversationId.toString()
+  })
 }

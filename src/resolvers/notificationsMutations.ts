@@ -2,16 +2,22 @@ import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { pubsub } from '@/lib/pubsub'
 import { BroadcastType } from '@/generated/graphql'
+import { getLogger } from '@/utils/logger'
 
-export function publishBroadcastEvent(broadcastType: BroadcastType) {
+export async function publishBroadcastEvent(broadcastType: BroadcastType) {
+  const logger = await getLogger()
   const topic = `SUBSCRIPTION_EVENT:ALL`
   pubsub.publish(topic, { broadcastEvent: { type: broadcastType } })
   
-  console.log(`Publishing broadcast event ${broadcastType} for all users`)
+  logger.info('Publishing broadcast event for all users', {
+    broadcastType,
+    topic
+  })
 }
 
 export const notificationsMutations = {
   setNotificationSeen: async (_: any, { id }: { id: string }, { db }: Context) => {
+    const logger = await getLogger()
     try {
       const _id = new ObjectId(id)
       const result = await db.collection('notifications').findOneAndUpdate(
@@ -29,12 +35,17 @@ export const notificationsMutations = {
         _id: result._id.toString()
       }
     } catch (error) {
-      console.error('Error updating notification:', error)
+      logger.error('Error updating notification', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        notificationId: id
+      })
       throw new Error('Failed to update notification')
     }
   },
   
   setAllNotificationsSeen: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+    const logger = await getLogger()
     try {
       const _userId = new ObjectId(userId)
       
@@ -50,7 +61,11 @@ export const notificationsMutations = {
       
       return result.modifiedCount > 0
     } catch (error) {
-      console.error('Error marking all notifications as seen:', error)
+      logger.error('Error marking all notifications as seen', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId
+      })
       throw new Error('Failed to mark all notifications as seen')
     }
   }

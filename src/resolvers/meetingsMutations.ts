@@ -4,6 +4,7 @@ import { MeetingStatus, NotificationType } from '@/generated/graphql';
 import { createOrUpdateMeeting } from './createOrUpdateMeeting';
 import { publishMeetingNotification } from './publishNotifications';
 import { calledMeetingsMetric, cancelledMeetingsMetric, deletedMeetingsMetric } from '@/utils/metrics';
+import { getLogger } from '@/utils/logger';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -13,6 +14,7 @@ interface UpdateMeetingStatusInput {
 }
 
 const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStatusInput }, { db }: Context) => {
+  const logger = await getLogger()
   try {
     const { status, lastCallTime } = input
     const _id = new ObjectId(input._id)
@@ -40,11 +42,20 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
     )
     
     if (!updatedMeeting) {
-      console.error('Meeting not found', { meetingId: _id.toString() })
+      logger.error('Meeting not found for status update', { 
+        meetingId: _id.toString(),
+        requestedStatus: status,
+        requestedLastCallTime: lastCallTime
+      })
       throw new Error('Meeting not found ' + _id.toString())
     }
 
-    console.log('Updated meeting:', updatedMeeting._id.toString(), status, lastCallTime)
+    logger.info('Updated meeting status', { 
+      meetingId: updatedMeeting._id.toString(),
+      newStatus: status,
+      lastCallTime,
+      previousStatus: currentStatus
+    })
 
     // Track when meetings transition to Called status
     if (status !== undefined && currentStatus !== status && status === MeetingStatus.Called) {
@@ -69,7 +80,11 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
         updateFields.status = peerMeeting?.linkedToPeer ? MeetingStatus.Finished : MeetingStatus.Seeking
         updateFields.peerMeetingId = null
         updateFields.startTime = null
-        console.log('Disconnecting peer:', _peerMeetingId.toString())
+        logger.info('Disconnecting peer meeting', { 
+          peerMeetingId: _peerMeetingId.toString(),
+          newPeerStatus: updateFields.status,
+          linkedToPeer: peerMeeting?.linkedToPeer
+        })
       }
 
       if (peerMeeting) {
@@ -78,7 +93,10 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
           { _id: _peerMeetingId },
           { $set: updateFields }
         )
-        console.log('Updated peer meeting:', _peerMeetingId.toString(), updateFields)
+        logger.info('Updated peer meeting', { 
+          peerMeetingId: _peerMeetingId.toString(),
+          updateFields
+        })
         
         if ( status === MeetingStatus.Finished ) {
           await publishMeetingNotification(NotificationType.MeetingFinished, db, peerMeeting, updatedMeeting)
@@ -91,7 +109,12 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
     
     return updatedMeeting
   } catch (error) {
-    console.error('Error updating meeting status:', error)
+    logger.error('Error updating meeting status', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      meetingId: input._id,
+      requestedStatus: input.status
+    })
     throw error
   }
 }
@@ -100,6 +123,7 @@ export const meetingsMutations = {
   createOrUpdateMeeting: createOrUpdateMeeting,
 
   deleteMeeting: async (_: any, { id }: { id: string }, context: any) => {
+    const logger = await getLogger()
     try {
       const { db } = context
       const _id = new ObjectId(id)
@@ -142,9 +166,18 @@ export const meetingsMutations = {
       // Delete the meeting
       await db.collection('meetings').deleteOne({ _id })
       
+      logger.info('Meeting deleted successfully', {
+        meetingId: id,
+        hadPeer: !!meeting.peerMeetingId
+      })
+      
       return { _id }
     } catch (error) {
-      console.error('Error deleting meeting:', error)
+      logger.error('Error deleting meeting', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        meetingId: id
+      })
       throw error
     }
   },

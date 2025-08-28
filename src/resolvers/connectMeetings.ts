@@ -2,6 +2,7 @@ import { Meeting, MeetingStatus, NotificationType, User } from "@/generated/grap
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./publishNotifications";
 import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, getLateAllowance, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
+import { getLogger } from "@/utils/logger"
 
 // Helper function to find overlapping time ranges
 export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[], minDurationM: number): TimeRange[] => {
@@ -124,6 +125,7 @@ export const PeerAlreadyConnected = Symbol('PeerAlreadyConnected');
 export const MeetingDoNotSufficientlyOverlap = Symbol('MeetingDoNotSufficientlyOverlap');
 
 export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectId) {
+  const logger = await getLogger()
   // Try to find a matching meeting
   const now = new Date().getTime();
   const potentialPeers = await db.collection('meetings').find({
@@ -171,7 +173,12 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
 
   let peersToChooseFrom = peersWithHourOverlap.length ? peersWithHourOverlap : peersWithAnyOverlap;
   if (peersToChooseFrom.length === 0) {
-    console.log('No peers to choose from')
+    logger.info('No peers to choose from for meeting', {
+      meetingId: meeting._id?.toString(),
+      userId: _userId.toString(),
+      potentialPeersCount: potentialPeers.length,
+      peersWithAnyOverlap: peersWithAnyOverlap.length
+    })
     return meeting;
   }
 
@@ -196,13 +203,20 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
           // Our meeting was already connected, get the new data
           updatedMeeting = await db.collection('meetings').findOne({ _id: meeting._id });
 
-          console.log('Meeting was connected by another process: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
+          logger.info('Meeting was connected by another process', {
+            meetingId: updatedMeeting._id?.toString(),
+            peerMeetingId: updatedMeeting.peerMeetingId?.toString()
+          });
           break;
 
         } else if (err === PeerAlreadyConnected) {
 
           const peerIdToRemove = peersToChooseFrom[randomIndex].peer._id;
-          console.log('Peer was connected by another process, removing it from consideration: ', peerIdToRemove.toString());
+          logger.info('Peer was connected by another process, removing it from consideration', {
+            peerIdToRemove: peerIdToRemove.toString(),
+            remainingPeersWithHourOverlap: peersWithHourOverlap.length,
+            remainingPeersWithAnyOverlap: peersWithAnyOverlap.length
+          });
 
           peersWithHourOverlap = peersWithHourOverlap.filter(p => !p.peer._id.equals(peerIdToRemove));
           peersWithAnyOverlap = peersWithAnyOverlap.filter(p => !p.peer._id.equals(peerIdToRemove));
@@ -229,6 +243,7 @@ export enum NofitySelf { No, Yes }
 
 // throws MeetingAlreadyConnected or PeerAlreadyConnected
 export async function tryConnectTwoMeetings(meeting: Meeting, peerMeeting: Meeting, overlap: TimeRange[], db: any, session: any, notifySelf: NofitySelf) {
+  const logger = await getLogger()
 
   // Determine the best start time
   const bestStartTime = determineBestStartTime(overlap, meeting, peerMeeting);
@@ -275,7 +290,11 @@ export async function tryConnectTwoMeetings(meeting: Meeting, peerMeeting: Meeti
   );
 
   // If we get here, transaction was successful
-  console.log('Connected meetings: ', updatedMeeting._id, updatedMeeting.peerMeetingId);
+  logger.info('Successfully connected meetings', {
+    meetingId: updatedMeeting._id?.toString(),
+    peerMeetingId: updatedMeeting.peerMeetingId?.toString(),
+    startTime: updatedMeeting.startTime
+  });
 
   setTimeout(async () => {
     await publishMeetingNotification(NotificationType.MeetingConnected, db, peerMeeting, updatedMeeting)

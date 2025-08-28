@@ -1,12 +1,14 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { GraphQLError } from 'graphql'
+import { getLogger } from '@/utils/logger'
 
 export const deleteUserMutation = async (
   _: any,
   { userId }: { userId: string },
   { db, session }: Context
 ) => {
+  const logger = await getLogger()
   if (!session?.user?.id) {
     throw new GraphQLError('User is not authenticated', {
       extensions: {
@@ -64,11 +66,21 @@ export const deleteUserMutation = async (
     // Delete associated accounts (Google, Apple, etc.) from the 'accounts' collection
     const accountDeleteResult = await db.collection('accounts').deleteMany({ userId: _id })
 
-    console.log(`Marked user ${_id} as deleted. Removed ${accountDeleteResult.deletedCount} associated account links.`)
+    logger.info('User account marked as deleted', {
+      userId: _id.toString(),
+      accountLinksRemoved: accountDeleteResult.deletedCount,
+      userUpdateMatched: userUpdateResult.matchedCount,
+      userUpdateModified: userUpdateResult.modifiedCount
+    })
 
     return true
   } catch (error) {
-    console.error('Error marking user as deleted:', error)
+    logger.error('Error marking user as deleted', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      isGraphQLError: error instanceof GraphQLError
+    })
     if (error instanceof GraphQLError) {
       throw error
     }

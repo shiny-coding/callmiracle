@@ -8,6 +8,7 @@ import {
   pushNotificationsDeliveredMetric, 
   pushNotificationsFailedMetric 
 } from '@/utils/metrics'
+import { getLogger } from '@/utils/logger'
 
 
 type PushNotification = {
@@ -37,8 +38,13 @@ if (vapidKeys.publicKey && vapidKeys.privateKey) {
 }
 
 const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription: any, payload: any) => {
+  const logger = await getLogger()
   if (!subscription || !subscription.endpoint) {
-    console.log('User does not have a push subscription.')
+    logger.warn('User does not have a push subscription', {
+      userId: userId.toString(),
+      hasSubscription: !!subscription,
+      hasEndpoint: !!subscription?.endpoint
+    })
     return
   }
 
@@ -50,14 +56,22 @@ const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription
   try {
     await webpush.sendNotification(subscription, JSON.stringify(payload))
     pushNotificationsDeliveredMetric.add(1)
-    console.log('📊 Push notification delivered successfully')
+    logger.info('Push notification delivered successfully', {
+      userId: userId.toString(),
+      endpoint: subscription.endpoint,
+      payloadType: payload.data?.url ? 'with_url' : 'basic'
+    })
   } catch (error: any) {
     pushNotificationsFailedMetric.add(1)
     console.error('📊 Push notification failed:', error)
     // Here you might want to handle expired subscriptions, for example,
     // if error.statusCode is 410, the subscription is gone and should be removed from the database.
     if (error.statusCode === 410) {
-      console.log('Subscription has expired or is no longer valid, removing from DB.')
+      logger.info('Push subscription expired, removing from database', {
+        userId: userId.toString(),
+        endpoint: subscription.endpoint,
+        statusCode: error.statusCode
+      })
       await db.collection('users').updateOne(
         { _id: userId },
         { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } } as any
@@ -67,8 +81,15 @@ const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription
 }
 
 export const publishPushNotification = async (db: Db, user: any, notification: PushNotification) => {
+  const logger = await getLogger()
   if (!user || !user.pushSubscriptions || !Array.isArray(user.pushSubscriptions) || user.pushSubscriptions.length === 0) {
-    console.log(`User ${user?._id} not found or has no push subscriptions.`)
+    logger.info('User not found or has no push subscriptions', {
+      userId: user?._id?.toString(),
+      hasUser: !!user,
+      hasPushSubscriptions: !!user?.pushSubscriptions,
+      subscriptionCount: user?.pushSubscriptions?.length || 0,
+      notificationType: notification.type
+    })
     return
   }
 
@@ -97,7 +118,14 @@ export const publishPushNotification = async (db: Db, user: any, notification: P
     }
   }
 
-  console.log('Sending push notifications to user:', user.name + " (" + user._id.toString() + ")", body)
+  logger.info('Sending push notifications to user', {
+    userName: user.name,
+    userId: user._id.toString(),
+    notificationBody: body,
+    notificationType: notification.type,
+    subscriptionCount: user.pushSubscriptions.length,
+    locale: userLocale
+  })
   for (const subscription of user.pushSubscriptions) {
     pushNotificationsSentMetric.add(1)
     await sendSinglePushNotification(db, user._id, subscription, payload)

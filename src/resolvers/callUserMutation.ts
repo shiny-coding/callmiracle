@@ -3,9 +3,11 @@ import { pubsub } from '@/lib/pubsub'
 import { ObjectId } from 'mongodb'
 import { Call, CallEvent, User } from '@/generated/graphql'
 import { callDurationHistogram, totalCallDurationMetric } from '@/utils/metrics'
+import { getLogger } from '@/utils/logger'
 
 // Helper function to publish meeting discall notification
 export async function publishCallNotification(notificationType: string, db: any, initiator: User, targetUser: User, call: Call) {
+  const logger = await getLogger()
   
   // Create a notification in the database
   await db.collection('notifications').insertOne({
@@ -21,10 +23,17 @@ export async function publishCallNotification(notificationType: string, db: any,
   const topic = `SUBSCRIPTION_EVENT:${targetUser._id.toString()}`
   pubsub.publish(topic, { notificationEvent: { type: notificationType, call, user: targetUser, peerUserName: initiator.name } })
   
-  console.log(`Published ${notificationType} event for peer:`, { name: targetUser.name, userId: targetUser._id.toString() })
+  logger.info('Published call notification event', {
+    notificationType,
+    targetUserName: targetUser.name,
+    targetUserId: targetUser._id.toString(),
+    initiatorName: initiator.name,
+    callId: call._id?.toString()
+  })
 }
 
 export const callUserMutation = async (_: any, { input }: { input: any }, { db }: Context) => {
+  const logger = await getLogger()
   const { type, offer, answer, iceCandidate, videoEnabled, audioEnabled, quality } = input
   const _initiatorUserId = new ObjectId(input.initiatorUserId)
   let _callId = input.callId ? new ObjectId(input.callId) : null
@@ -45,7 +54,13 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     console.error('no user found for target', _targetUserId.toString())
     return null
   }      
-  console.log('callUser:', { type, targetName: targetUser.name, initiatorName: initiator.name })
+  logger.info('Processing call user mutation', {
+    type,
+    targetName: targetUser.name,
+    initiatorName: initiator.name,
+    callId: _callId?.toString(),
+    meetingId: _meetingId?.toString()
+  })
 
   // Only handle calls table for specific types
   if (type === 'initiate') {
@@ -120,12 +135,25 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
         );
         
         if (callDurationS > 0) {
-          console.log(`Updated meeting ${_meetingId.toString()} duration to ${updateFields.totalDurationS}s`);
+          logger.info('Updated meeting duration after call', {
+            meetingId: _meetingId.toString(),
+            totalDurationS: updateFields.totalDurationS,
+            addedDurationS: callDurationS
+          });
         } else if (type === 'expired') {
-          console.log(`Updated meeting ${_meetingId.toString()} last missed call time to ${updateFields.lastMissedCallTime}`);
+          logger.info('Updated meeting missed call time', {
+            meetingId: _meetingId.toString(),
+            lastMissedCallTime: updateFields.lastMissedCallTime
+          });
         }
       } catch (err) {
-        console.error('Failed to update meeting duration:', err);
+        logger.error('Failed to update meeting duration', {
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+          meetingId: _meetingId?.toString(),
+          callType: type,
+          callDurationS
+        });
       }
     }
   }
@@ -163,7 +191,15 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     ...additionalFields[type]
   } as unknown as CallEvent
 
-  console.log('Publishing call request:', { callEvent })
+  logger.info('Publishing call event', {
+    type: callEvent.type,
+    callId: callEvent.callId?.toString(),
+    meetingId: callEvent.meetingId?.toString(),
+    targetUserId: _targetUserId.toString(),
+    hasOffer: !!callEvent.offer,
+    hasAnswer: !!callEvent.answer,
+    hasIceCandidate: !!callEvent.iceCandidate
+  })
   
   pubsub.publish(topic, { callEvent })
 
