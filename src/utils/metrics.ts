@@ -43,6 +43,26 @@ export const deletedMeetingsMetric = meter.createUpDownCounter('deleted_meetings
   valueType: ValueType.INT
 })
 
+export const sessionDurationHistogram = meter.createHistogram('session_duration_seconds', {
+  description: 'User session duration in seconds',
+  valueType: ValueType.DOUBLE
+})
+
+export const dailyActiveUsersMetric = meter.createUpDownCounter('daily_active_users', {
+  description: 'Number of unique users active today',
+  valueType: ValueType.INT
+})
+
+export const weeklyActiveUsersMetric = meter.createUpDownCounter('weekly_active_users', {
+  description: 'Number of unique users active this week',
+  valueType: ValueType.INT
+})
+
+export const totalSessionsMetric = meter.createUpDownCounter('total_sessions', {
+  description: 'Total number of user sessions',
+  valueType: ValueType.INT
+})
+
 
 
 // Graceful shutdown handler

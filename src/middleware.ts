@@ -6,6 +6,7 @@ import { getCurrentLocale } from './utils'
 import { routing } from './i18n/routing'
 import { generateShortRequestId } from './utils/commonUtils'
 import { decodeJWTPayload, isJWTExpired } from './utils/jwt'
+import { trackUserActivity } from './utils/sessionTracking'
 
 // Create internationalization middleware
 const intlMiddleware = createIntlMiddleware(routing)
@@ -73,6 +74,8 @@ export async function middleware(request: NextRequest) {
     if (token) {
       if (token.id) {
         response.headers.set('x-user-id', token.id)
+        // Track user activity for session and active user metrics
+        trackUserActivity(token.id)
       }
       if (token.name) {
         response.headers.set('x-user-name', token.name)

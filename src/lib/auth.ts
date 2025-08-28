@@ -11,6 +11,7 @@ import NextAuth from "next-auth"
 import { cookies } from 'next/headers'
 import { defaultLogLevel, defaultClientLogLevel } from "@/utils/logUtils"
 import { isBuilding } from '@/utils'
+import { endUserSession } from '@/utils/sessionTracking'
 
 // Build-time mock adapter
 const mockAdapter = {
@@ -250,8 +251,14 @@ export const authOptions: NextAuthOptions = {
           console.error(`[Event: signIn] Error augmenting user ${user.id}:`, error);
         }
       }
+    },
+    async signOut({ token }) {
+      if (token?.id) {
+        endUserSession(token.id as string)
+        console.log(`📊 Session ended for user: ${token.id}`)
+      }
     }
-    // You can add other events like signOut, createUser, updateUser, linkAccount, session
+    // You can add other events like createUser, updateUser, linkAccount, session
   },
   cookies: {
     pkceCodeVerifier: {
