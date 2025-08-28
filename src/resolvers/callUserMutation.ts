@@ -2,6 +2,7 @@ import { Context } from './types'
 import { pubsub } from '@/lib/pubsub'
 import { ObjectId } from 'mongodb'
 import { Call, CallEvent, User } from '@/generated/graphql'
+import { callDurationHistogram, totalCallDurationMetric } from '@/utils/metrics'
 
 // Helper function to publish meeting discall notification
 export async function publishCallNotification(notificationType: string, db: any, initiator: User, targetUser: User, call: Call) {
@@ -90,6 +91,12 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       { $set: updateFields },
       { returnDocument: 'after' }
     ) as Call|null
+
+    // Record call duration metrics when call finishes successfully
+    if (callDurationS > 0) {
+      callDurationHistogram.record(callDurationS)
+      totalCallDurationMetric.add(callDurationS)
+    }
 
     if (!_meetingId && type === 'expired' && call?.type !== 'connected') {
       await publishCallNotification('missed-call', db, initiator, targetUser, call as Call)

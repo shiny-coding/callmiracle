@@ -22,6 +22,17 @@ export const calledMeetingsMetric = meter.createUpDownCounter('called_meetings',
   valueType: ValueType.INT
 })
 
+export const callDurationHistogram = meter.createHistogram('call_duration_seconds', {
+  description: 'Duration of completed calls in seconds',
+  valueType: ValueType.DOUBLE,
+  boundaries: [5, 10, 30, 60, 120, 300, 600, 1800, 3600] // 5s, 10s, 30s, 1m, 2m, 5m, 10m, 30m, 1h
+})
+
+export const totalCallDurationMetric = meter.createUpDownCounter('total_call_duration_seconds', {
+  description: 'Total cumulative call duration in seconds',
+  valueType: ValueType.DOUBLE
+})
+
 
 
 // Graceful shutdown handler
