@@ -938,6 +938,163 @@
       ],
       "title": "Call Duration Distribution (Pie)",
       "type": "piechart"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.15
+              },
+              {
+                "color": "red",
+                "value": 0.3
+              }
+            ]
+          },
+          "unit": "percentunit",
+          "max": 1,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 28
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "(cancelled_meetings{service=\"callmiracle\"} + deleted_meetings{service=\"callmiracle\"}) / (matched_meetings{service=\"callmiracle\"} + 0.0001)",
+          "interval": "",
+          "legendFormat": "Cancellation Rate",
+          "refId": "A"
+        }
+      ],
+      "title": "Meeting Cancellation Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 28
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "cancelled_meetings{service=\"callmiracle\"}",
+          "interval": "",
+          "legendFormat": "Meetings Cancelled",
+          "refId": "A"
+        },
+        {
+          "expr": "deleted_meetings{service=\"callmiracle\"}",
+          "interval": "",
+          "legendFormat": "Meetings Deleted",
+          "refId": "B"
+        },
+        {
+          "expr": "matched_meetings{service=\"callmiracle\"} - cancelled_meetings{service=\"callmiracle\"} - deleted_meetings{service=\"callmiracle\"}",
+          "interval": "",
+          "legendFormat": "Meetings Retained",
+          "refId": "C"
+        }
+      ],
+      "title": "Meeting Retention vs Cancellation",
+      "type": "timeseries"
     }
   ],
   "schemaVersion": 30,

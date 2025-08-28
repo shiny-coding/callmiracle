@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb'
 import { MeetingStatus, NotificationType } from '@/generated/graphql';
 import { createOrUpdateMeeting } from './createOrUpdateMeeting';
 import { publishMeetingNotification } from './publishNotifications';
-import { calledMeetingsMetric } from '@/utils/metrics';
+import { calledMeetingsMetric, cancelledMeetingsMetric, deletedMeetingsMetric } from '@/utils/metrics';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -49,6 +49,11 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
     // Track when meetings transition to Called status
     if (status !== undefined && currentStatus !== status && status === MeetingStatus.Called) {
       calledMeetingsMetric.add(1)
+    }
+
+    // Track when meetings are cancelled (only count matched meetings for cancellation rate)
+    if (currentStatus !== status && status === MeetingStatus.Cancelled && _peerMeetingId) {
+      cancelledMeetingsMetric.add(1)
     }
 
     const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Finished
@@ -129,6 +134,11 @@ export const meetingsMutations = {
         }
       }
       
+      // Track meeting deletion (affects peer)
+      if (meeting.peerMeetingId) {
+        deletedMeetingsMetric.add(1)
+      }
+
       // Delete the meeting
       await db.collection('meetings').deleteOne({ _id })
       

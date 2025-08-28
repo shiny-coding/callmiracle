@@ -33,6 +33,16 @@ export const totalCallDurationMetric = meter.createUpDownCounter('total_call_dur
   valueType: ValueType.DOUBLE
 })
 
+export const cancelledMeetingsMetric = meter.createUpDownCounter('cancelled_meetings', {
+  description: 'Number of meetings cancelled after matching',
+  valueType: ValueType.INT
+})
+
+export const deletedMeetingsMetric = meter.createUpDownCounter('deleted_meetings', {
+  description: 'Number of meetings deleted (with peer disconnection)',
+  valueType: ValueType.INT
+})
+
 
 
 // Graceful shutdown handler
