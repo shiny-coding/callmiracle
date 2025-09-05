@@ -1,9 +1,9 @@
 import { Context } from './types'
-import { pubsub } from '@/lib/pubsub'
 import { ObjectId } from 'mongodb'
-import { Call, CallEvent, User } from '@/generated/graphql'
+import { Call, CallEvent, NotificationType, User } from '@/generated/graphql'
 import { callDurationHistogram, totalCallDurationMetric } from '@/utils/metrics'
 import { getLogger } from '@/utils/logger'
+import { publishSubscriptionEvent } from '@/utils/pubsubHelper'
 
 // Helper function to publish meeting discall notification
 export async function publishCallNotification(notificationType: string, db: any, initiator: User, targetUser: User, call: Call) {
@@ -21,7 +21,10 @@ export async function publishCallNotification(notificationType: string, db: any,
   
   // Publish notification event
   const topic = `SUBSCRIPTION_EVENT:${targetUser._id.toString()}`
-  pubsub.publish(topic, { notificationEvent: { type: notificationType, call, user: targetUser, peerUserName: initiator.name } })
+  publishSubscriptionEvent(topic, { 
+    notificationEvent: { type: notificationType as NotificationType, peerUserName: initiator.name },
+    logger 
+  })
   
   logger.info('Published call notification event', {
     notificationType,
@@ -201,7 +204,7 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     hasIceCandidate: !!callEvent.iceCandidate
   })
   
-  pubsub.publish(topic, { callEvent })
+  publishSubscriptionEvent(topic, { callEvent, logger })
 
   return callEvent
 }

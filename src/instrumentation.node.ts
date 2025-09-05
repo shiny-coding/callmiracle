@@ -151,7 +151,6 @@ console.log('✅ OpenTelemetry SDK started successfully')
 // NOW import anything that might load MongoDB
 try {
   require('@/lib/pubsub')
-  console.log('📦 pubsub imported AFTER SDK start')
 } catch (error: any) {
   console.log('⚠️ pubsub import failed (this is OK):', error.message)
 }

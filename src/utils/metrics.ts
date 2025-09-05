@@ -114,14 +114,17 @@ export const timezoneUsageMetric = meter.createUpDownCounter('timezone_usage', {
   valueType: ValueType.INT
 })
 
-export const peakUsageWindowMetric = meter.createGauge('peak_usage_window_score', {
+export const peakUsageWindowMetric = meter.createHistogram('peak_usage_window_score', {
   description: 'Peak usage window optimization score by hour',
   valueType: ValueType.DOUBLE
 })
 
 
 
-// Graceful shutdown handler - keep console.log as logger may not be available during shutdown
-process.on('SIGTERM', () => {
-  console.log('📊 Flushing metrics before shutdown...')
-})
+// // Graceful shutdown handler - keep console.log as logger may not be available during shutdown
+// // Only set up in Node.js environment (not Edge Runtime)
+// if (typeof process !== 'undefined' && process.on) {
+//   process.on('SIGTERM', () => {
+//     console.log('📊 Flushing metrics before shutdown...')
+//   })
+// }

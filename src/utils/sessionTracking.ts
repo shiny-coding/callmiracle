@@ -1,5 +1,12 @@
-import { sessionDurationHistogram, dailyActiveUsersMetric, weeklyActiveUsersMetric, totalSessionsMetric, hourlyActiveUsersMetric, timezoneUsageMetric, peakUsageWindowMetric } from './metrics'
-import { getLogger } from './logger'
+import { 
+  sessionDurationHistogram, 
+  dailyActiveUsersMetric, 
+  weeklyActiveUsersMetric, 
+  totalSessionsMetric, 
+  hourlyActiveUsersMetric, 
+  timezoneUsageMetric, 
+  peakUsageWindowMetric 
+} from './metrics-edge-safe'
 
 // In-memory session tracking (for simple implementation)
 const userSessions = new Map<string, { startTime: number, lastActivity: number }>()
@@ -80,8 +87,12 @@ export function trackUserActivity(userId: string) {
   }
 
   // Track timezone usage - get timezone from user's local time
-  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  timezoneUsageMetric.add(1, { timezone: userTimezone })
+  try {
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    timezoneUsageMetric.add(1, { timezone: userTimezone })
+  } catch (error) {
+    // Intl may not be available in all runtime environments
+  }
 }
 
 export function endUserSession(userId: string) {

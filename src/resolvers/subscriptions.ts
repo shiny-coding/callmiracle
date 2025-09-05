@@ -1,13 +1,15 @@
 import { BroadcastEvent, CallEvent, Meeting, NotificationEvent, NotificationType } from '@/generated/graphql'
 import { pubsub } from '@/lib/pubsub'
 import { mergeAsyncIterators } from '@/utils'
-import { getLogger } from '@/utils/logger'
+import { getLogger, withContext } from '@/utils/logger'
 
 export type SubscriptionEventPayload = {
-  callEvent: CallEvent
-  notificationEvent: NotificationEvent
-  broadcastEvent: BroadcastEvent
-}
+  logger: ReturnType<typeof withContext>
+} & (
+  | { callEvent: CallEvent; notificationEvent?: never; broadcastEvent?: never }
+  | { notificationEvent: NotificationEvent; callEvent?: never; broadcastEvent?: never }
+  | { broadcastEvent: BroadcastEvent; callEvent?: never; notificationEvent?: never }
+)
 
 export type PubSubEvents = {
   [key: string]: [any]
@@ -34,7 +36,15 @@ export const subscriptions = {
       return mergeAsyncIterators([userIterator, globalIterator])
     },
     resolve: async (payload: SubscriptionEventPayload) => {
-      const logger = await getLogger()
+      // Recreate logger from serialized context (functions don't survive Redis serialization)
+      const logger = payload.logger.context ? withContext(payload.logger.context) : withContext({
+        requestId: 'subscription-fallback',
+        path: '/graphql/subscription', 
+        userAgent: 'GraphQL-Subscription',
+        ip: 'internal',
+        userId: 'system',
+        userName: 'System'
+      })
       if ( payload.notificationEvent ) {
         if (payload.notificationEvent.type === NotificationType.MessageReceived) {
           logger.info('Resolving message notification event', {
@@ -67,9 +77,6 @@ export const subscriptions = {
         })
       } else {
         logger.warn('Resolving unknown subscription event', {
-          hasNotificationEvent: !!payload.notificationEvent,
-          hasCallEvent: !!payload.callEvent,
-          hasBroadcastEvent: !!payload.broadcastEvent,
           payloadKeys: Object.keys(payload)
         })
       }

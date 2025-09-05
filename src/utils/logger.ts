@@ -239,6 +239,7 @@ const logImpl = (context: LogContext, level: string, message: string, meta?: any
 
 export const withContext = (context: LogContext) => {
   return {
+    context, // Include context data for serialization
     debug: (message: string, meta?: any) => {
       logImpl(context, 'debug', message, meta)
     },

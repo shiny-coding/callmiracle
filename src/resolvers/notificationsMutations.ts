@@ -1,13 +1,16 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { pubsub } from '@/lib/pubsub'
 import { BroadcastType } from '@/generated/graphql'
 import { getLogger } from '@/utils/logger'
+import { publishSubscriptionEvent } from '@/utils/pubsubHelper'
 
 export async function publishBroadcastEvent(broadcastType: BroadcastType) {
   const logger = await getLogger()
   const topic = `SUBSCRIPTION_EVENT:ALL`
-  pubsub.publish(topic, { broadcastEvent: { type: broadcastType } })
+  publishSubscriptionEvent(topic, { 
+    broadcastEvent: { type: broadcastType },
+    logger
+  })
   
   logger.info('Publishing broadcast event for all users', {
     broadcastType,

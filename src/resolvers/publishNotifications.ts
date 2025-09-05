@@ -1,8 +1,8 @@
 import { ObjectId } from 'mongodb'
 import { NotificationType } from '@/generated/graphql';
-import { pubsub } from '@/lib/pubsub';
 import { publishPushNotification } from './pushNotifications';
 import { getLogger } from '@/utils/logger';
+import { publishSubscriptionEvent } from '@/utils/pubsubHelper';
 
 
 // Helper function to publish meeting disconnection notification
@@ -29,7 +29,10 @@ export async function publishMeetingNotification(notificationType: NotificationT
   
   // Publish notification event
   const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
-  pubsub.publish(topic, { notificationEvent: { type: notificationType, meeting: peerMeeting, user: peerUser, peerUserName: meeting.userName } })
+  publishSubscriptionEvent(topic, { 
+    notificationEvent: { type: notificationType as NotificationType, meeting: peerMeeting, peerUserName: meeting.userName },
+    logger 
+  })
   
   logger.info('Published meeting notification event', {
     notificationType,
@@ -60,14 +63,15 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
 
   // Publish notification event (no DB storage)
   const topic = `SUBSCRIPTION_EVENT:${targetUserId.toString()}`
-  pubsub.publish(topic, { 
+  publishSubscriptionEvent(topic, { 
     notificationEvent: { 
       type: NotificationType.MessageReceived, 
       peerUserId: senderUser._id.toString(),
       peerUserName: senderUser.name,
       messageText: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText,
       conversationId: conversationId.toString()
-    }
+    },
+    logger
   })
   
   logger.info('Published message notification event', {
