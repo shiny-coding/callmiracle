@@ -9,7 +9,7 @@ import { UPDATE_MEETING_LAST_CALL } from './MeetingCardUtils'; // Assuming this 
 export function handleMeetingSaveResult(
   result: MeetingOutput,
   t: any,
-  refetchMeetings: () => void,
+  refetchMeetings: (userInitiated?: boolean) => void,
   meetingToConnectId: string | null,
   meetingId: string | string[] | undefined,
   router: AppRouterInstance,
@@ -23,7 +23,7 @@ export function handleMeetingSaveResult(
     showSnackbar(errorMessage, 'error')
   } else {
     // No error reported, or result implies success
-    refetchMeetings()
+    refetchMeetings(true)
     let message;
     if (meetingToConnectId) {
       message = t('meetingConnected')
@@ -107,7 +107,7 @@ export function trySelectHourSlots(timeslot: number, availableTimeSlots: TimeSlo
 
 export function useCancelMeeting(
   t: any, 
-  refetchMeetings: () => void, 
+  refetchMeetings: (userInitiated?: boolean) => void, 
   router: AppRouterInstance, 
   showSnackbar: (message: string, type: 'success' | 'error') => void
 ) {
@@ -135,7 +135,7 @@ export function useCancelMeeting(
         }
       })
       showSnackbar(t('meetingCancelledSuccess'), 'success')
-      refetchMeetings()
+      refetchMeetings(true)
       router.back()
     } catch (error) {
       console.error('Error cancelling meeting:', error)

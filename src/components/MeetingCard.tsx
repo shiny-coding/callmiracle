@@ -201,7 +201,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         })
       }
       closeConfirmDialog()
-      refetchMeetings()
+      refetchMeetings(true)
     } catch (error) {
       console.error(`Error ${confirmAction}ing meeting:`, error)
       closeConfirmDialog()

@@ -337,7 +337,7 @@ export function useWebRTCCommon(callUser: any) {
             }
           })
           console.log('refetching meetings')
-          refetchMyMeetingsWithPeers()
+          refetchMyMeetingsWithPeers(false)
         } catch (err) {
           console.error('Failed to send finished signal:', err)
         }

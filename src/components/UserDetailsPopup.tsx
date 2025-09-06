@@ -150,7 +150,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     await updateUserData()
     setIsEditing(false)
     setIsBlockSectionExpanded(false)
-    refetchFutureMeetingsWithPeers()
+    refetchFutureMeetingsWithPeers(undefined, true)
     onClose()
   }
 

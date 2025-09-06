@@ -55,7 +55,8 @@ export default function MeetingsCalendar() {
     errorFutureMeetingsWithPeers, 
     myMeetingsWithPeers,
     refetchFutureMeetingsWithPeers,
-    networkStatusFutureMeetings
+    networkStatusFutureMeetings,
+    isUserInitiatedLoading
   } = useMeetings()
 
   const [filtersVisible, setFiltersVisible] = useState<boolean>(false)
@@ -134,7 +135,9 @@ export default function MeetingsCalendar() {
     }
   }, [slots])
 
-  const isLoading = loadingFutureMeetingsWithPeers || networkStatusFutureMeetings === NetworkStatus.refetch
+  // Show loading screen only if user-initiated or if it's the first load (no previous data)
+  const isLoading = (isUserInitiatedLoading && (loadingFutureMeetingsWithPeers || networkStatusFutureMeetings === NetworkStatus.refetch)) || 
+                   (futureMeetingsWithPeers.length === 0 && loadingFutureMeetingsWithPeers)
 
   if (isLoading || errorFutureMeetingsWithPeers) {
     return <LoadingDialog loading={isLoading} error={errorFutureMeetingsWithPeers} />
@@ -202,7 +205,7 @@ export default function MeetingsCalendar() {
           <AddIcon />
         </IconButton>
         <IconButton 
-            onClick={() => { if (refetchFutureMeetingsWithPeers) refetchFutureMeetingsWithPeers() }} 
+            onClick={() => { if (refetchFutureMeetingsWithPeers) refetchFutureMeetingsWithPeers(undefined, true) }} 
             aria-label={t('refreshMeetings')} 
             title={t('refreshMeetings')} 
             size="small"

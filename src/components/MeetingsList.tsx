@@ -101,7 +101,7 @@ export default function MeetingsList() {
             <AddIcon className="text-white" />
           </IconButton>
           <IconButton 
-            onClick={() => refetchMyMeetingsWithPeers()} 
+            onClick={() => refetchMyMeetingsWithPeers(true)} 
             size="small"
             className="hover:bg-gray-700 text-white"
             title={t('refreshMeetings')}

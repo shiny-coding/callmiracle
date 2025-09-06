@@ -95,13 +95,15 @@ interface MeetingsContextType {
   loadingMyMeetingsWithPeers: boolean
   errorMyMeetingsWithPeers: ApolloError | undefined
   networkStatusMyMeetings?: NetworkStatus
-  refetchMyMeetingsWithPeers: () => void
+  refetchMyMeetingsWithPeers: (userInitiated?: boolean) => void
   futureMeetingsWithPeers: MeetingWithPeer[]
   loadingFutureMeetingsWithPeers: boolean
   errorFutureMeetingsWithPeers: ApolloError | undefined
   networkStatusFutureMeetings?: NetworkStatus
-  refetchFutureMeetingsWithPeers: (variables?: any) => void
-  refetchMeetings: () => void
+  refetchFutureMeetingsWithPeers: (variables?: any, userInitiated?: boolean) => void
+  refetchMeetings: (userInitiated?: boolean) => void
+  // Track if current loading is user-initiated (for showing loading screen)
+  isUserInitiatedLoading: boolean
 }
 
 const MeetingsContext = createContext<MeetingsContextType | undefined>(undefined)
@@ -112,6 +114,8 @@ interface MeetingsProviderProps {
 
 export function MeetingsProvider({ children }: MeetingsProviderProps) {
   const [highlightedMeetingId, setHighlightedMeetingId] = useState<string | null>(null)
+  const [isUserInitiatedLoading, setIsUserInitiatedLoading] = useState(false)
+  
   const { 
     currentUser,
     filterInterests,
@@ -145,7 +149,7 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     data: myMeetingsWithPeersData,
     loading: loadingMyMeetingsWithPeers,
     error: errorMyMeetingsWithPeers,
-    refetch: refetchMyMeetingsWithPeers,
+    refetch: refetchMyMeetingsWithPeersQuery,
     networkStatus: networkStatusMyMeetings
   } = useQuery(GET_MEETINGS_WITH_PEERS, {
     variables: { userId: currentUser?._id },
@@ -178,20 +182,40 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
   })
   const futureMeetingsWithPeers = useMemo(() => futureMeetingsData?.getFutureMeetingsWithPeers || [], [futureMeetingsData])
 
-  const refetchFutureMeetings = useCallback((variables?: any) => {
+  // Clear user-initiated loading when queries complete
+  useEffect(() => {
+    if (!loadingMyMeetingsWithPeers && !loadingFutureMeetingsWithPeers && isUserInitiatedLoading) {
+      setIsUserInitiatedLoading(false)
+    }
+  }, [loadingMyMeetingsWithPeers, loadingFutureMeetingsWithPeers, isUserInitiatedLoading])
+
+  const refetchMyMeetingsWithPeers = useCallback((userInitiated = false) => {
+    if (userInitiated) {
+      setIsUserInitiatedLoading(true)
+    }
+    refetchMyMeetingsWithPeersQuery()
+  }, [refetchMyMeetingsWithPeersQuery])
+
+  const refetchFutureMeetings = useCallback((variables?: any, userInitiated = false) => {
+    if (userInitiated) {
+      setIsUserInitiatedLoading(true)
+    }
     refetchFutureMeetingsWithPeersQuery(variables)
   }, [refetchFutureMeetingsWithPeersQuery])
 
-  const refetchMeetings = useCallback(async () => {
-    await refetchMyMeetingsWithPeers();
+  const refetchMeetings = useCallback(async (userInitiated = false) => {
+    if (userInitiated) {
+      setIsUserInitiatedLoading(true)
+    }
+    await refetchMyMeetingsWithPeersQuery();
     await refetchFutureMeetingsWithPeersQuery();
-  }, [refetchMyMeetingsWithPeers, refetchFutureMeetingsWithPeersQuery])
+  }, [refetchMyMeetingsWithPeersQuery, refetchFutureMeetingsWithPeersQuery])
 
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event: NotificationEvent) => {
       if (event.type.startsWith('MEETING_')) {
         console.log('Refetching meetings because of meeting notification')
-        refetchMeetings();
+        refetchMeetings(false); // Event-triggered, not user-initiated
       }
     })
     
@@ -200,7 +224,7 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
 
   useEffect(() => {
     const unsubscribe = subscribeToBroadcastEvents((event: BroadcastEvent) => {
-      refetchMeetings();
+      refetchMeetings(false); // Event-triggered, not user-initiated
     })
     
     return unsubscribe
@@ -221,7 +245,8 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
         errorFutureMeetingsWithPeers,
         networkStatusFutureMeetings,
         refetchFutureMeetingsWithPeers: refetchFutureMeetings,
-        refetchMeetings
+        refetchMeetings,
+        isUserInitiatedLoading
       }}
     >
       {children}
