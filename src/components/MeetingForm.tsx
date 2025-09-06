@@ -8,6 +8,7 @@ import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
 import { useState, useEffect, ChangeEvent, useRef, useMemo } from 'react'
 import { Meeting, MeetingStatus, MeetingTransparency } from '@/generated/graphql'
+import { NetworkStatus } from '@apollo/client'
 import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
@@ -28,7 +29,7 @@ import UserDetailsPopup from './UserDetailsPopup'
 export default function MeetingForm() {
   const t = useTranslations()
 
-  const { myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, futureMeetingsWithPeers, loadingFutureMeetingsWithPeers, errorFutureMeetingsWithPeers } = useMeetings()
+  const { myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, futureMeetingsWithPeers, loadingFutureMeetingsWithPeers, errorFutureMeetingsWithPeers, networkStatusMyMeetings, networkStatusFutureMeetings } = useMeetings()
   const { groups, loading: loadingGroups, error: errorGroups } = useGroups()
 
   const { id: meetingId } = useParams()
@@ -184,9 +185,13 @@ export default function MeetingForm() {
 
   
 
-  if (loadingMyMeetingsWithPeers || errorMyMeetingsWithPeers || loadingGroups || errorGroups ||
-    (meetingToConnectId && (loadingFutureMeetingsWithPeers || errorFutureMeetingsWithPeers))) {
-    return <LoadingDialog loading={loadingMyMeetingsWithPeers || loadingFutureMeetingsWithPeers || loadingGroups} error={errorMyMeetingsWithPeers || errorFutureMeetingsWithPeers || errorGroups} />
+  const isInitialLoading = (networkStatusMyMeetings === NetworkStatus.loading) || 
+                        (meetingToConnectId && networkStatusFutureMeetings === NetworkStatus.loading) ||
+                        loadingGroups
+
+  if (isInitialLoading || errorMyMeetingsWithPeers || errorGroups ||
+    (meetingToConnectId && errorFutureMeetingsWithPeers)) {
+    return <LoadingDialog loading={isInitialLoading} error={errorMyMeetingsWithPeers || errorFutureMeetingsWithPeers || errorGroups} />
   }
 
   const toggleTimeSlot = (timestamp: number) => {

@@ -25,7 +25,7 @@ export default function MeetingsList() {
 
   const t = useTranslations()
   const [profileIncompleteDialogOpen, setProfileIncompleteDialogOpen] = useState(false)
-  const { highlightedMeetingId, setHighlightedMeetingId, myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, refetchMyMeetingsWithPeers, networkStatusMyMeetings } = useMeetings()
+  const { highlightedMeetingId, setHighlightedMeetingId, myMeetingsWithPeers, loadingMyMeetingsWithPeers, errorMyMeetingsWithPeers, refetchMyMeetingsWithPeers, networkStatusMyMeetings, isUserInitiatedLoading } = useMeetings()
   const meetingRefs = useRef<Record<string, HTMLElement>>({})
   const { currentUser } = useStore(state => ({ currentUser: state.currentUser, }))
   const router = useRouter()
@@ -67,7 +67,8 @@ export default function MeetingsList() {
     }
   }, [searchParams, setHighlightedMeetingId])
 
-  const isLoading = loadingMyMeetingsWithPeers || networkStatusMyMeetings === NetworkStatus.refetch
+  const isLoading = isUserInitiatedLoading || 
+                   (networkStatusMyMeetings === NetworkStatus.loading)
 
   if (isLoading || errorMyMeetingsWithPeers) {
     return <LoadingDialog loading={isLoading} error={errorMyMeetingsWithPeers} />
