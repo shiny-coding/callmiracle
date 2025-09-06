@@ -1,10 +1,11 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { MeetingStatus, NotificationType } from '@/generated/graphql';
+import { BroadcastType, MeetingStatus, NotificationType } from '@/generated/graphql';
 import { createOrUpdateMeeting } from './createOrUpdateMeeting';
 import { publishMeetingNotification } from './publishNotifications';
 import { calledMeetingsMetric, cancelledMeetingsMetric, deletedMeetingsMetric } from '@/utils/metrics';
 import { getLogger } from '@/utils/logger';
+import { publishBroadcastEvent } from './notificationsMutations';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -105,6 +106,9 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
           await publishMeetingNotification(NotificationType.MeetingDisconnected, db, peerMeeting, updatedMeeting)
         }  
       }
+    } else if (currentStatus === MeetingStatus.Seeking) {
+      // if the meeting was in seeking status, notify all users that the meeting was updated
+      publishBroadcastEvent(BroadcastType.MeetingUpdated)
     }
     
     return updatedMeeting
@@ -170,6 +174,11 @@ export const meetingsMutations = {
         meetingId: id,
         hadPeer: !!meeting.peerMeetingId
       })
+
+      if (!meeting.peerMeetingId && meeting.status === MeetingStatus.Seeking) {
+        // if the meeting was in seeking status, notify all users that the meeting was deleted
+        publishBroadcastEvent(BroadcastType.MeetingUpdated)
+      }
       
       return { _id }
     } catch (error) {

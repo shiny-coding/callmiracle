@@ -200,7 +200,7 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
 
   useEffect(() => {
     const unsubscribe = subscribeToBroadcastEvents((event: BroadcastEvent) => {
-      // refetchMeetings();
+      refetchMeetings();
     })
     
     return unsubscribe
