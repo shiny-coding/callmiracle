@@ -104,11 +104,7 @@ export const subscriptions = {
           subscriberUserName: payload.subscriberUserName
         })
       } else if ( payload.broadcastEvent ) {
-        logger.info('Resolving broadcast event for subscriber', {
-          broadcastType: payload.broadcastEvent.type,
-          subscriberUserId: payload.subscriberUserId,
-          subscriberUserName: payload.subscriberUserName
-        })
+        // Not logging broadcast events because of the large number of subscribers
       } else {
         logger.warn('Resolving unknown subscription event', {
           payloadKeys: Object.keys(payload)

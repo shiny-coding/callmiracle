@@ -74,95 +74,53 @@ const sseLink = new ApolloLink((operation) => {
     const requestId = operation.getContext().requestId || generateShortRequestId()
     let eventSource: EventSource | null = null
     let unsubscribed = false
-    // Create an AbortController to cancel the fetch if needed.
-    const controller = new AbortController()
 
-    // Build URL with query parameters for visibility
-    const fetchParams = new URLSearchParams({
-      operationName,
-      requestId: requestId
+    // Build the EventSource URL with query parameters (skip the POST request)
+    const params = new URLSearchParams({
+      query: operation.query.loc?.source.body || '',
+      variables: JSON.stringify(operation.variables || {}),
+      operationName: operation.operationName || '',
+      extensions: JSON.stringify({
+        subscription: { protocol: 'SSE' }
+      }),
+      'x-user-id': getUserId()
     })
     
-    // Initiate the request to set up the SSE connection
-    fetch(`/api/graphql?${fetchParams.toString()}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        'x-user-id': getUserId(),
-        'x-request-id': requestId
-      },
-      body: JSON.stringify({
-        query: operation.query.loc?.source.body,
-        variables: operation.variables,
-        operationName: operation.operationName,
-        extensions: {
-          subscription: {
-            protocol: 'SSE'
-          }
-        }
-      }),
-      signal: controller.signal
-    }).then(response => {
-      if (!response.ok) {
-        console.error(`SSE: Subscription request failed for ${operationName}:`, {
-          status: response.status,
-          statusText: response.statusText
-        })
-        throw new Error(`Subscription request failed: ${response.status}`)
+    eventSource = new EventSource(`/api/graphql?${params.toString()}`, {
+      withCredentials: true
+    })
+
+    eventSource.onopen = () => {
+      console.log(`SSE: Connection opened for ${operationName}`)
+    }
+
+    // Listen for subscription data
+    eventSource.addEventListener('next', (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        observer.next(data)
+      } catch (err) {
+        console.error(`SSE: Error parsing event for ${operationName}:`, err)
+        observer.error(err)
       }
-      // If unsubscribed before the fetch resolves, we simply exit.
-      if (unsubscribed) return
+    })
 
-      // Build the EventSource URL with query parameters
-      const params = new URLSearchParams({
-        query: operation.query.loc?.source.body || '',
-        variables: JSON.stringify(operation.variables || {}),
-        operationName: operation.operationName || '',
-        extensions: JSON.stringify({
-          subscription: { protocol: 'SSE' }
-        }),
-        'x-user-id': getUserId()
-      })
-      eventSource = new EventSource(`/api/graphql?${params.toString()}`, {
-        withCredentials: true
-      })
+    // Listen for subscription completion
+    eventSource.addEventListener('complete', () => {
+      console.log(`SSE: Subscription completed for ${operationName}`)
+      observer.complete()
+      eventSource?.close()
+    })
 
-      eventSource.onopen = () => {
-        console.log(`SSE: Connection opened for ${operationName}`)
-      }
-
-      // Listen for subscription data
-      eventSource.addEventListener('next', (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          observer.next(data)
-        } catch (err) {
-          console.error(`SSE: Error parsing event for ${operationName}:`, err)
-          observer.error(err)
-        }
-      })
-
-      // Listen for subscription completion
-      eventSource.addEventListener('complete', () => {
-        console.log(`SSE: Subscription completed for ${operationName}`)
-        observer.complete()
-        eventSource?.close()
-      })
-
-      // Listen for subscription errors
-      eventSource.addEventListener('error', (event) => {
-        console.error(`SSE: Error event for ${operationName}:`, event)
-        observer.error(event)
-      })
-    }).catch(error => {
-      observer.error(error)
+    // Listen for subscription errors
+    eventSource.addEventListener('error', (event) => {
+      console.error(`SSE: Error event for ${operationName}:`, event)
+      observer.error(event)
     })
 
     // Return a cleanup function that will be called on unsubscribe
     return () => {
       unsubscribed = true
-      controller.abort() // Cancel the fetch if it is still pending.
       if (eventSource) {
         console.log(`SSE: Closing connection for ${operationName}`)
         eventSource.close()
