@@ -62,7 +62,7 @@ export function ConversationsProvider({ children }: ConversationsProviderProps) 
   const { subscribeToNotifications } = useSubscriptions()
   const { data, loading, error, refetch } = useQuery(GET_CONVERSATIONS, {
     skip: !currentUser?._id,
-    pollInterval: 30000, // Poll every 30 seconds for new conversations
+    pollInterval: 300000, // Poll every 5 minutes for new conversations
   })
   const conversations = data?.getConversations || []
 

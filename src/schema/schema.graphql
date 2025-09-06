@@ -101,6 +101,7 @@ type User {
   deletedAt: Float
   pushSubscriptions: [PushSubscription]
   logLevel: String
+  locale: String
   clientLogLevel: String
   instrumentationConfig: InstrumentationConfig
 }

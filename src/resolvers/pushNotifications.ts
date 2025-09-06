@@ -1,7 +1,7 @@
 import webpush from 'web-push'
 import { getNotificationMessage } from '@/utils/notificationUtils'
 import { Db, ObjectId } from 'mongodb'
-import { NotificationType } from '@/generated/graphql'
+import { NotificationType, User } from '@/generated/graphql'
 import { getTranslations } from 'next-intl/server'
 import { 
   pushNotificationsSentMetric, 
@@ -37,11 +37,13 @@ if (vapidKeys.publicKey && vapidKeys.privateKey) {
   console.warn('VAPID keys are not configured. Push notifications will be disabled.')
 }
 
-const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription: any, payload: any) => {
+const sendSinglePushNotification = async (db: Db, user: User, subscription: any, payload: any) => {
   const logger = await getLogger()
+  const userId = user._id.toString()
   if (!subscription || !subscription.endpoint) {
     logger.warn('User does not have a push subscription', {
-      userId: userId.toString(),
+      userName: user.name,
+      userId,
       hasSubscription: !!subscription,
       hasEndpoint: !!subscription?.endpoint
     })
@@ -57,6 +59,7 @@ const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription
     await webpush.sendNotification(subscription, JSON.stringify(payload))
     pushNotificationsDeliveredMetric.add(1)
     logger.info('Push notification delivered successfully', {
+      userName: user.name,
       userId: userId.toString(),
       endpoint: subscription.endpoint,
       payloadType: payload.data?.url ? 'with_url' : 'basic'
@@ -68,19 +71,20 @@ const sendSinglePushNotification = async (db: Db, userId: ObjectId, subscription
     // if error.statusCode is 410, the subscription is gone and should be removed from the database.
     if (error.statusCode === 410) {
       logger.info('Push subscription expired, removing from database', {
-        userId: userId.toString(),
+        userName: user.name,
+        userId,
         endpoint: subscription.endpoint,
         statusCode: error.statusCode
       })
       await db.collection('users').updateOne(
-        { _id: userId },
+        { _id: new ObjectId(userId) },
         { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } } as any
       )
     }
   }
 }
 
-export const publishPushNotification = async (db: Db, user: any, notification: PushNotification) => {
+export const publishPushNotification = async (db: Db, user: User, notification: PushNotification) => {
   const logger = await getLogger()
   if (!user || !user.pushSubscriptions || !Array.isArray(user.pushSubscriptions) || user.pushSubscriptions.length === 0) {
     logger.info('User not found or has no push subscriptions', {
@@ -128,6 +132,6 @@ export const publishPushNotification = async (db: Db, user: any, notification: P
   })
   for (const subscription of user.pushSubscriptions) {
     pushNotificationsSentMetric.add(1)
-    await sendSinglePushNotification(db, user._id, subscription, payload)
+    await sendSinglePushNotification(db, user, subscription, payload)
   }
 } 

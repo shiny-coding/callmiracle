@@ -528,6 +528,7 @@ export type User = {
   groups: Array<Scalars['ID']['output']>;
   instrumentationConfig?: Maybe<InstrumentationConfig>;
   languages: Array<Scalars['String']['output']>;
+  locale?: Maybe<Scalars['String']['output']>;
   logLevel?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   pushSubscriptions?: Maybe<Array<Maybe<PushSubscription>>>;
