@@ -135,9 +135,9 @@ export default function MeetingsCalendar() {
     }
   }, [slots])
 
-  // Show loading screen only if user-initiated or if it's the first load (no previous data)
-  const isLoading = (isUserInitiatedLoading && (loadingFutureMeetingsWithPeers || networkStatusFutureMeetings === NetworkStatus.refetch)) || 
-                   (futureMeetingsWithPeers.length === 0 && loadingFutureMeetingsWithPeers)
+  // Show loading screen only if user-initiated or if it's the first load (initial fetch)
+  const isLoading = isUserInitiatedLoading || 
+                   (networkStatusFutureMeetings === NetworkStatus.loading)
 
   if (isLoading || errorFutureMeetingsWithPeers) {
     return <LoadingDialog loading={isLoading} error={errorFutureMeetingsWithPeers} />

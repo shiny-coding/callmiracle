@@ -182,9 +182,9 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
   })
   const futureMeetingsWithPeers = useMemo(() => futureMeetingsData?.getFutureMeetingsWithPeers || [], [futureMeetingsData])
 
-  // Clear user-initiated loading when queries complete
+  // Clear user-initiated loading when operations complete
   useEffect(() => {
-    if (!loadingMyMeetingsWithPeers && !loadingFutureMeetingsWithPeers && isUserInitiatedLoading) {
+    if (isUserInitiatedLoading && !loadingMyMeetingsWithPeers && !loadingFutureMeetingsWithPeers) {
       setIsUserInitiatedLoading(false)
     }
   }, [loadingMyMeetingsWithPeers, loadingFutureMeetingsWithPeers, isUserInitiatedLoading])
