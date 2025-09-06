@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb'
 import { MESSAGE_MAX_LENGTH } from '@/config/constants'
 import { publishPushNotification } from './pushNotifications'
 import { publishMessageNotification } from './publishNotifications'
-import { NotificationType } from '@/generated/graphql'
+import { NotificationType, User } from '@/generated/graphql'
 
 export const conversationsMutations = {
   addMessage: async (
@@ -35,7 +35,7 @@ export const conversationsMutations = {
     }
 
     // Check if target user exists
-    const targetUser = await db.collection('users').findOne({ _id: _targetUserId })
+    const targetUser = await db.collection('users').findOne<User>({ _id: _targetUserId })
     if (!targetUser) {
       throw new Error('Target user not found')
     }

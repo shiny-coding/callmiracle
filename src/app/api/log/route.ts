@@ -46,7 +46,10 @@ export async function POST(request: NextRequest) {
     }
     
     // Log using the same pattern as server-side, but with [CLIENT] prefix
-    logger[level as keyof typeof logger](`[CLIENT] ${message}`, enrichedMeta)
+    const logMethod = logger[level as keyof typeof logger]
+    if (typeof logMethod === 'function') {
+      logMethod(`[CLIENT] ${message}`, enrichedMeta)
+    }
     
     return NextResponse.json({ success: true }, { status: 200 })
     
