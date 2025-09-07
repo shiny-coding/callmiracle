@@ -51,11 +51,14 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://otel-collector:8889
+    url: http://prometheus:9090
     uid: prometheus
     isDefault: false
     editable: true
     jsonData:
       httpMethod: GET
       queryTimeout: 60s
-      timeInterval: 15s 
+      timeInterval: 15s
+      manageAlerts: false
+      prometheusType: Prometheus
+      prometheusVersion: 2.40.0 
