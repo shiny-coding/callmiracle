@@ -15,16 +15,32 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   // Get current server ID from environment (set by server)
   const [serverId, setServerId] = useState<string | null>(null)
   const [preferredServerId, setPreferredServerIdState] = useState<string | null>(null)
-  
-  // Available servers (could be made configurable)
-  const availableServers = ['auto', '1', '2', '3']
+  const [availableServers, setAvailableServers] = useState<string[]>(['auto'])
 
   useEffect(() => {
-    // Get server ID from meta tag set by server
-    const serverIdMeta = document.querySelector('meta[name="server-id"]')
-    if (serverIdMeta) {
-      setServerId(serverIdMeta.getAttribute('content'))
+    // Get server info from API
+    const fetchServerInfo = async () => {
+      try {
+        const response = await fetch('/api/select-server')
+        const data = await response.json()
+        
+        if (data.serverId) {
+          setServerId(data.serverId)
+        }
+        if (data.availableServers) {
+          setAvailableServers(data.availableServers)
+        }
+      } catch (error) {
+        console.error('Failed to fetch server info:', error)
+        // Fallback to meta tag for server ID
+        const serverIdMeta = document.querySelector('meta[name="server-id"]')
+        if (serverIdMeta) {
+          setServerId(serverIdMeta.getAttribute('content'))
+        }
+      }
     }
+
+    fetchServerInfo()
 
     // Get preferred server from cookie
     const preferred = Cookies.get('preferred_server')

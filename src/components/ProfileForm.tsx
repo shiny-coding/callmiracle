@@ -352,26 +352,29 @@ export default function ProfileForm() {
           </Select>
         </FormControl>
 
-        <FormControl fullWidth>
-          <FormLabel id="server-select">{t('preferredServer')}</FormLabel>
-          <Select
-            value={preferredServerId || 'auto'}
-            onChange={(e) => setPreferredServerId(e.target.value === 'auto' ? null : e.target.value)}
-            displayEmpty
-          >
-            {availableServers.map(server => (
-              <MenuItem key={server} value={server}>
-                {server === 'auto' ? t('serverAuto') : `${t('server')} ${server}`}
-                {serverId === server && server !== 'auto' && ' (current)'}
-              </MenuItem>
-            ))}
-          </Select>
-          {serverId && (
-            <Typography variant="caption" color="text.secondary" className="mt-1">
-              {t('currentlyConnectedTo')}: {serverId === 'unknown' ? t('unknown') : `${t('server')} ${serverId}`}
-            </Typography>
-          )}
-        </FormControl>
+        {/* Show server selection only for multi-server deployments */}
+        {availableServers.length > 1 && (
+          <FormControl fullWidth>
+            <FormLabel id="server-select">{t('preferredServer')}</FormLabel>
+            <Select
+              value={preferredServerId || 'auto'}
+              onChange={(e) => setPreferredServerId(e.target.value === 'auto' ? null : e.target.value)}
+              displayEmpty
+            >
+              {availableServers.map(server => (
+                <MenuItem key={server} value={server}>
+                  {server === 'auto' ? t('serverAuto') : `${t('server')} ${server}`}
+                  {serverId === server && server !== 'auto' && ' (current)'}
+                </MenuItem>
+              ))}
+            </Select>
+            {serverId && (
+              <Typography variant="caption" color="text.secondary" className="mt-1">
+                {t('currentlyConnectedTo')}: {serverId === 'unknown' ? t('unknown') : `${t('server')} ${serverId}`}
+              </Typography>
+            )}
+          </FormControl>
+        )}
         
         <div className="mt-4 pt-4 border-t panel-border">
           <Button 

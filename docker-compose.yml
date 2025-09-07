@@ -28,6 +28,8 @@ services:
       - MONGODB_URI=mongodb://host.docker.internal:27017/callmiracle
       # Redis connection to host machine
       - REDIS_HOST=host.docker.internal
+      # Server count (single server deployment)
+      - SERVER_COUNT=1
     # Enable connection to host machine services  
     extra_hosts:
       - "host.docker.internal:host-gateway"

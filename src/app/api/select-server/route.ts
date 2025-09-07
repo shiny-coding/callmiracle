@@ -38,8 +38,15 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  const serverCount = parseInt(process.env.SERVER_COUNT || '1')
+  
+  // Generate available servers based on SERVER_COUNT
+  const availableServers = serverCount > 1 
+    ? ['auto', ...Array.from({ length: serverCount }, (_, i) => String(i + 1))]
+    : ['auto']  // Single server mode - only show auto
+  
   return NextResponse.json({
     serverId: process.env.SERVER_ID || 'unknown',
-    availableServers: ['auto', '1', '2', '3']
+    availableServers
   })
 }

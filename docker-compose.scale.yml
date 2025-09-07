@@ -37,6 +37,7 @@ x-common-env: &common-env
   OTEL_EXPORTER_OTLP_ENDPOINT: http://callmiracle-otel-collector:4318
   LOKI_HOST: http://callmiracle-loki:3100
   MONGODB_URI: mongodb://host.docker.internal:27017/callmiracle
+  SERVER_COUNT: 3
 
 services:
   # App instances with shared configuration
