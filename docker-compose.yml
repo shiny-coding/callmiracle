@@ -26,6 +26,8 @@ services:
       - LOKI_HOST=http://callmiracle-loki:3100
       # MongoDB connection to host machine
       - MONGODB_URI=mongodb://host.docker.internal:27017/callmiracle
+      # Redis connection to host machine
+      - REDIS_HOST=host.docker.internal
     # Enable connection to host machine services  
     extra_hosts:
       - "host.docker.internal:host-gateway"
