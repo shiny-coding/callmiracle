@@ -150,7 +150,7 @@ console.log('✅ OpenTelemetry SDK started successfully')
 
 // NOW import anything that might load MongoDB
 try {
-  require('@/lib/pubsub')
+  require('./lib/pubsub')  // Use relative path to match import paths
 } catch (error: any) {
   console.log('⚠️ pubsub import failed (this is OK):', error.message)
 }
