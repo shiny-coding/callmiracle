@@ -23,15 +23,17 @@ jobs:
             set -e
             
             # Fix git ownership issue permanently
+            echo "Current user: $(whoami)"
+            echo "Repository ownership:"
+            ls -la /var/www/miracall.net/callmiracle/.git/ | head -5
+            
+            # Fix ownership of entire repository
+            echo "Fixing repository ownership..."
+            sudo chown -R $(whoami):$(whoami) /var/www/miracall.net/callmiracle
+            
+            # Configure git safe directory
             echo "Configuring git safe directory..."
             git config --global --add safe.directory /var/www/miracall.net/callmiracle || true
-            
-            # Verify and fix ownership if needed
-            echo "Checking repository ownership..."
-            if ! git status >/dev/null 2>&1; then
-              echo "Fixing repository ownership..."
-              sudo chown -R $(whoami):$(whoami) /var/www/miracall.net/callmiracle/.git
-            fi
             
             # Pull latest changes - will fail if git ownership issues
             echo "Pulling latest changes..."
