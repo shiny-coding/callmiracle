@@ -18,7 +18,32 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/miracall.net/callmiracle
+            
+            # Exit on any error
+            set -e
+            
+            # Fix git ownership issue permanently
+            echo "Configuring git safe directory..."
+            git config --global --add safe.directory /var/www/miracall.net/callmiracle || true
+            
+            # Verify and fix ownership if needed
+            echo "Checking repository ownership..."
+            if ! git status >/dev/null 2>&1; then
+              echo "Fixing repository ownership..."
+              sudo chown -R $(whoami):$(whoami) /var/www/miracall.net/callmiracle/.git
+            fi
+            
+            # Pull latest changes - will fail if git ownership issues
+            echo "Pulling latest changes..."
             git pull
+            
+            echo "Installing dependencies..."
             yarn install
+            
+            echo "Building containers..."
             docker compose build
+            
+            echo "Starting services..."
             docker compose up -d
+            
+            echo "Deployment completed successfully"
