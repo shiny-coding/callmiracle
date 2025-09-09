@@ -144,6 +144,46 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
+      if (account?.provider === "google" || account?.provider === "apple") {
+        try {
+          const client = await clientPromise;
+          
+          // Check if user with same email exists
+          const existingUser = await client.db().collection("users").findOne({ email: user.email });
+          if (existingUser) {
+            console.log(`👤 Found existing user: ${existingUser._id}`);
+            
+            // Check if account is already linked
+            const existingAccount = await client.db().collection("accounts").findOne({
+              userId: existingUser._id,
+              provider: account.provider
+            });
+            
+            if (!existingAccount) {
+              console.log(`🔗 Linking ${account.provider} account to existing user: ${existingUser._id}`);
+              
+              // Link account to existing user
+              await client.db().collection("accounts").insertOne({
+                userId: existingUser._id,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                type: account.type,
+                access_token: account.access_token,
+                refresh_token: account.refresh_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token
+              });
+              
+              console.log(`✅ Successfully linked ${account.provider} account to user: ${existingUser._id}`);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error linking ${account?.provider} account for ${user.email}:`, error);
+        }
+      }
+      
       return true;
     },
     async session({ session, token }) {
