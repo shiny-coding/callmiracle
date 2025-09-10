@@ -7,6 +7,7 @@ import { publishBroadcastEvent } from "./notificationsMutations"
 import { tryConnectMeetings } from "./connectMeetings"
 import { createdMeetingsMetric, matchedMeetingsMetric, hourlyMeetingCreationsMetric, hourlyMatchingSuccessMetric } from "@/utils/metrics"
 import { getLogger } from "@/utils/logger"
+import { incrementUserMeetingsStats } from "@/utils/meetingsStatsUtils"
 
 export enum MeetingError {
   CannotCreateMeetingInternalError = 'CannotCreateMeetingInternalError',
@@ -109,6 +110,7 @@ async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: Object
       const currentHour = new Date().getHours()
       createdMeetingsMetric.add(1)
       hourlyMeetingCreationsMetric.add(1, { hour: currentHour.toString() })
+      await incrementUserMeetingsStats(db, _userId, { createdCount: 1 })
     }
     
     // If this meeting doesn't have a peer yet, try to find a match
@@ -157,9 +159,12 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
       const meetingOutput = await doOneTry()
       if (meetingOutput) {
         if (meetingOutput.meeting) {
+
           const currentHour = new Date().getHours()
           createdMeetingsMetric.add(1)
           hourlyMeetingCreationsMetric.add(1, { hour: currentHour.toString() })
+          await incrementUserMeetingsStats(db, _userId, { joinedCount: 1 })
+          
           publishBroadcastEvent(BroadcastType.MeetingUpdated)
         }
         return meetingOutput

@@ -83,6 +83,15 @@ enum MeetingStatus {
   CANCELLED
 }
 
+type MeetingsStats {
+  createdCount: Int!
+  joinedCount: Int!
+  cancelledCount: Int!
+  attendedCount: Int!
+  callsDurationS: Int!
+  callsCount: Int!
+}
+
 type User {
   _id: ID!
   groups: [ID!]!
@@ -104,6 +113,7 @@ type User {
   locale: String
   clientLogLevel: String
   instrumentationConfig: InstrumentationConfig
+  meetingsStats: MeetingsStats
 }
 
 type InstrumentationConfig {

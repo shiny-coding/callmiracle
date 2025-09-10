@@ -259,6 +259,16 @@ export type MeetingWithPeer = {
   peerUser?: Maybe<User>;
 };
 
+export type MeetingsStats = {
+  __typename?: 'MeetingsStats';
+  attendedCount: Scalars['Int']['output'];
+  callsDurationS: Scalars['Int']['output'];
+  cancelledCount: Scalars['Int']['output'];
+  createdCount: Scalars['Int']['output'];
+  joinedCount: Scalars['Int']['output'];
+  callsCount: Scalars['Int']['output'];
+};
+
 export type Message = {
   __typename?: 'Message';
   _id: Scalars['ID']['output'];
@@ -530,6 +540,7 @@ export type User = {
   languages: Array<Scalars['String']['output']>;
   locale?: Maybe<Scalars['String']['output']>;
   logLevel?: Maybe<Scalars['String']['output']>;
+  meetingsStats?: Maybe<MeetingsStats>;
   name: Scalars['String']['output'];
   pushSubscriptions?: Maybe<Array<Maybe<PushSubscription>>>;
   sex: Scalars['String']['output'];

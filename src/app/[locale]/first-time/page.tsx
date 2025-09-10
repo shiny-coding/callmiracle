@@ -11,7 +11,14 @@ import {
   FormControlLabel, 
   Checkbox,
   Divider,
-  CircularProgress
+  CircularProgress,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio,
+  Select,
+  MenuItem,
+  Alert
 } from '@mui/material'
 import LanguageSelector from '@/components/LanguageSelector'
 import GroupCard from '@/components/GroupCard'
@@ -37,12 +44,18 @@ export default function FirstTimePage() {
 
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
+  const [selectedSex, setSelectedSex] = useState<string>('')
+  const [selectedBirthYear, setSelectedBirthYear] = useState<number | null>(null)
   const [showWarning, setShowWarning] = useState(false)
 
   // Filter public groups based on selected languages
   const publicGroups = groups?.filter(group => 
     group.open && selectedLanguages.includes(group.language)
   ) || []
+
+  // Generate years array for birth year selection
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 80 }, (_, i) => currentYear - i - 10)
 
   // Initialize selectedGroupIds with user's existing groups that are public and match selected languages
   useEffect(() => {
@@ -97,7 +110,7 @@ export default function FirstTimePage() {
   }
 
   const handleNext = async () => {
-    if (selectedLanguages.length === 0) {
+    if (selectedLanguages.length === 0 || !selectedSex || !selectedBirthYear) {
       return // Button should be disabled
     }
 
@@ -119,10 +132,12 @@ export default function FirstTimePage() {
         ...selectedGroupIds
       ]))
       
-      // Update user with selected languages and groups
+      // Update user with selected languages, sex, birth year, and groups
       const updatedUser = {
         ...currentUser,
         languages: selectedLanguages,
+        sex: selectedSex,
+        birthYear: selectedBirthYear,
         groups: uniqueGroupIds
       }
       
@@ -143,7 +158,7 @@ export default function FirstTimePage() {
     }
   }
 
-  const isNextDisabled = selectedLanguages.length === 0 || updateLoading
+  const isNextDisabled = selectedLanguages.length === 0 || !selectedSex || !selectedBirthYear || updateLoading
 
   return (
     <div className="h-full flex flex-col">
@@ -172,6 +187,64 @@ export default function FirstTimePage() {
                 {t('pleaseSelectLanguages')}
               </Typography>
             )}
+          </div>
+
+          <Divider className="my-6" />
+
+          {/* Sex and Birth Year Section */}
+          <div className="mb-8">
+            <Typography variant="h6" className="mb-2">
+              {t('personalInfoTitle')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" className="mb-4">
+              {t('personalInfoDescription')}
+            </Typography>
+
+            {/* Sex Selection */}
+            <FormControl component="fieldset" className="mb-4 w-full">
+              <FormLabel component="legend" required>{t('sex')}</FormLabel>
+              <RadioGroup
+                row
+                value={selectedSex}
+                onChange={(e) => setSelectedSex(e.target.value)}
+              >
+                <FormControlLabel 
+                  value="female" 
+                  control={<Radio />} 
+                  label={t('female')} 
+                />
+                <FormControlLabel 
+                  value="male" 
+                  control={<Radio />} 
+                  label={t('male')} 
+                />
+              </RadioGroup>
+              {!selectedSex && (
+                <Typography color="error" className="text-sm mt-1">
+                  {t('pleaseSelectSex')}
+                </Typography>
+              )}
+            </FormControl>
+
+            {/* Birth Year Selection */}
+            <FormControl fullWidth className="mb-4">
+              <FormLabel component="legend" required>{t('birthYear')}</FormLabel>
+              <Select
+                value={selectedBirthYear || ''}
+                onChange={(e) => setSelectedBirthYear(Number(e.target.value) || null)}
+                displayEmpty
+              >
+                <MenuItem value="">{t('selectYear')}</MenuItem>
+                {years.map(year => (
+                  <MenuItem key={year} value={year}>{year}</MenuItem>
+                ))}
+              </Select>
+              {!selectedBirthYear && (
+                <Typography color="error" className="text-sm mt-1">
+                  {t('pleaseSelectBirthYear')}
+                </Typography>
+              )}
+            </FormControl>
           </div>
 
           <Divider className="my-6" />
@@ -215,6 +288,33 @@ export default function FirstTimePage() {
                   ))}
                 </div>
               )}
+
+              {showWarning && (
+                <Alert severity="warning" className="mt-4">
+                  {t('noGroupsSelectedWarning')}
+                </Alert>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="p-6 border-t">
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            disabled={isNextDisabled}
+            onClick={handleNext}
+            startIcon={updateLoading ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {updateLoading ? t('saving') : t('continue')}
+          </Button>
+        </div>
+      </Paper>
+    </div>
+  )
+}
             </div>
           )}
         </div>

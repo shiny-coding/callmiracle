@@ -1,11 +1,12 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { BroadcastType, MeetingStatus, NotificationType } from '@/generated/graphql';
+import { BroadcastType, Meeting, MeetingStatus, NotificationType } from '@/generated/graphql';
 import { createOrUpdateMeeting } from './createOrUpdateMeeting';
 import { publishMeetingNotification } from './publishNotifications';
 import { calledMeetingsMetric, cancelledMeetingsMetric, deletedMeetingsMetric } from '@/utils/metrics';
 import { getLogger } from '@/utils/logger';
 import { publishBroadcastEvent } from './notificationsMutations';
+import { incrementUserMeetingsStats } from '@/utils/meetingsStatsUtils';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -61,20 +62,21 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
     // Track when meetings transition to Called status
     if (status !== undefined && currentStatus !== status && status === MeetingStatus.Called) {
       calledMeetingsMetric.add(1)
+      await incrementUserMeetingsStats(db, meeting?.userId, { attendedCount: 1 })
     }
 
     // Track when meetings are cancelled (only count matched meetings for cancellation rate)
     if (currentStatus !== status && status === MeetingStatus.Cancelled && _peerMeetingId) {
       cancelledMeetingsMetric.add(1)
+      await incrementUserMeetingsStats(db, meeting?.userId, { cancelledCount: 1 })
     }
+
+    const peerMeeting = _peerMeetingId ? await db.collection('meetings').findOne({ _id: _peerMeetingId }) : null
 
     const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Finished
     
     // If status is CANCELLED or FINISHED and this meeting has a peer, handle peer notification
     if (_peerMeetingId) {
-      
-      // Get the peer meeting
-      const peerMeeting = await db.collection('meetings').findOne({ _id: _peerMeetingId })
 
       if (disconnectPeer) {
         // if peer meeting was linked to our meeting, finish it, otherwise update to seeking
@@ -166,6 +168,9 @@ export const meetingsMutations = {
       if (meeting.peerMeetingId) {
         deletedMeetingsMetric.add(1)
       }
+      
+      // Note: We don't decrement meeting stats on deletion to preserve historical data
+      // Users can still see their total created/joined counts even for deleted meetings
 
       // Delete the meeting
       await db.collection('meetings').deleteOne({ _id })

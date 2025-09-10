@@ -4,6 +4,7 @@ import { Call, CallEvent, NotificationType, User } from '@/generated/graphql'
 import { callDurationHistogram, totalCallDurationMetric } from '@/utils/metrics'
 import { getLogger } from '@/utils/logger'
 import { publishSubscriptionEvent } from '@/utils/pubsubHelper'
+import { incrementUserMeetingsStats } from '@/utils/meetingsStatsUtils'
 
 // Helper function to publish meeting discall notification
 export async function publishCallNotification(notificationType: string, db: any, initiator: User, targetUser: User, call: Call) {
@@ -114,6 +115,9 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     if (callDurationS > 0) {
       callDurationHistogram.record(callDurationS)
       totalCallDurationMetric.add(callDurationS)
+
+      await incrementUserMeetingsStats(db, _initiatorUserId, { callsDurationS: callDurationS })
+      await incrementUserMeetingsStats(db, _targetUserId, { callsDurationS: callDurationS })
     }
 
     if (!_meetingId && type === 'expired' && call?.type !== 'connected') {
