@@ -299,7 +299,7 @@ export default function FirstTimePage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="p-6 border-t">
+        <div className="p-6 border-t panel-border">
           <Button
             fullWidth
             variant="contained"
@@ -309,33 +309,6 @@ export default function FirstTimePage() {
             startIcon={updateLoading ? <CircularProgress size={20} color="inherit" /> : null}
           >
             {updateLoading ? t('saving') : t('continue')}
-          </Button>
-        </div>
-      </Paper>
-    </div>
-  )
-}
-            </div>
-          )}
-        </div>
-
-        {/* Footer with Next button */}
-        <div className="sticky bottom-0 left-0 w-full normal-bg border-t panel-border px-6 py-4 flex justify-between items-center">
-          <div className="flex flex-col gap-1">
-            {showWarning && (
-              <Typography color="warning" className="text-sm">
-                {t('warningSelectGroup')}
-              </Typography>
-            )}
-          </div>
-          
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            disabled={isNextDisabled}
-            className="ml-auto"
-          >
-            {updateLoading ? <CircularProgress size={20} /> : t('next')}
           </Button>
         </div>
       </Paper>
