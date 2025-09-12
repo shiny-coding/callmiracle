@@ -10,17 +10,9 @@ export async function POST(request: NextRequest) {
   const logger = await getLogger()
   
   try {
-    fcmTokenRegistrationsMetric.add(1)
-    logger.info('FCM token registration attempt', { source: 'fcm_registration' })
-    
     const session = await getServerSession(authOptions)
 
     if (!session || !session.user) {
-      fcmTokenRegistrationFailuresMetric.add(1)
-      logger.warn('FCM token registration unauthorized', { 
-        hasSession: !!session, 
-        hasUser: !!session?.user 
-      })
       return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
     }
 
@@ -42,9 +34,17 @@ export async function POST(request: NextRequest) {
     )
 
     if (result.modifiedCount === 0 && result.matchedCount === 0) {
-      fcmTokenRegistrationFailuresMetric.add(1)
       logger.warn('FCM token registration user not found', { userId })
       return new NextResponse(JSON.stringify({ message: 'User not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    // Only increment the metric when a new subscription was actually added
+    if (result.modifiedCount > 0) {
+      fcmTokenRegistrationsMetric.add(1)
+      logger.info('FCM token registered successfully - new subscription added', { 
+        userId, 
+        subscriptionEndpoint: subscription?.endpoint 
+      })
     }
 
     return new NextResponse(JSON.stringify({ success: true, message: 'Subscription saved.' }), { status: 200, headers: { 'Content-Type': 'application/json' } })

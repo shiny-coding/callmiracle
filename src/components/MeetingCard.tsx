@@ -159,7 +159,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   const handleCallPeer = () => {
     if (meetingWithPeer.peerUser && meetingWithPeer.peerUser._id) {
-      console.log('calling peer', meetingWithPeer.peerUser, meetingWithPeer.meeting._id)
       // If this is a first call (no lastCallTime), don't show user info
       doCall(meetingWithPeer.peerUser as User, false, meetingWithPeer.meeting._id, meetingWithPeer.meeting.lastCallTime ?? null)
     }
@@ -331,7 +330,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                           <Typography variant="body2" className={`${textColor} whitespace-nowrap flex items-center h-6`}>
                             {day}
                           </Typography>
-                          <div className="grid grid-cols-[repeat(auto-fill,90px)] gap-1">
+                          <div className="grid grid-cols-[repeat(auto-fill,110px)] gap-1">
                             <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
                                 {meeting.minDurationM} {t('min')}
                               </Typography>
@@ -347,7 +346,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                         <Typography variant="body2" className={`${textColor} whitespace-nowrap flex items-center h-6`}>
                           {day}
                         </Typography>
-                        <div className="grid grid-cols-[repeat(auto-fill,90px)] gap-1">
+                        <div className="grid grid-cols-[repeat(auto-fill,110px)] gap-1">
                           {displayableSlots.map(({start, end}, slotIndex) => {
                             const isActive = isWithinInterval(now, {
                               start: new Date(start),

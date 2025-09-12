@@ -39,6 +39,7 @@
     "scale:external-redis:down": "docker-compose -f docker-compose.scale-no-redis.yml down",
     "scale:external-redis:logs": "docker-compose -f docker-compose.scale-no-redis.yml logs -f",
     "test:observability": "node --loader ts-node/esm -e \"import('./src/utils/observabilityTest.ts').then(m => m.runObservabilityTests())\"",
+    "clean:metrics": "docker-compose -f docker-compose.observability.yml stop prometheus otel-collector && docker-compose -f docker-compose.observability.yml rm -f prometheus otel-collector && docker volume rm callmiracle_prometheus-data && docker-compose -f docker-compose.observability.yml up -d otel-collector prometheus",
     "kill-port": "node scripts/kill-port.js 3003 9229 9230"
   },
   "dependencies": {

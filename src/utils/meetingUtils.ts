@@ -199,8 +199,14 @@ function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
     .filter(m => !isMeetingPassed(m))
     .flatMap(m => {
       if (m.startTime) {
-        // Only two slots: startTime and startTime + 30min
-        return [m.startTime, m.startTime + 30 * 60 * 1000]
+        // Round startTime down to the previous 30-minute slot
+        const startDate = new Date(m.startTime)
+        const minutes = startDate.getMinutes()
+        const roundedMinutes = minutes < 30 ? 0 : 30
+        const slotStartTime = setMilliseconds(setSeconds(setMinutes(startDate, roundedMinutes), 0), 0).getTime()
+        
+        // Return slot start time and next slot (slot start + 30min)
+        return [slotStartTime, slotStartTime + SLOT_DURATION]
       }
       return m.timeSlots || []
     })

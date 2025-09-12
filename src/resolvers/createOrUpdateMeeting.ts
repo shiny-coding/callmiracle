@@ -211,8 +211,8 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
         
         // Track matched meetings - both meetings are now matched
         const currentHour = new Date().getHours()
-        matchedMeetingsMetric.add(2) // Both our meeting and peer meeting
-        hourlyMatchingSuccessMetric.add(2, { hour: currentHour.toString() })
+        matchedMeetingsMetric.add(1) // Both our meeting and peer meeting
+        hourlyMatchingSuccessMetric.add(1, { hour: currentHour.toString() })
       });
 
       return { meeting: myMeeting }

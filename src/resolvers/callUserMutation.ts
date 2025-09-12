@@ -121,7 +121,7 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     }
 
     if (!_meetingId && type === 'expired' && call?.type !== 'connected') {
-      await publishCallNotification('missed-call', db, initiator, targetUser, call as Call)
+      await publishCallNotification('MISSED_CALL', db, initiator, targetUser, call as Call)
     }
     
     // If this call was for a meeting and has a duration, update the meeting's total duration

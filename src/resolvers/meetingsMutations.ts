@@ -66,7 +66,7 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
     }
 
     // Track when meetings are cancelled (only count matched meetings for cancellation rate)
-    if (currentStatus !== status && status === MeetingStatus.Cancelled && _peerMeetingId) {
+    if (currentStatus !== status && status === MeetingStatus.Cancelled) {
       cancelledMeetingsMetric.add(1)
       await incrementUserMeetingsStats(db, meeting?.userId, { cancelledCount: 1 })
     }

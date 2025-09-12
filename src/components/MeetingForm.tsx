@@ -13,7 +13,7 @@ import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
 import LanguageSelector from './LanguageSelector'
 import SingleGroupSelector from './SingleGroupSelector'
-import { getAvailableTimeSlots, getTimeSlotsFromMeeting } from '@/utils/meetingUtils'
+import { getAvailableTimeSlots, getTimeSlotsFromMeeting, isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useMeetings } from '@/contexts/MeetingsContext'
@@ -477,8 +477,8 @@ export default function MeetingForm() {
         )}
       </div>
       {/* Bottom Controls Bar */}
-      <div className="sticky bottom-0 left-0 w-full normal-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10">
-        {meeting && (
+      <div className="sticky bottom-0 left-0 w-full normal-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10 flex-wrap">
+        {meeting && !isMeetingPassed(meeting) && (
           <Button
             variant="contained"
             color="warning"
