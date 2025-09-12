@@ -262,11 +262,11 @@ export type MeetingWithPeer = {
 export type MeetingsStats = {
   __typename?: 'MeetingsStats';
   attendedCount: Scalars['Int']['output'];
+  callsCount: Scalars['Int']['output'];
   callsDurationS: Scalars['Int']['output'];
   cancelledCount: Scalars['Int']['output'];
   createdCount: Scalars['Int']['output'];
   joinedCount: Scalars['Int']['output'];
-  callsCount: Scalars['Int']['output'];
 };
 
 export type Message = {
@@ -407,7 +407,8 @@ export enum NotificationType {
   MeetingConnected = 'MEETING_CONNECTED',
   MeetingDisconnected = 'MEETING_DISCONNECTED',
   MeetingFinished = 'MEETING_FINISHED',
-  MessageReceived = 'MESSAGE_RECEIVED'
+  MessageReceived = 'MESSAGE_RECEIVED',
+  MissedCall = 'MISSED_CALL'
 }
 
 export type PushSubscription = {

@@ -147,7 +147,8 @@
     "meetingDisconnected": "Ваш партнер отменил встречу.",
     "newNotification": "Новое уведомление",
     "meetingPartnerUpdated": "Ваша встреча с партнером обновлена",
-    "meetingWithFinished": "Ваша встреча с {name} завершена"
+    "meetingWithFinished": "Ваша встреча с {name} завершена",
+    "missedCall": "Пропущенный звонок от {name}"
   },
   "totalDuration": "Общая продолжительность звонков",
   "finishMeeting": "Завершить",

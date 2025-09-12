@@ -25,7 +25,7 @@ export default function CallerDialog() {
   const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
 
   const sendExpired = useCallback(async () => {
-    const { targetUser, callId } = syncStore()
+    const { targetUser, callId, setCallId } = syncStore()
     if (callId && targetUser) {
       console.log('Sending expired', callId)
       await callUser({
@@ -38,6 +38,8 @@ export default function CallerDialog() {
           }
         }
       })
+      // Clear callId after sending expired to prevent duplicate sends
+      setCallId(null)
     }
   }, [currentUser, callUser])
 

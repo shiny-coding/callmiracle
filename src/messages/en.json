@@ -148,7 +148,8 @@
     "meetingDisconnected": "Your meeting partner has canceled the meeting.",
     "newNotification": "New notification",
     "meetingPartnerUpdated": "Your meeting with a partner has been updated",
-    "meetingWithFinished": "Your meeting with {name} has been finished"    
+    "meetingWithFinished": "Your meeting with {name} has been finished",
+    "missedCall": "Missed call from {name}"
   },
   "totalDuration": "Total call duration",
   "finishMeeting": "Finish",

@@ -7,7 +7,7 @@ import { publishSubscriptionEvent } from '@/utils/pubsubHelper'
 import { incrementUserMeetingsStats } from '@/utils/meetingsStatsUtils'
 
 // Helper function to publish meeting discall notification
-export async function publishCallNotification(notificationType: string, db: any, initiator: User, targetUser: User, call: Call) {
+export async function publishCallNotification(notificationType: NotificationType, db: any, initiator: User, targetUser: User, call: Call) {
   const logger = await getLogger()
   
   // Create a notification in the database
