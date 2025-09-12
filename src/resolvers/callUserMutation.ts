@@ -130,7 +130,6 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       if (_meetingId) {
         const meeting = await db.collection('meetings').findOne<Meeting>({ _id: _meetingId })
         // Show name only if there was at least one successful call in this meeting before
-        console.log('!meeting!', meeting)
         showInitiatorName = !!meeting?.lastCallTime || meeting?.transparency === MeetingTransparency.Transparent
       }
       await publishCallNotification(NotificationType.MissedCall, db, initiator, targetUser, call as Call, showInitiatorName)

@@ -91,7 +91,6 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
       }
 
       if (peerMeeting) {
-        // Update the peer meeting to SEEKING status
         await db.collection('meetings').updateOne(
           { _id: _peerMeetingId },
           { $set: updateFields }
