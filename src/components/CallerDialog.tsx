@@ -34,7 +34,8 @@ export default function CallerDialog() {
             type: 'expired',
             targetUserId: targetUser._id,
             initiatorUserId: currentUser?._id,
-            callId
+            callId,
+            meetingId
           }
         }
       })

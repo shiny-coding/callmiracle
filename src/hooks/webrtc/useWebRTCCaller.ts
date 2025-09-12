@@ -244,7 +244,8 @@ export function useWebRTCCaller({
             videoEnabled: localVideoEnabled,
             audioEnabled: localAudioEnabled,
             quality: qualityWeWantFromRemote,
-            callId: syncStore().callId // Use current callId for both reconnect and new calls
+            callId: syncStore().callId, // Use current callId for both reconnect and new calls
+            meetingId: meetingId
           }
         }
       })

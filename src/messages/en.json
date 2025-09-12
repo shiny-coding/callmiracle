@@ -149,7 +149,8 @@
     "newNotification": "New notification",
     "meetingPartnerUpdated": "Your meeting with a partner has been updated",
     "meetingWithFinished": "Your meeting with {name} has been finished",
-    "missedCall": "Missed call from {name}"
+    "missedCall": "Missed call from {name}",
+    "missedCallAnonymous": "Missed call on meeting"
   },
   "totalDuration": "Total call duration",
   "finishMeeting": "Finish",

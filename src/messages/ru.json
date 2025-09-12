@@ -148,7 +148,8 @@
     "newNotification": "Новое уведомление",
     "meetingPartnerUpdated": "Ваша встреча с партнером обновлена",
     "meetingWithFinished": "Ваша встреча с {name} завершена",
-    "missedCall": "Пропущенный звонок от {name}"
+    "missedCall": "Пропущенный звонок от {name}",
+    "missedCallAnonymous": "Пропущенный звонок по встрече"
   },
   "totalDuration": "Общая продолжительность звонков",
   "finishMeeting": "Завершить",

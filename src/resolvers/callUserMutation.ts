@@ -1,14 +1,17 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
-import { Call, CallEvent, NotificationType, User } from '@/generated/graphql'
+import { Call, CallEvent, Meeting, MeetingTransparency, NotificationType, User } from '@/generated/graphql'
 import { callDurationHistogram, totalCallDurationMetric } from '@/utils/metrics'
 import { getLogger } from '@/utils/logger'
 import { publishSubscriptionEvent } from '@/utils/pubsubHelper'
 import { incrementUserMeetingsStats } from '@/utils/meetingsStatsUtils'
 
 // Helper function to publish meeting discall notification
-export async function publishCallNotification(notificationType: NotificationType, db: any, initiator: User, targetUser: User, call: Call) {
+export async function publishCallNotification(notificationType: NotificationType, db: any, initiator: User, targetUser: User, call: Call, showInitiatorName: boolean = true) {
   const logger = await getLogger()
+  
+  // Use initiator name if showInitiatorName is true, otherwise null for anonymous calls
+  const peerUserName = showInitiatorName ? initiator.name : null
   
   // Create a notification in the database
   await db.collection('notifications').insertOne({
@@ -16,14 +19,14 @@ export async function publishCallNotification(notificationType: NotificationType
     userName: targetUser.name,
     type: notificationType,
     seen: false,
-    peerUserName: initiator.name,
+    peerUserName,
     createdAt: new Date()
   })
   
   // Publish notification event
   const topic = `SUBSCRIPTION_EVENT:${targetUser._id.toString()}`
   publishSubscriptionEvent(topic, { 
-    notificationEvent: { type: notificationType as NotificationType, peerUserName: initiator.name },
+    notificationEvent: { type: notificationType as NotificationType, peerUserName },
     logger 
   })
   
@@ -32,6 +35,7 @@ export async function publishCallNotification(notificationType: NotificationType
     targetUserName: targetUser.name,
     targetUserId: targetUser._id.toString(),
     initiatorName: initiator.name,
+    showInitiatorName,
     callId: call._id?.toString()
   })
 }
@@ -120,8 +124,16 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       await incrementUserMeetingsStats(db, _targetUserId, { callsDurationS: callDurationS })
     }
 
-    if (!_meetingId && type === 'expired' && call?.type !== 'connected') {
-      await publishCallNotification('MISSED_CALL', db, initiator, targetUser, call as Call)
+    if (type === 'expired' && call?.type !== 'connected') {
+      // For meeting calls, check if meetingLastCallTime exists to determine if we should show the caller's name
+      let showInitiatorName = true
+      if (_meetingId) {
+        const meeting = await db.collection('meetings').findOne<Meeting>({ _id: _meetingId })
+        // Show name only if there was at least one successful call in this meeting before
+        console.log('!meeting!', meeting)
+        showInitiatorName = !!meeting?.lastCallTime || meeting?.transparency === MeetingTransparency.Transparent
+      }
+      await publishCallNotification(NotificationType.MissedCall, db, initiator, targetUser, call as Call, showInitiatorName)
     }
     
     // If this call was for a meeting and has a duration, update the meeting's total duration

@@ -11,7 +11,9 @@ export const getNotificationMessage = (notification: any, t: TFunction): string 
     case NotificationType.MeetingFinished:
       return t('notificationMessages.meetingWithFinished', { name: notification.peerUserName })
     case NotificationType.MissedCall:
-      return t('notificationMessages.missedCall', { name: notification.peerUserName })
+      return notification.peerUserName 
+        ? t('notificationMessages.missedCall', { name: notification.peerUserName })
+        : t('notificationMessages.missedCallAnonymous')
     default:
       console.log('Unknown notification type:', notification.type)
       return t('notificationMessages.newNotification')
