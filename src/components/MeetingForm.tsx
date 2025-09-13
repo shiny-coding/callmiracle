@@ -25,6 +25,7 @@ import { handleMeetingSaveResult, calculateHasValidDuration, trySelectHourSlots,
 import PageHeader from './PageHeader'
 import UserAvatar from './UserAvatar'
 import UserDetailsPopup from './UserDetailsPopup'
+import { LANGUAGES } from '@/config/languages'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -138,6 +139,12 @@ export default function MeetingForm() {
       // Connecting to existing meeting
       setSelectedGroupId(meetingToConnect.groupId || '')
       setMinDurationM(meetingToConnect.minDurationM || 60)
+      
+      // Set languages to intersection of meeting languages and current user's languages
+      const meetingLanguages = meetingToConnect.languages || []
+      const userLanguages = currentUser?.languages || []
+      const languageIntersection = meetingLanguages.filter(lang => userLanguages.includes(lang))
+      setTempLanguagesState(languageIntersection)
     } else {
       // Creating new meeting - use lastMeetingGroup if available and user is still in that group
       if (lastMeetingGroup && currentUser?.groups?.includes(lastMeetingGroup)) {
@@ -317,13 +324,24 @@ export default function MeetingForm() {
         )}
 
         {/* Group Selector */}
-        <SingleGroupSelector
-          value={selectedGroupId}
-          onChange={setSelectedGroupId}
-          label={t('selectGroup')}
-          availableGroups={userGroups}
-        />
-        {!selectedGroupId && (
+        {meetingToConnect ? (
+          <div>
+            <Typography variant="subtitle1" className="mb-2">
+              {t('group')}
+            </Typography>
+            <Typography variant="body1" className="p-3 rounded-lg">
+              {userGroups.find(group => group._id === meetingToConnect.groupId)?.name || t('unknownGroup')}
+            </Typography>
+          </div>
+        ) : (
+          <SingleGroupSelector
+            value={selectedGroupId}
+            onChange={setSelectedGroupId}
+            label={t('selectGroup')}
+            availableGroups={userGroups}
+          />
+        )}
+        {!selectedGroupId && !meetingToConnect && (
           <Typography color="error" className="text-sm">
             {t('pleaseSelectGroup')}
           </Typography>
@@ -347,14 +365,32 @@ export default function MeetingForm() {
         <Typography variant="subtitle1" className="mt-4">
           {t('languages')}
         </Typography>
-        <LanguageSelector
-          value={tempLanguages}
-          onChange={setTempLanguages}
-          availableLanguages={meetingToConnect?.languages}
-        />
+        {meetingToConnect ? (
+          <div>
+            <div className="p-3 rounded-lg">
+              {tempLanguages.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {tempLanguages.map(langCode => {
+                    const language = LANGUAGES.find(lang => lang.code === langCode)
+                    return (
+                      <span key={langCode} className="px-2 py-1 text-sm">
+                        {language?.name || langCode}
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <LanguageSelector
+            value={tempLanguages}
+            onChange={setTempLanguages}
+          />
+        )}
         {tempLanguages.length === 0 && (
           <Typography color="error" className="text-sm">
-            {t('pleaseSelectLanguages')}
+            {meetingToConnect ? t('noCommonLanguages') : t('pleaseSelectLanguages')}
           </Typography>
         )}
         <Typography variant="subtitle1" className="mt-4">
