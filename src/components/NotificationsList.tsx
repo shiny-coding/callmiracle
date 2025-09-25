@@ -10,6 +10,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll'
 import { NotificationType } from '@/generated/graphql'
 import { useRouter } from 'next/navigation'
 import { getNotificationMessage } from '@/utils/notificationUtils'
+import { routerPush } from '@/utils/routerHelper'
 
 interface NotificationsListProps {
   onClose?: () => void
@@ -37,7 +38,12 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
     setNotificationSeen(notification._id)
     setHighlightedMeetingId(notification.meetingId)
     onClose?.()
-    router.push(`/list`)
+    routerPush(router, `/list`, {
+      source: 'notification_go_to_meeting',
+      notificationType: notification.type,
+      meetingId: notification.meetingId,
+      notificationId: notification._id
+    })
   }
 
   return (

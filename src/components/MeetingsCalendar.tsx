@@ -20,6 +20,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { useRouter } from 'next/navigation'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
+import { routerPush } from '@/utils/routerHelper'
 import { NetworkStatus } from '@apollo/client'
 import { useGroups } from '@/store/GroupsProvider'
 import UserDetailsPopup from './UserDetailsPopup'
@@ -196,7 +197,10 @@ export default function MeetingsCalendar() {
               setProfileIncompleteDialogOpen(true)
               return
             }
-            router.push('/meeting')
+            routerPush(router, '/meeting', {
+              source: 'meetings_calendar_add_button',
+              userComplete: isProfileComplete(currentUser)
+            })
           }}
           aria-label={t('createNewMeeting')}
           title={t('createNewMeeting')}

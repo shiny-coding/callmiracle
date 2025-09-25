@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation'
 import LocaleSelector from './LocaleSelector'
 import { signOut } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
+import { routerPush } from '@/utils/routerHelper'
 
 export default function TopControlsBar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -106,13 +107,19 @@ export default function TopControlsBar() {
 
   const handleProfileSettings = () => {
     handleProfileMenuClose()
-    router.push('/profile')
+    routerPush(router, '/profile', {
+      source: 'top_controls_bar_profile_menu',
+      connectionStatus
+    })
   }
 
   const handleLogout = () => {
     handleProfileMenuClose()
     signOut({ redirect: false }).then(() => {
-      router.push('/auth/signin')
+      routerPush(router, '/auth/signin', {
+        source: 'top_controls_bar_logout',
+        previousConnectionStatus: connectionStatus
+      })
     })
   }
 

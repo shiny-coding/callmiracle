@@ -5,6 +5,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { useTranslations } from 'next-intl'
 import MeetingCard from './MeetingCard'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { routerPush } from '@/utils/routerHelper'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import AddIcon from '@mui/icons-material/Add'
@@ -79,7 +80,10 @@ export default function MeetingsList() {
       setProfileIncompleteDialogOpen(true)
       return
     }
-    router.push('/meeting')
+    routerPush(router, '/meeting', {
+      source: 'add_new_meeting_click',
+      userComplete: isProfileComplete(currentUser)
+    })
   }
 
   const allMeetingsPassedOrNoneExist = 
@@ -139,7 +143,11 @@ export default function MeetingsList() {
                   meetingWithPeer={meetingWithPeer} 
                   onEdit={e => {
                     e?.stopPropagation()
-                    router.push(`/meeting/${meetingWithPeer.meeting._id}`)
+                    routerPush(router, `/meeting/${meetingWithPeer.meeting._id}`, {
+                      source: 'meeting_card_edit_click',
+                      meetingId: meetingWithPeer.meeting._id,
+                      meetingStatus: meetingWithPeer.meeting.status
+                    })
                   }}
                 />
               </ListItem>

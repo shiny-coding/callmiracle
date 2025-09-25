@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
+import { routerPush } from '@/utils/routerHelper'
 import Cookies from 'js-cookie'
 import { 
   Button, TextField, Typography, Card, CardContent, Divider, Box, 
@@ -95,7 +96,12 @@ export default function SignInContent() {
     const newPath = `/${newLocale}/${pathWithoutLocale}`
     
     setShowLocaleDialog(false)
-    router.push(newPath)
+    routerPush(router, newPath, {
+      source: 'signin_locale_change',
+      oldLocale: currentLocale,
+      newLocale,
+      pathWithoutLocale
+    })
   }
 
   return (
@@ -157,7 +163,11 @@ function SignInForm() {
         const res = await signIn('credentials', { redirect: false, email, password, callbackUrl, })
 
         if (!res?.error) {
-          router.push(callbackUrl)
+          routerPush(router, callbackUrl, {
+            source: 'signin_credentials_success',
+            email,
+            callbackUrl
+          })
         } else if (res.error.startsWith('provider_')) {
           // Handle provider error
           const provider = res.error.replace('provider_', '')
@@ -195,7 +205,11 @@ function SignInForm() {
             email,
             password,
           })
-          router.push(callbackUrl)
+          routerPush(router, callbackUrl, {
+            source: 'signin_signup_success',
+            email,
+            callbackUrl
+          })
         } else if (data.error === 'provider_exists') {
           // Handle case where email is already used with a social provider
           const provider = data.provider.charAt(0).toUpperCase() + data.provider.slice(1)

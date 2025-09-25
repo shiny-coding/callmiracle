@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useClientPushNotifications } from '@/hooks/useClientPushNotifications'
 import { useSnackbar } from './SnackContext'
 import { NotificationType } from '@/generated/graphql'
+import { routerPush } from '@/utils/routerHelper'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications($userId: ID!) {
@@ -74,7 +75,11 @@ function showBrowserNotification(notificationEvent: any, t: any, router: any) {
   const notification = new window.Notification('CallMiracle', { body })
   notification.onclick = () => {
     if (notificationEvent.meeting?._id) {
-      router.push(`/list?meetingId=${notificationEvent.meeting._id}`)
+      routerPush(router, `/list?meetingId=${notificationEvent.meeting._id}`, {
+        source: 'browser_notification_click',
+        notificationType: notificationEvent.type,
+        meetingId: notificationEvent.meeting._id
+      })
     }
   }
 }
@@ -116,7 +121,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         if (notificationEvent.type === NotificationType.MessageReceived) {
           const messageText = `${notificationEvent.peerUserName}: ${notificationEvent.messageText}`
           showSnackbar(messageText, 'info', () => {
-            router.push(`/conversations?with=${notificationEvent.peerUserId}`)
+            routerPush(router, `/conversations?with=${notificationEvent.peerUserId}`, {
+              source: 'message_notification_snackbar_click',
+              peerUserId: notificationEvent.peerUserId,
+              notificationType: notificationEvent.type
+            })
           })
 
           if (!isMessagePlaying) {
@@ -125,7 +134,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         } else {
           showSnackbar(getNotificationMessage(notificationEvent, t), 'info', () => {
             if (notificationEvent.meeting?._id) {
-              router.push(`/list?meetingId=${notificationEvent.meeting._id}`)
+              routerPush(router, `/list?meetingId=${notificationEvent.meeting._id}`, {
+                source: 'notification_snackbar_click',
+                notificationType: notificationEvent.type,
+                meetingId: notificationEvent.meeting._id,
+                hasMeetingObject: !!notificationEvent.meeting
+              })
             }
           })
 

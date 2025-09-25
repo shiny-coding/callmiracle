@@ -12,6 +12,7 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useRouter, usePathname  } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useConversations } from '@/store/ConversationsProvider'
+import { routerPush } from '@/utils/routerHelper'
 import NotificationBadge from './NotificationBadge'
 
 export default function BottomControlsBar() {
@@ -40,28 +41,28 @@ export default function BottomControlsBar() {
       <div className="mt-auto p-3 w-full flex justify-center items-center gap-4 bg-gradient-to-b from-transparent to-white/30">
         {connectionStatus !== 'connected' && (
           <>
-            <IconButton onClick={() => router.push(calendarPath)} style={{ color: pathname === calendarPath ? selectedColor : undefined, }} >
+            <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} style={{ color: pathname === calendarPath ? selectedColor : undefined, }} >
               <CalendarMonthIcon />
             </IconButton>
-            <IconButton onClick={() => router.push(listPath)} style={{ color: pathname === listPath ? selectedColor : undefined, }} >
+            <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} style={{ color: pathname === listPath ? selectedColor : undefined, }} >
               <ListIcon />
             </IconButton>
 
-            <IconButton onClick={() => router.push(usersPath)} style={{ color: pathname === usersPath ? selectedColor : undefined, }} >
+            <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} style={{ color: pathname === usersPath ? selectedColor : undefined, }} >
               <PersonIcon />
             </IconButton>
             
-            <IconButton onClick={() => router.push(groupsPath)} style={{ color: pathname === groupsPath ? selectedColor : undefined, }} >
+            <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} style={{ color: pathname === groupsPath ? selectedColor : undefined, }} >
               <GroupIcon />
             </IconButton>
             
-            <IconButton onClick={() => router.push(conversationsPath)} style={{ color: pathname === conversationsPath ? selectedColor : undefined, }} >
+            <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} style={{ color: pathname === conversationsPath ? selectedColor : undefined, }} >
               <NotificationBadge show={hasUnreadConversations}>
                 <MessageIcon />
               </NotificationBadge>
             </IconButton>
             
-            <IconButton onClick={() => router.push(callHistoryPath)} style={{ color: pathname === callHistoryPath ? selectedColor : undefined, }} >
+            <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} style={{ color: pathname === callHistoryPath ? selectedColor : undefined, }} >
               <HistoryIcon />
             </IconButton>
           </>

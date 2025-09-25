@@ -13,14 +13,10 @@ services:
     networks:
       - redis-network
     restart: unless-stopped
-    command: redis-server --appendonly yes
     volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
       - redis_data:/data
-    # Optional: Redis configuration
-    # volumes:
-    #   - ./redis.conf:/usr/local/etc/redis/redis.conf
-    #   - redis_data:/data
-    # command: redis-server /usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
 
 volumes:
   redis_data:

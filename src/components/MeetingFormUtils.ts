@@ -5,6 +5,7 @@ import { TimeSlot } from "./TimeSlotsGrid";
 import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { UPDATE_MEETING_LAST_CALL } from './MeetingCardUtils'; // Assuming this is the correct path
+import { routerPush } from '@/utils/routerHelper'
 
 export function handleMeetingSaveResult(
   result: MeetingOutput,
@@ -41,7 +42,13 @@ export function handleMeetingSaveResult(
       }
     }
     showSnackbar(message, 'success')
-    router.push(`/${locale}/list`)
+    routerPush(router, `/${locale}/list`, {
+      source: 'meeting_save_success',
+      meetingToConnectId,
+      meetingId,
+      operationType: meetingToConnectId ? 'connect' : (meetingId ? 'update' : 'create'),
+      hasPeerConnection: !!result.meeting?.peerMeetingId
+    })
   }
 }
 

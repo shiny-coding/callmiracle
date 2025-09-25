@@ -16,6 +16,7 @@ import { Group, User, MeetingTransparency } from '@/generated/graphql'
 import { useParams, useRouter } from 'next/navigation'
 import { useGroups } from '@/store/GroupsProvider'
 import LoadingDialog from './LoadingDialog'
+import { routerPush } from '@/utils/routerHelper'
 import { useSnackbar } from '@/contexts/SnackContext'
 import PageHeader from './PageHeader'
 import GroupIcon from '@mui/icons-material/Group'
@@ -138,7 +139,12 @@ export default function GroupForm() {
             : t('groupCreated'),
           'success'
         )
-        router.push(`/${locale}/groups`)
+        routerPush(router, `/${locale}/groups`, {
+          source: 'group_form_save_success',
+          groupId,
+          operationType: groupId ? 'update' : 'create',
+          locale
+        })
       }
     } catch (error) {
       console.error('Error saving group:', error)

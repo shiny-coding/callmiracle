@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useRouter } from 'next/navigation'
+import { routerPush } from '@/utils/routerHelper'
 
 interface ProfileIncompleteDialogProps {
   open: boolean
@@ -17,7 +18,11 @@ export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncomp
   const router = useRouter()
 
   const handleOpenProfileSettings = () => {
-    router.push( '/profile' )
+    routerPush(router, '/profile', {
+      source: 'profile_incomplete_dialog',
+      missingFields,
+      currentPath: typeof window !== 'undefined' ? window.location.pathname : 'server'
+    })
     onClose()
   }
   

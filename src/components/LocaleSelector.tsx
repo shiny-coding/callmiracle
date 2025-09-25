@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { FormControl, Select, MenuItem } from '@mui/material';
 import { Locale, locales } from '@/config';
 import Cookies from 'js-cookie'
+import { routerPush } from '@/utils/routerHelper'
 
 export default function LocaleSelector() {
   const pathname = usePathname();
@@ -45,7 +46,12 @@ export default function LocaleSelector() {
     
     const pathWithoutLocale = pathname?.split('/').slice(2).join('/')
     const newPath = `/${newLocale}/${pathWithoutLocale}`
-    router.push(newPath)
+    routerPush(router, newPath, {
+      source: 'locale_selector_change',
+      oldLocale: currentLocale,
+      newLocale,
+      pathWithoutLocale
+    })
   };
 
   return (

@@ -4,6 +4,7 @@ import { signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { routerPush } from '@/utils/routerHelper'
 
 export default function SignOut() {
   const router = useRouter()
@@ -16,7 +17,11 @@ export default function SignOut() {
       await signOut({ redirect: false })
       // Extract locale from pathname and redirect to localized signin
       const locale = pathname.split('/')[1] || 'en'
-      router.push(`/${locale}/auth/signin`)
+      routerPush(router, `/${locale}/auth/signin`, {
+        source: 'auth_signout_page',
+        locale,
+        previousPath: pathname
+      })
     }
     
     handleSignOut()

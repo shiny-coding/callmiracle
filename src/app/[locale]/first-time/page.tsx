@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
+import { routerPush } from '@/utils/routerHelper'
 import { 
   Paper, 
   Typography, 
@@ -151,7 +152,12 @@ export default function FirstTimePage() {
       }
       
       // Navigate to calendar - the JWT token should now have the updated languages
-      router.push(`/${locale}/calendar`)
+      routerPush(router, `/${locale}/calendar`, {
+        source: 'first_time_setup_complete',
+        selectedLanguages: languages,
+        selectedGroups: selectedGroupIds,
+        profileData: { name, sex, birthYear }
+      })
       
     } catch (error) {
       console.error('Error updating user:', error)

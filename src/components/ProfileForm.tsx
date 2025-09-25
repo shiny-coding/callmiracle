@@ -19,6 +19,7 @@ import { gql, useMutation } from '@apollo/client'
 import { useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress'
 import PageHeader from './PageHeader'
+import { routerPush } from '@/utils/routerHelper'
 import Typography from '@mui/material/Typography'
 import { useServer } from '@/contexts/ServerContext'
 
@@ -83,7 +84,10 @@ export default function ProfileForm() {
     if (window.history.length > 1) {
       router.back()
     } else {
-      router.push('/')
+      routerPush(router, '/', {
+        source: 'profile_form_cancel_fallback',
+        reason: 'no_browser_history'
+      })
     }
   }
 
@@ -189,7 +193,10 @@ export default function ProfileForm() {
     try {
       await deleteUser({ variables: { userId: currentUserId } })
       signOut({ redirect: false }).then(() => {
-        router.push('/auth/signin')
+        routerPush(router, '/auth/signin', {
+          source: 'profile_form_delete_account',
+          reason: 'account_deleted'
+        })
       })
     } catch (error) {
       console.error('Error deleting account:', error)

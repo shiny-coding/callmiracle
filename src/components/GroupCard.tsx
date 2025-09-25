@@ -16,6 +16,7 @@ import { useUpdateGroup } from '@/hooks/useUpdateGroup'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useSnackbar } from '@/contexts/SnackContext'
+import { routerPush } from '@/utils/routerHelper'
 import { useGroups } from '@/store/GroupsProvider'
 import ConfirmationDialog from './ConfirmationDialog'
 import { LANGUAGES } from '@/config/languages'
@@ -55,7 +56,11 @@ export default function GroupCard({ group }: GroupCardProps) {
   }
 
   const handleEdit = () => {
-    router.push(`/${locale}/groups/${group._id}`)
+    routerPush(router, `/${locale}/groups/${group._id}`, {
+      source: 'group_card_edit_button',
+      groupId: group._id,
+      groupName: group.name
+    })
   }
 
   const handleDeleteClick = () => {
@@ -121,7 +126,11 @@ export default function GroupCard({ group }: GroupCardProps) {
   }
 
   const handleGroupClick = () => {
-    router.push(`/${locale}/users?groupId=${group._id}`)
+    routerPush(router, `/${locale}/users?groupId=${group._id}`, {
+      source: 'group_card_click',
+      groupId: group._id,
+      groupName: group.name
+    })
   }
 
   return (

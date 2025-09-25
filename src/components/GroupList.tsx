@@ -17,6 +17,7 @@ import LoadingDialog from './LoadingDialog'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import PageHeader from './PageHeader'
+import { routerPush } from '@/utils/routerHelper'
 
 export default function GroupList() {
   const { groups, loading, error, refetch } = useGroups()
@@ -79,7 +80,10 @@ export default function GroupList() {
         title={t('groups')}
       >
         <IconButton 
-          onClick={() => router.push(`/${locale}/groups/create`)} 
+          onClick={() => routerPush(router, `/${locale}/groups/create`, {
+            source: 'group_list_create_button',
+            locale
+          })} 
           aria-label={t('createGroup')}
           title={t('createGroup')}
           size="small"

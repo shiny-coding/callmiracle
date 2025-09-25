@@ -22,6 +22,7 @@ import { useSnackbar } from '@/contexts/SnackContext'
 import UserAvatar from './UserAvatar'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
+import { routerPush } from '@/utils/routerHelper'
 
 interface UserCardProps {
   user: User
@@ -157,7 +158,11 @@ export default function UserCard({
             <IconButton
               onClick={(e) => {
                 e.stopPropagation()
-                router.push(`/${locale}/conversations?with=${user._id}`)
+                routerPush(router, `/${locale}/conversations?with=${user._id}`, {
+                  source: 'user_card_message_button',
+                  targetUserId: user._id,
+                  targetUserName: user.name
+                })
               }}
               className="text-white hover:bg-gray-600"
               title={t('sendMessage')}

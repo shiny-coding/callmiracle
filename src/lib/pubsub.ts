@@ -36,12 +36,18 @@ function initializePubSub() {
       const redisOptions = {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
-        connectTimeout: 5000,
-        lazyConnect: false, // Connect immediately to test connectivity
-        maxRetriesPerRequest: 0, // No retries
-        retryDelayOnFailover: false, // No retry on failover
-        enableOfflineQueue: false, // Don't queue commands when disconnected
-        enableReadyCheck: true, // Ensure connection is ready
+        password: process.env.REDIS_PASSWORD,
+        connectTimeout: 2000,
+        lazyConnect: false,
+        // CRITICAL: maxRetriesPerRequest must be null for pub/sub (from ioredis docs)
+        maxRetriesPerRequest: null,
+        retryDelayOnFailover: false,
+        enableOfflineQueue: false,
+        enableReadyCheck: true,
+        // Pub/sub optimizations
+        keepAlive: 30000,
+        commandTimeout: 5000,
+        family: 4,
       }
 
       logger.info(`Attempting to connect to Redis at ${redisOptions.host}:${redisOptions.port}`)

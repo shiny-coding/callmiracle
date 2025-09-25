@@ -71,7 +71,9 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
           </Button>
         )}
         {!isReconnecting && !isConnecting && (
-          <Button onClick={() => onAccept(null)} variant="contained" color="success">
+          <Button onClick={() => {
+            onAccept(null)
+          }} variant="contained" color="success">
             {tVideoChat('accept')}
           </Button>
         )}
