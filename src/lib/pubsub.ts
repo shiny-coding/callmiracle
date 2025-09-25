@@ -36,7 +36,6 @@ function initializePubSub() {
       const redisOptions = {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD,
         connectTimeout: 2000,
         lazyConnect: false,
         // CRITICAL: maxRetriesPerRequest must be null for pub/sub (from ioredis docs)

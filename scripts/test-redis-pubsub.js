@@ -9,7 +9,6 @@ require('dotenv').config({ path: '.env.local' });
 // Configuration
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379');
-const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const TEST_CHANNEL = 'pubsub-speed-test';
 const MESSAGE_COUNT = parseInt(process.argv[2]) || 50;
 const PUBLISH_INTERVAL = parseInt(process.argv[3]) || 100; // ms between messages
@@ -26,7 +25,6 @@ console.log(`🔍 Testing Redis connection...`);
 const publisherOptions = {
   host: REDIS_HOST,
   port: REDIS_PORT,
-  password: REDIS_PASSWORD,
   maxRetriesPerRequest: null,
   lazyConnect: false,
   enableOfflineQueue: true,
