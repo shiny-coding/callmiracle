@@ -17,6 +17,9 @@ export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncomp
   }))
   const router = useRouter()
 
+  // Determine which fields are missing
+  const missingFields: string[] = []
+
   const handleOpenProfileSettings = () => {
     routerPush(router, '/profile', {
       source: 'profile_incomplete_dialog',
@@ -26,8 +29,6 @@ export default function ProfileIncompleteDialog({ open, onClose }: ProfileIncomp
     onClose()
   }
   
-  // Determine which fields are missing
-  const missingFields = []
   if (!currentUser?.languages || currentUser.languages.length === 0) {
     missingFields.push('languages')
   }

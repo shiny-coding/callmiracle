@@ -98,7 +98,6 @@ export default function SignInContent() {
     setShowLocaleDialog(false)
     routerPush(router, newPath, {
       source: 'signin_locale_change',
-      oldLocale: currentLocale,
       newLocale,
       pathWithoutLocale
     })

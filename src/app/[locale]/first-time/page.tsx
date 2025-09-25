@@ -154,9 +154,8 @@ export default function FirstTimePage() {
       // Navigate to calendar - the JWT token should now have the updated languages
       routerPush(router, `/${locale}/calendar`, {
         source: 'first_time_setup_complete',
-        selectedLanguages: languages,
         selectedGroups: selectedGroupIds,
-        profileData: { name, sex, birthYear }
+        profileData: { name }
       })
       
     } catch (error) {
