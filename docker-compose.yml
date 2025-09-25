@@ -6,6 +6,9 @@ networks:
   observability:
     external: true
     name: callmiracle_observability
+  redis-network:
+    external: true
+    name: callmiracle_redis-network
 services:
   app:
     build:
@@ -26,8 +29,8 @@ services:
       - LOKI_HOST=http://callmiracle-loki:3100
       # MongoDB connection to host machine
       - MONGODB_URI=mongodb://host.docker.internal:27017/callmiracle
-      # Redis connection to host machine
-      - REDIS_HOST=host.docker.internal
+      # Redis connection to container
+      - REDIS_HOST=callmiracle-redis
       # Server count (single server deployment)
       - SERVER_COUNT=1
     # Enable connection to host machine services  
@@ -36,6 +39,7 @@ services:
     networks:
       - app-network
       - observability
+      - redis-network
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
