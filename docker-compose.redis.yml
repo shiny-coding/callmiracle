@@ -16,6 +16,7 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
       - redis_data:/data
+      - ./logs/redis:/data
     command: redis-server /usr/local/etc/redis/redis.conf
 
 volumes:

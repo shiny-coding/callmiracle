@@ -30,20 +30,36 @@ export async function* mergeAsyncIterators(iterables: AsyncIterable<any>[]) {
   const iterators = iterables.map(iterable => iterable[Symbol.asyncIterator]())
   const nexts = iterators.map(iterator => iterator.next())
 
-  while (nexts.length > 0) {
-    // Wait for the first iterator to yield a value
-    const { result, i } = await Promise.race(
-      nexts.map((p, i) => p.then(result => ({ result, i })))
-    )
+  try {
+    while (nexts.length > 0) {
+      // Wait for the first iterator to yield a value
+      const { result, i } = await Promise.race(
+        nexts.map((p, i) => p.then(result => ({ result, i })))
+      )
 
-    if (result.done) {
-      // Remove this iterator and its promise
-      iterators.splice(i, 1)
-      nexts.splice(i, 1)
-    } else {
-      // Queue up the next value for this iterator
-      nexts[i] = iterators[i].next()
-      yield result.value
+      if (result.done) {
+        // Remove this iterator and its promise
+        iterators.splice(i, 1)
+        nexts.splice(i, 1)
+      } else {
+        // Queue up the next value for this iterator
+        nexts[i] = iterators[i].next()
+        yield result.value
+      }
     }
+  } finally {
+    // CRITICAL: Cleanup all underlying iterators when generator exits
+    // This ensures Redis subscriptions are properly unsubscribed
+    await Promise.all(
+      iterators.map(async (iterator) => {
+        try {
+          if (iterator.return) {
+            await iterator.return()
+          }
+        } catch (error) {
+          console.error('❌ Error cleaning up iterator:', error)
+        }
+      })
+    )
   }
 }

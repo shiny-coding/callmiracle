@@ -46,7 +46,7 @@
     "test:pubsub:slow": "node scripts/test-redis-pubsub.js 20 1000",
     "test:resolver": "node scripts/test-subscription-resolver.js",
     "test:pipeline": "node scripts/test-full-pipeline.js",
-    "test:graphql-redis": "node scripts/test-graphql-redis.js"
+    "redis:monitor": "node redis-monitor.js"
   },
   "dependencies": {
     "@apollo/client": "^3.12.5",
