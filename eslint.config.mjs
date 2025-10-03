@@ -21,7 +21,7 @@ const eslintConfig = [
       '@typescript-eslint/no-require-imports': 'off', // Allow require
       "@typescript-eslint/no-unused-expressions": "off",
       "@typescript-eslint/ban-ts-comment": "off",
-      "react-hooks/rules-of-hooks": "off",
+      "react-hooks/rules-of-hooks": "off  ",
       // or to keep warnings but ignore specific patterns:
       // '@typescript-eslint/no-unused-vars': ['warn', { 
       //   argsIgnorePattern: '^_',

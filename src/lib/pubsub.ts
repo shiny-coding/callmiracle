@@ -1,5 +1,7 @@
 import { RedisPubSub } from 'graphql-redis-subscriptions'
+import { PubSub } from 'graphql-subscriptions'
 import { isBuilding } from '@/utils'
+import { pubSubConfig } from '@/config'
 
 // Mock pubsub for build time and browser
 const mockPubSub = {
@@ -22,78 +24,86 @@ function initializePubSub() {
   if ((global as any)[globalIsInitializedKey]) {
     return (global as any)[globalKey]
   }
-  
+
   let pubsub: any
-  
+
   if (isBuilding) {
     pubsub = mockPubSub
   } else {
+    const { logger } = require('../utils/logger')
+    const implementation = pubSubConfig.implementation
+
+    logger.info(`Initializing PubSub with implementation: ${implementation}`)
+
     try {
-      // Synchronous initialization for server environment
-      const Redis = require('ioredis')
-      const { logger } = require('../utils/logger')
-      
-      const redisOptions = {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        connectTimeout: 2000,
-        lazyConnect: false,
-        // CRITICAL: maxRetriesPerRequest must be null for pub/sub (from ioredis docs)
-        maxRetriesPerRequest: null,
-        retryDelayOnFailover: false,
-        enableOfflineQueue: false,
-        enableReadyCheck: true,
-        // Pub/sub optimizations
-        keepAlive: 30000,
-        commandTimeout: 5000,
-        family: 4,
+      if (implementation === 'internal') {
+        // Use in-memory PubSub (no external dependencies)
+        pubsub = new PubSub()
+        logger.info('Internal PubSub initialized successfully')
+      } else {
+        // Use Redis-based PubSub (distributed)
+        const Redis = require('ioredis')
+
+        const redisOptions = {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379'),
+          connectTimeout: 2000,
+          lazyConnect: false,
+          // CRITICAL: maxRetriesPerRequest must be null for pub/sub (from ioredis docs)
+          maxRetriesPerRequest: null,
+          retryDelayOnFailover: false,
+          enableOfflineQueue: false,
+          enableReadyCheck: true,
+          // Pub/sub optimizations
+          keepAlive: 30000,
+          commandTimeout: 5000,
+          family: 4,
+        }
+
+        logger.info(`Attempting to connect to Redis at ${redisOptions.host}:${redisOptions.port}`)
+
+        const publisher = new Redis(redisOptions)
+        const subscriber = new Redis(redisOptions)
+
+        // Set up error handlers that will exit the process
+        publisher.on('error', (error: any) => {
+          logger.error('Redis publisher connection failed - shutting down server', {
+            error: error.message,
+            host: redisOptions.host,
+            port: redisOptions.port
+          })
+          process.exit(1)
+        })
+
+        subscriber.on('error', (error: any) => {
+          logger.error('Redis subscriber connection failed - shutting down server', {
+            error: error.message,
+            host: redisOptions.host,
+            port: redisOptions.port
+          })
+          process.exit(1)
+        })
+
+        // Add success handlers
+        publisher.on('connect', () => {
+          logger.info('Redis publisher connected successfully')
+        })
+
+        subscriber.on('connect', () => {
+          logger.info('Redis subscriber connected successfully')
+        })
+
+        pubsub = new RedisPubSub({
+          publisher,
+          subscriber,
+        })
+
+        logger.info('Redis PubSub initialized - testing connectivity')
       }
-
-      logger.info(`Attempting to connect to Redis at ${redisOptions.host}:${redisOptions.port}`)
-
-      const publisher = new Redis(redisOptions)
-      const subscriber = new Redis(redisOptions)
-
-      // Set up error handlers that will exit the process
-      publisher.on('error', (error: any) => {
-        logger.error('Redis publisher connection failed - shutting down server', { 
-          error: error.message,
-          host: redisOptions.host,
-          port: redisOptions.port
-        })
-        process.exit(1)
-      })
-      
-      subscriber.on('error', (error: any) => {
-        logger.error('Redis subscriber connection failed - shutting down server', { 
-          error: error.message,
-          host: redisOptions.host,
-          port: redisOptions.port
-        })
-        process.exit(1)
-      })
-
-      // Add success handlers
-      publisher.on('connect', () => {
-        logger.info('Redis publisher connected successfully')
-      })
-      
-      subscriber.on('connect', () => {
-        logger.info('Redis subscriber connected successfully')
-      })
-
-      pubsub = new RedisPubSub({
-        publisher,
-        subscriber,
-      })
-      
-      logger.info('Redis PubSub initialized - testing connectivity')
-      
     } catch (error) {
-      const { logger } = require('../utils/logger')
-      logger.error('Failed to initialize Redis pubsub - shutting down server', { 
-        error: (error as Error).message, 
-        stack: (error as Error).stack 
+      logger.error(`Failed to initialize ${implementation} pubsub - shutting down server`, {
+        error: (error as Error).message,
+        stack: (error as Error).stack
       })
       process.exit(1)
     }
@@ -102,11 +112,9 @@ function initializePubSub() {
   // Store in global for cross-bundle access
   (global as any)[globalKey] = pubsub;
   (global as any)[globalIsInitializedKey] = true
-  
+
   return pubsub
 }
 
-// Get or initialize pubsub instance
-const pubsub = initializePubSub()
-
-export { pubsub } 
+// Export pubsub instance
+export const pubsub = initializePubSub() 

@@ -33,15 +33,23 @@ export const subscriptions = {
       const globalTopic = `SUBSCRIPTION_EVENT:ALL`
       
       logger.info('User subscribing to real-time events', {
-        userId,
         subscriberUserName,
         userTopic,
         globalTopic,
       })
-      
+
       // Create async iterators for both topics
-      const userIterator = pubsub.asyncIterator(userTopic)
-      const globalIterator = pubsub.asyncIterator(globalTopic)
+      // Note: PubSub (graphql-subscriptions) uses asyncIterableIterator
+      //       RedisPubSub (graphql-redis-subscriptions) uses asyncIterator
+      const asyncIteratorMethod = (pubsub as any).asyncIterableIterator || (pubsub as any).asyncIterator
+
+      if (!asyncIteratorMethod) {
+        logger.error('PubSub does not have asyncIterableIterator or asyncIterator method')
+        throw new Error('PubSub not properly initialized')
+      }
+
+      const userIterator = asyncIteratorMethod.call(pubsub, userTopic)
+      const globalIterator = asyncIteratorMethod.call(pubsub, globalTopic)
       
       // Create a wrapper that adds subscriber context to each payload
       const addSubscriberContext = (iterator: AsyncIterable<any>) => ({
