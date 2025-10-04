@@ -5,6 +5,9 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/lib/auth'
 import { getLogger } from '@/utils/logger'
 import { formatGraphQLResponseError } from '@/utils/commonUtils'
+import { subscriptionsConfig } from '@/config'
+import { createOptimizedSSEResponse } from '@/lib/sse-optimized'
+import { subscribe, parse, validate } from 'graphql'
 
 // Helper function to extract operation name from request
 async function getOperationName(request: Request): Promise<string> {
@@ -68,41 +71,62 @@ async function handleGraphQLResponse(
   return response
 }
 
-// Create yoga instance
-const yoga = createYoga({
+// Create GraphQL context
+async function createGraphQLContext(request: Request) {
+  const client = await clientPromise
+  const dbName = getDatabaseName()
+  const db = client.db(dbName)
+  const session = await getServerSession(authOptions)
+  
+  // Get logger from AsyncLocalStorage context (set by middleware)
+  const logger = await getLogger()
+  
+  return { db, session, logger, request }
+}
+
+const yoga = createYoga<any, any>({
   schema,
-  context: async ({ request }): Promise<{ db: any, session: any, logger: any }> => {
-    const client = await clientPromise
-    const dbName = getDatabaseName()
-    const db = client.db(dbName)
-    const session = await getServerSession(authOptions)
-    
-    // Get logger from AsyncLocalStorage context (set by middleware)
-    const logger = await getLogger()
-    
-    return { db, session, logger }
-  },
+  context: createGraphQLContext,
   graphqlEndpoint: '/api/graphql',
   fetchAPI: { Response },
-  // Enable GraphiQL with SSE support
+  // Enable GraphiQL with SSE subscriptions protocol
   graphiql: {
     subscriptionsProtocol: 'SSE'
-  },
+  }
 })
 
 // Export request handlers
 export const GET = async (request: Request) => {
   const logger = await getLogger()
   
-  // Log SSE requests
-  if (request.headers.get('accept')?.includes('text/event-stream')) {
+  // Check if this is an SSE request
+  const isSSERequest = request.headers.get('accept')?.includes('text/event-stream')
+  
+  if (isSSERequest) {
     const operationName = await getOperationName(request)
-    
+
     logger.info('SSE GET Request', {
       operationName,
       isSSE: true,
+      implementation: subscriptionsConfig.implementation,
       accept: request.headers.get('accept')
     })
+
+    // Use optimized SSE implementation if configured
+    if (subscriptionsConfig.implementation === 'sse-optimized') {
+      try {
+        return await handleOptimizedSSE(request, logger)
+      } catch (error) {
+        logger.error('Optimized SSE handler error', {
+          operationName,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        })
+        throw error
+      }
+    }
+
+    // For 'sse-default' mode, let Yoga handle it with built-in SSE
   }
   
   try {
@@ -111,12 +135,6 @@ export const GET = async (request: Request) => {
     // Handle GraphQL errors using unified helper
     const handledResponse = await handleGraphQLResponse(response, request, logger, 'GET')
 
-    // Add SSE headers if needed
-    if (request.headers.get('accept')?.includes('text/event-stream')) {
-      handledResponse.headers.set('Content-Type', 'text/event-stream')
-      handledResponse.headers.set('Connection', 'keep-alive')
-      handledResponse.headers.set('Cache-Control', 'no-cache')
-    }
 
     return handledResponse
   } catch (error) {
@@ -126,6 +144,59 @@ export const GET = async (request: Request) => {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       url: request.url
+    })
+    throw error
+  }
+}
+
+// Handle optimized SSE requests
+async function handleOptimizedSSE(request: Request, logger: any): Promise<Response> {
+  const url = new URL(request.url)
+  const query = url.searchParams.get('query')
+  const variables = url.searchParams.get('variables')
+  const operationName = url.searchParams.get('operationName')
+
+  if (!query) {
+    throw new Error('No GraphQL query provided for SSE subscription')
+  }
+
+  try {
+    // Parse and validate the query
+    const document = parse(query)
+    const validationErrors = validate(schema, document)
+
+    if (validationErrors.length > 0) {
+      throw new Error(`GraphQL validation errors: ${validationErrors.map(e => e.message).join(', ')}`)
+    }
+
+    // Create GraphQL context
+    const context = await createGraphQLContext(request)
+
+    // Use subscribe instead of execute for subscriptions
+    const result = await subscribe({
+      schema,
+      document,
+      contextValue: context,
+      variableValues: variables ? JSON.parse(variables) : {},
+      operationName: operationName || undefined
+    })
+
+    // Check if result is an async iterable (subscription)
+    if (result && typeof result === 'object' && Symbol.asyncIterator in result) {
+      logger.info('Creating optimized SSE response', { operationName })
+      return createOptimizedSSEResponse(result as AsyncIterable<any>, request, logger)
+    } else {
+      // subscribe returned an error result
+      logger.error('Subscription returned error result', {
+        operationName,
+        result
+      })
+      throw new Error('Failed to create subscription: ' + JSON.stringify(result))
+    }
+  } catch (error) {
+    logger.error('Optimized SSE execution error', {
+      operationName,
+      error: error instanceof Error ? error.message : String(error)
     })
     throw error
   }

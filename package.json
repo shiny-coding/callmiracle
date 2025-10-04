@@ -52,7 +52,6 @@
     "@apollo/client": "^3.12.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@graphql-yoga/plugin-graphql-sse": "^3.10.10",
     "@mui/icons-material": "^6.4.0",
     "@mui/material": "^6.4.0",
     "@mui/material-nextjs": "^6.3.1",

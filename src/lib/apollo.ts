@@ -4,6 +4,7 @@ import { Observable } from '@apollo/client/utilities'
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev"
 import { syncStore, vanillaStore} from '@/store/useStore'
 import { formatGraphQLResponseError, generateShortRequestId } from '@/utils/commonUtils'
+import { subscriptionsConfig } from '@/config'
 
 function getUserId() {
   return syncStore().currentUser?._id || ''
@@ -68,7 +69,8 @@ const httpLink = new ApolloLink((operation, forward) => {
   return httpLinkWithDynamicUri.request(operation, forward)
 })
 
-const sseLink = new ApolloLink((operation) => {
+// SSE link for sse-default and sse-optimized modes (using EventSource)
+const customSSELink = new ApolloLink((operation) => {
   return new Observable((observer) => {
     const operationName = operation.operationName || 'unnamed'
     const requestId = operation.getContext().requestId || generateShortRequestId()
@@ -85,13 +87,20 @@ const sseLink = new ApolloLink((operation) => {
       }),
       'x-user-id': getUserId()
     })
-    
+
     eventSource = new EventSource(`/api/graphql?${params.toString()}`, {
       withCredentials: true
     })
 
+    let reconnectCount = 0
+
     eventSource.onopen = () => {
-      console.log(`SSE: Connection opened for ${operationName}`)
+      if (reconnectCount > 0) {
+        console.log(`SSE: Reconnected for ${operationName} (attempt ${reconnectCount})`)
+      } else {
+        console.log(`SSE: Connection opened for ${operationName}`)
+      }
+      reconnectCount++
     }
 
     // Listen for subscription data
@@ -113,9 +122,26 @@ const sseLink = new ApolloLink((operation) => {
     })
 
     // Listen for subscription errors
-    eventSource.addEventListener('error', (event) => {
-      console.error(`SSE: Error event for ${operationName}:`, event)
-      observer.error(event)
+    eventSource.addEventListener('error', (event: Event) => {
+      const target = event.target as EventSource
+
+      // EventSource has 3 readyState values:
+      // 0 = CONNECTING (reconnecting after error)
+      // 1 = OPEN (connection is open)
+      // 2 = CLOSED (connection closed, won't reconnect)
+
+      if (target.readyState === EventSource.CONNECTING) {
+        // Transient error - browser is reconnecting automatically
+        console.warn(`SSE: Connection lost for ${operationName}, reconnecting...`)
+        // Don't call observer.error() - let EventSource reconnect
+      } else if (target.readyState === EventSource.CLOSED) {
+        // Fatal error - connection permanently closed
+        console.error(`SSE: Connection permanently closed for ${operationName}`)
+        observer.error(new Error('SSE connection permanently closed'))
+      } else {
+        // Unexpected state
+        console.error(`SSE: Error event for ${operationName}:`, event)
+      }
     })
 
     // Return a cleanup function that will be called on unsubscribe
@@ -129,6 +155,11 @@ const sseLink = new ApolloLink((operation) => {
   })
 })
 
+
+// Use SSE for all subscriptions
+console.log(`Using SSE (${subscriptionsConfig.implementation}) for GraphQL subscriptions`)
+const subscriptionLink = customSSELink
+
 const splitLink = split(
   ({ query }) => {
     const definition = getMainDefinition(query)
@@ -138,7 +169,7 @@ const splitLink = split(
       definition.operation === 'subscription'
     )
   },
-  sseLink,
+  subscriptionLink,
   httpLink
 )
 
