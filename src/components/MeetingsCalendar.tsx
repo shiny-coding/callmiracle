@@ -5,7 +5,8 @@ import { Paper, Typography, Chip, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { MeetingWithPeer, User } from '@/generated/graphql'
 import { isToday } from 'date-fns'
-import { Fragment, useRef, useState, useEffect } from 'react'
+import { Fragment, useRef, useState, useEffect, useMemo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { getDayLabel, isMeetingPassed, SLOT_DURATION } from '@/utils/meetingUtils'
 import AddIcon from '@mui/icons-material/Add'
@@ -64,7 +65,7 @@ export default function MeetingsCalendar() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userDetailsPopupOpen, setUserDetailsPopupOpen] = useState(false)
 
-  const gridBodyRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
 
@@ -72,69 +73,105 @@ export default function MeetingsCalendar() {
   const HOURS_AHEAD = 24 * 7
   const slots = getCalendarTimeSlots(now, HOURS_AHEAD)
 
-  // Collect all meetingIds for quick lookup
-  const myMeetingSlotToId: Record<number, string> = {}
-  myMeetingsWithPeers.forEach(meetingWithPeer => {
-    const meeting = meetingWithPeer.meeting
-    const isPassed = isMeetingPassed(meeting)
-    if (isPassed) return
-    if (meeting.startTime) {
-      // if meeting is scheduled, it occupies two slots (an hour)
-      myMeetingSlotToId[meeting.startTime] = meeting._id
-      myMeetingSlotToId[meeting.startTime + SLOT_DURATION] = meeting._id
-    } else {
-      meeting.timeSlots.forEach(slot => {
-        myMeetingSlotToId[slot] = meeting._id
-      })
-    }
-  })
-
-  // Create a set of all time slots occupied by user's own meetings for conflict detection
-  const myOccupiedSlots = new Set<number>()
-  myMeetingsWithPeers.forEach(meetingWithPeer => {
-    const meeting = meetingWithPeer.meeting
-    if (isMeetingPassed(meeting)) return
-    
-    if (meeting.startTime) {
-      // If meeting is scheduled, it occupies two slots (an hour)
-      myOccupiedSlots.add(meeting.startTime)
-      myOccupiedSlots.add(meeting.startTime + SLOT_DURATION)
-    } else {
-      // If meeting is not scheduled yet, add all its time slots
-      meeting.timeSlots.forEach(timeSlot => {
-        myOccupiedSlots.add(timeSlot)
-      })
-    }
-  })
-
-  // Find the first visible slot and update topDayKey
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!gridBodyRef.current) return
-      const gridRect = gridBodyRef.current.getBoundingClientRect()
-      let firstVisibleSlotDay: string | null = null
-      for (const slot of slots) {
-        const ref = slotRefs.current[slot.timestamp]
-        if (ref) {
-          const rect = ref.getBoundingClientRect()
-          if (rect.bottom > gridRect.top + 1) { // +1 for tolerance
-            firstVisibleSlotDay = slot.dayKey
-            break
-          }
-        }
+  // Prepare all data with useMemo to maintain consistent hook order
+  const {
+    myMeetingSlotToId,
+    myOccupiedSlots,
+    slot2meetingsWithInfos,
+    daysArray
+  } = useMemo(() => {
+    // Collect all meetingIds for quick lookup
+    const myMeetingSlotToId: Record<number, string> = {}
+    myMeetingsWithPeers.forEach(meetingWithPeer => {
+      const meeting = meetingWithPeer.meeting
+      const isPassed = isMeetingPassed(meeting)
+      if (isPassed) return
+      if (meeting.startTime) {
+        // if meeting is scheduled, it occupies two slots (an hour)
+        myMeetingSlotToId[meeting.startTime] = meeting._id
+        myMeetingSlotToId[meeting.startTime + SLOT_DURATION] = meeting._id
+      } else {
+        meeting.timeSlots.forEach(slot => {
+          myMeetingSlotToId[slot] = meeting._id
+        })
       }
-      setTopDayKey(firstVisibleSlotDay)
+    })
+
+    // Create a set of all time slots occupied by user's own meetings for conflict detection
+    const myOccupiedSlots = new Set<number>()
+    myMeetingsWithPeers.forEach(meetingWithPeer => {
+      const meeting = meetingWithPeer.meeting
+      if (isMeetingPassed(meeting)) return
+
+      if (meeting.startTime) {
+        // If meeting is scheduled, it occupies two slots (an hour)
+        myOccupiedSlots.add(meeting.startTime)
+        myOccupiedSlots.add(meeting.startTime + SLOT_DURATION)
+      } else {
+        // If meeting is not scheduled yet, add all its time slots
+        meeting.timeSlots.forEach(timeSlot => {
+          myOccupiedSlots.add(timeSlot)
+        })
+      }
+    })
+
+    // Map: slotTime -> meetings
+    const slot2meetingsWithInfos = prepareTimeSlotsInfos(
+      futureMeetingsWithPeers.map(meetingWithPeer => meetingWithPeer.meeting),
+      slots,
+      myMeetingsWithPeers,
+      currentUser!
+    )
+
+    // Group slots by dayKey
+    const slotsByDay: Record<string, typeof slots> = {}
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i]
+      if (!slotsByDay[slot.dayKey]) slotsByDay[slot.dayKey] = []
+      slotsByDay[slot.dayKey].push(slot)
     }
-    const grid = gridBodyRef.current
-    if (grid) {
-      grid.addEventListener('scroll', handleScroll)
-      // Initial call
-      handleScroll()
+
+    // Prepare days array for virtualization
+    const daysArray = Object.entries(slotsByDay).map(([dayKey, daySlots]) => ({
+      dayKey,
+      daySlots
+    }))
+
+    return {
+      myMeetingSlotToId,
+      myOccupiedSlots,
+      slot2meetingsWithInfos,
+      daysArray
     }
-    return () => {
-      if (grid) grid.removeEventListener('scroll', handleScroll)
+  }, [futureMeetingsWithPeers, myMeetingsWithPeers, currentUser, slots])
+
+  // Set up virtualizer - must be called unconditionally
+  const virtualizer = useVirtualizer({
+    count: daysArray.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: (index) => {
+      // First day is partial (from now until midnight), others are full days
+      // Full day = 48 slots (24 hours × 2 slots/hour) × ~64px = ~3072px
+      // First day varies based on current time
+      if (index === 0) {
+        const firstDay = daysArray[0]
+        return firstDay.daySlots.length * 64 + 32 // slots × height + day label
+      }
+      return 3072 // Full day estimate
+    },
+    overscan: 1, // Render 1 extra day above and below viewport (reduced from 2 since days are large)
+  })
+
+  // Update topDayKey based on first visible virtual item
+  useEffect(() => {
+    const firstVisibleItem = virtualizer.getVirtualItems()[0]
+    if (firstVisibleItem) {
+      const dayKey = daysArray[firstVisibleItem.index]?.dayKey
+      if (dayKey) {
+        setTopDayKey(dayKey)
+      }
     }
-  }, [slots])
+  }, [virtualizer.getVirtualItems(), daysArray])
 
   // Show loading screen only if user-initiated or if it's the first load (initial fetch)
   const isLoading = isUserInitiatedLoading ||
@@ -142,22 +179,6 @@ export default function MeetingsCalendar() {
 
   if (isLoading || errorFutureMeetingsWithPeers) {
     return <LoadingDialog loading={isLoading} error={errorFutureMeetingsWithPeers} />
-  }
-
-  // Map: slotTime -> meetings
-  const slot2meetingsWithInfos = prepareTimeSlotsInfos(
-    futureMeetingsWithPeers.map(meetingWithPeer => meetingWithPeer.meeting),
-    slots,
-    myMeetingsWithPeers,
-    currentUser!
-  )
-
-  // Group slots by dayKey
-  const slotsByDay: Record<string, typeof slots> = {}
-  for (let i = 0; i < slots.length; i++) {
-    const slot = slots[i]
-    if (!slotsByDay[slot.dayKey]) slotsByDay[slot.dayKey] = []
-    slotsByDay[slot.dayKey].push(slot)
   }
 
   // Collect all unique user IDs from all meetings in all slots
@@ -242,15 +263,11 @@ export default function MeetingsCalendar() {
             <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('time')}</div>
             <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('interests')}</div>
           </div>
-          {/* Body grid (scrollable) */}
+          {/* Body grid (scrollable) with virtualization */}
           <div
             className="calendar-grid-body px-2"
-            ref={gridBodyRef}
+            ref={scrollContainerRef}
             style={{
-              display: 'grid',
-              gridTemplateColumns: '80px 1fr',
-              alignItems: 'stretch',
-              width: '100%',
               overflowY: 'auto',
               flex: 1,
               position: 'relative'
@@ -261,43 +278,78 @@ export default function MeetingsCalendar() {
               <div className="normal-bg panel-border"
                 style={{
                   position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
-                  gridColumn: '1 / span 2', padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
+                  padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
                 }}
               >
                 {getDayLabel(new Date(topDayKey), t)}
               </div>
             )}
-            {Object.entries(slotsByDay).map(([dayKey, daySlots]) => (
-              <Fragment key={dayKey}>
-                {/* Day label row (skip for today) */}
-                {!isToday(new Date(dayKey)) && (
-                  <div style={{ gridColumn: '1 / span 2', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
-                    {getDayLabel(new Date(dayKey), t)}
+
+            {/* Virtual container */}
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {/* Virtual items */}
+              {virtualizer.getVirtualItems().map((virtualDay) => {
+                const { dayKey, daySlots } = daysArray[virtualDay.index]
+
+                return (
+                  <div
+                    key={virtualDay.key}
+                    data-index={virtualDay.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualDay.start}px)`,
+                      display: 'block',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '80px 1fr',
+                        alignItems: 'stretch',
+                      }}
+                    >
+                      {/* Day label row (skip for today) */}
+                      {!isToday(new Date(dayKey)) && (
+                        <div style={{ gridColumn: '1 / span 2', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
+                          {getDayLabel(new Date(dayKey), t)}
+                        </div>
+                      )}
+                      {/* Slot rows */}
+                      {daySlots.map((slot) => {
+                        const meetingsWithInfos = slot2meetingsWithInfos[slot.timestamp]
+                        return (
+                          <MeetingsCalendarRow
+                            key={slot.timestamp}
+                            slot={slot}
+                            meetingsWithInfos={meetingsWithInfos}
+                            myMeetingSlotToId={myMeetingSlotToId}
+                            myMeetingsWithPeers={myMeetingsWithPeers}
+                            t={t}
+                            slotRefs={slotRefs}
+                            filterGroups={filterGroups}
+                            groups={groups}
+                            users={users}
+                            currentUser={currentUser}
+                            myOccupiedSlots={myOccupiedSlots}
+                            onUserClick={handleUserClick}
+                          />
+                        )
+                      })}
+                    </div>
                   </div>
-                )}
-                {/* Slot rows */}
-                {daySlots.map((slot) => {
-                  const meetingsWithInfos = slot2meetingsWithInfos[slot.timestamp]
-                  return (
-                    <MeetingsCalendarRow
-                      key={slot.timestamp}
-                      slot={slot}
-                      meetingsWithInfos={meetingsWithInfos}
-                      myMeetingSlotToId={myMeetingSlotToId}
-                      myMeetingsWithPeers={myMeetingsWithPeers}
-                      t={t}
-                      slotRefs={slotRefs}
-                      filterGroups={filterGroups}
-                      groups={groups}
-                      users={users}
-                      currentUser={currentUser}
-                      myOccupiedSlots={myOccupiedSlots}
-                      onUserClick={handleUserClick}
-                    />
-                  )
-                })}
-              </Fragment>
-            ))}
+                )
+              })}
+            </div>
           </div>
         </>
       )}
