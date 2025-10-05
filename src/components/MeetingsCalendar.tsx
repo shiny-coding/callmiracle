@@ -64,13 +64,13 @@ export default function MeetingsCalendar() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userDetailsPopupOpen, setUserDetailsPopupOpen] = useState(false)
 
-  const now = Date.now()
-  const HOURS_AHEAD = 24 * 7
-  const slots = getCalendarTimeSlots(now, HOURS_AHEAD)
-
   const gridBodyRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
+
+  const now = Date.now()
+  const HOURS_AHEAD = 24 * 7
+  const slots = getCalendarTimeSlots(now, HOURS_AHEAD)
 
   // Collect all meetingIds for quick lookup
   const myMeetingSlotToId: Record<number, string> = {}
@@ -137,7 +137,7 @@ export default function MeetingsCalendar() {
   }, [slots])
 
   // Show loading screen only if user-initiated or if it's the first load (initial fetch)
-  const isLoading = isUserInitiatedLoading || 
+  const isLoading = isUserInitiatedLoading ||
                    (networkStatusFutureMeetings === NetworkStatus.loading)
 
   if (isLoading || errorFutureMeetingsWithPeers) {

@@ -1,7 +1,12 @@
 'use client';
 
 import MeetingsList from '@/components/MeetingsList';
+import DeferredRender from '@/components/DeferredRender';
 
 export default function ListPage() {
-  return <MeetingsList />
+  return (
+    <DeferredRender>
+      <MeetingsList />
+    </DeferredRender>
+  )
 }
