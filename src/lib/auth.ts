@@ -33,6 +33,16 @@ const mockAdapter = {
 
 export const authOptions: NextAuthOptions = {
   debug: false,
+  logger: {
+    error: (code, metadata) => {
+      // Suppress JWT_SESSION_ERROR logging as it's a normal occurrence for expired tokens
+      if (code !== 'JWT_SESSION_ERROR') {
+        console.error(`[next-auth][error][${code}]`, metadata)
+      }
+    },
+    warn: (code) => console.warn(`[next-auth][warn][${code}]`),
+    debug: () => {}, // Disabled
+  },
   adapter: isBuilding ? mockAdapter as any : MongoDBAdapter(clientPromise),
   jwt: {
     // Use standard JWT (signed only) instead of JWE for OpenTelemetry compatibility
@@ -59,7 +69,12 @@ export const authOptions: NextAuthOptions = {
         const decoded = jwt.verify(token, secret, { algorithms: ["HS256"] })
         return decoded as any
       } catch (error) {
-        console.error('JWT decode error:', error)
+        // Only log expired tokens as info, not errors with stack traces
+        if (error && typeof error === 'object' && 'name' in error && error.name === 'TokenExpiredError') {
+          console.info('JWT token expired')
+        } else {
+          console.error('JWT decode error:', error instanceof Error ? error.message : error)
+        }
         return null
       }
     },

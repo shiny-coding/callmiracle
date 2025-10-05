@@ -183,7 +183,6 @@ async function handleOptimizedSSE(request: Request, logger: any): Promise<Respon
 
     // Check if result is an async iterable (subscription)
     if (result && typeof result === 'object' && Symbol.asyncIterator in result) {
-      logger.info('Creating optimized SSE response', { operationName })
       return createOptimizedSSEResponse(result as AsyncIterable<any>, request, logger)
     } else {
       // subscribe returned an error result
