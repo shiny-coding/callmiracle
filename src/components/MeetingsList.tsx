@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { routerPush } from '@/utils/routerHelper'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import AddIcon from '@mui/icons-material/Add'
 import EventIcon from '@mui/icons-material/Event'
 import ViewListIcon from '@mui/icons-material/ViewList'
@@ -31,6 +32,7 @@ export default function MeetingsList() {
   const { currentUser } = useStore(state => ({ currentUser: state.currentUser, }))
   const router = useRouter()
   const searchParams = useSearchParams()
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (highlightedMeetingId && meetingRefs.current[highlightedMeetingId]) {
@@ -68,7 +70,33 @@ export default function MeetingsList() {
     }
   }, [searchParams, setHighlightedMeetingId])
 
-  const isLoading = isUserInitiatedLoading || 
+  // Prepare meetings list for virtualization
+  const meetingsToRender = useMemo(() => {
+    const allMeetingsPassedOrNoneExist =
+      myMeetingsWithPeers.length === 0 ||
+      myMeetingsWithPeers.every(mwp => isMeetingPassed(mwp.meeting))
+
+    // Add empty state as first item if needed
+    return allMeetingsPassedOrNoneExist
+      ? [{ type: 'empty' as const }, ...myMeetingsWithPeers]
+      : myMeetingsWithPeers
+  }, [myMeetingsWithPeers])
+
+  // Set up virtualizer - must be called unconditionally
+  const virtualizer = useVirtualizer({
+    count: meetingsToRender.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: (index) => {
+      // Empty state card is larger
+      if ('type' in meetingsToRender[index] && meetingsToRender[index].type === 'empty') {
+        return 210 // Empty state height
+      }
+      return 200 // Estimated meeting card height
+    },
+    overscan: 3, // Render 3 extra items above and below viewport
+  })
+
+  const isLoading = isUserInitiatedLoading ||
                    (networkStatusMyMeetings === NetworkStatus.loading)
 
   if (isLoading || errorMyMeetingsWithPeers) {
@@ -85,10 +113,6 @@ export default function MeetingsList() {
       userComplete: isProfileComplete(currentUser)
     })
   }
-
-  const allMeetingsPassedOrNoneExist = 
-    myMeetingsWithPeers.length === 0 || 
-    myMeetingsWithPeers.every(mwp => isMeetingPassed(mwp.meeting))
 
   return (
     <>
@@ -115,44 +139,75 @@ export default function MeetingsList() {
           </IconButton>
         </PageHeader>
         
-        <div className="flex-grow overflow-y-auto px-4">
-          <List className="space-y-4">
-            {allMeetingsPassedOrNoneExist && (
-              <ListItem 
-                onClick={handleAddNewMeetingClick}
-                className="p-8 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer shadow-lg"
-                sx={{ minHeight: '178px' }}
-              >
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                  <AddIcon sx={{ fontSize: 30, color: 'white' }} />
-                  <Typography variant="h6" className="mt-2 text-white">
-                    {t('addNewMeetingPrompt')}
-                  </Typography>
-                </Box>
-              </ListItem>
-            )}
-            {myMeetingsWithPeers.map((meetingWithPeer: MeetingWithPeer) => (
-              <ListItem 
-                key={meetingWithPeer.meeting._id}
-                ref={(el: any) => el && (meetingRefs.current[meetingWithPeer.meeting._id] = el)}
-                className={`flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative mb-4 transition-all duration-500
-                  ${highlightedMeetingId === meetingWithPeer.meeting._id ? 'highlight-animation' : ''}`}
-                disablePadding
-              >
-                <MeetingCard 
-                  meetingWithPeer={meetingWithPeer} 
-                  onEdit={e => {
-                    e?.stopPropagation()
-                    routerPush(router, `/meeting/${meetingWithPeer.meeting._id}`, {
-                      source: 'meeting_card_edit_click',
-                      meetingId: meetingWithPeer.meeting._id,
-                      meetingStatus: meetingWithPeer.meeting.status
-                    })
+        <div
+          ref={scrollContainerRef}
+          className="flex-grow overflow-y-auto px-4"
+          style={{ position: 'relative' }}
+        >
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const item = meetingsToRender[virtualItem.index]
+              const isEmptyState = 'type' in item && item.type === 'empty'
+
+              return (
+                <div
+                  key={virtualItem.key}
+                  data-index={virtualItem.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualItem.start}px)`,
+                    display: 'block',
+                    paddingBottom: '16px', // space-y-4 equivalent
                   }}
-                />
-              </ListItem>
-            ))}
-          </List>
+                >
+                  {isEmptyState ? (
+                    <ListItem
+                      onClick={handleAddNewMeetingClick}
+                      className="p-8 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer shadow-lg"
+                      sx={{ minHeight: '178px' }}
+                    >
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                        <AddIcon sx={{ fontSize: 30, color: 'white' }} />
+                        <Typography variant="h6" className="mt-2 text-white">
+                          {t('addNewMeetingPrompt')}
+                        </Typography>
+                      </Box>
+                    </ListItem>
+                  ) : (
+                    <ListItem
+                      key={(item as MeetingWithPeer).meeting._id}
+                      ref={(el: any) => el && (meetingRefs.current[(item as MeetingWithPeer).meeting._id] = el)}
+                      className={`flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative transition-all duration-500
+                        ${highlightedMeetingId === (item as MeetingWithPeer).meeting._id ? 'highlight-animation' : ''}`}
+                      disablePadding
+                    >
+                      <MeetingCard
+                        meetingWithPeer={item as MeetingWithPeer}
+                        onEdit={e => {
+                          e?.stopPropagation()
+                          routerPush(router, `/meeting/${(item as MeetingWithPeer).meeting._id}`, {
+                            source: 'meeting_card_edit_click',
+                            meetingId: (item as MeetingWithPeer).meeting._id,
+                            meetingStatus: (item as MeetingWithPeer).meeting.status
+                          })
+                        }}
+                      />
+                    </ListItem>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </Paper>
       <ProfileIncompleteDialog

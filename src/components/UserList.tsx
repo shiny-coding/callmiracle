@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslations } from 'next-intl'
 import { Paper, List, ListItem, Typography, IconButton, Divider } from '@mui/material'
 import PeopleIcon from '@mui/icons-material/People'
@@ -34,6 +35,7 @@ export default function UserList() {
   const [appliedShowFemales, setAppliedShowFemales] = useState(true)
 
   const [filtersVisible, setFiltersVisible] = useState(false)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Check for groupId parameter and auto-select the group, then remove from URL
   useEffect(() => {
@@ -77,55 +79,77 @@ export default function UserList() {
     setAppliedShowFemales(filters.showFemales)
   }
 
-  if (loading || error) return <LoadingDialog loading={loading} error={error} />
+  // Prepare filtered users with useMemo
+  const filteredUsers = useMemo(() => {
+    let result = users || []
+    // Note: We no longer filter out the current user - they will be shown with "Me" label
 
-  let filteredUsers = users || []
-  // Note: We no longer filter out the current user - they will be shown with "Me" label
+    // Apply sex filter
+    if (!appliedShowMales || !appliedShowFemales) {
+      result = result.filter(user => {
+        if (!user.sex) return appliedShowMales && appliedShowFemales
+        return (appliedShowMales && user.sex === 'male') || (appliedShowFemales && user.sex === 'female')
+      })
+    }
 
-  // Apply sex filter
-  if (!appliedShowMales || !appliedShowFemales) {
-    filteredUsers = filteredUsers.filter(user => {
-      if (!user.sex) return appliedShowMales && appliedShowFemales
-      return (appliedShowMales && user.sex === 'male') || (appliedShowFemales && user.sex === 'female')
-    })
-  }
+    // Apply group filter if any groups are selected
+    if (appliedSelectedGroups.length > 0) {
+      result = result.filter(user => {
+        // Check if user belongs to any of the selected groups
+        if (!user.groups || user.groups.length === 0) return false
+        return user.groups.some(groupId => appliedSelectedGroups.includes(groupId))
+      })
+    }
 
-  // Apply group filter if any groups are selected
-  if (appliedSelectedGroups.length > 0) {
-    filteredUsers = filteredUsers.filter(user => {
-      // Check if user belongs to any of the selected groups
-      if (!user.groups || user.groups.length === 0) return false
-      return user.groups.some(groupId => appliedSelectedGroups.includes(groupId))
-    })
-  }
+    // Apply language filter if any languages are selected
+    if (appliedSelectedLanguages.length > 0) {
+      result = result.filter(user =>
+        user.languages.some(lang => appliedSelectedLanguages.includes(lang))
+      )
+    }
+
+    // Apply name filter if provided
+    if (appliedNameFilter) {
+      const normalizedFilter = normalizeText(appliedNameFilter)
+      result = result.filter(user =>
+        normalizeText(user.name).includes(normalizedFilter)
+      )
+    }
+
+    // Apply friends filter if enabled
+    const friends = currentUser?.friends ?? []
+    if (appliedShowOnlyFriends) {
+      result = result.filter(user =>
+        friends.includes(user._id)
+      )
+    }
+
+    return result
+  }, [
+    users,
+    appliedShowMales,
+    appliedShowFemales,
+    appliedSelectedGroups,
+    appliedSelectedLanguages,
+    appliedNameFilter,
+    appliedShowOnlyFriends,
+    currentUser
+  ])
 
   // Get the filtering group (for remove functionality) - only if filtering by a single group
-  const filteringGroup = appliedSelectedGroups.length === 1 
-    ? groups?.find(g => g._id === appliedSelectedGroups[0]) || null 
+  const filteringGroup = appliedSelectedGroups.length === 1
+    ? groups?.find(g => g._id === appliedSelectedGroups[0]) || null
     : null
 
-  // Apply language filter if any languages are selected
-  if (appliedSelectedLanguages.length > 0) {
-    filteredUsers = filteredUsers.filter(user =>
-      user.languages.some(lang => appliedSelectedLanguages.includes(lang))
-    )
-  }
+  // Set up virtualizer - must be called unconditionally
+  const virtualizer = useVirtualizer({
+    count: filteredUsers.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 180, // Estimated user card height
+    overscan: 5, // Render 5 extra items above and below viewport
+  })
 
-  // Apply name filter if provided
-  if (appliedNameFilter) {
-    const normalizedFilter = normalizeText(appliedNameFilter)
-    filteredUsers = filteredUsers.filter(user =>
-      normalizeText(user.name).includes(normalizedFilter)
-    )
-  }
-
-  // Apply friends filter if enabled
-  const friends = currentUser?.friends ?? []
-  if (appliedShowOnlyFriends) {
-    filteredUsers = filteredUsers.filter(user =>
-      friends.includes(user._id)
-    )
-  }
+  if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
   return (
     <Paper className="h-full flex flex-col">
@@ -158,28 +182,55 @@ export default function UserList() {
 
       {/* Conditional User List Display: Only show if filters are not expanded */}
       {!filtersVisible && (
-        <div className="flex-grow overflow-y-auto px-4">
+        <div
+          ref={scrollContainerRef}
+          className="flex-grow overflow-y-auto px-4"
+          style={{ position: 'relative' }}
+        >
           <Divider className="mb-4" />
-          <div className="relative">
-            <List>
-              {filteredUsers.map((user: User) => (
-                <ListItem 
-                  key={user._id} 
-                  className="flex flex-col items-start hover:bg-gray-700 rounded-lg mb-4"
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const user = filteredUsers[virtualItem.index]
+
+              return (
+                <div
+                  key={virtualItem.key}
+                  data-index={virtualItem.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualItem.start}px)`,
+                    display: 'block',
+                    paddingBottom: '16px', // mb-4 equivalent
+                  }}
                 >
-                  <div className="w-full">
-                    <UserCard 
-                      user={user} 
-                      showDetails={true} 
-                      showCallButton={true}
-                      showMessageButton={true}
-                      showHistoryButton={true}
-                      filteringByGroup={filteringGroup}
-                    />
-                  </div>
-                </ListItem>
-              ))}
-            </List>
+                  <ListItem
+                    key={user._id}
+                    className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
+                  >
+                    <div className="w-full">
+                      <UserCard
+                        user={user}
+                        showDetails={true}
+                        showCallButton={true}
+                        showMessageButton={true}
+                        showHistoryButton={true}
+                        filteringByGroup={filteringGroup}
+                      />
+                    </div>
+                  </ListItem>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
