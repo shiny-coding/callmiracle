@@ -1,5 +1,5 @@
 import { Button, Typography } from '@mui/material'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { getDayLabel } from '@/utils/meetingUtils'
 
 export interface TimeSlot {
@@ -19,13 +19,14 @@ interface TimeSlotsGridProps {
   onToggleTimeSlot: (timestamp: number) => void
 }
 
-export default function TimeSlotsGrid({ 
-  timeSlots, 
-  selectedTimeSlots, 
+export default function TimeSlotsGrid({
+  timeSlots,
+  selectedTimeSlots,
   onToggleTimeSlot
 }: TimeSlotsGridProps) {
   const t = useTranslations()
-  
+  const locale = useLocale()
+
   // Group time slots by day
   const timeSlotsByDay = timeSlots.reduce((acc, slot) => {
     const dayKey = slot.dayKey
@@ -40,7 +41,7 @@ export default function TimeSlotsGrid({
         <div key={day} className="mb-2">
           <div className="mb-2">
             <Typography variant="subtitle2">
-              {getDayLabel(new Date(slots[0].timestamp), t)}
+              {getDayLabel(new Date(slots[0].timestamp), t, locale)}
             </Typography>
           </div>
           <div className="grid grid-cols-4 gap-2">

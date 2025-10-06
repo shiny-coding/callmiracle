@@ -3,7 +3,7 @@ import resolveConfig from "tailwindcss/resolveConfig"
 import tailwindConfig from "../../tailwind.config"
 import { ObjectId } from "mongodb"
 import { format, addMinutes, isAfter, parseISO, setMinutes, setSeconds, setMilliseconds, differenceInMinutes, startOfHour, getMinutes, differenceInMilliseconds, isTomorrow, isToday } from 'date-fns'
-import { enUS } from "date-fns/locale"
+import { enUS, ru, type Locale } from "date-fns/locale"
 import { TimeSlot } from "@/components/TimeSlotsGrid"
 
 export const SLOT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
@@ -234,8 +234,16 @@ export function canEditMeeting(meeting: Meeting) {
   return (meeting.status === MeetingStatus.Cancelled || (meeting.status === MeetingStatus.Seeking && !isMeetingPassed(meeting)))
 }
 
-export function getDayLabel(date: Date, t: any) {
-  // Get day of month with ordinal (e.g., 1st, 2nd, 3rd, 4th, ...)
+export function getDayLabel(date: Date, t: any, locale: string = 'en') {
+  // Map locale codes to date-fns locales
+  const dateFnsLocales: Record<string, Locale> = {
+    'en': enUS,
+    'ru': ru
+  }
+
+  const dateFnsLocale = dateFnsLocales[locale] || enUS
+
+  // Get day of month with ordinal (only for English)
   const day = date.getDate()
   const ordinal =
     day % 10 === 1 && day !== 11
@@ -247,16 +255,24 @@ export function getDayLabel(date: Date, t: any) {
       : 'th'
   const dayWithOrdinal = `${day}${ordinal}`
 
-  const weekday = format(date, 'EEEE', { locale: enUS })
-  const month = format(date, 'LLLL', { locale: enUS })
+  const weekday = format(date, 'EEEE', { locale: dateFnsLocale })
+  const month = format(date, 'LLLL', { locale: dateFnsLocale })
 
   if (isToday(date)) {
-    return `${t('today')}, ${weekday}, ${dayWithOrdinal} of ${month}`
+    // For Russian, use genitive case for month (handled by date-fns ru locale)
+    return locale === 'ru'
+      ? `${t('today')}, ${weekday}, ${day} ${format(date, 'LLLL', { locale: dateFnsLocale })}`
+      : `${t('today')}, ${weekday}, ${dayWithOrdinal} of ${month}`
   }
   if (isTomorrow(date)) {
-    return `${t('tomorrow')}, ${weekday}, ${dayWithOrdinal} of ${month}`
+    return locale === 'ru'
+      ? `${t('tomorrow')}, ${weekday}, ${day} ${format(date, 'LLLL', { locale: dateFnsLocale })}`
+      : `${t('tomorrow')}, ${weekday}, ${dayWithOrdinal} of ${month}`
   }
-  return `${weekday}, ${dayWithOrdinal} of ${month}`
+
+  return locale === 'ru'
+    ? `${weekday}, ${day} ${month}`
+    : `${weekday}, ${dayWithOrdinal} of ${month}`
 }
 
 export function meetingIsActiveNow(meeting: Meeting) {

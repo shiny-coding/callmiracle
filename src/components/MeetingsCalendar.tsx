@@ -2,7 +2,7 @@
 
 import { useStore, type AppState } from '@/store/useStore'
 import { Paper, Typography, Chip, IconButton } from '@mui/material'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { MeetingWithPeer, User } from '@/generated/graphql'
 import { isToday } from 'date-fns'
 import { Fragment, useRef, useState, useEffect, useMemo } from 'react'
@@ -35,7 +35,8 @@ const MIN_CELL_HEIGHT = '4rem'
 
 export default function MeetingsCalendar() {
   const t = useTranslations()
-  const { 
+  const locale = useLocale()
+  const {
     currentUser,
     appliedFilterMinDurationM,
     filterGroups,
@@ -281,7 +282,7 @@ export default function MeetingsCalendar() {
                   padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
                 }}
               >
-                {getDayLabel(new Date(topDayKey), t)}
+                {getDayLabel(new Date(topDayKey), t, locale)}
               </div>
             )}
 
@@ -321,7 +322,7 @@ export default function MeetingsCalendar() {
                       {/* Day label row (skip for today) */}
                       {!isToday(new Date(dayKey)) && (
                         <div style={{ gridColumn: '1 / span 2', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
-                          {getDayLabel(new Date(dayKey), t)}
+                          {getDayLabel(new Date(dayKey), t, locale)}
                         </div>
                       )}
                       {/* Slot rows */}
