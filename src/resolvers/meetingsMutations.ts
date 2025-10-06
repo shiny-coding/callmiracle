@@ -7,6 +7,7 @@ import { calledMeetingsMetric, cancelledMeetingsMetric, deletedMeetingsMetric } 
 import { getLogger } from '@/utils/logger';
 import { publishBroadcastEvent } from './notificationsMutations';
 import { incrementUserMeetingsStats } from '@/utils/meetingsStatsUtils';
+import { isMeetingPassed } from '@/utils/meetingUtils';
 
 interface UpdateMeetingStatusInput {
   _id: string
@@ -95,17 +96,22 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
           { _id: _peerMeetingId },
           { $set: updateFields }
         )
-        logger.info('Updated peer meeting', { 
+        logger.info('Updated peer meeting', {
           peerMeetingId: _peerMeetingId.toString(),
           updateFields
         })
-        
-        if ( status === MeetingStatus.Finished ) {
-          await publishMeetingNotification(NotificationType.MeetingFinished, db, peerMeeting, updatedMeeting)
-        } else if (disconnectPeer) {
-          // Use the helper function to publish notification
-          await publishMeetingNotification(NotificationType.MeetingDisconnected, db, peerMeeting, updatedMeeting)
-        }  
+
+        // Check if meeting has already passed before sending notifications
+        const meetingHasPassed = isMeetingPassed(updatedMeeting as unknown as Meeting)
+
+        if (!meetingHasPassed) {
+          if ( status === MeetingStatus.Finished ) {
+            await publishMeetingNotification(NotificationType.MeetingFinished, db, peerMeeting, updatedMeeting)
+          } else if (disconnectPeer) {
+            // Use the helper function to publish notification
+            await publishMeetingNotification(NotificationType.MeetingDisconnected, db, peerMeeting, updatedMeeting)
+          }
+        }
       }
     } else if (currentStatus === MeetingStatus.Seeking) {
       // if the meeting was in seeking status, notify all users that the meeting was updated
@@ -140,26 +146,41 @@ export const meetingsMutations = {
         throw new Error('Meeting not found or you do not have permission to delete it')
       }
 
-      // If this meeting has a peer, notify the peer user
+      // If this meeting has a peer, notify the peer user (only if meeting hasn't passed)
       if (meeting.peerMeetingId) {
         // Get the peer meeting
         const peerMeeting = await db.collection('meetings').findOne({ _id: meeting.peerMeetingId })
 
         if (peerMeeting) {
+          // Check if the meeting has expired/finished
+          const meetingHasPassed = isMeetingPassed(meeting)
+
           // Update the peer meeting to remove the connection
           await db.collection('meetings').updateOne(
             { _id: meeting.peerMeetingId },
-            { 
-              $set: { 
+            {
+              $set: {
                 peerMeetingId: null,
                 startTime: null,
                 status: MeetingStatus.Seeking
-              } 
+              }
             }
           )
 
-          // Use the helper function to publish notification
-          await publishMeetingNotification(NotificationType.MeetingDisconnected, db, peerMeeting, meeting)
+          // Only send notification if meeting hasn't passed (not expired/finished)
+          if (!meetingHasPassed) {
+            await publishMeetingNotification(NotificationType.MeetingDisconnected, db, peerMeeting, meeting)
+            logger.info('Sent disconnection notification to peer', {
+              peerMeetingId: peerMeeting._id.toString(),
+              meetingId: id
+            })
+          } else {
+            logger.info('Skipped notification for expired/finished meeting deletion', {
+              peerMeetingId: peerMeeting._id.toString(),
+              meetingId: id,
+              meetingStatus: meeting.status
+            })
+          }
         }
       }
       
