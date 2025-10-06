@@ -1,0 +1,113 @@
+import { useState, useEffect } from 'react'
+import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { useStore } from '@/store/useStore'
+
+interface UseDeviceSelectionProps {
+  kind: 'audioinput' | 'videoinput'
+  storageKey: string
+  isEnabled: boolean
+  getLabel?: (device: MediaDeviceInfo) => Promise<string | null>
+}
+
+export function useDeviceSelection({
+  kind,
+  storageKey,
+  isEnabled,
+  getLabel
+}: UseDeviceSelectionProps) {
+  const { setLocalStream } = useWebRTCContext()
+  const { localVideoEnabled, localAudioEnabled } = useStore((state) => ({
+    localVideoEnabled: state.localVideoEnabled,
+    localAudioEnabled: state.localAudioEnabled
+  }))
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
+  const [deviceLabels, setDeviceLabels] = useState<Record<string, string>>({})
+  const [selectedDevice, setSelectedDevice] = useState<string>('')
+
+  // Initialize client-side only state
+  useEffect(() => {
+    setSelectedDevice(localStorage.getItem(storageKey) || '')
+  }, [storageKey])
+
+  // Fetch devices
+  useEffect(() => {
+    async function getDevices() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const filteredDevices = devices.filter(d => d.kind === kind)
+
+        if (getLabel) {
+          // Filter and get labels for devices that support streaming
+          const realDevices: MediaDeviceInfo[] = []
+          const labels: Record<string, string> = {}
+
+          for (const device of filteredDevices) {
+            const label = await getLabel(device)
+            if (label !== null) {
+              realDevices.push(device)
+              labels[device.deviceId] = label
+            }
+          }
+
+          setDevices(realDevices)
+          setDeviceLabels(labels)
+        } else {
+          setDevices(filteredDevices)
+        }
+      } catch (err) {
+        console.error('Error getting devices:', err)
+      }
+    }
+    getDevices()
+  }, [kind, getLabel])
+
+  const handleDeviceChange = async (deviceId: string) => {
+    const previousDevice = selectedDevice
+    setSelectedDevice(deviceId)
+    localStorage.setItem(storageKey, deviceId)
+
+    // Update the stream with the new device
+    try {
+      if (isEnabled) {
+        // Get the other device ID from localStorage to maintain both tracks
+        const otherStorageKey = kind === 'videoinput' ? 'selectedAudioDevice' : 'selectedVideoDevice'
+        const otherDeviceId = localStorage.getItem(otherStorageKey) || ''
+
+        // Check if the other track type is enabled
+        const otherEnabled = kind === 'videoinput' ? localAudioEnabled : localVideoEnabled
+
+        const constraints: MediaStreamConstraints = {}
+
+        if (kind === 'videoinput') {
+          constraints.video = deviceId ? { deviceId } : true
+          // Include audio only if it's enabled
+          if (localAudioEnabled) {
+            constraints.audio = otherDeviceId ? { deviceId: otherDeviceId } : true
+          }
+        } else {
+          constraints.audio = deviceId ? { deviceId } : true
+          // Include video only if it's enabled
+          if (localVideoEnabled) {
+            constraints.video = otherDeviceId ? { deviceId: otherDeviceId } : true
+          }
+        }
+
+        const newStream = await navigator.mediaDevices.getUserMedia(constraints)
+        setLocalStream(newStream)
+      }
+    } catch (err) {
+      console.error('Error switching device:', err)
+      // Revert to previous device on error
+      setSelectedDevice(previousDevice)
+      localStorage.setItem(storageKey, previousDevice)
+      alert(`Failed to switch ${kind === 'videoinput' ? 'camera' : 'microphone'}. The device may not be available or may not have active content.`)
+    }
+  }
+
+  return {
+    devices,
+    deviceLabels,
+    selectedDevice,
+    handleDeviceChange
+  }
+}

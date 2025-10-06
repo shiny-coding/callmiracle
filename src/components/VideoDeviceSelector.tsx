@@ -1,6 +1,6 @@
-import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import DeviceSelector from './DeviceSelector'
 import { useStore } from '@/store/useStore'
+import { useDeviceSelection } from '@/hooks/useDeviceSelection'
 
 interface VideoDeviceSelectorProps {
   onOpenChange?: (isOpen: boolean) => void
@@ -15,10 +15,10 @@ async function getDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
       })
       const track = stream.getVideoTracks()[0]
       const capabilities = track.getCapabilities()
-      
+
       // Clean up the stream
       stream.getTracks().forEach(track => track.stop())
-      
+
       if (capabilities.facingMode) {
         if (capabilities.facingMode.includes('user')) return 'Front Camera'
         if (capabilities.facingMode.includes('environment')) return 'Back Camera'
@@ -36,26 +36,23 @@ async function getDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
 }
 
 export default function VideoDeviceSelector({ onOpenChange }: VideoDeviceSelectorProps) {
-  const { setLocalStream } = useWebRTCContext()
   const { localVideoEnabled } = useStore((state) => ({
     localVideoEnabled: state.localVideoEnabled
   }))
 
-  const getStream = async (deviceId: string) => {
-    return navigator.mediaDevices.getUserMedia({
-      video: deviceId ? { deviceId } : true,
-      audio: false
-    })
-  }
+  const deviceSelection = useDeviceSelection({
+    kind: 'videoinput',
+    storageKey: 'selectedVideoDevice',
+    isEnabled: localVideoEnabled,
+    getLabel: getDeviceLabel
+  })
 
   return (
     <DeviceSelector
-      kind="videoinput"
-      storageKey="selectedVideoDevice"
-      getStream={getStream}
-      isEnabled={localVideoEnabled}
-      setStream={setLocalStream}
-      getLabel={getDeviceLabel}
+      devices={deviceSelection.devices}
+      deviceLabels={deviceSelection.deviceLabels}
+      selectedDevice={deviceSelection.selectedDevice}
+      onDeviceChange={deviceSelection.handleDeviceChange}
       onOpenChange={onOpenChange}
     />
   )

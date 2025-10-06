@@ -1,85 +1,26 @@
 import { FormControl, Select, MenuItem } from '@mui/material'
-import { useState, useEffect, MutableRefObject } from 'react'
-import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { useState, useEffect } from 'react'
 
 interface DeviceSelectorProps {
-  kind: 'audioinput' | 'videoinput'
-  storageKey: string
-  getStream: (deviceId: string) => Promise<MediaStream>
-  isEnabled: boolean
-  setStream: (stream: MediaStream | undefined) => void
-  getLabel?: (device: MediaDeviceInfo) => Promise<string | null>
+  devices: MediaDeviceInfo[]
+  deviceLabels: Record<string, string>
+  selectedDevice: string
+  onDeviceChange: (deviceId: string) => void
   onOpenChange?: (isOpen: boolean) => void
 }
 
-export default function DeviceSelector({ 
-  kind, 
-  storageKey, 
-  getStream, 
-  isEnabled,
-  setStream,
-  getLabel,
+export default function DeviceSelector({
+  devices,
+  deviceLabels,
+  selectedDevice,
+  onDeviceChange,
   onOpenChange,
 }: DeviceSelectorProps) {
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
-  const [deviceLabels, setDeviceLabels] = useState<Record<string, string>>({})
-  const [selectedDevice, setSelectedDevice] = useState<string>('')
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     onOpenChange?.(isOpen)
   }, [isOpen, onOpenChange])
-
-  // Initialize client-side only state
-  useEffect(() => {
-    setSelectedDevice(localStorage.getItem(storageKey) || '')
-  }, [storageKey])
-
-  useEffect(() => {
-    async function getDevices() {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices()
-        const filteredDevices = devices.filter(d => d.kind === kind)
-        
-        if (getLabel) {
-          // Filter and get labels for devices that support streaming
-          const realDevices: MediaDeviceInfo[] = []
-          const labels: Record<string, string> = {}
-          
-          for (const device of filteredDevices) {
-            const label = await getLabel(device)
-            if (label !== null) {
-              realDevices.push(device)
-              labels[device.deviceId] = label
-            }
-          }
-          
-          setDevices(realDevices)
-          setDeviceLabels(labels)
-        } else {
-          setDevices(filteredDevices)
-        }
-      } catch (err) {
-        console.error('Error getting devices:', err)
-      }
-    }
-    getDevices()
-  }, [kind, getLabel])
-
-  const handleChange = async (deviceId: string) => {
-    setSelectedDevice(deviceId)
-    localStorage.setItem(storageKey, deviceId)
-
-    // Update the stream with the new device
-    try {
-      if (isEnabled) {
-        const newStream = await getStream(deviceId)
-        setStream(newStream)
-      }
-    } catch (err) {
-      console.error('Error switching device:', err)
-    }
-  }
 
   if (devices.length === 0) return null
 
@@ -94,7 +35,7 @@ export default function DeviceSelector({
         <div className="dropdown-root">
           <Select
             value={selectedDevice}
-            onChange={(e) => handleChange(e.target.value)}
+            onChange={(e) => onDeviceChange(e.target.value)}
             variant="standard"
             className={`dark:text-gray-100 ${!isOpen ? 'opacity-0' : 'dark:bg-gray-700'}`}
             open={isOpen}
@@ -104,12 +45,12 @@ export default function DeviceSelector({
             renderValue={() => ''}
           >
             {devices.map(device => (
-              <MenuItem 
-                key={device.deviceId} 
+              <MenuItem
+                key={device.deviceId}
                 value={device.deviceId}
                 className="dark:text-gray-100 dark:hover:bg-gray-600"
               >
-                {getLabel ? deviceLabels[device.deviceId] : device.label || `Device ${device.deviceId.slice(0, 5)}...`}
+                {deviceLabels[device.deviceId] || device.label || `Device ${device.deviceId.slice(0, 5)}...`}
               </MenuItem>
             ))}
           </Select>
