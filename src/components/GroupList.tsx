@@ -6,8 +6,8 @@ import { Paper, List, ListItem, Typography, IconButton, Divider } from '@mui/mat
 import GroupIcon from '@mui/icons-material/Group'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import CloseIcon from '@mui/icons-material/Close'
-import AddIcon from '@mui/icons-material/Add'
 import { Group } from '@/generated/graphql'
+import AddFab from './AddFab'
 import { useGroups } from '@/store/GroupsProvider'
 import GroupCard from './GroupCard'
 import { normalizeText } from '@/utils/textNormalization'
@@ -74,24 +74,13 @@ export default function GroupList() {
   }
 
   return (
-    <Paper className="h-full flex flex-col">
+    <Paper className="h-full flex flex-col relative">
       <PageHeader
         icon={<GroupIcon />}
         title={t('groups')}
       >
-        <IconButton 
-          onClick={() => routerPush(router, `/${locale}/groups/create`, {
-            source: 'group_list_create_button',
-            locale
-          })} 
-          aria-label={t('createGroup')}
-          title={t('createGroup')}
-          size="small"
-        >
-          <AddIcon />
-        </IconButton>
-        <IconButton 
-          onClick={() => refetch()} 
+        <IconButton
+          onClick={() => refetch()}
           aria-label="refresh"
           title="Refresh"
           size="small"
@@ -133,6 +122,14 @@ export default function GroupList() {
           </div>
         </div>
       )}
+      <AddFab
+        onClick={() => routerPush(router, `/${locale}/groups/create`, {
+          source: 'group_list_fab_button',
+          locale
+        })}
+        ariaLabel={t('createGroup')}
+        title={t('createGroup')}
+      />
     </Paper>
   )
 } 

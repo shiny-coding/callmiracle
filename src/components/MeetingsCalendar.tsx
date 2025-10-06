@@ -9,8 +9,8 @@ import { Fragment, useRef, useState, useEffect, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { getDayLabel, isMeetingPassed, SLOT_DURATION } from '@/utils/meetingUtils'
-import AddIcon from '@mui/icons-material/Add'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
+import AddFab from './AddFab'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
 import React from 'react'
 import LoadingDialog from './LoadingDialog'
@@ -214,27 +214,10 @@ export default function MeetingsCalendar() {
         title={t('upcomingMeetings')}
       >
         <IconButton
-          onClick={() => {
-            if (!currentUser || !isProfileComplete(currentUser)) {
-              setProfileIncompleteDialogOpen(true)
-              return
-            }
-            routerPush(router, '/meeting', {
-              source: 'meetings_calendar_add_button',
-              userComplete: isProfileComplete(currentUser)
-            })
-          }}
-          aria-label={t('createNewMeeting')}
-          title={t('createNewMeeting')}
+          onClick={() => { if (refetchFutureMeetingsWithPeers) refetchFutureMeetingsWithPeers(undefined, true) }}
+          aria-label={t('refreshMeetings')}
+          title={t('refreshMeetings')}
           size="small"
-        >
-          <AddIcon />
-        </IconButton>
-        <IconButton 
-            onClick={() => { if (refetchFutureMeetingsWithPeers) refetchFutureMeetingsWithPeers(undefined, true) }} 
-            aria-label={t('refreshMeetings')} 
-            title={t('refreshMeetings')} 
-            size="small"
         >
           <RefreshIcon />
         </IconButton>
@@ -365,6 +348,20 @@ export default function MeetingsCalendar() {
           onClose={handleCloseUserDetails}
         />
       )}
+      <AddFab
+        onClick={() => {
+          if (!currentUser || !isProfileComplete(currentUser)) {
+            setProfileIncompleteDialogOpen(true)
+            return
+          }
+          routerPush(router, '/meeting', {
+            source: 'meetings_calendar_fab_button',
+            userComplete: isProfileComplete(currentUser)
+          })
+        }}
+        ariaLabel={t('createNewMeeting')}
+        title={t('createNewMeeting')}
+      />
     </Paper>
   )
 } 

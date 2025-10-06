@@ -10,8 +10,8 @@ import { routerPush } from '@/utils/routerHelper'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import AddIcon from '@mui/icons-material/Add'
-import EventIcon from '@mui/icons-material/Event'
 import ViewListIcon from '@mui/icons-material/ViewList'
+import AddFab from './AddFab'
 import CloseIcon from '@mui/icons-material/Close'
 import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
@@ -116,21 +116,13 @@ export default function MeetingsList() {
 
   return (
     <>
-      <Paper className="bg-gray-800 flex flex-col h-full">
-        <PageHeader 
+      <Paper className="bg-gray-800 flex flex-col h-full relative">
+        <PageHeader
           icon={<ViewListIcon className="text-blue-400" />}
           title={t('myMeetings')}
         >
           <IconButton
-            onClick={handleAddNewMeetingClick}
-            size="small"
-            className="hover:bg-gray-700 text-white"
-            title={t('createNewMeeting')}
-          >
-            <AddIcon className="text-white" />
-          </IconButton>
-          <IconButton 
-            onClick={() => refetchMyMeetingsWithPeers(true)} 
+            onClick={() => refetchMyMeetingsWithPeers(true)}
             size="small"
             className="hover:bg-gray-700 text-white"
             title={t('refreshMeetings')}
@@ -209,6 +201,11 @@ export default function MeetingsList() {
             })}
           </div>
         </div>
+        <AddFab
+          onClick={handleAddNewMeetingClick}
+          ariaLabel={t('createNewMeeting')}
+          title={t('createNewMeeting')}
+        />
       </Paper>
       <ProfileIncompleteDialog
         open={profileIncompleteDialogOpen}
