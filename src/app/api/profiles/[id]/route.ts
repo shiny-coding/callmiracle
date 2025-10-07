@@ -13,18 +13,18 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    
+
     // Remove .jpg extension if present in the id
     const cleanId = id.replace(/\.jpg$/, '')
-    
+
     // Path to the profile image in the public directory
     const imagePath = path.join(process.cwd(), 'public', 'profiles', `${cleanId}.jpg`)
-    
+
     // Check if the file exists
     if (existsSync(imagePath)) {
       // File exists, serve it
       const imageBuffer = await readFile(imagePath)
-      
+
       return new NextResponse(imageBuffer, {
         headers: {
           'Content-Type': 'image/jpeg',
@@ -32,31 +32,33 @@ export async function GET(
         },
       })
     } else {
-      // File doesn't exist, serve transparent PNG
+      // File doesn't exist, serve 1x1 transparent PNG with a custom header
       const transparentBuffer = Buffer.from(TRANSPARENT_PNG_BASE64, 'base64')
-      
+
       return new NextResponse(transparentBuffer, {
         headers: {
           'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+          'Cache-Control': 'public, max-age=60', // Cache for 1 minute only
+          'X-Profile-Image': 'placeholder', // Custom header to identify placeholder
         },
       })
     }
   } catch (error) {
     const logger = await getLogger()
-  
+
     logger.error('Error serving profile image', {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     })
-    
-    // On error, also serve transparent PNG
+
+    // On error, also serve transparent PNG with placeholder header
     const transparentBuffer = Buffer.from(TRANSPARENT_PNG_BASE64, 'base64')
-    
+
     return new NextResponse(transparentBuffer, {
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=86400',
+        'Cache-Control': 'public, max-age=60',
+        'X-Profile-Image': 'placeholder',
       },
     })
   }

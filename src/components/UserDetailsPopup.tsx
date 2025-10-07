@@ -11,9 +11,10 @@ import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { LANGUAGES } from '@/config/languages'
 import { formatTextWithLinks } from '@/utils/formatTextWithLinks'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import { useCheckImage } from '@/hooks/useCheckImage'
 import InterestSelector from './InterestSelector'
 import { useGroups } from '@/store/GroupsProvider'
+import Image from 'next/image'
+import { useProfileImage } from '@/hooks/useProfileImage'
 
 interface UserDetailsPopupProps {
   user: User
@@ -30,7 +31,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
   const { groups } = useGroups()
   const { updateUserData } = useUpdateUser()
   const [showFullImage, setShowFullImage] = useState(false)
-  const { exists: imageExists } = useCheckImage(user._id)
+  const { imageSrc } = useProfileImage(user._id)
 
   const existingBlock = currentUser?.blocks.find((b: any) => b.userId === user._id)
   const [blockAll, setBlockAll] = useState(existingBlock?.all || false)
@@ -53,7 +54,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
   
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (imageExists) {
+    if (imageSrc) {
       setShowFullImage(true)
     }
   }
@@ -176,13 +177,15 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
         <DialogContent className="space-y-4">
           {/* User Avatar and Basic Info */}
           <div className="flex items-center space-x-4 mb-4">
-            <div className="relative">
-              {imageExists ? (
-                <img
-                  src={`/profiles/${user._id}.jpg`}
+            <div className="relative w-16 h-16 cursor-pointer" onClick={handleImageClick}>
+              {imageSrc ? (
+                <Image
+                  src={imageSrc}
                   alt={user.name}
-                  className="w-16 h-16 rounded-full object-cover cursor-pointer"
-                  onClick={handleImageClick}
+                  width={64}
+                  height={64}
+                  className="rounded-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-lg font-semibold">

@@ -13,8 +13,8 @@ import { useUpdateUser } from '@/hooks/useUpdateUser'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { Dialog as CameraDialog } from '@mui/material'
-import { useCheckImage } from '@/hooks/useCheckImage'
 import { signOut } from 'next-auth/react'
+import { useProfileImage } from '@/hooks/useProfileImage'
 import { gql, useMutation } from '@apollo/client'
 import { useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress'
@@ -52,11 +52,11 @@ export default function ProfileForm() {
   const [showCameraPreview, setShowCameraPreview] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const currentUserId = currentUser?._id || ''
-  const { exists: imageExists } = useCheckImage(currentUserId, timestamp)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [imageDeleted, setImageDeleted] = useState(false)
   const [deleteUser] = useMutation(DELETE_USER)
   const router = useRouter()
+  const { imageSrc: existingImageSrc } = useProfileImage(currentUserId, timestamp)
 
   useEffect(() => {
     setTempName(name)
@@ -233,11 +233,11 @@ export default function ProfileForm() {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-4">
         <div className="relative flex justify-center items-center">
-          <div 
-            {...getRootProps()} 
+          <div
+            {...getRootProps()}
             className={`
-              w-full aspect-square max-w-[240px] mx-auto rounded-lg border-2 border-dashed 
-              ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} 
+              w-full aspect-square max-w-[240px] mx-auto rounded-full border-2 border-dashed
+              ${isDragActive ? 'border-blue-500' : 'border-gray-300'}
               flex items-center justify-center cursor-pointer overflow-hidden
               hover:border-blue-500 transition-colors
             `}
@@ -245,21 +245,18 @@ export default function ProfileForm() {
             <input {...getInputProps()} />
             {currentUserId ? (
               <div className="relative w-full h-full">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-                  {uploading ? t('uploading') : selectedFile ? selectedFile.name : t('uploadPhoto')}
-                </div>
-                {((imageExists && !imageDeleted) || selectedFile) && (
-                    <Image
-                      src={selectedFile ? URL.createObjectURL(selectedFile) : `/profiles/${currentUserId}.jpg?v=${currentUser?.updatedAt}`}
-                      alt={t('photo')}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                      onLoad={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.nextElementSibling?.classList.remove('flex')
-                      }}
-                    />
+                {(selectedFile || (existingImageSrc && !imageDeleted)) ? (
+                  <Image
+                    src={selectedFile ? URL.createObjectURL(selectedFile) : existingImageSrc!}
+                    alt={t('photo')}
+                    fill
+                    unoptimized
+                    className="object-cover rounded-full"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                    {uploading ? t('uploading') : t('uploadPhoto')}
+                  </div>
                 )}
               </div>
             ) : (
@@ -280,8 +277,8 @@ export default function ProfileForm() {
             >
               <PhotoCameraIcon className="text-white" />
             </IconButton>
-            {((imageExists && !imageDeleted) || selectedFile) && (
-              <IconButton 
+            {(selectedFile || (existingImageSrc && !imageDeleted)) && (
+              <IconButton
                 onClick={(e) => {
                   e.stopPropagation()
                   handleDeletePhoto()
@@ -441,7 +438,7 @@ export default function ProfileForm() {
           </IconButton>
         </DialogTitle>
         <DialogContent className="flex flex-col gap-4">
-          <div className="relative aspect-square w-full max-w-[240px] mx-auto overflow-hidden rounded-lg">
+          <div className="relative aspect-square w-full max-w-[240px] mx-auto overflow-hidden rounded-full">
             <video
               ref={videoRef}
               autoPlay

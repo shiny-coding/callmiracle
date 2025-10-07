@@ -14,21 +14,21 @@ import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
-import { useCheckImage } from '@/hooks/useCheckImage'
 import { useRouter } from 'next/navigation'
 import LocaleSelector from './LocaleSelector'
 import { signOut } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
 import { routerPush } from '@/utils/routerHelper'
+import { useProfileImage } from '@/hooks/useProfileImage'
 
 export default function TopControlsBar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null)
   const { hasUnseenNotifications } = useNotifications()
   const { currentUser, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled } = useStore((state: any) => ({ currentUser: state.currentUser, localAudioEnabled: state.localAudioEnabled, localVideoEnabled: state.localVideoEnabled, setLocalAudioEnabled: state.setLocalAudioEnabled, setLocalVideoEnabled: state.setLocalVideoEnabled }))
-  const { exists: imageExists } = useCheckImage(currentUser?._id, currentUser?.updatedAt)
   const router = useRouter()
   const t = useTranslations('Profile')
+  const { imageSrc } = useProfileImage(currentUser?._id, currentUser?.updatedAt)
 
   const {
     connectionStatus,
@@ -138,10 +138,20 @@ export default function TopControlsBar() {
             style={{ width: 40, height: 40 }}
           >
             <Avatar
-              sx={{ width: 40, height: 40, position: 'absolute', top: 0, left: 0 }}
-              src={imageExists ? `/profiles/${currentUser?._id}.jpg?v=${currentUser?.updatedAt}` : undefined}
+              sx={{
+                width: 40,
+                height: 40,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bgcolor: 'rgba(0, 0, 0, 0.3)',
+                backdropFilter: 'blur(4px)',
+                color: 'white',
+                fontWeight: 'bold'
+              }}
+              src={imageSrc}
             >
-              {!imageExists && currentUser?.name?.[0]?.toUpperCase()}
+              {currentUser?.name?.[0]?.toUpperCase()}
             </Avatar>
           </IconButton>
         </div>
