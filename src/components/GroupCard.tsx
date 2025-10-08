@@ -20,6 +20,8 @@ import { routerPush } from '@/utils/routerHelper'
 import { useGroups } from '@/store/GroupsProvider'
 import ConfirmationDialog from './ConfirmationDialog'
 import { LANGUAGES } from '@/config/languages'
+import { useGroupImage } from '@/hooks/useGroupImage'
+import Image from 'next/image'
 
 interface GroupCardProps {
   group: Group
@@ -133,15 +135,29 @@ export default function GroupCard({ group }: GroupCardProps) {
     })
   }
 
+  const { imageSrc } = useGroupImage(group._id)
+
   return (
     <>
-      <div 
-        className="flex items-center flex-grow flex-wrap cursor-pointer hover:bg-gray-800 rounded-lg p-2 transition-colors"
+      <div
+        className="flex items-center flex-grow flex-wrap cursor-pointer rounded-lg p-2 transition-colors"
         style={{ gap: 'var(--20sp)' }}
         onClick={handleGroupClick}
       >
-        <div className="flex items-center justify-center w-12 h-12 bg-blue-600 rounded-full">
-          <GroupIcon className="text-white" />
+        <div className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded-full">
+          {imageSrc ? (
+            <Image
+              src={imageSrc}
+              alt={group.name}
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          ) : (
+            <div className="flex items-center justify-center w-full h-full bg-blue-600">
+              <GroupIcon className="text-white" />
+            </div>
+          )}
         </div>
         
         <div className="flex-grow">

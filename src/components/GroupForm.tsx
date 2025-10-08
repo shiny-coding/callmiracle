@@ -4,6 +4,8 @@ import { IconButton, Button, FormGroup, FormControlLabel, Switch, TextField, Cir
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import DeleteIcon from '@mui/icons-material/Delete'
+import Image from 'next/image'
 import { useLocale, useTranslations } from 'next-intl'
 import { useUpdateGroup } from '@/hooks/useUpdateGroup'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
@@ -23,6 +25,9 @@ import GroupIcon from '@mui/icons-material/Group'
 import InterestsPairsEditor from './InterestsPairsEditor'
 import InterestsDescriptionsEditor from './InterestsDescriptionsEditor'
 import LanguageSelector from './LanguageSelector'
+import { useDropzone } from 'react-dropzone'
+import { useCallback } from 'react'
+import { useGroupImage } from '@/hooks/useGroupImage'
 
 interface InterestDescription {
   interest: string
@@ -56,10 +61,29 @@ export default function GroupForm() {
   const [interestsPairs, setInterestsPairs] = useState<string[][]>([])
   const [interestsDescriptions, setInterestsDescriptions] = useState<InterestDescription[]>([])
   const [isGeneratingToken, setIsGeneratingToken] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [imageDeleted, setImageDeleted] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [timestamp, setTimestamp] = useState(Date.now())
   const { updateGroup, loading } = useUpdateGroup()
   const { updateUserData } = useUpdateUser()
   const { regenerateJoinToken } = useRegenerateJoinToken()
   const { showSnackbar } = useSnackbar()
+  const { imageSrc: existingImageSrc } = useGroupImage(groupId as string, timestamp)
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return
+    setSelectedFile(acceptedFiles[0])
+    setImageDeleted(false)
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': []
+    },
+    maxFiles: 1
+  })
 
   // Reset form when group changes
   useEffect(() => {
@@ -108,25 +132,55 @@ export default function GroupForm() {
       return
     }
 
-    // Filter out empty pairs and descriptions
-    const validPairs = interestsPairs.filter(pair => pair[0] && pair[1])
-    const validDescriptions = interestsDescriptions.filter(desc => desc.description.trim())
-
-    const groupInput = {
-      _id: groupId as string || undefined,
-      name: name.trim(),
-      description: description.trim(),
-      open,
-      transparency,
-      admins: selectedAdmins.map(admin => admin._id),
-      language,
-      interestsPairs: validPairs,
-      interestsDescriptions: validDescriptions
-    }
+    setUploading(true)
 
     try {
+      // Filter out empty pairs and descriptions
+      const validPairs = interestsPairs.filter(pair => pair[0] && pair[1])
+      const validDescriptions = interestsDescriptions.filter(desc => desc.description.trim())
+
+      const groupInput = {
+        _id: groupId as string || undefined,
+        name: name.trim(),
+        description: description.trim(),
+        open,
+        transparency,
+        admins: selectedAdmins.map(admin => admin._id),
+        language,
+        interestsPairs: validPairs,
+        interestsDescriptions: validDescriptions
+      }
+
       const result = await updateGroup(groupInput)
       if (result) {
+        const savedGroupId = result._id
+
+        // Handle image deletion first
+        if (imageDeleted && groupId) {
+          await fetch('/api/delete-image', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ entityId: savedGroupId, entityType: 'group' }),
+          })
+          setTimestamp(Date.now())
+        }
+
+        // Handle image upload
+        if (selectedFile) {
+          const formData = new FormData()
+          formData.append('image', selectedFile)
+          formData.append('entityId', savedGroupId)
+          formData.append('entityType', 'group')
+
+          await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData
+          })
+          setTimestamp(Date.now())
+        }
+
         refetch()
         // Refetch user data to update current user's groups array
         if (!groupId) {
@@ -141,7 +195,7 @@ export default function GroupForm() {
         )
         routerPush(router, `/${locale}/groups`, {
           source: 'group_form_save_success',
-          groupId,
+          groupId: savedGroupId,
           operationType: groupId ? 'update' : 'create',
           locale
         })
@@ -149,6 +203,8 @@ export default function GroupForm() {
     } catch (error) {
       console.error('Error saving group:', error)
       showSnackbar(t('errorSavingGroup'), 'error')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -235,11 +291,11 @@ export default function GroupForm() {
 
   const handleGenerateJoinToken = async () => {
     if (!group) return
-    
+
     setIsGeneratingToken(true)
     try {
       const result = await regenerateJoinToken(group._id)
-      
+
       if (result) {
         refetch() // Refresh groups to get the new token
         showSnackbar(t('joinTokenGenerated'), 'success')
@@ -252,16 +308,31 @@ export default function GroupForm() {
     }
   }
 
+  const handleDeletePhoto = () => {
+    setImageDeleted(true)
+    setSelectedFile(null)
+  }
+
   const isFormValid = name.trim().length > 0 && language.length > 0
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 text-white">
+    <div className="h-full flex flex-col bg-gray-900 text-white relative">
+      {/* Loader Overlay */}
+      {uploading && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
+          style={{ pointerEvents: 'all' }}
+        >
+          <CircularProgress color="inherit" />
+        </div>
+      )}
+
       <PageHeader
         icon={<GroupIcon />}
         title={groupId ? t('editGroup') : t('createGroup')}
       >
-        <IconButton 
-          onClick={handleCancel} 
+        <IconButton
+          onClick={handleCancel}
           aria-label={t('close')}
           title={t('close')}
           size="small"
@@ -272,6 +343,48 @@ export default function GroupForm() {
 
       <div className="flex-grow overflow-y-auto p-4">
         <div className="mx-auto space-y-6">
+          {/* Group Image Upload */}
+          <div className="relative flex justify-center items-center">
+            <div
+              {...getRootProps()}
+              className={`
+                w-full aspect-square max-w-[240px] mx-auto rounded-full border-2 border-dashed
+                ${isDragActive ? 'border-blue-500' : 'border-gray-300'}
+                flex items-center justify-center cursor-pointer overflow-hidden
+                hover:border-blue-500 transition-colors
+              `}
+            >
+              <input {...getInputProps()} />
+              <div className="relative w-full h-full">
+                {(selectedFile || (existingImageSrc && !imageDeleted)) ? (
+                  <Image
+                    src={selectedFile ? URL.createObjectURL(selectedFile) : existingImageSrc!}
+                    alt={t('groupImage')}
+                    fill
+                    unoptimized
+                    className="object-cover rounded-full"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm px-4">
+                    {uploading ? t('uploading') : t('uploadGroupImage')}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {(selectedFile || (existingImageSrc && !imageDeleted)) && (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeletePhoto()
+                }}
+                className="absolute right-0 top-0 bg-red-500/50 hover:bg-red-500/70"
+              >
+                <DeleteIcon className="text-white" />
+              </IconButton>
+            )}
+          </div>
+
           <TextField
             fullWidth
             label={t('groupName')}
@@ -501,7 +614,7 @@ export default function GroupForm() {
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={loading || !isFormValid}
+            disabled={loading || uploading || !isFormValid}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {loading ? (

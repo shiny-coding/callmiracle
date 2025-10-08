@@ -348,20 +348,22 @@ export default function MeetingsCalendar() {
           onClose={handleCloseUserDetails}
         />
       )}
-      <AddFab
-        onClick={() => {
-          if (!currentUser || !isProfileComplete(currentUser)) {
-            setProfileIncompleteDialogOpen(true)
-            return
-          }
-          routerPush(router, '/meeting', {
-            source: 'meetings_calendar_fab_button',
-            userComplete: isProfileComplete(currentUser)
-          })
-        }}
-        ariaLabel={t('createNewMeeting')}
-        title={t('createNewMeeting')}
-      />
+      {!filtersVisible && (
+        <AddFab
+          onClick={() => {
+            if (!currentUser || !isProfileComplete(currentUser)) {
+              setProfileIncompleteDialogOpen(true)
+              return
+            }
+            routerPush(router, '/meeting', {
+              source: 'meetings_calendar_fab_button',
+              userComplete: isProfileComplete(currentUser)
+            })
+          }}
+          ariaLabel={t('createNewMeeting')}
+          title={t('createNewMeeting')}
+        />
+      )}
     </Paper>
   )
 } 

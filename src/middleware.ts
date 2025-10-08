@@ -17,12 +17,6 @@ const PUBLIC_FILE = /\.(.*)$/i
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Handle profile image requests FIRST - rewrite /profiles/{id}.jpg to /api/profiles/{id}.jpg
-  if (pathname.startsWith('/profiles/') && pathname.endsWith('.jpg')) {
-    const rewriteUrl = new URL(`/api${pathname}`, request.url)
-    return NextResponse.rewrite(rewriteUrl)
-  }
-
   // Skip middleware for public files (e.g. .jpg, .png, .css, .js, .ico, etc)
   // Don't add headers to these since we don't need logging for static files
   if (PUBLIC_FILE.test(pathname)) {

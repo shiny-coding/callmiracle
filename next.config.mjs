@@ -88,8 +88,25 @@ const nextConfig = {
         hostname: 'localhost',
         pathname: '/profiles/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        pathname: '/groups/**',
+      },
     ],
-  }
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/profiles/:id',
+        destination: '/api/images/profiles/:id',
+      },
+      {
+        source: '/groups/:id',
+        destination: '/api/images/groups/:id',
+      },
+    ];
+  },
 };
  
 export default withNextIntl(nextConfig);

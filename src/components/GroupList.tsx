@@ -122,14 +122,16 @@ export default function GroupList() {
           </div>
         </div>
       )}
-      <AddFab
-        onClick={() => routerPush(router, `/${locale}/groups/create`, {
-          source: 'group_list_fab_button',
-          locale
-        })}
-        ariaLabel={t('createGroup')}
-        title={t('createGroup')}
-      />
+      {!filtersVisible && (
+        <AddFab
+          onClick={() => routerPush(router, `/${locale}/groups/create`, {
+            source: 'group_list_fab_button',
+            locale
+          })}
+          ariaLabel={t('createGroup')}
+          title={t('createGroup')}
+        />
+      )}
     </Paper>
   )
 } 
