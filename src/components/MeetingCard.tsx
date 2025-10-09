@@ -25,6 +25,8 @@ import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
 import { combineAdjacentSlots } from '@/utils/meetingUtils'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { useGroups } from '@/store/GroupsProvider'
+import { useProfileImage } from '@/hooks/useProfileImage'
+import Image from 'next/image'
 
 interface MeetingCardProps {
   meetingWithPeer: MeetingWithPeer
@@ -43,6 +45,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
   const { refetchMeetings } = useMeetings()
   const [confirmAction, setConfirmAction] = useState<'finish' | 'cancel' | 'delete' | null>(null)
   const { groups } = useGroups()
+  const { imageSrc: peerImageSrc } = useProfileImage(meetingWithPeer.peerUser?._id)
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
@@ -280,7 +283,22 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                 </Button>
               )}
               {meeting.lastCallTime ? (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <div className="relative w-8 h-8 flex-shrink-0 overflow-hidden rounded-full">
+                    {peerImageSrc ? (
+                      <Image
+                        src={peerImageSrc}
+                        alt={meetingWithPeer.peerUser.name}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center w-full h-full bg-blue-600 text-white text-sm font-semibold">
+                        {meetingWithPeer.peerUser.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
                   <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
                     {meetingWithPeer.peerUser.name}
                   </Typography>

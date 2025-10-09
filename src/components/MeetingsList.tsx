@@ -72,13 +72,12 @@ export default function MeetingsList() {
 
   // Prepare meetings list for virtualization
   const meetingsToRender = useMemo(() => {
-    const allMeetingsPassedOrNoneExist =
-      myMeetingsWithPeers.length === 0 ||
-      myMeetingsWithPeers.every(mwp => isMeetingPassed(mwp.meeting))
+    // Only show empty state when there are truly no meetings
+    const noMeetingsExist = myMeetingsWithPeers.length === 0
 
     // Add empty state as first item if needed
-    return allMeetingsPassedOrNoneExist
-      ? [{ type: 'empty' as const }, ...myMeetingsWithPeers]
+    return noMeetingsExist
+      ? [{ type: 'empty' as const }]
       : myMeetingsWithPeers
   }, [myMeetingsWithPeers])
 
