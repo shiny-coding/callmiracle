@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Dialog, DialogContent, Typography, Button, Checkbox, FormControlLabel, FormGroup, Chip, Divider, Switch, IconButton } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import CloseIcon from '@mui/icons-material/Close'
 import { InterestsBlock, User } from '@/generated/graphql'
 import { useTranslations } from 'next-intl'
 import { useStore } from '@/store/useStore'
@@ -175,18 +176,35 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
     <>
       <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>
         <DialogContent className="space-y-4">
+          {/* Close button */}
+          <IconButton
+            aria-label="close"
+            onClick={handleCancel}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
           {/* User Avatar and Basic Info */}
           <div className="flex items-center space-x-4 mb-4">
             <div className="relative w-16 h-16 cursor-pointer" onClick={handleImageClick}>
               {imageSrc ? (
-                <Image
-                  src={imageSrc}
-                  alt={user.name}
-                  width={64}
-                  height={64}
-                  className="rounded-full object-cover"
-                  unoptimized
-                />
+                <div className="w-16 h-16 rounded-full overflow-hidden">
+                  <Image
+                    src={imageSrc}
+                    alt={user.name}
+                    width={64}
+                    height={64}
+                    className="object-cover"
+                    style={{ width: '100%', height: '100%' }}
+                    unoptimized
+                  />
+                </div>
               ) : (
                 <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-lg font-semibold">
                   {user.name[0]?.toUpperCase() || '?'}
@@ -263,7 +281,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
             </div>
 
             {isBlockSectionExpanded && (
-              <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-8 py-0 pb-4">
+              <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-1 py-0 pb-4">
           <FormGroup>
             <FormControlLabel
               control={

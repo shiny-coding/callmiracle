@@ -20,7 +20,7 @@ export default function StandardChip({ style, sx, ...props }: StandardChipProps)
       style={{
         maxWidth: '100%',
         height: 'unset',
-        minHeight: '28px',
+        minHeight: '32px',
         ...style
       }}
       sx={{
