@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment } from 'react'
-import { Typography, Chip } from '@mui/material'
+import { Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Meeting, MeetingWithPeer, MeetingTransparency, User, Group } from '@/generated/graphql'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ import AddIcon from '@mui/icons-material/Add'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
 import UserAvatar from './UserAvatar'
 import React from 'react'
+import StandardChip from './StandardChip'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -173,7 +174,7 @@ function MeetingChip({
   )
 
   const chipElement = (
-    <Chip
+    <StandardChip
       label={
         <div className="flex items-center gap-1 p-1 flex-wrap" style={{ maxWidth: '100%', minWidth: 0 }}>
           {userNamePart}
@@ -181,13 +182,9 @@ function MeetingChip({
           {interestsPart}
         </div>
       }
-      size="small"
       variant={isMyMeeting ? "outlined" : "filled"}
-      style={{ 
-        maxWidth: '100%', 
-        height: 'unset',
+      style={{
         borderColor: isMyMeeting ? meetingColor : undefined,
-        minHeight: '28px'
       }}
     />
   )

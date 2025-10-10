@@ -160,7 +160,7 @@ const getFutureMeetingsWithPeers = async (_: any, {
       return []
     }
 
-    // 1. Fetch meetings with group filtering applied at the database level (excluding user's own meetings)
+    // 1. Fetch meetings with group filtering applied at the database level
     const meetingsQuery: any = {
       $and: [
         { groupId: { $in: groupsToFilter } }, // Always apply group filter
@@ -206,6 +206,16 @@ const getFutureMeetingsWithPeers = async (_: any, {
         const meetingUser = usersById[meetingUserId]
         if (!meetingUser) return null
 
+        // If this is the user's own meeting, return it early without applying filters
+        if (meetingUserId === userId) {
+          return {
+            meeting,
+            peerUser: {
+              sex: meetingUser.sex
+            }
+          }
+        }
+
         // Note: Group filtering is now done at the database level via meeting.groupId
         // No need to filter by user groups here anymore
 
@@ -245,7 +255,7 @@ const getFutureMeetingsWithPeers = async (_: any, {
               return null
           }
         }
-        
+
         // Filter interests blocked by meetingUser for currentUser
         const compatibleInterests = getNonBlockedInterests(
           meeting,

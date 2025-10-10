@@ -10,6 +10,8 @@ import { useEffect, useState, useRef } from 'react'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { useGroups } from '@/store/GroupsProvider'
+import CloseIcon from '@mui/icons-material/Close'
+import StandardChip from './StandardChip'
 
 interface MeetingsFiltersProps {
   onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
@@ -65,7 +67,6 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
 
   const [hasChanges, setHasChanges] = useState<boolean>(false)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
-  const [activeFiltersSummary, setActiveFiltersSummary] = useState<string>('')
 
   const scrollableContainerRef = useRef<HTMLDivElement>(null)
 
@@ -115,61 +116,93 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     filterInterests, filterLanguages, filterAllowedMales, filterAllowedFemales, filterAgeRange, filterMinDurationM, filterGroups
   ])
 
-  useEffect(() => {
-    const summaryParts: string[] = []
+  // Build active filter chips data
+  const activeFilterChips = []
 
-    // Groups
-    if (changedFilterGroups.length > 0 && changedFilterGroups.length < availableGroups.length) {
-      const groupNames = changedFilterGroups.map(groupId => 
-        groups?.find(g => g._id === groupId)?.name || groupId
-      ).join(', ')
-      summaryParts.push(groupNames)
-    }
-
-    // Minimum Duration
-    if (changedFilterMinDurationM === 60) {
-      summaryParts.push('60min')
-    }
-
-    // Languages
-    const userLanguages = currentUser?.languages || []
-    if (userLanguages.length > 1) {
-      if (changedFilterLanguages.length > 0 && changedFilterLanguages.length < userLanguages.length) {
-        summaryParts.push(changedFilterLanguages.join(', '))
+  // Groups
+  if (changedFilterGroups.length > 0 && changedFilterGroups.length < availableGroups.length) {
+    const groupNames = changedFilterGroups.map(groupId =>
+      groups?.find(g => g._id === groupId)?.name || groupId
+    ).join(', ')
+    activeFilterChips.push({
+      type: 'groups',
+      label: `${t('groups')}: ${groupNames}`,
+      onDelete: () => {
+        setChangedFilterGroups([])
+        setFilterGroups([])
       }
-    }
+    })
+  }
 
-    // Interests
-    if (changedFilterInterests.length > 0) {
-      summaryParts.push(changedFilterInterests.join(', '))
-    }
+  // Minimum Duration
+  if (changedFilterMinDurationM === 60) {
+    activeFilterChips.push({
+      type: 'duration',
+      label: `${t('minDuration')}: 60min`,
+      onDelete: () => {
+        setChangedFilterMinDurationM(30)
+        setFilterMinDurationM(30)
+      }
+    })
+  }
 
-    // Age Range
-    if (changedFilterAgeRange[0] !== 10 || changedFilterAgeRange[1] !== 100) {
-      summaryParts.push(`${changedFilterAgeRange[0]}-${changedFilterAgeRange[1]}`)
-    }
+  // Languages
+  const userLanguages = currentUser?.languages || []
+  if (userLanguages.length > 1 && changedFilterLanguages.length > 0 && changedFilterLanguages.length < userLanguages.length) {
+    activeFilterChips.push({
+      type: 'languages',
+      label: `${t('filterByLanguage')}: ${changedFilterLanguages.join(', ')}`,
+      onDelete: () => {
+        setChangedFilterLanguages([])
+        setFilterLanguages([])
+      }
+    })
+  }
 
-    // Allowed Genders
-    if (!changedFilterAllowedMales && changedFilterAllowedFemales) { // Only females allowed
-      summaryParts.push(t('females'))
-    } else if (changedFilterAllowedMales && !changedFilterAllowedFemales) { // Only males allowed
-      summaryParts.push(t('males'))
-    }
+  // Interests
+  if (changedFilterInterests.length > 0) {
+    activeFilterChips.push({
+      type: 'interests',
+      label: `${t('interests')}: ${changedFilterInterests.join(', ')}`,
+      onDelete: () => {
+        setChangedFilterInterests([])
+        setFilterInterests([])
+      }
+    })
+  }
 
-    setActiveFiltersSummary(summaryParts.join(', '))
-  }, [
-    changedFilterGroups,
-    changedFilterMinDurationM,
-    changedFilterLanguages,
-    changedFilterInterests,
-    changedFilterAgeRange,
-    changedFilterAllowedMales,
-    changedFilterAllowedFemales,
-    availableGroups,
-    groups,
-    currentUser?.languages,
-    t
-  ])
+  // Age Range
+  if (changedFilterAgeRange[0] !== 10 || changedFilterAgeRange[1] !== 100) {
+    activeFilterChips.push({
+      type: 'age',
+      label: `${t('ageRange')}: ${changedFilterAgeRange[0]}-${changedFilterAgeRange[1]}`,
+      onDelete: () => {
+        setChangedFilterAgeRange([10, 100])
+        setFilterAgeRange([10, 100])
+      }
+    })
+  }
+
+  // Allowed Genders
+  if (!changedFilterAllowedMales && changedFilterAllowedFemales) {
+    activeFilterChips.push({
+      type: 'gender',
+      label: t('femalesOnly'),
+      onDelete: () => {
+        setChangedFilterAllowedMales(true)
+        setFilterAllowedMales(true)
+      }
+    })
+  } else if (changedFilterAllowedMales && !changedFilterAllowedFemales) {
+    activeFilterChips.push({
+      type: 'gender',
+      label: t('malesOnly'),
+      onDelete: () => {
+        setChangedFilterAllowedFemales(true)
+        setFilterAllowedFemales(true)
+      }
+    })
+  }
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded)
@@ -234,12 +267,21 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
           <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
             {t('filterMeetings')}
           </Typography>
-          {!isExpanded && activeFiltersSummary && (
-            <Typography variant="caption" component="span" sx={{ ml: 1, color: 'text.secondary', flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'wrap' }}>
-              ({activeFiltersSummary})
-            </Typography>
-          )}
         </div>
+
+        {/* Active filter chips - displayed below toggler when collapsed */}
+        {!isExpanded && activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
+            {activeFilterChips.map((chip) => (
+              <StandardChip
+                key={chip.type}
+                label={chip.label}
+                onDelete={chip.onDelete}
+                deleteIcon={<CloseIcon />}
+              />
+            ))}
+          </div>
+        )}
 
         {isExpanded && (
           <div 
