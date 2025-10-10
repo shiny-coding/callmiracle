@@ -240,7 +240,7 @@
   "tomorrow": "Tomorrow",
   "count": "Count",
   "connectWithMeeting": "Connect with Meeting",
-  "connectingToUser": "Connecting to user",
+  "meetingWith": "Meeting with",
   "pleaseSelectAnEarlierTimeSlot": "Please select an earlier time slot for this meeting or change the minimum duration",
   "myMeeting": "My Meeting",
   "cannotJoinOwnMeetingConflict": "Cannot join because you have your own meeting at that time",

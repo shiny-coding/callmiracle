@@ -83,6 +83,7 @@ export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
       }
       peerUser {
         sex
+        name
       }
     }
   }

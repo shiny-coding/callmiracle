@@ -1,7 +1,7 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { isMeetingPassed, getNonBlockedInterests } from '@/utils/meetingUtils'
-import { Meeting, MeetingStatus, User } from '@/generated/graphql'
+import { Meeting, MeetingStatus, MeetingTransparency, User } from '@/generated/graphql'
 import { subDays, getYear, subYears } from 'date-fns'
 
 const getMyMeetingsWithPeers = async (_: any, { userId }: { userId: string }, { db }: Context) => {
@@ -206,13 +206,16 @@ const getFutureMeetingsWithPeers = async (_: any, {
         const meetingUser = usersById[meetingUserId]
         if (!meetingUser) return null
 
+        const peerUser = {
+          sex: meetingUser.sex,
+          name: meeting.transparency === MeetingTransparency.Transparent ? meetingUser.name : undefined
+        }
+
         // If this is the user's own meeting, return it early without applying filters
         if (meetingUserId === userId) {
           return {
             meeting,
-            peerUser: {
-              sex: meetingUser.sex
-            }
+            peerUser
           }
         }
 
@@ -276,9 +279,7 @@ const getFutureMeetingsWithPeers = async (_: any, {
             ...meeting,
             interests: compatibleForCurrentUser,
           },
-          peerUser: {
-            sex: meetingUser.sex
-          }
+          peerUser
         }
       })
       .filter(Boolean) // Type assertion after filter(Boolean)

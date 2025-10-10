@@ -306,18 +306,18 @@ export default function MeetingForm() {
       <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
         {/* User Info Display - only show when connecting to transparent meeting */}
         {meetingToConnect && meetingToConnect.transparency === MeetingTransparency.Transparent && meetingWithPeerToConnect?.peerUser && (
-          <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-3 p-3 rounded-lg">
             <UserAvatar user={meetingWithPeerToConnect.peerUser} size="lg" />
             <div className="flex-1">
+              <Typography variant="body2" color="text.secondary">
+                {t('meetingWith')}
+              </Typography>
               <Typography 
                 variant="body1" 
                 className="font-medium cursor-pointer hover:underline"
                 onClick={handleUserClick}
               >
                 {meetingWithPeerToConnect.peerUser.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('connectingToUser')}
               </Typography>
             </div>
           </div>

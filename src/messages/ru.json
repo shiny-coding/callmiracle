@@ -240,7 +240,7 @@
   "tomorrow": "Завтра",
   "count": "Кол.",
   "connectWithMeeting": "Присоединиться к встрече",
-  "connectingToUser": "Подключение к пользователю",
+  "meetingWith": "Встреча с",
   "pleaseSelectAnEarlierTimeSlot": "Пожалуйста, выберите более раннее время для этой встречи или измените минимальную продолжительность",
   "myMeeting": "Моя встреча",
   "cannotJoinOwnMeetingConflict": "Нельзя присоединиться, у вас уже есть встреча в это время",
