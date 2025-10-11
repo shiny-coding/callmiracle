@@ -237,6 +237,8 @@
   "time": "Время",
   "meetingsCount": "Количество встреч",
   "meetingsAtThisTime": "Встречи в это время",
+  "hideEmptySlots": "Скрыть пустые слоты",
+  "showEmptySlots": "Показать все слоты",
   "interests": "Интересы",
   "tomorrow": "Завтра",
   "count": "Кол.",
