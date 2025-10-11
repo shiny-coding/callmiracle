@@ -78,7 +78,7 @@ export default function MeetingsCalendar() {
   const {
     myMeetingSlotToId,
     myOccupiedSlots,
-    slot2meetingsWithInfos,
+    slot2meetingData,
     daysArray
   } = useMemo(() => {
     // Collect all meetingIds for quick lookup
@@ -116,9 +116,9 @@ export default function MeetingsCalendar() {
       }
     })
 
-    // Map: slotTime -> meetings
-    const slot2meetingsWithInfos = prepareTimeSlotsInfos(
-      futureMeetingsWithPeers.map(meetingWithPeer => meetingWithPeer.meeting),
+    // Map: slotTime -> meeting data (displayable meetings + total count)
+    const slot2meetingData = prepareTimeSlotsInfos(
+      futureMeetingsWithPeers,
       slots,
       myMeetingsWithPeers,
       currentUser!
@@ -141,7 +141,7 @@ export default function MeetingsCalendar() {
     return {
       myMeetingSlotToId,
       myOccupiedSlots,
-      slot2meetingsWithInfos,
+      slot2meetingData,
       daysArray
     }
   }, [futureMeetingsWithPeers, myMeetingsWithPeers, currentUser, slots])
@@ -184,7 +184,7 @@ export default function MeetingsCalendar() {
 
   // Collect all unique user IDs from all meetings in all slots
   const userIdSet = new Set<string>(
-    slots.map(slot => slot2meetingsWithInfos[slot.timestamp].map(meetingWithJoinable => meetingWithJoinable.meeting.userId)).flat()
+    slots.map(slot => slot2meetingData[slot.timestamp].displayMeetings.map(meetingWithJoinable => meetingWithJoinable.meeting.userId)).flat()
   )
 
   const userIds = Array.from(userIdSet)
@@ -310,12 +310,13 @@ export default function MeetingsCalendar() {
                       )}
                       {/* Slot rows */}
                       {daySlots.map((slot) => {
-                        const meetingsWithInfos = slot2meetingsWithInfos[slot.timestamp]
+                        const meetingData = slot2meetingData[slot.timestamp]
                         return (
                           <MeetingsCalendarRow
                             key={slot.timestamp}
                             slot={slot}
-                            meetingsWithInfos={meetingsWithInfos}
+                            meetingsWithInfos={meetingData.displayMeetings}
+                            totalMeetingsCount={meetingData.totalCount}
                             myMeetingSlotToId={myMeetingSlotToId}
                             myMeetingsWithPeers={myMeetingsWithPeers}
                             t={t}

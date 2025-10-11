@@ -166,16 +166,8 @@ const getFutureMeetingsWithPeers = async (_: any, {
         { groupId: { $in: groupsToFilter } }, // Always apply group filter
         { lastSlotEnd: { $gt: now } },
         {
-          $or: [
-            { status: MeetingStatus.Seeking },
-            {
-              $and: [
-                { userId: _userId },
-                { status: { $in: [MeetingStatus.Called, MeetingStatus.Found] } }
-              ]
-            }
-          ]
-        },
+          status: { $in: [MeetingStatus.Called, MeetingStatus.Found, MeetingStatus.Seeking] }
+        }
       ]
     }
 
@@ -215,40 +207,46 @@ const getFutureMeetingsWithPeers = async (_: any, {
         if (meetingUserId === userId) {
           return {
             meeting,
-            peerUser
+            peerUser,
+            filteredOut: false
           }
         }
+
+        // Check if meeting has matched status (Called or Found)
+        const isMatched = meeting.status === MeetingStatus.Called || meeting.status === MeetingStatus.Found
 
         // Note: Group filtering is now done at the database level via meeting.groupId
         // No need to filter by user groups here anymore
 
+        let passedFilters = true
+
         // Apply filters
         if (filterInterests && filterInterests.length > 0) {
           if (!meeting.interests.some(interest => filterInterests.includes(interest))) {
-            return null
+            passedFilters = false
           }
         }
 
         if (filterLanguages && filterLanguages.length > 0) {
           if (!meeting.languages.some(lang => filterLanguages.includes(lang))) {
-            return null
+            passedFilters = false
           }
         }
 
         if (filterAllowedMales === false && meetingUser.sex === 'male') {
-          return null
+          passedFilters = false
         }
         if (filterAllowedFemales === false && meetingUser.sex === 'female') {
-          return null
+          passedFilters = false
         }
 
         if (meetingUser.birthYear) {
           const age = currentYear - meetingUser.birthYear
           if (filterMinAge && age < filterMinAge) {
-            return null
+            passedFilters = false
           }
           if (filterMaxAge && age > filterMaxAge) {
-            return null
+            passedFilters = false
           }
         }
 
@@ -265,14 +263,17 @@ const getFutureMeetingsWithPeers = async (_: any, {
           currentUser,
           { _id: new ObjectId(meetingUserId) }
         )
-        if (compatibleForCurrentUser.length === 0) return null
+        if (compatibleForCurrentUser.length === 0) {
+          passedFilters = false
+        }
 
         return {
           meeting: {
             ...meeting,
-            interests: compatibleForCurrentUser,
+            interests: compatibleForCurrentUser.length > 0 ? compatibleForCurrentUser : meeting.interests,
           },
-          peerUser
+          peerUser,
+          filteredOut: isMatched || !passedFilters
         }
       })
       .filter(Boolean) // Type assertion after filter(Boolean)

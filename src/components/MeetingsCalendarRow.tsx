@@ -202,7 +202,8 @@ function MeetingChip({
 // Define props for the new Row component
 export interface MeetingsCalendarRowProps {
   slot: ReturnType<typeof getCalendarTimeSlots>[0];
-  meetingsWithInfos: ReturnType<typeof prepareTimeSlotsInfos>[number];
+  meetingsWithInfos: ReturnType<typeof prepareTimeSlotsInfos>[number]['displayMeetings'];
+  totalMeetingsCount: number;
   myMeetingSlotToId: Record<number, string>;
   myMeetingsWithPeers: MeetingWithPeer[];
   t: (key: string, values?: Record<string, any>) => string; // Adjust type based on your i18n setup
@@ -218,6 +219,7 @@ export interface MeetingsCalendarRowProps {
 export default function MeetingsCalendarRow({
   slot,
   meetingsWithInfos,
+  totalMeetingsCount,
   myMeetingSlotToId,
   myMeetingsWithPeers,
   t,
@@ -313,9 +315,26 @@ export default function MeetingsCalendarRow({
               -
               <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
             </div>
-            <div className="count-badge w-full h-5">{meetingsWithInfos.length ? `(${meetingsWithInfos.length})` : null}</div>
           </Link>
         </Tooltip>
+        {/* Stats badge - non-clickable, shows total count including filtered out meetings */}
+        {totalMeetingsCount > 0 && (
+          <Tooltip title={t('meetingsAtThisTime')} placement="right">
+            <div
+              className="w-full h-5 flex items-center justify-center"
+              style={{
+                fontSize: '0.7rem',
+                color: 'rgba(255, 255, 255, 0.6)',
+                backgroundColor: 'rgba(128, 128, 128, 0.3)',
+                borderRadius: '4px',
+                padding: '2px 4px',
+                marginTop: '2px'
+              }}
+            >
+              ({totalMeetingsCount})
+            </div>
+          </Tooltip>
+        )}
       </div>
       {/* Interests */}
       <div

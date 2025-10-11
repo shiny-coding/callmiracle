@@ -357,6 +357,7 @@ type MeetingWithPeer {
   meeting: Meeting!
   peerMeeting: Meeting
   peerUser: User
+  filteredOut: Boolean!
 }
 
 input UpdateMeetingStatusInput {

@@ -254,6 +254,7 @@ export enum MeetingTransparency {
 
 export type MeetingWithPeer = {
   __typename?: 'MeetingWithPeer';
+  filteredOut: Scalars['Boolean']['output'];
   meeting: Meeting;
   peerMeeting?: Maybe<Meeting>;
   peerUser?: Maybe<User>;

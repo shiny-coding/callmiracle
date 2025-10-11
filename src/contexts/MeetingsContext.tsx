@@ -85,6 +85,7 @@ export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
         sex
         name
       }
+      filteredOut
     }
   }
 `
