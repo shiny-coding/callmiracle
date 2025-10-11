@@ -23,6 +23,9 @@ import LoadingDialog from './LoadingDialog'
 import { NetworkStatus } from '@apollo/client'
 import PageHeader from './PageHeader'
 
+// Shared constant for list bottom padding
+export const LIST_BOTTOM_PADDING = '4.5rem'
+
 export default function MeetingsList() {
 
   const t = useTranslations()
@@ -140,6 +143,7 @@ export default function MeetingsList() {
               height: `${virtualizer.getTotalSize()}px`,
               width: '100%',
               position: 'relative',
+              paddingBottom: LIST_BOTTOM_PADDING,
             }}
           >
             {virtualizer.getVirtualItems().map((virtualItem) => {

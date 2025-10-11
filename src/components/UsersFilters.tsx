@@ -273,7 +273,7 @@ export default function UsersFilters({
 
   return (
     <>
-      <div className={`flex flex-col overflow-hidden ${isExpanded ? 'flex-grow' : ''}`}>
+      <div className={`flex flex-col overflow-hidden flex-shrink-0 ${isExpanded ? 'flex-grow' : ''}`}>
         <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
           <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
             {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}

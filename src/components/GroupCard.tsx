@@ -8,7 +8,6 @@ import LockIcon from '@mui/icons-material/Lock'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
@@ -18,7 +17,6 @@ import { useLocale } from 'next-intl'
 import { useSnackbar } from '@/contexts/SnackContext'
 import { routerPush } from '@/utils/routerHelper'
 import { useGroups } from '@/store/GroupsProvider'
-import ConfirmationDialog from './ConfirmationDialog'
 import { LANGUAGES } from '@/config/languages'
 import { useGroupImage } from '@/hooks/useGroupImage'
 import Image from 'next/image'
@@ -34,11 +32,9 @@ export default function GroupCard({ group }: GroupCardProps) {
     setCurrentUser: state.setCurrentUser
   }))
   const { updateUserData, loading: updateLoading } = useUpdateUser()
-  const { deleteGroup, loading: deleteLoading } = useUpdateGroup()
   const { refetch } = useGroups()
   const { showSnackbar } = useSnackbar()
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [actionType, setActionType] = useState<'join' | 'leave'>('join')
   const router = useRouter()
   const locale = useLocale()
@@ -63,33 +59,6 @@ export default function GroupCard({ group }: GroupCardProps) {
       groupId: group._id,
       groupName: group.name
     })
-  }
-
-  const handleDeleteClick = () => {
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    try {
-      await deleteGroup(group._id)
-      
-      // Remove the group from current user's groups if they were in it
-      if (currentUser && isInGroup) {
-        const updatedGroups = currentUser.groups?.filter((id: string) => id !== group._id) || []
-        setCurrentUser({
-          ...currentUser,
-          groups: updatedGroups
-        })
-        await updateUserData()
-      }
-      
-      refetch()
-      showSnackbar(t('groupDeleted'), 'success')
-      setDeleteDialogOpen(false)
-    } catch (error) {
-      console.error('Error deleting group:', error)
-      showSnackbar(t('errorDeletingGroup'), 'error')
-    }
   }
 
   const handleConfirm = async () => {
@@ -140,93 +109,88 @@ export default function GroupCard({ group }: GroupCardProps) {
   return (
     <>
       <div
-        className="flex items-center flex-grow flex-wrap cursor-pointer rounded-lg p-2 transition-colors"
-        style={{ gap: 'var(--20sp)' }}
+        className="cursor-pointer rounded-lg p-2 transition-colors"
         onClick={handleGroupClick}
       >
-        <div className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded-full">
-          {imageSrc ? (
-            <Image
-              src={imageSrc}
-              alt={group.name}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          ) : (
-            <div className="flex items-center justify-center w-full h-full bg-blue-600">
-              <GroupIcon className="text-white" />
-            </div>
-          )}
-        </div>
-        
-        <div className="flex-grow">
-          <div className="flex items-center" style={{ gap: 'var(--16sp)' }}>
-            <Typography variant="h6" className="text-white font-medium">
-              {group.name}
-            </Typography>
-            {!group.open && <LockIcon className="text-gray-400" fontSize="small" />}
-            {isOwner ? (
-              <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
-                {t('owner')}
-              </Typography>
-            ) : isAdmin && (
-              <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
-                {t('admin')}
-              </Typography>
-            )}
-            {group.language && (
-              <Chip
-                label={LANGUAGES.find(lang => lang.code === group.language)?.name || group.language}
-                size="small"
-                className="text-xs text-white bg-purple-600"
+        <div className="flex items-center gap-4 mb-2">
+          <div className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded-full">
+            {imageSrc ? (
+              <Image
+                src={imageSrc}
+                alt={group.name}
+                fill
+                className="object-cover"
+                unoptimized
               />
+            ) : (
+              <div className="flex items-center justify-center w-full h-full bg-blue-600">
+                <GroupIcon className="text-white" />
+              </div>
             )}
           </div>
-          
-          <Typography variant="body2" className="text-gray-400">
-            {group.open ? t('openGroup') : t('privateGroup')}
-          </Typography>
-          
-          {group.description && (
-            <Typography variant="body2" className="text-gray-300 mt-1">
+
+          <div className="flex-grow">
+            <div className="flex items-center gap-2">
+              <Typography variant="h6" className="text-white font-medium">
+                {group.name}
+              </Typography>
+              {!group.open && <LockIcon className="text-gray-400" fontSize="small" />}
+            </div>
+
+            <Typography variant="body2" className="text-gray-400">
+              {group.open ? t('openGroup') : t('privateGroup')} · {t('participantCount', { count: group.usersCount || 0 })}
+            </Typography>
+          </div>
+
+          <div className="flex items-center space-x-2 ml-auto">
+            {(isAdmin || isOwner) && (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleEdit()
+                }}
+                aria-label={t('editGroup')}
+                title={t('editGroup')}
+              >
+                <EditIcon className="text-gray-400 hover:text-white" />
+              </IconButton>
+            )}
+          </div>
+        </div>
+
+        {group.description && (
+          <div className="mb-4">
+            <Typography variant="body2" className="text-gray-300">
               {group.description}
             </Typography>
-          )}
-          
-          <Typography variant="body2" className="text-gray-500 text-sm">
-            {t('participantCount', { count: group.usersCount || 0 })}
-          </Typography>
-        </div>
-        <div className="flex items-center space-x-2 ml-auto">
-          {(isAdmin || isOwner) && (
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleEdit()
-              }}
-              aria-label={t('editGroup')}
-              title={t('editGroup')}
-            >
-              <EditIcon className="text-gray-400 hover:text-white" />
-            </IconButton>
-          )}
-          {isOwner && (
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDeleteClick()
-              }}
-              aria-label={t('deleteGroup')}
-              title={t('deleteGroup')}
-            >
-              <DeleteIcon className="text-red-400 hover:text-red-300" />
-            </IconButton>
-          )}
-          {isInGroup ? (
-            !isOwner && (
+          </div>
+        )}
+
+        {((isOwner || isAdmin) || group.language || (isInGroup && !isOwner) || !isInGroup) && (
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-1 items-center">
+              {/* Language chip */}
+              {group.language && (
+                <Chip
+                  label={LANGUAGES.find(lang => lang.code === group.language)?.name || group.language}
+                  size="small"
+                  className="text-xs text-white bg-gray-700"
+                />
+              )}
+
+              {/* Badge */}
+              {isOwner ? (
+                <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
+                  {t('owner')}
+                </Typography>
+              ) : isAdmin && (
+                <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
+                  {t('admin')}
+                </Typography>
+              )}
+            </div>
+            {isInGroup && !isOwner ? (
               <Button
                 variant="outlined"
                 color="error"
@@ -240,23 +204,23 @@ export default function GroupCard({ group }: GroupCardProps) {
               >
                 {t('leave')}
               </Button>
-            )
-          ) : (
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={(e) => {
-                e.stopPropagation()
-                handleJoinLeave('join')
-              }}
-              disabled={updateLoading || (!group.open && !isAdmin)}
-            >
-              {t('join')}
-            </Button>
-          )}
-        </div>
+            ) : !isInGroup && (
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleJoinLeave('join')
+                }}
+                disabled={updateLoading || (!group.open && !isAdmin)}
+              >
+                {t('join')}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Join/Leave Confirmation Dialog */}
@@ -290,17 +254,6 @@ export default function GroupCard({ group }: GroupCardProps) {
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmationDialog
-        open={deleteDialogOpen}
-        title={t('deleteGroup')}
-        message={t('confirmDeleteGroup', { groupName: group.name })}
-        confirmText={t('delete')}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => setDeleteDialogOpen(false)}
-        loading={deleteLoading}
-        destructive={true}
-      />
     </>
   )
 } 

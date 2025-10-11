@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import PageHeader from './PageHeader'
 import { routerPush } from '@/utils/routerHelper'
+import { LIST_BOTTOM_PADDING } from './MeetingsList'
 
 export default function GroupList() {
   const { groups, loading, error, refetch } = useGroups()
@@ -101,7 +102,7 @@ export default function GroupList() {
       {/* Conditional Group List Display: Only show if filters are not expanded */}
       {!filtersVisible && (
         <div className="flex-grow overflow-y-auto px-4">
-          <div className="relative">
+          <div className="relative" style={{ paddingBottom: LIST_BOTTOM_PADDING }}>
             {filteredGroups.length === 0 ? (
               <Typography className="text-gray-400 text-center py-8">
                 {t('noGroupsFound')}
@@ -109,8 +110,8 @@ export default function GroupList() {
             ) : (
               <List className="flex flex-col gap-4 !py-0">
                 {filteredGroups.map((group: Group) => (
-                  <ListItem 
-                    key={group._id} 
+                  <ListItem
+                    key={group._id}
                     className="flex flex-col items-start hover:bg-gray-700 rounded-lg !items-stretch"
                   >
                     <GroupCard group={group} />

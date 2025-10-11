@@ -28,6 +28,7 @@ import LanguageSelector from './LanguageSelector'
 import { useDropzone } from 'react-dropzone'
 import { useCallback } from 'react'
 import { useGroupImage } from '@/hooks/useGroupImage'
+import ConfirmationDialog from './ConfirmationDialog'
 
 interface InterestDescription {
   interest: string
@@ -65,7 +66,8 @@ export default function GroupForm() {
   const [imageDeleted, setImageDeleted] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [timestamp, setTimestamp] = useState(Date.now())
-  const { updateGroup, loading } = useUpdateGroup()
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
+  const { updateGroup, deleteGroup, loading } = useUpdateGroup()
   const { updateUserData } = useUpdateUser()
   const { regenerateJoinToken } = useRegenerateJoinToken()
   const { showSnackbar } = useSnackbar()
@@ -122,8 +124,39 @@ export default function GroupForm() {
   // Filter users to exclude deleted ones and ensure current user is available
   const availableUsers = users?.filter(user => !user.deleted) || []
 
+  // Check if current user is the owner of the group
+  const isOwner = group?.owner === currentUser?._id
+
   const handleCancel = () => {
     router.back()
+  }
+
+  const handleDeleteGroup = async () => {
+    if (!groupId) return
+
+    try {
+      await deleteGroup(groupId as string)
+
+      // Remove the group from current user's groups if they were in it
+      if (currentUser?.groups?.includes(groupId as string)) {
+        const updatedGroups = currentUser.groups.filter(id => id !== groupId)
+        setCurrentUser({
+          ...currentUser,
+          groups: updatedGroups
+        })
+        await updateUserData()
+      }
+
+      refetch()
+      showSnackbar(t('groupDeleted'), 'success')
+      setShowDeleteConfirmation(false)
+      routerPush(router, `/${locale}/groups`, {
+        source: 'group_form_delete'
+      })
+    } catch (error) {
+      console.error('Error deleting group:', error)
+      showSnackbar(t('errorDeletingGroup'), 'error')
+    }
   }
 
   const handleSave = async () => {
@@ -494,6 +527,7 @@ export default function GroupForm() {
               onChange={(_, newValue) => setSelectedAdmins(newValue)}
               getOptionLabel={(option) => option.name}
               isOptionEqualToValue={(option, value) => option._id === value._id}
+              disabled={group && !isOwner}
               renderInput={(params) => (
                 <TextField
                   {...params}
@@ -563,7 +597,8 @@ export default function GroupForm() {
                   InputLabelProps={{
                     className: 'text-gray-300'
                   }}
-                  className="flex-1 min-w-0"
+                  className="flex-1"
+                  sx={{ minWidth: '10rem' }}
                 />
                 <Button
                   variant="outlined"
@@ -598,6 +633,19 @@ export default function GroupForm() {
             onChange={setInterestsDescriptions}
             interestsPairs={interestsPairs}
           />
+
+          {groupId && isOwner && (
+            <div className="mt-4 pt-4 border-t panel-border">
+              <Button
+                onClick={() => setShowDeleteConfirmation(true)}
+                color="error"
+                startIcon={<DeleteIcon />}
+                size="small"
+              >
+                {t('deleteGroup')}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -625,6 +673,18 @@ export default function GroupForm() {
           </Button>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showDeleteConfirmation}
+        title={t('deleteGroup')}
+        message={t('confirmDeleteGroup', { groupName: group?.name || '' })}
+        confirmText={t('delete')}
+        onConfirm={handleDeleteGroup}
+        onCancel={() => setShowDeleteConfirmation(false)}
+        loading={loading}
+        destructive={true}
+      />
     </div>
   )
 } 
