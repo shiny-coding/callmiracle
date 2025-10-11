@@ -14,7 +14,7 @@ const DETAILED_CALL_HISTORY = gql`
       initiatorUserId
       targetUserId
       type
-      duration
+      durationS
     }
   }
 `
@@ -83,7 +83,7 @@ export default function DetailedCallHistory({ user, open, onClose }: DetailedCal
                     {formatDate(call._id)}
                   </Typography>
                   <Typography className="text-gray-400">
-                    {formatDuration(call.duration)}
+                    {formatDuration(call.durationS)}
                   </Typography>
                 </div>
               </ListItem>

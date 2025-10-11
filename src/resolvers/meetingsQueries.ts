@@ -250,13 +250,6 @@ const getFutureMeetingsWithPeers = async (_: any, {
           if (filterMaxAge && age > filterMaxAge) {
             return null
           }
-        } else {
-          // If user has no birthYear, they might be excluded if age filters are strict
-          if (filterMinAge || filterMaxAge) {
-              // Decide how to handle users without birthYear when age filters are active
-              // For now, let's exclude them if any age filter is set
-              return null
-          }
         }
 
         // Filter interests blocked by meetingUser for currentUser
