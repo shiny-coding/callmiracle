@@ -1,7 +1,7 @@
 'use client'
 
 import { Button, Checkbox, FormControlLabel, FormGroup, Slider, Typography, IconButton } from '@mui/material'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useStore } from '@/store/useStore'
 import InterestSelector from './InterestSelector'
 import LanguageSelector from './LanguageSelector'
@@ -12,6 +12,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { useGroups } from '@/store/GroupsProvider'
 import CloseIcon from '@mui/icons-material/Close'
 import StandardChip from './StandardChip'
+import { LANGUAGES } from '@/config/languages'
 
 interface MeetingsFiltersProps {
   onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
@@ -19,6 +20,7 @@ interface MeetingsFiltersProps {
 
 export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProps) {
   const t = useTranslations()
+  const locale = useLocale()
   const { groups } = useGroups()
 
   // Applied filters from the store
@@ -126,7 +128,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
     ).join(', ')
     activeFilterChips.push({
       type: 'groups',
-      label: `${t('groups')}: ${groupNames}`,
+      label: groupNames,
       onDelete: () => {
         setChangedFilterGroups([])
         setFilterGroups([])
@@ -138,7 +140,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
   if (changedFilterMinDurationM === 60) {
     activeFilterChips.push({
       type: 'duration',
-      label: `${t('minDuration')}: 60min`,
+      label: `60${t('min')}`,
       onDelete: () => {
         setChangedFilterMinDurationM(30)
         setFilterMinDurationM(30)
@@ -149,9 +151,12 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
   // Languages
   const userLanguages = currentUser?.languages || []
   if (userLanguages.length > 1 && changedFilterLanguages.length > 0 && changedFilterLanguages.length < userLanguages.length) {
+    const languageNames = changedFilterLanguages
+      .map(code => LANGUAGES.find(lang => lang.code === code)?.name || code)
+      .join(', ')
     activeFilterChips.push({
       type: 'languages',
-      label: `${t('filterByLanguage')}: ${changedFilterLanguages.join(', ')}`,
+      label: languageNames,
       onDelete: () => {
         setChangedFilterLanguages([])
         setFilterLanguages([])
@@ -163,7 +168,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
   if (changedFilterInterests.length > 0) {
     activeFilterChips.push({
       type: 'interests',
-      label: `${t('interests')}: ${changedFilterInterests.join(', ')}`,
+      label: changedFilterInterests.join(', '),
       onDelete: () => {
         setChangedFilterInterests([])
         setFilterInterests([])
