@@ -317,24 +317,6 @@ export default function MeetingsCalendarRow({
             </div>
           </Link>
         </Tooltip>
-        {/* Stats badge - non-clickable, shows total count including filtered out meetings */}
-        {totalMeetingsCount > 0 && (
-          <Tooltip title={t('meetingsAtThisTime')} placement="right">
-            <div
-              className="w-full h-5 flex items-center justify-center"
-              style={{
-                fontSize: '0.7rem',
-                color: 'rgba(255, 255, 255, 0.6)',
-                backgroundColor: 'rgba(128, 128, 128, 0.3)',
-                borderRadius: '4px',
-                padding: '2px 4px',
-                marginTop: '2px'
-              }}
-            >
-              ({totalMeetingsCount})
-            </div>
-          </Tooltip>
-        )}
       </div>
       {/* Interests */}
       <div
@@ -388,6 +370,35 @@ export default function MeetingsCalendarRow({
             </React.Fragment>
           )
         })}
+      </div>
+      {/* Count cell */}
+      <div
+        style={{
+          padding: `0.3rem ${HORIZONTAL_CELL_PADDING}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderBottom: '1px solid var(--border-color)',
+        }}
+      >
+        {totalMeetingsCount > 0 && (
+          <Tooltip title={t('meetingsAtThisTime')} placement="top">
+            <div
+              style={{
+                fontSize: '0.75rem',
+                color: 'rgba(255, 255, 255, 0.6)',
+                backgroundColor: 'rgba(128, 128, 128, 0.3)',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {totalMeetingsCount}
+            </div>
+          </Tooltip>
+        )}
       </div>
     </Fragment>
   )

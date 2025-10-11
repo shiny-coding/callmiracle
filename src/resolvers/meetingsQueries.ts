@@ -200,7 +200,7 @@ const getFutureMeetingsWithPeers = async (_: any, {
 
         const peerUser = {
           sex: meetingUser.sex,
-          name: meeting.transparency === MeetingTransparency.Transparent ? meetingUser.name : undefined
+          name: meeting.transparency === MeetingTransparency.Transparent ? meetingUser.name : ''
         }
 
         // If this is the user's own meeting, return it early without applying filters

@@ -235,7 +235,7 @@ export default function MeetingsCalendar() {
             className="calendar-grid-header input-bg px-2"
             style={{
               display: 'grid',
-              gridTemplateColumns: '80px 1fr',
+              gridTemplateColumns: '80px 1fr 60px',
               alignItems: 'stretch',
               width: '100%',
               position: 'sticky',
@@ -246,6 +246,7 @@ export default function MeetingsCalendar() {
           >
             <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('time')}</div>
             <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('interests')}</div>
+            <div style={{ padding: CELL_PADDING, ...headerStyle, textAlign: 'center' }}>{t('count')}</div>
           </div>
           {/* Body grid (scrollable) with virtualization */}
           <div
@@ -298,13 +299,13 @@ export default function MeetingsCalendar() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '80px 1fr',
+                        gridTemplateColumns: '80px 1fr 60px',
                         alignItems: 'stretch',
                       }}
                     >
                       {/* Day label row (skip for today) */}
                       {!isToday(new Date(dayKey)) && (
-                        <div style={{ gridColumn: '1 / span 2', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
+                        <div style={{ gridColumn: '1 / span 3', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
                           {getDayLabel(new Date(dayKey), t, locale)}
                         </div>
                       )}
