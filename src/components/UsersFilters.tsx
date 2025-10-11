@@ -1,13 +1,16 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { Button, FormControlLabel, Checkbox, TextField, FormGroup, Typography, IconButton } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import CloseIcon from '@mui/icons-material/Close'
 import LanguageSelector from './LanguageSelector'
 import GroupSelector from './GroupSelector'
 import { Group } from '@/generated/graphql'
+import StandardChip from './StandardChip'
+import { LANGUAGES } from '@/config/languages'
 
 interface UsersFiltersProps {
   // Applied filters (from parent state)
@@ -47,6 +50,7 @@ export default function UsersFilters({
   onToggleFilters
 }: UsersFiltersProps) {
   const t = useTranslations()
+  const locale = useLocale()
   
   // Local interactive state for filters
   const [changedShowOnlyFriends, setChangedShowOnlyFriends] = useState(appliedShowOnlyFriends)
@@ -58,7 +62,6 @@ export default function UsersFilters({
   
   const [hasChanges, setHasChanges] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [activeFiltersSummary, setActiveFiltersSummary] = useState('')
 
   // Sync local state when applied filters change
   useEffect(() => {
@@ -95,55 +98,125 @@ export default function UsersFilters({
     appliedNameFilter, appliedShowMales, appliedShowFemales
   ])
 
-  // Update active filters summary
-  useEffect(() => {
-    const summaryParts: string[] = []
+  // Build active filter chips data
+  const activeFilterChips = []
 
-    // Name filter
-    if (appliedNameFilter) {
-      summaryParts.push(`"${appliedNameFilter}"`)
-    }
-
-    // Gender filters
-    if (!appliedShowMales && appliedShowFemales) {
-      summaryParts.push(t('Profile.female'))
-    } else if (appliedShowMales && !appliedShowFemales) {
-      summaryParts.push(t('Profile.male'))
-    }
-
-    // Friends filter
-    if (appliedShowOnlyFriends) {
-      summaryParts.push(t('onlyFriends'))
-    }
-
-    // Languages
-    if (appliedSelectedLanguages.length > 0 && appliedSelectedLanguages.length < availableLanguages.length) {
-      summaryParts.push(appliedSelectedLanguages.join(', '))
-    }
-
-    // Groups
-    if (appliedSelectedGroups.length > 0) {
-      const groupNames = appliedSelectedGroups
-        .map(groupId => availableGroups.find(g => g._id === groupId)?.name)
-        .filter(Boolean)
-        .join(', ')
-      if (groupNames) {
-        summaryParts.push(groupNames)
+  // Name filter
+  if (appliedNameFilter) {
+    activeFilterChips.push({
+      type: 'name',
+      label: `"${appliedNameFilter}"`,
+      onDelete: () => {
+        setChangedNameFilter('')
+        onApplyFilters({
+          showOnlyFriends: appliedShowOnlyFriends,
+          selectedLanguages: appliedSelectedLanguages,
+          selectedGroups: appliedSelectedGroups,
+          nameFilter: '',
+          showMales: appliedShowMales,
+          showFemales: appliedShowFemales
+        })
       }
-    }
+    })
+  }
 
-    setActiveFiltersSummary(summaryParts.join(', '))
-  }, [
-    appliedNameFilter,
-    appliedShowMales,
-    appliedShowFemales,
-    appliedShowOnlyFriends,
-    appliedSelectedLanguages,
-    appliedSelectedGroups,
-    availableLanguages,
-    availableGroups,
-    t
-  ])
+  // Gender filters
+  if (!appliedShowMales && appliedShowFemales) {
+    activeFilterChips.push({
+      type: 'gender',
+      label: t('femalesOnly'),
+      onDelete: () => {
+        setChangedShowMales(true)
+        onApplyFilters({
+          showOnlyFriends: appliedShowOnlyFriends,
+          selectedLanguages: appliedSelectedLanguages,
+          selectedGroups: appliedSelectedGroups,
+          nameFilter: appliedNameFilter,
+          showMales: true,
+          showFemales: appliedShowFemales
+        })
+      }
+    })
+  } else if (appliedShowMales && !appliedShowFemales) {
+    activeFilterChips.push({
+      type: 'gender',
+      label: t('malesOnly'),
+      onDelete: () => {
+        setChangedShowFemales(true)
+        onApplyFilters({
+          showOnlyFriends: appliedShowOnlyFriends,
+          selectedLanguages: appliedSelectedLanguages,
+          selectedGroups: appliedSelectedGroups,
+          nameFilter: appliedNameFilter,
+          showMales: appliedShowMales,
+          showFemales: true
+        })
+      }
+    })
+  }
+
+  // Friends filter
+  if (appliedShowOnlyFriends) {
+    activeFilterChips.push({
+      type: 'friends',
+      label: t('onlyFriends'),
+      onDelete: () => {
+        setChangedShowOnlyFriends(false)
+        onApplyFilters({
+          showOnlyFriends: false,
+          selectedLanguages: appliedSelectedLanguages,
+          selectedGroups: appliedSelectedGroups,
+          nameFilter: appliedNameFilter,
+          showMales: appliedShowMales,
+          showFemales: appliedShowFemales
+        })
+      }
+    })
+  }
+
+  // Languages
+  if (appliedSelectedLanguages.length > 0 && appliedSelectedLanguages.length < availableLanguages.length) {
+    const languageNames = appliedSelectedLanguages
+      .map(code => LANGUAGES.find(lang => lang.code === code)?.name || code)
+      .join(', ')
+    activeFilterChips.push({
+      type: 'languages',
+      label: languageNames,
+      onDelete: () => {
+        setChangedSelectedLanguages([])
+        onApplyFilters({
+          showOnlyFriends: appliedShowOnlyFriends,
+          selectedLanguages: [],
+          selectedGroups: appliedSelectedGroups,
+          nameFilter: appliedNameFilter,
+          showMales: appliedShowMales,
+          showFemales: appliedShowFemales
+        })
+      }
+    })
+  }
+
+  // Groups
+  if (appliedSelectedGroups.length > 0) {
+    const groupNames = appliedSelectedGroups
+      .map(groupId => availableGroups.find(g => g._id === groupId)?.name || groupId)
+      .join(', ')
+    activeFilterChips.push({
+      type: 'groups',
+      label: groupNames,
+      onDelete: () => {
+        setChangedSelectedGroups([])
+        onApplyFilters({
+          showOnlyFriends: appliedShowOnlyFriends,
+          selectedLanguages: appliedSelectedLanguages,
+          selectedGroups: [],
+          nameFilter: appliedNameFilter,
+          showMales: appliedShowMales,
+          showFemales: appliedShowFemales
+        })
+      }
+    })
+  }
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded)
@@ -208,12 +281,21 @@ export default function UsersFilters({
           <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
             {t('filterUsers')}
           </Typography>
-          {!isExpanded && activeFiltersSummary && (
-            <Typography variant="caption" component="span" sx={{ ml: 1, color: 'text.secondary', flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'wrap' }}>
-              ({activeFiltersSummary})
-            </Typography>
-          )}
         </div>
+
+        {/* Active filter chips - displayed below toggler when collapsed */}
+        {!isExpanded && activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
+            {activeFilterChips.map((chip) => (
+              <StandardChip
+                key={chip.type}
+                label={chip.label}
+                onDelete={chip.onDelete}
+                deleteIcon={<CloseIcon />}
+              />
+            ))}
+          </div>
+        )}
 
         {isExpanded && (
           <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4">

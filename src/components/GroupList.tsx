@@ -101,14 +101,13 @@ export default function GroupList() {
       {/* Conditional Group List Display: Only show if filters are not expanded */}
       {!filtersVisible && (
         <div className="flex-grow overflow-y-auto px-4">
-          <Divider className="mb-4" />
-          <div className="py-4 relative">
+          <div className="relative">
             {filteredGroups.length === 0 ? (
               <Typography className="text-gray-400 text-center py-8">
                 {t('noGroupsFound')}
               </Typography>
             ) : (
-              <List className="flex flex-col gap-4">
+              <List className="flex flex-col gap-4 !py-0">
                 {filteredGroups.map((group: Group) => (
                   <ListItem 
                     key={group._id} 

@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 import { Button, FormControlLabel, Checkbox, TextField, FormGroup, Typography, IconButton } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import CloseIcon from '@mui/icons-material/Close'
+import StandardChip from './StandardChip'
 
 interface GroupsFiltersProps {
   // Applied filters (from parent state)
@@ -41,7 +43,6 @@ export default function GroupsFilters({
   
   const [hasChanges, setHasChanges] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [activeFiltersSummary, setActiveFiltersSummary] = useState('')
 
   // Sync local state when applied filters change
   useEffect(() => {
@@ -70,35 +71,73 @@ export default function GroupsFilters({
     appliedShowMyGroups, appliedNameFilter, appliedShowOpenGroups, appliedShowPrivateGroups
   ])
 
-  // Update active filters summary
-  useEffect(() => {
-    const summaryParts: string[] = []
+  // Build active filter chips data
+  const activeFilterChips = []
 
-    // Name filter
-    if (appliedNameFilter) {
-      summaryParts.push(`"${appliedNameFilter}"`)
-    }
+  // Name filter
+  if (appliedNameFilter) {
+    activeFilterChips.push({
+      type: 'name',
+      label: `"${appliedNameFilter}"`,
+      onDelete: () => {
+        setChangedNameFilter('')
+        onApplyFilters({
+          showMyGroups: appliedShowMyGroups,
+          nameFilter: '',
+          showOpenGroups: appliedShowOpenGroups,
+          showPrivateGroups: appliedShowPrivateGroups
+        })
+      }
+    })
+  }
 
-    // Group type filters
-    if (!appliedShowOpenGroups && appliedShowPrivateGroups) {
-      summaryParts.push(t('privateGroups'))
-    } else if (appliedShowOpenGroups && !appliedShowPrivateGroups) {
-      summaryParts.push(t('openGroups'))
-    }
+  // Group type filters
+  if (!appliedShowOpenGroups && appliedShowPrivateGroups) {
+    activeFilterChips.push({
+      type: 'groupType',
+      label: t('privateGroups'),
+      onDelete: () => {
+        setChangedShowOpenGroups(true)
+        onApplyFilters({
+          showMyGroups: appliedShowMyGroups,
+          nameFilter: appliedNameFilter,
+          showOpenGroups: true,
+          showPrivateGroups: appliedShowPrivateGroups
+        })
+      }
+    })
+  } else if (appliedShowOpenGroups && !appliedShowPrivateGroups) {
+    activeFilterChips.push({
+      type: 'groupType',
+      label: t('openGroups'),
+      onDelete: () => {
+        setChangedShowPrivateGroups(true)
+        onApplyFilters({
+          showMyGroups: appliedShowMyGroups,
+          nameFilter: appliedNameFilter,
+          showOpenGroups: appliedShowOpenGroups,
+          showPrivateGroups: true
+        })
+      }
+    })
+  }
 
-    // My groups filter
-    if (appliedShowMyGroups) {
-      summaryParts.push(t('myGroups'))
-    }
-
-    setActiveFiltersSummary(summaryParts.join(', '))
-  }, [
-    appliedNameFilter,
-    appliedShowOpenGroups,
-    appliedShowPrivateGroups,
-    appliedShowMyGroups,
-    t
-  ])
+  // My groups filter
+  if (appliedShowMyGroups) {
+    activeFilterChips.push({
+      type: 'myGroups',
+      label: t('myGroups'),
+      onDelete: () => {
+        setChangedShowMyGroups(false)
+        onApplyFilters({
+          showMyGroups: false,
+          nameFilter: appliedNameFilter,
+          showOpenGroups: appliedShowOpenGroups,
+          showPrivateGroups: appliedShowPrivateGroups
+        })
+      }
+    })
+  }
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded)
@@ -159,12 +198,21 @@ export default function GroupsFilters({
           <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
             {t('filterGroups')}
           </Typography>
-          {!isExpanded && activeFiltersSummary && (
-            <Typography variant="caption" component="span" sx={{ ml: 1, color: 'text.secondary', flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'wrap' }}>
-              ({activeFiltersSummary})
-            </Typography>
-          )}
         </div>
+
+        {/* Active filter chips - displayed below toggler when collapsed */}
+        {!isExpanded && activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
+            {activeFilterChips.map((chip) => (
+              <StandardChip
+                key={chip.type}
+                label={chip.label}
+                onDelete={chip.onDelete}
+                deleteIcon={<CloseIcon />}
+              />
+            ))}
+          </div>
+        )}
 
         {isExpanded && (
           <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4">
