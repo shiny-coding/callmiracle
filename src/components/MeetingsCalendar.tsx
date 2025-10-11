@@ -182,26 +182,31 @@ export default function MeetingsCalendar() {
     overscan: 1, // Render 1 extra day above and below viewport (reduced from 2 since days are large)
   })
 
-  // Update topDayKey based on first visible virtual item
+  // Update topDayKey based on scroll position
   useEffect(() => {
-    const updateTopDay = () => {
-      const firstVisibleItem = virtualizer.getVirtualItems()[0]
-      if (firstVisibleItem) {
-        const dayKey = daysArray[firstVisibleItem.index]?.dayKey
-        if (dayKey && dayKey !== topDayKey) {
-          setTopDayKey(dayKey)
-        }
+    const virtualItems = virtualizer.getVirtualItems()
+    const scrollOffset = virtualizer.scrollOffset || 0
+
+    console.log('Scroll offset:', scrollOffset, 'virtualItems:', virtualItems.length)
+
+    // Find the day that is at the top of the viewport (at scrollOffset)
+    let topDayIndex = 0
+    for (let i = 0; i < virtualItems.length; i++) {
+      const item = virtualItems[i]
+      if (item.start <= scrollOffset && item.end > scrollOffset) {
+        topDayIndex = item.index
+        break
       }
     }
 
-    updateTopDay()
+    const dayKey = daysArray[topDayIndex]?.dayKey
+    console.log('Top day index:', topDayIndex, 'dayKey:', dayKey, 'current topDayKey:', topDayKey)
 
-    const scrollElement = scrollContainerRef.current
-    if (scrollElement) {
-      scrollElement.addEventListener('scroll', updateTopDay)
-      return () => scrollElement.removeEventListener('scroll', updateTopDay)
+    if (dayKey && dayKey !== topDayKey) {
+      console.log('Updating topDayKey from', topDayKey, 'to', dayKey)
+      setTopDayKey(dayKey)
     }
-  }, [virtualizer, daysArray, topDayKey])
+  }, [virtualizer.range, virtualizer.scrollOffset, daysArray])
 
   // Show loading screen only if user-initiated or if it's the first load (initial fetch)
   const isLoading = isUserInitiatedLoading ||
