@@ -13,16 +13,11 @@ import { useGroups } from '@/store/GroupsProvider'
 import CloseIcon from '@mui/icons-material/Close'
 import StandardChip from './StandardChip'
 import { LANGUAGES } from '@/config/languages'
-import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
-import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
-
 interface MeetingsFiltersProps {
   onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
-  collapseEmptySlots: boolean
-  onToggleCollapse: (collapsed: boolean) => void
 }
 
-export default function MeetingsFilters({ onToggleFilters, collapseEmptySlots, onToggleCollapse }: MeetingsFiltersProps) {
+export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProps) {
   const t = useTranslations()
   const locale = useLocale()
   const { groups } = useGroups()
@@ -269,23 +264,13 @@ export default function MeetingsFilters({ onToggleFilters, collapseEmptySlots, o
   return (
     <>
       <div className="flex flex-col overflow-hidden">
-        <div className="flex items-center py-2 justify-between" style={{ userSelect: 'none' }}>
-          <div className="flex items-center">
-            <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
-              {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
-            </IconButton>
-            <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
-              {t('filterMeetings')}
-            </Typography>
-          </div>
-          <IconButton
-            size="small"
-            onClick={() => onToggleCollapse(!collapseEmptySlots)}
-            aria-label={collapseEmptySlots ? t('showEmptySlots') : t('hideEmptySlots')}
-            title={collapseEmptySlots ? t('showEmptySlots') : t('hideEmptySlots')}
-          >
-            {collapseEmptySlots ? <UnfoldMoreIcon /> : <UnfoldLessIcon />}
+        <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
+          <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
+            {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
           </IconButton>
+          <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
+            {t('filterMeetings')}
+          </Typography>
         </div>
 
         {/* Active filter chips - displayed below toggler when collapsed */}

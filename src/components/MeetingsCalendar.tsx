@@ -65,7 +65,6 @@ export default function MeetingsCalendar() {
   const [filtersVisible, setFiltersVisible] = useState<boolean>(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userDetailsPopupOpen, setUserDetailsPopupOpen] = useState(false)
-  const [collapseEmptySlots, setCollapseEmptySlots] = useState<boolean>(false)
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
@@ -125,14 +124,14 @@ export default function MeetingsCalendar() {
       currentUser!
     )
 
-    // Group slots by dayKey and filter if collapse is enabled
+    // Group slots by dayKey and skip empty slots
     const slotsByDay: Record<string, typeof slots> = {}
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i]
       const slotData = slot2meetingData[slot.timestamp]
 
-      // Skip empty slots if collapse is enabled
-      if (collapseEmptySlots && slotData.totalCount === 0) {
+      // Skip empty slots
+      if (slotData.totalCount === 0) {
         continue
       }
 
@@ -152,7 +151,7 @@ export default function MeetingsCalendar() {
       slot2meetingData,
       daysArray
     }
-  }, [futureMeetingsWithPeers, myMeetingsWithPeers, currentUser, slots, collapseEmptySlots])
+  }, [futureMeetingsWithPeers, myMeetingsWithPeers, currentUser, slots])
 
   // Set up virtualizer - must be called unconditionally
   const virtualizer = useVirtualizer({
@@ -162,22 +161,10 @@ export default function MeetingsCalendar() {
       const day = daysArray[index]
       if (!day) return 64
 
-      // When collapsed, calculate based on actual number of slots
-      // When expanded, use standard estimates for better performance
-      if (collapseEmptySlots) {
-        // Calculate based on actual number of slots in this day
-        // Each slot is approximately 64px
-        const dayLabelHeight = index === 0 || !isToday(new Date(day.dayKey)) ? 32 : 0
-        return day.daySlots.length * 64 + dayLabelHeight
-      } else {
-        // Standard estimation for expanded mode
-        // First day is partial (from now until midnight), others are full days
-        // Full day = 48 slots (24 hours × 2 slots/hour) × ~64px = ~3072px
-        if (index === 0) {
-          return day.daySlots.length * 64 + 32 // First day varies based on current time
-        }
-        return 3072 // Full day estimate
-      }
+      // Calculate based on actual number of slots in this day
+      // Each slot is approximately 64px
+      const dayLabelHeight = index === 0 || !isToday(new Date(day.dayKey)) ? 32 : 0
+      return day.daySlots.length * 64 + dayLabelHeight
     },
     overscan: 1, // Render 1 extra day above and below viewport (reduced from 2 since days are large)
   })
@@ -259,8 +246,6 @@ export default function MeetingsCalendar() {
 
       <MeetingsFilters
         onToggleFilters={setFiltersVisible}
-        collapseEmptySlots={collapseEmptySlots}
-        onToggleCollapse={setCollapseEmptySlots}
         />
 
       {/* Conditional Grid Display: Only show if filters have NOT changed */}
