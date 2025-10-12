@@ -79,7 +79,7 @@ export default function CallHistory() {
       <div
         ref={scrollContainerRef}
         className="flex-grow overflow-y-auto px-4"
-        style={{ position: 'relative' }}
+        style={{ position: 'relative', paddingTop: '8px' }}
       >
         {callHistory.length === 0 ? (
           <Typography className="text-gray-400 text-center py-4">

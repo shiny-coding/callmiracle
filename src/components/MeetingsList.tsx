@@ -136,7 +136,7 @@ export default function MeetingsList() {
         <div
           ref={scrollContainerRef}
           className="flex-grow overflow-y-auto px-4"
-          style={{ position: 'relative' }}
+          style={{ position: 'relative', paddingTop: '8px' }}
         >
           <div
             style={{

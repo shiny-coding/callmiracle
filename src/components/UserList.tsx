@@ -187,7 +187,6 @@ export default function UserList() {
           className="flex-grow overflow-y-auto px-4"
           style={{ position: 'relative' }}
         >
-          <Divider className="mb-4" />
           <div
             style={{
               height: `${virtualizer.getTotalSize()}px`,
