@@ -7,7 +7,6 @@ import { Meeting, MeetingWithPeer, MeetingTransparency, User, Group } from '@/ge
 import Link from 'next/link'
 import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, isMeetingPassed, SLOT_DURATION, getSharedInterests } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
-import AddIcon from '@mui/icons-material/Add'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
 import UserAvatar from './UserAvatar'
 import React from 'react'
@@ -300,16 +299,12 @@ export default function MeetingsCalendarRow({
                 alignItems: 'center', justifyContent: 'center'
               }}
             >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, }}>
-              {myMeeting && !meetingPassed ? (
+            {myMeeting && !meetingPassed && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, }}>
                 <span className={meetingColorClass}
                   style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s' }} />
-              ) : (
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                  <AddIcon className="calendar-plus" sx={{ width: 20, height: 20, color: '#1976d2', opacity: 0, transition: 'opacity 0.15s' }} />
-                </span>
-              )}
-            </div>
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'center' }}>
               <div className="min-w-8 px-4sp text-center">{startLabel}</div>
               -

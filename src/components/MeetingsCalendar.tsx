@@ -174,8 +174,6 @@ export default function MeetingsCalendar() {
     const virtualItems = virtualizer.getVirtualItems()
     const scrollOffset = virtualizer.scrollOffset || 0
 
-    console.log('Scroll offset:', scrollOffset, 'virtualItems:', virtualItems.length)
-
     // Find the day that is at the top of the viewport (at scrollOffset)
     let topDayIndex = 0
     for (let i = 0; i < virtualItems.length; i++) {
@@ -187,10 +185,7 @@ export default function MeetingsCalendar() {
     }
 
     const dayKey = daysArray[topDayIndex]?.dayKey
-    console.log('Top day index:', topDayIndex, 'dayKey:', dayKey, 'current topDayKey:', topDayKey)
-
     if (dayKey && dayKey !== topDayKey) {
-      console.log('Updating topDayKey from', topDayKey, 'to', dayKey)
       setTopDayKey(dayKey)
     }
   }, [virtualizer.range, virtualizer.scrollOffset, daysArray])
