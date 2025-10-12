@@ -3,7 +3,6 @@ import { Paper, List, ListItem, Typography, IconButton, Button, Badge, Chip, Box
 import { useTranslations, useLocale } from 'next-intl'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
-import CheckIcon from '@mui/icons-material/Check'
 import { formatRelativeTime } from '@/utils/formatRelativeTime'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
@@ -96,24 +95,12 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
                   />
                 </div>
                 
-                <div className="flex mt-3 gap-2">
-                  {!notification.seen && (
-                    <Button 
-                      size="small" 
+                {(notification.type === NotificationType.MeetingConnected || notification.type === NotificationType.MeetingDisconnected) &&
+                  notification.meeting && (
+                  <div className="flex mt-3 gap-2">
+                    <Button
+                      size="small"
                       variant="outlined"
-                      startIcon={<CheckIcon />}
-                      onClick={() => setNotificationSeen(notification._id)}
-                      className="text-xs"
-                    >
-                      {t('markAsSeen')}
-                    </Button>
-                  )}
-                  
-                  {(notification.type === NotificationType.MeetingConnected || notification.type === NotificationType.MeetingDisconnected) && 
-                    notification.meeting && (
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
                       color="info"
                       startIcon={<ArrowRightIcon />}
                       className="text-xs"
@@ -121,8 +108,8 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
                     >
                       {t('goToMeeting')}
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </ListItem>
           ))
