@@ -18,7 +18,7 @@ export default function TopControlsBar() {
   }, [])
 
   if (isCompact) {
-    return null
+    return <div style={{ height: '8px', flexShrink: 0 }} />
   }
 
   return <ControlsBar position="top" isCompact={isCompact} />

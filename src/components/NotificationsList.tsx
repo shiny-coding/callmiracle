@@ -46,6 +46,11 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
     })
   }
 
+  const handleMarkAllAsSeen = () => {
+    setAllNotificationsSeen()
+    onClose?.()
+  }
+
   return (
     <Paper className="px-1sp py-1 bg-gray-800">
       {notifications.length > 0 && (
@@ -54,7 +59,7 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
             size="small"
             variant="outlined"
             startIcon={<DoneAllIcon />}
-            onClick={setAllNotificationsSeen}
+            onClick={handleMarkAllAsSeen}
             disabled={markingAllSeen || !hasUnseenNotifications}
             className="text-xs"
           >

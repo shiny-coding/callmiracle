@@ -33,11 +33,12 @@ body {
 
 body:before {
   content: '';
-  background-image: url('/space3.jpg');
+  background-image: url('/space6.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: brightness(0.7) contrast(1.2);
+  // filter: brightness(0.7) contrast(1.2);
+  filter: brightness(0.2) contrast(1);
   position: fixed;
   top: 0;
   left: 0;
@@ -58,7 +59,24 @@ body:before {
   width: 100vw;
   height: 100vh;
   object-fit: cover;
-  filter: brightness(0.7) contrast(1.2);
+  pointer-events: none;
+  // filter: brightness(1) contrast(1);
+}
+
+.video-bg-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1200;
+  object-fit: cover;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
 }
 
 :root {

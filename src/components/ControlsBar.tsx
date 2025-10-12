@@ -104,7 +104,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   // Bottom bar - compact layout (all controls)
   if (position === 'bottom' && isCompact) {
     return (
-      <div className={`mt-auto p-3 w-full flex items-center gap-4 bg-gradient-to-b from-transparent to-white/30 ${className}`} style={{ justifyContent: 'space-between' }}>
+      <div className={`mt-auto p-2 w-full flex items-center gap-4 bg-gradient-to-b from-transparent to-white/30 ${className}`} style={{ justifyContent: 'space-between' }}>
         {connectionStatus !== 'connected' && (
           <>
             {/* Notification button on left */}

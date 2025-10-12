@@ -7,7 +7,7 @@ import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
 
-const MAX_CALLING_TIME_MS = 10000
+const MAX_CALLING_TIME_MS = 60000
 
 export default function CallerDialog() {
   const t = useTranslations()
@@ -22,6 +22,7 @@ export default function CallerDialog() {
   const tStatus = useTranslations('ConnectionStatus')
   const { doCall, callUser, caller } = useWebRTCContext()
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
+  const isCalling = connectionStatus === 'calling'
   const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
 
   const sendExpired = useCallback(async () => {
@@ -81,11 +82,20 @@ export default function CallerDialog() {
   const showUserInfo = !meetingId || meetingLastCallTime
 
   return ( open &&
-    <Dialog 
+    <Dialog
       open={open}
       onClose={handleCancel}
+      hideBackdrop={isCalling}
       PaperProps={{
         className: 'bg-gray-900 text-white min-w-[300px]'
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(8px)'
+          }
+        }
       }}
     >
       <DialogTitle className="flex justify-between items-center">

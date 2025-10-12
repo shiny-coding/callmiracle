@@ -22,6 +22,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
 
   const isReconnecting = connectionStatus === 'reconnecting' || connectionStatus === 'need-reconnect'
   const open = isReconnecting || !!callee.incomingRequest
+  const isReceivingCall = connectionStatus === 'receiving-call'
   const user = callee.incomingRequest?.from || null
   const onAccept = callee.handleAcceptCall
   const onReject = callee.handleRejectCall
@@ -46,11 +47,20 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   if (!user) return null
 
   return (
-    <Dialog 
+    <Dialog
       open={open}
       onClose={onReject}
+      hideBackdrop={isReceivingCall}
       PaperProps={{
         className: 'bg-gray-900 text-white min-w-[300px]'
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(8px)'
+          }
+        }
       }}
     >
       <DialogTitle className="flex justify-between items-center">
