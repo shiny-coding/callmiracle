@@ -4,6 +4,7 @@ import { QUALITY_CONFIGS, type VideoQuality } from '@/components/VideoQualitySel
 import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import { ICE_SERVERS } from '@/constants/webrtc'
 
 export const CALL_USER = gql`
   mutation CallUser($input: CallUserInput!) {
@@ -109,9 +110,7 @@ export function useWebRTCCommon(callUser: any) {
 
   const createPeerConnection = () => {
     const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-      ],
+      iceServers: ICE_SERVERS,
       iceCandidatePoolSize: 0,
       iceTransportPolicy: 'all',
       bundlePolicy: 'balanced',

@@ -5,6 +5,7 @@ import WifiIcon from '@mui/icons-material/Wifi'
 import WifiOffIcon from '@mui/icons-material/WifiOff'
 import BlockIcon from '@mui/icons-material/Block'
 import { P2PStatus } from '@/hooks/useP2PConnectivityCheck'
+import { useTranslations } from 'next-intl'
 
 interface P2PStatusIconProps {
   status: P2PStatus
@@ -12,6 +13,8 @@ interface P2PStatusIconProps {
 }
 
 export default function P2PStatusIcon({ status, onClick }: P2PStatusIconProps) {
+  const t = useTranslations('P2P')
+
   const getIcon = () => {
     switch (status) {
       case 'online':
@@ -42,13 +45,13 @@ export default function P2PStatusIcon({ status, onClick }: P2PStatusIconProps) {
   const getTooltip = () => {
     switch (status) {
       case 'online':
-        return 'P2P connections available'
+        return t('statusOnline')
       case 'offline':
-        return 'No internet connection'
+        return t('statusOffline')
       case 'checking':
-        return 'Checking P2P connections availability'
+        return t('statusChecking')
       case 'online-blocked':
-        return 'P2P connections blocked'
+        return t('statusBlocked')
     }
   }
 

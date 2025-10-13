@@ -8,6 +8,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt'
 import SpeedIcon from '@mui/icons-material/Speed'
 import RouterIcon from '@mui/icons-material/Router'
+import { useTranslations } from 'next-intl'
 
 interface P2PConnectionDialogProps {
   open: boolean
@@ -18,44 +19,46 @@ interface P2PConnectionDialogProps {
 }
 
 export default function P2PConnectionDialog({ open, status, diagnostics, onClose, onRecheck }: P2PConnectionDialogProps) {
+  const t = useTranslations('P2P')
+
   const getMessage = () => {
     if (status === 'offline') {
       return {
-        title: 'No Internet Connection',
+        title: t('dialogTitleOffline'),
         icon: <WifiOffIcon style={{ fontSize: 48, color: '#ef4444' }} />,
-        message: 'Your device appears to be offline. Please check your internet connection and try again.',
+        message: t('dialogMessageOffline'),
         showDiagnostics: false,
       }
     }
 
     if (status === 'online-blocked') {
       return {
-        title: 'Video Calls Not Available',
+        title: t('dialogTitleBlocked'),
         icon: <ErrorOutlineIcon style={{ fontSize: 48, color: '#f97316' }} />,
-        message: 'Your network is blocking peer-to-peer connections needed for video calls. Common causes:',
+        message: t('dialogMessageBlocked'),
         details: [
-          '• Firewall or antivirus software blocking connections',
-          '• Corporate or school network restrictions',
-          '• VPN or security proxy settings',
-          '• Router configuration blocking P2P traffic',
+          t('causeFirewall'),
+          t('causeNetwork'),
+          t('causeVPN'),
+          t('causeRouter'),
         ],
-        suggestion: 'Try switching to a different network (like mobile data) or temporarily disable your firewall to test. Contact your IT administrator if on a corporate network.',
+        suggestion: t('suggestionSwitch'),
         showDiagnostics: true,
       }
     }
 
     if (status === 'online') {
       return {
-        title: 'P2P Connection Available',
+        title: t('dialogTitleOnline'),
         icon: <CheckCircleIcon style={{ fontSize: 48, color: '#22c55e' }} />,
-        message: 'Your network supports peer-to-peer connections. Video calling should work properly.',
+        message: t('dialogMessageOnline'),
         showDiagnostics: true,
       }
     }
 
     if (status === 'checking') {
       return {
-        title: 'Checking P2P Connection',
+        title: t('dialogTitleChecking'),
         icon: null,
         message: '',
         showDiagnostics: false,
@@ -95,7 +98,7 @@ export default function P2PConnectionDialog({ open, status, diagnostics, onClose
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 4 }}>
             <CircularProgress size={48} sx={{ mb: 2 }} />
             <Typography variant="body2" color="text.secondary">
-              Checking P2P connectivity...
+              {t('checkingMessage')}
             </Typography>
           </Box>
         ) : (
@@ -123,14 +126,14 @@ export default function P2PConnectionDialog({ open, status, diagnostics, onClose
             {content.showDiagnostics && diagnostics && (
           <Box sx={{ mt: 3 }}>
             <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
-              Network Diagnostics
+              {t('networkDiagnostics')}
             </Typography>
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {diagnostics.effectiveType && (
                 <Chip
                   icon={<SignalCellularAltIcon />}
-                  label={`Connection: ${getEffectiveTypeLabel(diagnostics.effectiveType)}`}
+                  label={`${t('connection')}: ${getEffectiveTypeLabel(diagnostics.effectiveType)}`}
                   size="small"
                   variant="outlined"
                 />
@@ -138,7 +141,7 @@ export default function P2PConnectionDialog({ open, status, diagnostics, onClose
               {diagnostics.downlink !== undefined && (
                 <Chip
                   icon={<SpeedIcon />}
-                  label={`Speed: ${diagnostics.downlink} Mbps`}
+                  label={`${t('speed')}: ${diagnostics.downlink} Mbps`}
                   size="small"
                   variant="outlined"
                 />
@@ -146,7 +149,7 @@ export default function P2PConnectionDialog({ open, status, diagnostics, onClose
               {diagnostics.rtt !== undefined && (
                 <Chip
                   icon={<RouterIcon />}
-                  label={`Latency: ${diagnostics.rtt}ms`}
+                  label={`${t('latency')}: ${diagnostics.rtt}ms`}
                   size="small"
                   variant="outlined"
                 />
@@ -156,20 +159,16 @@ export default function P2PConnectionDialog({ open, status, diagnostics, onClose
             {status === 'online' && diagnostics.srflxCandidates === 0 && diagnostics.hostCandidates > 0 && (
               <Box sx={{ mt: 2, bgcolor: '#fff3cd', p: 2, borderRadius: 1, border: '1px solid #ffc107' }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                  ⚠️ Connection May Be Restricted
+                  {t('restrictionTitle')}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  Video calls might not work properly. This could be caused by:
+                  {t('restrictionMessage')}
                 </Typography>
-                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
-                  • <strong>Local firewall</strong> blocking P2P connections
-                  <br />
-                  • Router or network firewall settings
-                  <br />
-                  • VPN or security software
-                </Typography>
+                <Typography variant="body2" component="div" sx={{ mb: 1 }} dangerouslySetInnerHTML={{
+                  __html: `${t('restrictionFirewall')}<br />${t('restrictionRouter')}<br />${t('restrictionVPN')}`
+                }} />
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  💡 Try temporarily disabling your firewall/antivirus or switching to mobile data to test.
+                  {t('restrictionSuggestion')}
                 </Typography>
               </Box>
             )}
@@ -180,10 +179,10 @@ export default function P2PConnectionDialog({ open, status, diagnostics, onClose
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">
-          Close
+          {t('close')}
         </Button>
         <Button onClick={onRecheck} variant="contained" color="primary" disabled={status === 'checking'}>
-          Check Again
+          {t('checkAgain')}
         </Button>
       </DialogActions>
     </Dialog>

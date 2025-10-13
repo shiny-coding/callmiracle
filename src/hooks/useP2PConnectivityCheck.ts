@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { STUN_SERVERS } from '@/constants/webrtc'
 
 export type P2PStatus = 'online' | 'offline' | 'checking' | 'online-blocked'
 
@@ -14,11 +15,6 @@ export interface NetworkDiagnostics {
   downlink?: number
   rtt?: number
 }
-
-const STUN_SERVERS = [
-  'stun:stun.l.google.com:19302',
-  'stun:stun1.l.google.com:19302',
-]
 
 export function useP2PConnectivityCheck() {
   const [status, setStatus] = useState<P2PStatus>('checking')

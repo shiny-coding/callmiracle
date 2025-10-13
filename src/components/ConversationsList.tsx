@@ -219,12 +219,13 @@ export default function ConversationsList() {
                   onClick={() => handleConversationSelect(conversation._id)}
                 >
                   <NotificationBadge show={hasUnread && !isSelected}>
-                    <Avatar 
+                    <Avatar
+                      src={otherUser?._id ? `/profiles/${otherUser._id}.jpg` : undefined}
                       className="w-12 h-12 mb-1"
-                      sx={{ 
+                      sx={{
                         backgroundColor: isSelected ? '#ffffff' : '#4b5563',
                         color: isSelected ? '#2563eb' : '#ffffff',
-                        fontSize: '1rem' 
+                        fontSize: '1rem'
                       }}
                     >
                       {otherUser?.name?.charAt(0)?.toUpperCase() || '?'}
