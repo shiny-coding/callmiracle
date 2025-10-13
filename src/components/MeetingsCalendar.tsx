@@ -319,8 +319,8 @@ export default function MeetingsCalendar() {
                         alignItems: 'stretch',
                       }}
                     >
-                      {/* Day label row (skip for today) */}
-                      {!isToday(new Date(dayKey)) && (
+                      {/* Day label row (skip for today and when matching sticky header) */}
+                      {!isToday(new Date(dayKey)) && dayKey !== topDayKey && (
                         <div style={{ gridColumn: '1 / span 3', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
                           {getDayLabel(new Date(dayKey), t, locale)}
                         </div>
