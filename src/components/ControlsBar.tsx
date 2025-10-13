@@ -16,6 +16,9 @@ import { routerPush } from '@/utils/routerHelper'
 import NotificationBadge from './NotificationBadge'
 import { useStore } from '@/store/useStore'
 import MediaControls from './MediaControls'
+import P2PStatusIcon from './P2PStatusIcon'
+import P2PConnectionDialog from './P2PConnectionDialog'
+import { useP2PConnectivityCheck } from '@/hooks/useP2PConnectivityCheck'
 
 interface ControlsBarProps {
   position: 'top' | 'bottom'
@@ -27,6 +30,12 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   const { connectionStatus, hangup } = useWebRTCContext()
   const { hasUnreadConversations } = useConversations()
   const currentUser = useStore((state: any) => state.currentUser)
+  const { status: p2pStatus, isDialogOpen, diagnostics, closeDialog, openDialog, recheckManually } = useP2PConnectivityCheck()
+
+  const handleP2PIconClick = () => {
+    // Always open dialog, even when checking
+    openDialog()
+  }
 
   const router = useRouter()
   const pathname = usePathname()
@@ -65,91 +74,104 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   // Bottom bar - navigation only (non-compact)
   if (position === 'bottom' && !isCompact) {
     return (
-      <div className={`mt-auto p-3 w-full flex items-center gap-4 bg-gradient-to-b from-transparent to-white/30 ${className}`} style={{ justifyContent: 'center' }}>
-        {connectionStatus !== 'connected' && (
-          <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
-            <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} style={{ color: pathname === calendarPath ? selectedColor : undefined }}>
-              <CalendarMonthIcon />
-            </IconButton>
-            <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} style={{ color: pathname === listPath ? selectedColor : undefined }}>
-              <ListIcon />
-            </IconButton>
-            <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} style={{ color: pathname === usersPath ? selectedColor : undefined }}>
-              <PersonIcon />
-            </IconButton>
-            <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} style={{ color: pathname === groupsPath ? selectedColor : undefined }}>
-              <GroupIcon />
-            </IconButton>
-            <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} style={{ color: pathname === conversationsPath ? selectedColor : undefined }}>
-              <NotificationBadge show={hasUnreadConversations}>
-                <MessageIcon />
-              </NotificationBadge>
-            </IconButton>
-            <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} style={{ color: pathname === callHistoryPath ? selectedColor : undefined }}>
-              <HistoryIcon />
-            </IconButton>
-          </div>
-        )}
-        {connectionStatus === 'connected' && (
-          <div>
-            <IconButton className="bg-red-600 hover:bg-red-700 text-white" onClick={hangup}>
-              <CallEndIcon className="text-red-400" />
-            </IconButton>
-          </div>
-        )}
-      </div>
+      <>
+        <div className={`mt-auto p-3 w-full flex items-center gap-4 bg-gradient-to-b from-transparent to-white/30 ${className}`} style={{ justifyContent: 'space-between' }}>
+          {connectionStatus !== 'connected' && (
+            <>
+              <div style={{ width: '48px' }} /> {/* Spacer for balance */}
+              <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
+                <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} style={{ color: pathname === calendarPath ? selectedColor : undefined }}>
+                  <CalendarMonthIcon />
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} style={{ color: pathname === listPath ? selectedColor : undefined }}>
+                  <ListIcon />
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} style={{ color: pathname === usersPath ? selectedColor : undefined }}>
+                  <PersonIcon />
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} style={{ color: pathname === groupsPath ? selectedColor : undefined }}>
+                  <GroupIcon />
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} style={{ color: pathname === conversationsPath ? selectedColor : undefined }}>
+                  <NotificationBadge show={hasUnreadConversations}>
+                    <MessageIcon />
+                  </NotificationBadge>
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} style={{ color: pathname === callHistoryPath ? selectedColor : undefined }}>
+                  <HistoryIcon />
+                </IconButton>
+              </div>
+              <P2PStatusIcon status={p2pStatus} onClick={handleP2PIconClick} />
+            </>
+          )}
+          {connectionStatus === 'connected' && (
+            <div>
+              <IconButton className="bg-red-600 hover:bg-red-700 text-white" onClick={hangup}>
+                <CallEndIcon className="text-red-400" />
+              </IconButton>
+            </div>
+          )}
+        </div>
+        <P2PConnectionDialog open={isDialogOpen} status={p2pStatus} diagnostics={diagnostics} onClose={closeDialog} onRecheck={recheckManually} />
+      </>
     )
   }
 
   // Bottom bar - compact layout (all controls)
   if (position === 'bottom' && isCompact) {
     return (
-      <div className={`mt-auto p-2 w-full flex items-center gap-4 bg-gradient-to-b from-transparent to-white/30 ${className}`} style={{ justifyContent: 'space-between' }}>
-        {connectionStatus !== 'connected' && (
-          <>
-            {/* Notification button on left */}
-            <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
+      <>
+        <div className={`mt-auto p-2 w-full flex items-center gap-4 bg-gradient-to-b from-transparent to-white/30 ${className}`} style={{ justifyContent: 'space-between' }}>
+          {connectionStatus !== 'connected' && (
+            <>
+              {/* Notification button on left */}
+              <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
 
-            {/* Navigation buttons in center */}
-            <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
-              <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} style={{ color: pathname === calendarPath ? selectedColor : undefined }}>
-                <CalendarMonthIcon />
-              </IconButton>
-              <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} style={{ color: pathname === listPath ? selectedColor : undefined }}>
-                <ListIcon />
-              </IconButton>
-              <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} style={{ color: pathname === usersPath ? selectedColor : undefined }}>
-                <PersonIcon />
-              </IconButton>
-              <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} style={{ color: pathname === groupsPath ? selectedColor : undefined }}>
-                <GroupIcon />
-              </IconButton>
-              <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} style={{ color: pathname === conversationsPath ? selectedColor : undefined }}>
-                <NotificationBadge show={hasUnreadConversations}>
-                  <MessageIcon />
-                </NotificationBadge>
-              </IconButton>
-              <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} style={{ color: pathname === callHistoryPath ? selectedColor : undefined }}>
-                <HistoryIcon />
-              </IconButton>
+              {/* Navigation buttons in center */}
+              <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
+                <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} style={{ color: pathname === calendarPath ? selectedColor : undefined }}>
+                  <CalendarMonthIcon />
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} style={{ color: pathname === listPath ? selectedColor : undefined }}>
+                  <ListIcon />
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} style={{ color: pathname === usersPath ? selectedColor : undefined }}>
+                  <PersonIcon />
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} style={{ color: pathname === groupsPath ? selectedColor : undefined }}>
+                  <GroupIcon />
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} style={{ color: pathname === conversationsPath ? selectedColor : undefined }}>
+                  <NotificationBadge show={hasUnreadConversations}>
+                    <MessageIcon />
+                  </NotificationBadge>
+                </IconButton>
+                <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} style={{ color: pathname === callHistoryPath ? selectedColor : undefined }}>
+                  <HistoryIcon />
+                </IconButton>
 
-              {/* Media controls after navigation */}
-              <div style={{ width: '16px' }} />
-              <MediaControls showNotifications={false} showMediaButtons={true} showProfile={false} />
+                {/* Media controls after navigation */}
+                <div style={{ width: '16px' }} />
+                <MediaControls showNotifications={false} showMediaButtons={true} showProfile={false} />
+              </div>
+
+              {/* P2P Status and Profile on right */}
+              <div className="flex items-center gap-2">
+                <P2PStatusIcon status={p2pStatus} onClick={handleP2PIconClick} />
+                <MediaControls showNotifications={false} showMediaButtons={false} showProfile={true} />
+              </div>
+            </>
+          )}
+          {connectionStatus === 'connected' && (
+            <div>
+              <IconButton className="bg-red-600 hover:bg-red-700 text-white" onClick={hangup}>
+                <CallEndIcon className="text-red-400" />
+              </IconButton>
             </div>
-
-            {/* Profile on right */}
-            <MediaControls showNotifications={false} showMediaButtons={false} showProfile={true} />
-          </>
-        )}
-        {connectionStatus === 'connected' && (
-          <div>
-            <IconButton className="bg-red-600 hover:bg-red-700 text-white" onClick={hangup}>
-              <CallEndIcon className="text-red-400" />
-            </IconButton>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+        <P2PConnectionDialog open={isDialogOpen} status={p2pStatus} diagnostics={diagnostics} onClose={closeDialog} onRecheck={recheckManually} />
+      </>
     )
   }
 
