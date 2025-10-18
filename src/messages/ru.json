@@ -237,6 +237,7 @@
   "time": "Время",
   "meetingsCount": "Количество встреч",
   "meetingsAtThisTime": "Встречи в это время",
+  "meetingCount": "{count, plural, one {# встреча} few {# встречи} many {# встреч} other {# встреч}}",
   "interests": "Интересы",
   "tomorrow": "Завтра",
   "count": "Кол.",

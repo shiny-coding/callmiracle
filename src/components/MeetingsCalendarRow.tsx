@@ -202,7 +202,6 @@ function MeetingChip({
 export interface MeetingsCalendarRowProps {
   slot: ReturnType<typeof getCalendarTimeSlots>[0];
   meetingsWithInfos: ReturnType<typeof prepareTimeSlotsInfos>[number]['displayMeetings'];
-  totalMeetingsCount: number;
   myMeetingSlotToId: Record<number, string>;
   myMeetingsWithPeers: MeetingWithPeer[];
   t: (key: string, values?: Record<string, any>) => string; // Adjust type based on your i18n setup
@@ -218,7 +217,6 @@ export interface MeetingsCalendarRowProps {
 export default function MeetingsCalendarRow({
   slot,
   meetingsWithInfos,
-  totalMeetingsCount,
   myMeetingSlotToId,
   myMeetingsWithPeers,
   t,
@@ -365,35 +363,6 @@ export default function MeetingsCalendarRow({
             </React.Fragment>
           )
         })}
-      </div>
-      {/* Count cell */}
-      <div
-        style={{
-          padding: `0.3rem ${HORIZONTAL_CELL_PADDING}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderBottom: '1px solid var(--border-color)',
-        }}
-      >
-        {totalMeetingsCount > 0 && (
-          <Tooltip title={t('meetingsAtThisTime')} placement="top">
-            <div
-              style={{
-                fontSize: '0.75rem',
-                color: 'rgba(255, 255, 255, 0.6)',
-                backgroundColor: 'rgba(128, 128, 128, 0.3)',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {totalMeetingsCount}
-            </div>
-          </Tooltip>
-        )}
       </div>
     </Fragment>
   )

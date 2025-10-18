@@ -237,6 +237,7 @@
   "time": "Time",
   "meetingsCount": "Meetings Count",
   "meetingsAtThisTime": "Meetings at this time",
+  "meetingCount": "{count, plural, one {# meeting} other {# meetings}}",
   "interests": "Interests",
   "tomorrow": "Tomorrow",
   "count": "Count",

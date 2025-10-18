@@ -58,7 +58,7 @@ function MainContent({ children }: { children: React.ReactNode }) {
           <TopControlsBar />
         )}
         <div className="flex flex-col items-center w-full max-w-[1536px] mx-auto grow overflow-hidden">
-          <div className={`flex items-center justify-center w-full h-[calc(100%-72px)] ${
+          <div className={`flex items-center justify-center w-full h-full ${
             connectionStatus === 'connected' ? 'relative opacity-100' : 'absolute opacity-0 pointer-events-none'
           }`}>
             <RemoteVideo />

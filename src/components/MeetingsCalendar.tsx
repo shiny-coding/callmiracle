@@ -79,7 +79,8 @@ export default function MeetingsCalendar() {
     myMeetingSlotToId,
     myOccupiedSlots,
     slot2meetingData,
-    daysArray
+    daysArray,
+    dayMeetingCounts
   } = useMemo(() => {
     // Collect all meetingIds for quick lookup
     const myMeetingSlotToId: Record<number, string> = {}
@@ -124,8 +125,11 @@ export default function MeetingsCalendar() {
       currentUser!
     )
 
-    // Group slots by dayKey and skip empty slots
+    // Group slots by dayKey and skip empty slots, also calculate day meeting counts
     const slotsByDay: Record<string, typeof slots> = {}
+    const dayMeetingCounts: Record<string, number> = {}
+    const dayMeetingIds: Record<string, Set<string>> = {}
+
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i]
       const slotData = slot2meetingData[slot.timestamp]
@@ -137,7 +141,22 @@ export default function MeetingsCalendar() {
 
       if (!slotsByDay[slot.dayKey]) slotsByDay[slot.dayKey] = []
       slotsByDay[slot.dayKey].push(slot)
+
+      // Track unique meeting IDs per day for accurate counting
+      if (!dayMeetingIds[slot.dayKey]) {
+        dayMeetingIds[slot.dayKey] = new Set<string>()
+      }
+
+      // Add all meeting IDs from this slot
+      slotData.displayMeetings.forEach(meetingWithInfo => {
+        dayMeetingIds[slot.dayKey].add(meetingWithInfo.meeting._id)
+      })
     }
+
+    // Calculate unique meeting counts per day
+    Object.keys(dayMeetingIds).forEach(dayKey => {
+      dayMeetingCounts[dayKey] = dayMeetingIds[dayKey].size
+    })
 
     // Prepare days array for virtualization
     const daysArray = Object.entries(slotsByDay).map(([dayKey, daySlots]) => ({
@@ -149,7 +168,8 @@ export default function MeetingsCalendar() {
       myMeetingSlotToId,
       myOccupiedSlots,
       slot2meetingData,
-      daysArray
+      daysArray,
+      dayMeetingCounts
     }
   }, [futureMeetingsWithPeers, myMeetingsWithPeers, currentUser, slots])
 
@@ -251,7 +271,7 @@ export default function MeetingsCalendar() {
             className="calendar-grid-header input-bg px-2"
             style={{
               display: 'grid',
-              gridTemplateColumns: '80px 1fr 60px',
+              gridTemplateColumns: '80px 1fr',
               alignItems: 'stretch',
               width: '100%',
               position: 'sticky',
@@ -262,7 +282,6 @@ export default function MeetingsCalendar() {
           >
             <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('time')}</div>
             <div style={{ padding: CELL_PADDING, ...headerStyle }}>{t('interests')}</div>
-            <div style={{ padding: CELL_PADDING, ...headerStyle, textAlign: 'center' }}>{t('count')}</div>
           </div>
           {/* Body grid (scrollable) with virtualization */}
           <div
@@ -279,10 +298,26 @@ export default function MeetingsCalendar() {
               <div className="normal-bg panel-border"
                 style={{
                   position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
-                  padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px'
+                  padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'linear-gradient(to right, transparent, rgba(128, 128, 128, 0.4) 50%, transparent)',
+                  margin: '0.1rem 0'
                 }}
               >
-                {getDayLabel(new Date(topDayKey), t, locale)}
+                <span>{getDayLabel(new Date(topDayKey), t, locale)}</span>
+                {dayMeetingCounts[topDayKey] > 0 && (
+                  <Chip
+                    label={t('meetingCount', { count: dayMeetingCounts[topDayKey] })}
+                    size="small"
+                    style={{
+                      fontSize: '0.75rem',
+                      height: '20px',
+                      backgroundColor: 'rgba(128, 128, 128, 0.3)',
+                      position: 'absolute',
+                      right: '0.5rem'
+                    }}
+                  />
+                )}
               </div>
             )}
 
@@ -315,14 +350,38 @@ export default function MeetingsCalendar() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '80px 1fr 60px',
+                        gridTemplateColumns: '80px 1fr',
                         alignItems: 'stretch',
                       }}
                     >
                       {/* Day label row (skip for today and when matching sticky header) */}
                       {!isToday(new Date(dayKey)) && dayKey !== topDayKey && (
-                        <div style={{ gridColumn: '1 / span 3', padding: CELL_PADDING, minHeight: '2rem', borderBottom: '1px solid var(--border-color)' }}>
-                          {getDayLabel(new Date(dayKey), t, locale)}
+                        <div style={{
+                          gridColumn: '1 / span 2',
+                          padding: CELL_PADDING,
+                          minHeight: '2rem',
+                          borderBottom: '1px solid var(--border-color)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative',
+                          background: 'linear-gradient(to right, transparent, rgba(128, 128, 128, 0.4) 50%, transparent)',
+                          margin: '0.1rem 0'
+                        }}>
+                          <span>{getDayLabel(new Date(dayKey), t, locale)}</span>
+                          {dayMeetingCounts[dayKey] > 0 && (
+                            <Chip
+                              label={t('meetingCount', { count: dayMeetingCounts[dayKey] })}
+                              size="small"
+                              style={{
+                                fontSize: '0.75rem',
+                                height: '20px',
+                                backgroundColor: 'rgba(128, 128, 128, 0.3)',
+                                position: 'absolute',
+                                right: '0.5rem'
+                              }}
+                            />
+                          )}
                         </div>
                       )}
                       {/* Slot rows */}
@@ -333,7 +392,6 @@ export default function MeetingsCalendar() {
                             key={slot.timestamp}
                             slot={slot}
                             meetingsWithInfos={meetingData.displayMeetings}
-                            totalMeetingsCount={meetingData.totalCount}
                             myMeetingSlotToId={myMeetingSlotToId}
                             myMeetingsWithPeers={myMeetingsWithPeers}
                             t={t}
