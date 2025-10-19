@@ -3,8 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { IconButton } from '@mui/material'
 import CallEndIcon from '@mui/icons-material/CallEnd'
+import MicIcon from '@mui/icons-material/Mic'
+import MicOffIcon from '@mui/icons-material/MicOff'
+import VideocamIcon from '@mui/icons-material/Videocam'
+import VideocamOffIcon from '@mui/icons-material/VideocamOff'
+import SettingsIcon from '@mui/icons-material/Settings'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useStore } from '@/store/useStore'
+import { useRouter } from 'next/navigation'
+import { routerPush } from '@/utils/routerHelper'
 import VideoLayoutControls, { VideoLayoutMode } from './VideoLayoutControls'
 import RemoteVideo from './RemoteVideo'
 import LocalVideo from './LocalVideo'
@@ -13,10 +20,36 @@ export default function ConnectedCallLayout() {
   const [layoutMode, setLayoutMode] = useState<VideoLayoutMode>('overlay')
   const [isSplitHorizontal, setIsSplitHorizontal] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
-  const { hangup, remoteVideoRef } = useWebRTCContext()
-  const { localVideoEnabled } = useStore((state) => ({
-    localVideoEnabled: state.localVideoEnabled
+  const router = useRouter()
+  const { hangup, remoteVideoRef, connectionStatus, sendWantedMediaState } = useWebRTCContext()
+  const {
+    localVideoEnabled,
+    localAudioEnabled,
+    setLocalAudioEnabled,
+    setLocalVideoEnabled
+  } = useStore((state) => ({
+    localVideoEnabled: state.localVideoEnabled,
+    localAudioEnabled: state.localAudioEnabled,
+    setLocalAudioEnabled: state.setLocalAudioEnabled,
+    setLocalVideoEnabled: state.setLocalVideoEnabled
   }))
+
+  const handleAudioToggle = () => {
+    setLocalAudioEnabled(!localAudioEnabled)
+    sendWantedMediaState()
+  }
+
+  const handleVideoToggle = () => {
+    setLocalVideoEnabled(!localVideoEnabled)
+    sendWantedMediaState()
+  }
+
+  const handleDeviceSettings = () => {
+    routerPush(router, '/settings', {
+      source: 'connected_call_device_settings',
+      connectionStatus
+    })
+  }
 
   // Determine best split orientation based on container dimensions
   useEffect(() => {
@@ -53,15 +86,15 @@ export default function ConnectedCallLayout() {
       )}
 
       {layoutMode === 'split' && (
-        <div className={`absolute inset-0 flex ${isSplitHorizontal ? 'flex-row' : 'flex-col'} w-full h-full gap-1`}>
+        <div className={`absolute inset-0 flex ${isSplitHorizontal ? 'flex-row' : 'flex-col'} gap-1`}>
           {/* Remote video - always first */}
-          <div className="flex-1 relative h-full w-full">
+          <div className={`flex-1 relative ${isSplitHorizontal ? 'min-w-0' : 'min-h-0'}`}>
             <RemoteVideo showTopControls={true} />
           </div>
 
           {/* Local video */}
           {localVideoEnabled && (
-            <div className="flex-1 relative h-full w-full">
+            <div className={`flex-1 relative ${isSplitHorizontal ? 'min-w-0' : 'min-h-0'}`}>
               <LocalVideo showDeviceSelection={false} compact={true} />
             </div>
           )}
@@ -77,19 +110,105 @@ export default function ConnectedCallLayout() {
       {/* Controls overlay at bottom */}
       <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-2 z-20">
         <div className="flex items-center justify-between w-full max-w-[1536px]">
-          {/* Spacer for left side */}
-          <div className="flex-1" />
+          {/* Left side: Mic, Video, Settings */}
+          <div className="flex-1 flex gap-2 pl-2">
+            <IconButton
+              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+              onClick={handleAudioToggle}
+              size="small"
+              sx={{
+                '@media (max-width: 768px)': {
+                  padding: '8px',
+                },
+              }}
+            >
+              {localAudioEnabled ? (
+                <MicIcon
+                  sx={{
+                    color: 'white',
+                    filter: 'drop-shadow(0 0 2px black)',
+                    '@media (max-width: 768px)': {
+                      fontSize: '1.5rem',
+                    },
+                  }}
+                />
+              ) : (
+                <MicOffIcon
+                  sx={{
+                    color: '#f87171',
+                    filter: 'drop-shadow(0 0 2px black)',
+                    '@media (max-width: 768px)': {
+                      fontSize: '1.5rem',
+                    },
+                  }}
+                />
+              )}
+            </IconButton>
+
+            <IconButton
+              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+              onClick={handleVideoToggle}
+              size="small"
+              sx={{
+                '@media (max-width: 768px)': {
+                  padding: '8px',
+                },
+              }}
+            >
+              {localVideoEnabled ? (
+                <VideocamIcon
+                  sx={{
+                    color: 'white',
+                    filter: 'drop-shadow(0 0 2px black)',
+                    '@media (max-width: 768px)': {
+                      fontSize: '1.5rem',
+                    },
+                  }}
+                />
+              ) : (
+                <VideocamOffIcon
+                  sx={{
+                    color: '#f87171',
+                    filter: 'drop-shadow(0 0 2px black)',
+                    '@media (max-width: 768px)': {
+                      fontSize: '1.5rem',
+                    },
+                  }}
+                />
+              )}
+            </IconButton>
+
+            <IconButton
+              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+              onClick={handleDeviceSettings}
+              size="small"
+              sx={{
+                '@media (max-width: 768px)': {
+                  padding: '8px',
+                },
+              }}
+            >
+              <SettingsIcon
+                sx={{
+                  color: 'white',
+                  filter: 'drop-shadow(0 0 2px black)',
+                  '@media (max-width: 768px)': {
+                    fontSize: '1.5rem',
+                  },
+                }}
+              />
+            </IconButton>
+          </div>
 
           {/* Hangup button in center */}
           <IconButton
             onClick={hangup}
             size="small"
             sx={{
-              backgroundColor: '#dc2626',
+              backgroundColor: 'transparent',
               '&:hover': {
-                backgroundColor: '#b91c1c',
+                backgroundColor: 'rgba(0, 0, 0, 0.2)',
               },
-              boxShadow: 3,
               '@media (max-width: 768px)': {
                 padding: '8px',
               },
@@ -97,7 +216,7 @@ export default function ConnectedCallLayout() {
           >
             <CallEndIcon
               sx={{
-                color: '#ffffff',
+                color: '#dc2626',
                 filter: 'drop-shadow(0 0 2px black)',
                 '@media (max-width: 768px)': {
                   fontSize: '1.5rem',
@@ -108,7 +227,7 @@ export default function ConnectedCallLayout() {
 
           {/* Layout controls on right */}
           <div className="flex-1 flex justify-end pr-2">
-            <VideoLayoutControls mode={layoutMode} onModeChange={setLayoutMode} />
+            <VideoLayoutControls mode={layoutMode} onModeChange={setLayoutMode} isSplitHorizontal={isSplitHorizontal} />
           </div>
         </div>
       </div>

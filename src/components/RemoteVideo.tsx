@@ -163,12 +163,15 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
           {connectionStatus === 'connected' && showTopControls && (
             <div className="absolute top-0 left-0 right-0 pt-2 px-4 z-20">
               <div className="flex justify-between items-center">
-                {/* Left side: Name, FitScreen, Quality */}
+                {/* Left side: Name only */}
                 <div className="flex items-center gap-2">
                   <div className="text-white text-sm">
                     {targetUser?.name}
                   </div>
+                </div>
 
+                {/* Right side: FitScreen, Quality */}
+                <div className="flex gap-2 items-center">
                   <IconButton
                     className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
                     onClick={() => setIsFitMode(!isFitMode)}
@@ -213,96 +216,6 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
                       />
                       <span className="ml-1 text-xs text-white" style={{ filter: 'drop-shadow(0 0 2px black)' }}>{qualityWeWantFromRemote}</span>
                     </div>
-                  </IconButton>
-                </div>
-
-                {/* Right side: Mic, Video and Settings icons */}
-                <div className="flex gap-2 items-center">
-                  <IconButton
-                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-                    onClick={handleAudioToggle}
-                    size="small"
-                    sx={{
-                      '@media (max-width: 768px)': {
-                        padding: '8px',
-                      },
-                    }}
-                  >
-                    {localAudioEnabled ? (
-                      <MicIcon
-                        sx={{
-                          color: 'white',
-                          filter: 'drop-shadow(0 0 2px black)',
-                          '@media (max-width: 768px)': {
-                            fontSize: '1.5rem',
-                          },
-                        }}
-                      />
-                    ) : (
-                      <MicOffIcon
-                        sx={{
-                          color: '#f87171',
-                          filter: 'drop-shadow(0 0 2px black)',
-                          '@media (max-width: 768px)': {
-                            fontSize: '1.5rem',
-                          },
-                        }}
-                      />
-                    )}
-                  </IconButton>
-
-                  <IconButton
-                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-                    onClick={handleVideoToggle}
-                    size="small"
-                    sx={{
-                      '@media (max-width: 768px)': {
-                        padding: '8px',
-                      },
-                    }}
-                  >
-                    {localVideoEnabled ? (
-                      <VideocamIcon
-                        sx={{
-                          color: 'white',
-                          filter: 'drop-shadow(0 0 2px black)',
-                          '@media (max-width: 768px)': {
-                            fontSize: '1.5rem',
-                          },
-                        }}
-                      />
-                    ) : (
-                      <VideocamOffIcon
-                        sx={{
-                          color: '#f87171',
-                          filter: 'drop-shadow(0 0 2px black)',
-                          '@media (max-width: 768px)': {
-                            fontSize: '1.5rem',
-                          },
-                        }}
-                      />
-                    )}
-                  </IconButton>
-
-                  <IconButton
-                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-                    onClick={handleDeviceSettings}
-                    size="small"
-                    sx={{
-                      '@media (max-width: 768px)': {
-                        padding: '8px',
-                      },
-                    }}
-                  >
-                    <SettingsIcon
-                      sx={{
-                        color: 'white',
-                        filter: 'drop-shadow(0 0 2px black)',
-                        '@media (max-width: 768px)': {
-                          fontSize: '1.5rem',
-                        },
-                      }}
-                    />
                   </IconButton>
                 </div>
               </div>
