@@ -177,29 +177,30 @@ export function useWebRTCCommon(callUser: any) {
 
   const handleTrack = (event: RTCTrackEvent, peerConnection: RTCPeerConnection, remoteVideoRef: React.RefObject<HTMLVideoElement>, remoteStreamRef: React.MutableRefObject<MediaStream | null>) => {
     if (!peerConnection) {
-      console.log('WebRTC: OnTrack, but no peer connection found')
       return
     }
-    
-    console.log('WebRTC: OnTrack', event)
+
     if (!event.streams[0]?.id.includes(currentUser?._id || '')) {
       const [remoteStream] = event.streams
-      if (remoteStream && remoteVideoRef?.current) {
+      if (remoteStream) {
+        // Store the stream in the ref regardless of video element existence
         if (!remoteStreamRef.current) {
           remoteStreamRef.current = remoteStream
         }
-        remoteVideoRef.current.srcObject = remoteStream
-        console.log('Received first remote track: ' + event.track.kind)
+
+        // Attach to video element if it exists
+        if (remoteVideoRef?.current) {
+          remoteVideoRef.current.srcObject = remoteStream
+        }
+
         // Apply saved remote quality preference if it exists
         if (event.track.kind === 'video') {
           const qualityRemoteWantsFromUs = syncStore().qualityRemoteWantsFromUs
-          applyLocalQuality(peerConnection, qualityRemoteWantsFromUs).catch(err => 
+          applyLocalQuality(peerConnection, qualityRemoteWantsFromUs).catch(err =>
             console.error('Failed to apply initial remote quality settings:', err)
           )
         }
       }
-    } else {
-      console.log('Ignored local track: ' + event.track.kind)
     }
   }
 

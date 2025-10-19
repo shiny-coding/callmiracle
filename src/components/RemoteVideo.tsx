@@ -9,27 +9,67 @@ import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import HdIcon from '@mui/icons-material/Hd';
 import FitScreenIcon from '@mui/icons-material/FitScreen';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useTranslations } from 'next-intl';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 import VideoQualitySelector from './VideoQualitySelector';
 import { useStore } from '@/store/useStore';
+import { useRouter } from 'next/navigation';
+import { routerPush } from '@/utils/routerHelper';
 
-export default function RemoteVideo() {
+interface RemoteVideoProps {
+  showTopControls?: boolean
+}
+
+export default function RemoteVideo({ showTopControls = false }: RemoteVideoProps) {
   const t = useTranslations('VideoChat');
   const overlayRef = useRef<HTMLDivElement>(null);
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isFitMode, setIsFitMode] = useState(true);
   const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
-  const { qualityWeWantFromRemote, targetUser } = useStore((state) => ({
+  const router = useRouter();
+
+  const {
+    qualityWeWantFromRemote,
+    targetUser,
+    localAudioEnabled,
+    localVideoEnabled,
+    setLocalAudioEnabled,
+    setLocalVideoEnabled
+  } = useStore((state) => ({
     qualityWeWantFromRemote: state.qualityWeWantFromRemote,
-    targetUser: state.targetUser
+    targetUser: state.targetUser,
+    localAudioEnabled: state.localAudioEnabled,
+    localVideoEnabled: state.localVideoEnabled,
+    setLocalAudioEnabled: state.setLocalAudioEnabled,
+    setLocalVideoEnabled: state.setLocalVideoEnabled
   }))
   const {
     connectionStatus,
     remoteVideoEnabled,
     remoteAudioEnabled,
     remoteVideoRef,
+    sendWantedMediaState,
+    caller,
+    callee,
   } = useWebRTCContext();
+
+  const handleAudioToggle = () => {
+    setLocalAudioEnabled(!localAudioEnabled);
+    sendWantedMediaState();
+  };
+
+  const handleVideoToggle = () => {
+    setLocalVideoEnabled(!localVideoEnabled);
+    sendWantedMediaState();
+  };
+
+  const handleDeviceSettings = () => {
+    routerPush(router, '/settings', {
+      source: 'remote_video_device_settings',
+      connectionStatus
+    });
+  };
 
   // Update overlay dimensions when video loads or resizes
   useEffect(() => {
@@ -86,73 +126,192 @@ export default function RemoteVideo() {
     }
   }, [remoteVideoRef])
 
+  // Attach stream when component mounts or stream becomes available
+  useEffect(() => {
+    if (connectionStatus === 'connected' && remoteVideoRef.current) {
+      const activeStreamRef = caller.active ? caller.remoteStreamRef : callee.active ? callee.remoteStreamRef : null
+      const stream = activeStreamRef?.current
+
+      if (stream && remoteVideoRef.current.srcObject !== stream) {
+        remoteVideoRef.current.srcObject = stream
+      }
+    }
+  }, [connectionStatus, remoteVideoRef, caller.active, caller.remoteStreamRef, callee.active, callee.remoteStreamRef])
+
   useEffect(() => {
     // Reset video when connection is lost or disconnected
     if (connectionStatus !== 'connected' && remoteVideoRef.current) {
-      const tracks = remoteVideoRef.current.srcObject instanceof MediaStream 
-        ? remoteVideoRef.current.srcObject.getTracks() 
+      const tracks = remoteVideoRef.current.srcObject instanceof MediaStream
+        ? remoteVideoRef.current.srcObject.getTracks()
         : []
-      
+
       // Stop all tracks
       for (const track of tracks) {
         track.stop()
       }
-      
+
       // Clear the video source
       remoteVideoRef.current.srcObject = null
       setVideoDimensions(null)
     }
   }, [connectionStatus, remoteVideoRef])
 
+
   return (
     <>
         <div className="relative w-full h-full flex flex-col">
-          {connectionStatus === 'connected' && (
-            <div className="p-4 bg-gradient-to-b from-white/50 to-black">
+          {connectionStatus === 'connected' && showTopControls && (
+            <div className="absolute top-0 left-0 right-0 pt-2 px-4 z-20">
               <div className="flex justify-between items-center">
+                {/* Left side: Name, FitScreen, Quality */}
                 <div className="flex items-center gap-2">
                   <div className="text-white text-sm">
                     {targetUser?.name}
                   </div>
-                </div>
-                <div className="flex gap-2 items-center">
+
                   <IconButton
                     className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
                     onClick={() => setIsFitMode(!isFitMode)}
+                    size="small"
+                    sx={{
+                      '@media (max-width: 768px)': {
+                        padding: '8px',
+                      },
+                    }}
                   >
-                    <FitScreenIcon className={`text-white transform ${!isFitMode ? 'rotate-90' : ''}`} />
+                    <FitScreenIcon
+                      sx={{
+                        color: 'white',
+                        filter: 'drop-shadow(0 0 2px black)',
+                        transform: !isFitMode ? 'rotate(90deg)' : 'none',
+                        '@media (max-width: 768px)': {
+                          fontSize: '1.5rem',
+                        },
+                      }}
+                    />
                   </IconButton>
-
-                  {
-                    <IconButton
-                      className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-                      onClick={() => setQualityDialogOpen(true)}
-                    >
-                      <div className="flex items-center">
-                        <HdIcon className="text-white" />
-                        <span className="ml-1 text-xs text-white">{qualityWeWantFromRemote}</span>
-                      </div>
-                    </IconButton>
-                  }
 
                   <IconButton
                     className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-                    disabled
+                    onClick={() => setQualityDialogOpen(true)}
+                    size="small"
+                    sx={{
+                      '@media (max-width: 768px)': {
+                        padding: '8px',
+                      },
+                    }}
                   >
-                    {remoteAudioEnabled ? (
-                      <MicIcon className="text-white" />
+                    <div className="flex items-center">
+                      <HdIcon
+                        sx={{
+                          color: 'white',
+                          filter: 'drop-shadow(0 0 2px black)',
+                          '@media (max-width: 768px)': {
+                            fontSize: '1.5rem',
+                          },
+                        }}
+                      />
+                      <span className="ml-1 text-xs text-white" style={{ filter: 'drop-shadow(0 0 2px black)' }}>{qualityWeWantFromRemote}</span>
+                    </div>
+                  </IconButton>
+                </div>
+
+                {/* Right side: Mic, Video and Settings icons */}
+                <div className="flex gap-2 items-center">
+                  <IconButton
+                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+                    onClick={handleAudioToggle}
+                    size="small"
+                    sx={{
+                      '@media (max-width: 768px)': {
+                        padding: '8px',
+                      },
+                    }}
+                  >
+                    {localAudioEnabled ? (
+                      <MicIcon
+                        sx={{
+                          color: 'white',
+                          filter: 'drop-shadow(0 0 2px black)',
+                          '@media (max-width: 768px)': {
+                            fontSize: '1.5rem',
+                          },
+                        }}
+                      />
                     ) : (
-                      <MicOffIcon className="text-red-400" />
+                      <MicOffIcon
+                        sx={{
+                          color: '#f87171',
+                          filter: 'drop-shadow(0 0 2px black)',
+                          '@media (max-width: 768px)': {
+                            fontSize: '1.5rem',
+                          },
+                        }}
+                      />
                     )}
+                  </IconButton>
+
+                  <IconButton
+                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+                    onClick={handleVideoToggle}
+                    size="small"
+                    sx={{
+                      '@media (max-width: 768px)': {
+                        padding: '8px',
+                      },
+                    }}
+                  >
+                    {localVideoEnabled ? (
+                      <VideocamIcon
+                        sx={{
+                          color: 'white',
+                          filter: 'drop-shadow(0 0 2px black)',
+                          '@media (max-width: 768px)': {
+                            fontSize: '1.5rem',
+                          },
+                        }}
+                      />
+                    ) : (
+                      <VideocamOffIcon
+                        sx={{
+                          color: '#f87171',
+                          filter: 'drop-shadow(0 0 2px black)',
+                          '@media (max-width: 768px)': {
+                            fontSize: '1.5rem',
+                          },
+                        }}
+                      />
+                    )}
+                  </IconButton>
+
+                  <IconButton
+                    className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+                    onClick={handleDeviceSettings}
+                    size="small"
+                    sx={{
+                      '@media (max-width: 768px)': {
+                        padding: '8px',
+                      },
+                    }}
+                  >
+                    <SettingsIcon
+                      sx={{
+                        color: 'white',
+                        filter: 'drop-shadow(0 0 2px black)',
+                        '@media (max-width: 768px)': {
+                          fontSize: '1.5rem',
+                        },
+                      }}
+                    />
                   </IconButton>
                 </div>
               </div>
             </div>
           )}
-          <div className="w-full h-[calc(100%-72px)] flex items-center justify-center bg-black">
+          <div className="w-full h-full flex items-center justify-center bg-black">
             {!remoteVideoEnabled && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
-                <VideocamOffIcon className="text-red-400 w-16 h-16" />
+                <VideocamOffIcon className="text-red-400 w-64 h-64" />
               </div>
             )}
             <video

@@ -288,6 +288,7 @@ export function useWebRTCCaller({
     handleIceCandidate,
     cleanup,
     peerConnection,
+    remoteStreamRef,
     active,
     targetUser,
     hangup,

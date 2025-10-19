@@ -34,9 +34,11 @@ async function getVideoDeviceLabel(device: MediaDeviceInfo): Promise<string | nu
 
 interface LocalVideoProps {
   onClose?: () => void
+  showDeviceSelection?: boolean
+  compact?: boolean
 }
 
-export default function LocalVideo({ onClose }: LocalVideoProps) {
+export default function LocalVideo({ onClose, showDeviceSelection = true, compact = false }: LocalVideoProps) {
   const t = useTranslations()
   const { localVideoEnabled, localAudioEnabled, connectionStatus } = useStore((state) => ({
     localVideoEnabled: state.localVideoEnabled,
@@ -75,12 +77,18 @@ export default function LocalVideo({ onClose }: LocalVideoProps) {
     }
   }, [localStream, localVideoEnabled])
 
+  const containerStyle = compact
+    ? { width: '100%', height: '100%' }
+    : connectionStatus === 'connected'
+    ? { width: '200px', height: '150px' }
+    : { width: '400px', height: '300px' }
+
   return (
-    <div className="relative w-full max-w-[400px] mx-auto">
-      {error && (
+    <div className={`relative ${compact ? 'w-full h-full' : 'w-full max-w-[400px] mx-auto'}`}>
+      {error && !compact && (
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
-      <div style={connectionStatus === 'connected' ? { width: '200px', height: '150px' } : { width: '400px', height: '300px' }}
+      <div style={containerStyle}
         className="relative mx-auto bg-gray-800 rounded-lg">
         <video
           ref={videoRef}
@@ -111,7 +119,7 @@ export default function LocalVideo({ onClose }: LocalVideoProps) {
       </div>
 
       {/* Device selection */}
-      {connectionStatus !== 'connected' && (
+      {showDeviceSelection && connectionStatus !== 'connected' && (
         <div className="mt-4 space-y-3">
           {/* Video devices */}
           {videoDevices.devices.length > 0 && (

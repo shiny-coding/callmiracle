@@ -7,19 +7,15 @@ import { DetailedCallHistoryProvider } from "@/store/DetailedCallHistoryProvider
 import { ConversationsProvider } from "@/store/ConversationsProvider";
 import { useWebRTCContext } from "@/hooks/webrtc/WebRTCProvider";
 import { ServerProvider } from "@/contexts/ServerContext";
-import TopControlsBar from "@/components/TopControlsBar";
-import RemoteVideo from "@/components/RemoteVideo";
-import BottomControlsBar from "@/components/BottomControlsBar";
-import DetailedCallHistoryDialog from "@/components/DetailedCallHistoryDialog";
-import CallerDialog from "@/components/CallerDialog";
-import CalleeDialog from "@/components/CalleeDialog";
+import ConnectedCallLayout from "@/components/ConnectedCallLayout";
+import DisconnectedLayout from "@/components/DisconnectedLayout";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const authRoute = '/auth'
 
   return pathname.includes(authRoute) ?
-    children : 
+    children :
     <AppContent>
       <ServerProvider>
         <WebRTCProvider>
@@ -36,49 +32,13 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 }
 
 function MainContent({ children }: { children: React.ReactNode }) {
-  const { connectionStatus, callee } = useWebRTCContext()
-  const videoRef = React.useRef<HTMLVideoElement>(null)
-  const showVideo = connectionStatus === 'calling' || connectionStatus === 'receiving-call'
+  const { connectionStatus } = useWebRTCContext()
 
-  React.useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 0.5
-    }
-  }, [])
-
-  return (
-    <>
-      {showVideo && (
-        <video ref={videoRef} className="video-bg-dialog" autoPlay muted loop playsInline>
-          <source src="/fallingstars.mp4" type="video/mp4" />
-        </video>
-      )}
-      <div className="flex flex-col w-full" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
-        {connectionStatus !== 'connected' && (
-          <TopControlsBar />
-        )}
-        <div className="flex flex-col items-center w-full max-w-[1536px] mx-auto grow overflow-hidden">
-          <div className={`flex items-center justify-center w-full h-full ${
-            connectionStatus === 'connected' ? 'relative opacity-100' : 'absolute opacity-0 pointer-events-none'
-          }`}>
-            <RemoteVideo />
-          </div>
-
-          {connectionStatus !== 'connected' && (
-            <div className="overflow-y-auto px-2 w-full max-w-[800px] grow">
-              {children}
-            </div>
-          )}
-        </div>
-        <BottomControlsBar />
-        {connectionStatus !== 'connected' && (
-          <>
-            <DetailedCallHistoryDialog />
-            <CallerDialog />
-            <CalleeDialog callee={callee} />
-          </>
-        )}
-      </div>
-    </>
+  return connectionStatus === 'connected' ? (
+    <ConnectedCallLayout />
+  ) : (
+    <DisconnectedLayout>
+      {children}
+    </DisconnectedLayout>
   )
 }

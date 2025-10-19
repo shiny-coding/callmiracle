@@ -170,6 +170,7 @@ export function useWebRTCCallee({
     handleIceCandidate,
     cleanup,
     peerConnection,
+    remoteStreamRef,
     active,
     hangup
   }
