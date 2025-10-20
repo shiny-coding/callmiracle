@@ -74,7 +74,7 @@ export default function ConnectedCallLayout() {
 
           {/* Local video overlay at bottom right */}
           {localVideoEnabled && (
-            <div className="absolute bottom-14 right-2 z-10">
+            <div className="absolute bottom-0 right-2 z-10 mb-12">
               <LocalVideo showDeviceSelection={false} compact={false} />
             </div>
           )}
