@@ -272,3 +272,8 @@ body:before {
     bottom: 0px;
   }
 }
+
+/* Hide Next.js static indicator icon */
+.nextjs-static-indicator-toast-icon {
+  display: none !important;
+}
