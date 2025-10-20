@@ -1,6 +1,6 @@
 'use client'
 
-import { IconButton } from '@mui/material'
+import { IconButton, Badge } from '@mui/material'
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import HistoryIcon from '@mui/icons-material/History'
 import PersonIcon from '@mui/icons-material/Person'
@@ -19,6 +19,8 @@ import MediaControls from './MediaControls'
 import P2PStatusIcon from './P2PStatusIcon'
 import P2PConnectionDialog from './P2PConnectionDialog'
 import { useP2PConnectivityCheck } from '@/hooks/useP2PConnectivityCheck'
+import { useMeetings } from '@/contexts/MeetingsContext'
+import { getHighestPriorityMeetingColor, class2Hex } from '@/utils/meetingUtils'
 
 interface ControlsBarProps {
   position: 'top' | 'bottom'
@@ -31,6 +33,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   const { hasUnreadConversations } = useConversations()
   const currentUser = useStore((state: any) => state.currentUser)
   const { status: p2pStatus, isDialogOpen, diagnostics, closeDialog, openDialog, recheckManually } = useP2PConnectivityCheck()
+  const { myMeetingsWithPeers } = useMeetings()
 
   const handleP2PIconClick = () => {
     // Always open dialog, even when checking
@@ -48,6 +51,27 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   const callHistoryPath = `/${locale}/call-history`
 
   const selectedColor = '#60a5fa'
+
+  // Get the highest priority meeting color for the status dot
+  const meetings = myMeetingsWithPeers.map(m => m.meeting)
+  const meetingColorClass = getHighestPriorityMeetingColor(meetings)
+  const meetingColor = meetingColorClass ? class2Hex(meetingColorClass) : null
+
+  // Calendar icon with status dot
+  const CalendarIconWithDot = () => (
+    <Badge
+      variant="dot"
+      invisible={!meetingColor}
+      sx={{
+        '& .MuiBadge-dot': {
+          backgroundColor: meetingColor || 'transparent',
+          right: -2,
+        }
+      }}
+    >
+      <CalendarMonthIcon />
+    </Badge>
+  )
 
   // Top bar layout (non-compact)
   if (position === 'top' && !isCompact) {
@@ -81,7 +105,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
               <div style={{ width: '48px' }} /> {/* Spacer for balance */}
               <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
                 <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} style={{ color: pathname === calendarPath ? selectedColor : undefined }}>
-                  <CalendarMonthIcon />
+                  <CalendarIconWithDot />
                 </IconButton>
                 <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} style={{ color: pathname === listPath ? selectedColor : undefined }}>
                   <ListIcon />
@@ -130,7 +154,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
               {/* Navigation buttons in center */}
               <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
                 <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} style={{ color: pathname === calendarPath ? selectedColor : undefined }}>
-                  <CalendarMonthIcon />
+                  <CalendarIconWithDot />
                 </IconButton>
                 <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} style={{ color: pathname === listPath ? selectedColor : undefined }}>
                   <ListIcon />

@@ -219,15 +219,50 @@ export const FINDING_MEETING_COLOR = 'text-blue-500' // '#3B82F6'
 
 
 export function getMeetingColorClass(meeting: Meeting) {
-  if (isMeetingPassed(meeting)) return PASSED_MEETING_COLOR; 
+  if (isMeetingPassed(meeting)) return PASSED_MEETING_COLOR;
 
   if (meeting.startTime) {
     if ( meetingIsActiveNow(meeting) ) return ACTIVE_MEETING_COLOR
     return SCHEDULED_MEETING_COLOR
   }
-  
+
   // Finding partner
-  return FINDING_MEETING_COLOR; 
+  return FINDING_MEETING_COLOR;
+}
+
+/**
+ * Gets the highest priority meeting color from a list of meetings
+ * Priority: green (active) > yellow (scheduled) > blue (finding)
+ * Ignores passed meetings
+ *
+ * @param meetings Array of meetings to evaluate
+ * @returns The color class with highest priority, or null if no active meetings
+ */
+export function getHighestPriorityMeetingColor(meetings: Meeting[]): string | null {
+  let hasGreen = false
+  let hasYellow = false
+  let hasBlue = false
+
+  for (const meeting of meetings) {
+    const colorClass = getMeetingColorClass(meeting)
+
+    // Skip passed meetings
+    if (colorClass === PASSED_MEETING_COLOR) continue
+
+    if (colorClass === ACTIVE_MEETING_COLOR) {
+      hasGreen = true
+      break // Green is highest priority, no need to check further
+    } else if (colorClass === SCHEDULED_MEETING_COLOR) {
+      hasYellow = true
+    } else if (colorClass === FINDING_MEETING_COLOR) {
+      hasBlue = true
+    }
+  }
+
+  if (hasGreen) return ACTIVE_MEETING_COLOR
+  if (hasYellow) return SCHEDULED_MEETING_COLOR
+  if (hasBlue) return FINDING_MEETING_COLOR
+  return null
 }
 
 export function canEditMeeting(meeting: Meeting) {
