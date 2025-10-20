@@ -1,21 +1,14 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { VIDEO_WIDTH, VIDEO_HEIGHT } from '@/config/video';
-import { Typography, IconButton } from '@mui/material';
-import VideocamIcon from '@mui/icons-material/Videocam';
+import { IconButton } from '@mui/material';
 import VideocamOffIcon from '@mui/icons-material/VideocamOff';
-import MicIcon from '@mui/icons-material/Mic';
-import MicOffIcon from '@mui/icons-material/MicOff';
 import HdIcon from '@mui/icons-material/Hd';
 import FitScreenIcon from '@mui/icons-material/FitScreen';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { useTranslations } from 'next-intl';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 import VideoQualitySelector from './VideoQualitySelector';
 import { useStore } from '@/store/useStore';
-import { useRouter } from 'next/navigation';
-import { routerPush } from '@/utils/routerHelper';
 
 interface RemoteVideoProps {
   showTopControls?: boolean
@@ -27,7 +20,6 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
   const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isFitMode, setIsFitMode] = useState(true);
   const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
-  const router = useRouter();
 
   const {
     qualityWeWantFromRemote,
@@ -35,14 +27,16 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
     localAudioEnabled,
     localVideoEnabled,
     setLocalAudioEnabled,
-    setLocalVideoEnabled
+    setLocalVideoEnabled,
+    setDeviceSettingsOpen
   } = useStore((state) => ({
     qualityWeWantFromRemote: state.qualityWeWantFromRemote,
     targetUser: state.targetUser,
     localAudioEnabled: state.localAudioEnabled,
     localVideoEnabled: state.localVideoEnabled,
     setLocalAudioEnabled: state.setLocalAudioEnabled,
-    setLocalVideoEnabled: state.setLocalVideoEnabled
+    setLocalVideoEnabled: state.setLocalVideoEnabled,
+    setDeviceSettingsOpen: state.setDeviceSettingsOpen
   }))
   const {
     connectionStatus,
@@ -65,10 +59,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
   };
 
   const handleDeviceSettings = () => {
-    routerPush(router, '/settings', {
-      source: 'remote_video_device_settings',
-      connectionStatus
-    });
+    setDeviceSettingsOpen(true);
   };
 
   // Update overlay dimensions when video loads or resizes

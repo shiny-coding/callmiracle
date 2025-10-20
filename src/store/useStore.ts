@@ -17,6 +17,7 @@ const DEFAULT_FILTER_MIN_DURATION_M = 30
 export interface AppState {
   currentUser: User | null // non-persisted
   currentUserId: string | null // persisted
+  deviceSettingsOpen: boolean // non-persisted
   // Call state
   callId: string | null
   meetingId: string | null
@@ -32,6 +33,7 @@ export interface AppState {
   qualityRemoteWantsFromUs: VideoQuality
   setCurrentUser: (currentUser: User | null) => void
   setCurrentUserId: (currentUserId: string | null) => void
+  setDeviceSettingsOpen: (open: boolean) => void
   // Call state setters
   setCallId: (callId: string | null) => void
   setConnectionStatus: (status: AppState['connectionStatus']) => void
@@ -115,6 +117,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
     (set, get): AppState => ({
       currentUser: null,
       currentUserId: null,
+      deviceSettingsOpen: false,
       callId: null,
       connectionStatus: 'disconnected',
       targetUser: null,
@@ -140,6 +143,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
         set({ currentUser })
       },
       setCurrentUserId: (currentUserId: string | null) => set({ currentUserId }),
+      setDeviceSettingsOpen: (open: boolean) => set({ deviceSettingsOpen: open }),
       setCallId: (callId) => { 
         set({ callId })
       },

@@ -9,6 +9,8 @@ import { useWebRTCContext } from "@/hooks/webrtc/WebRTCProvider";
 import { ServerProvider } from "@/contexts/ServerContext";
 import ConnectedCallLayout from "@/components/ConnectedCallLayout";
 import DisconnectedLayout from "@/components/DisconnectedLayout";
+import DeviceSettingsDialog from "@/components/DeviceSettingsDialog";
+import { useStore } from "@/store/useStore";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -33,12 +35,24 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
 function MainContent({ children }: { children: React.ReactNode }) {
   const { connectionStatus } = useWebRTCContext()
+  const { deviceSettingsOpen, setDeviceSettingsOpen } = useStore((state) => ({
+    deviceSettingsOpen: state.deviceSettingsOpen,
+    setDeviceSettingsOpen: state.setDeviceSettingsOpen
+  }))
 
-  return connectionStatus === 'connected' ? (
-    <ConnectedCallLayout />
-  ) : (
-    <DisconnectedLayout>
-      {children}
-    </DisconnectedLayout>
+  return (
+    <>
+      {connectionStatus === 'connected' ? (
+        <ConnectedCallLayout />
+      ) : (
+        <DisconnectedLayout>
+          {children}
+        </DisconnectedLayout>
+      )}
+      <DeviceSettingsDialog
+        open={deviceSettingsOpen}
+        onClose={() => setDeviceSettingsOpen(false)}
+      />
+    </>
   )
 }

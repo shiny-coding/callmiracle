@@ -10,8 +10,6 @@ import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useStore } from '@/store/useStore'
-import { useRouter } from 'next/navigation'
-import { routerPush } from '@/utils/routerHelper'
 import VideoLayoutControls, { VideoLayoutMode } from './VideoLayoutControls'
 import RemoteVideo from './RemoteVideo'
 import LocalVideo from './LocalVideo'
@@ -20,18 +18,19 @@ export default function ConnectedCallLayout() {
   const [layoutMode, setLayoutMode] = useState<VideoLayoutMode>('overlay')
   const [isSplitHorizontal, setIsSplitHorizontal] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
-  const { hangup, remoteVideoRef, connectionStatus, sendWantedMediaState } = useWebRTCContext()
+  const { hangup, remoteVideoRef, sendWantedMediaState } = useWebRTCContext()
   const {
     localVideoEnabled,
     localAudioEnabled,
     setLocalAudioEnabled,
-    setLocalVideoEnabled
+    setLocalVideoEnabled,
+    setDeviceSettingsOpen
   } = useStore((state) => ({
     localVideoEnabled: state.localVideoEnabled,
     localAudioEnabled: state.localAudioEnabled,
     setLocalAudioEnabled: state.setLocalAudioEnabled,
-    setLocalVideoEnabled: state.setLocalVideoEnabled
+    setLocalVideoEnabled: state.setLocalVideoEnabled,
+    setDeviceSettingsOpen: state.setDeviceSettingsOpen
   }))
 
   const handleAudioToggle = () => {
@@ -45,10 +44,7 @@ export default function ConnectedCallLayout() {
   }
 
   const handleDeviceSettings = () => {
-    routerPush(router, '/settings', {
-      source: 'connected_call_device_settings',
-      connectionStatus
-    })
+    setDeviceSettingsOpen(true)
   }
 
   // Determine best split orientation based on container dimensions
@@ -78,8 +74,10 @@ export default function ConnectedCallLayout() {
 
           {/* Local video overlay at bottom right */}
           {localVideoEnabled && (
-            <div className="absolute bottom-20 right-4 w-48 h-36 rounded-lg overflow-hidden shadow-2xl z-10 border-2 border-white/20">
-              <LocalVideo showDeviceSelection={false} compact={true} />
+            <div className="absolute bottom-14 right-2 w-48 z-10">
+              <div className="aspect-video">
+                <LocalVideo showDeviceSelection={false} compact={true} />
+              </div>
             </div>
           )}
         </>
