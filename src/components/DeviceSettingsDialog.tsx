@@ -252,6 +252,13 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     }
   }
 
+  const handleContentClick = (e: React.MouseEvent) => {
+    // Close dialog if clicking directly on the content area (not on buttons)
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
   return (
     <Dialog
       open={open}
@@ -276,14 +283,24 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+      <DialogContent
+        sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}
+        onClick={handleContentClick}
+      >
         <div
           ref={containerRef}
           className={`flex ${isLandscape ? 'flex-row' : 'flex-col'} gap-4 flex-1 min-h-0`}
+          onClick={handleContentClick}
         >
           {/* Video preview section */}
-          <div className={`${isLandscape ? 'w-1/2' : 'flex-1'} flex items-center justify-center min-h-0`}>
-            <div className="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
+          <div
+            className={`${isLandscape ? 'w-1/2' : 'flex-1'} flex items-center justify-center min-h-0`}
+            onClick={handleContentClick}
+          >
+            <div
+              className="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center"
+              onClick={handleContentClick}
+            >
               <video
                 ref={videoRef}
                 autoPlay
@@ -300,9 +317,12 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           </div>
 
           {/* Device selection section */}
-          <div className={`${isLandscape ? 'w-1/2' : 'flex-1'} flex flex-col gap-4 overflow-y-auto min-h-0`}>
+          <div
+            className={`${isLandscape ? 'w-1/2' : 'flex-1'} flex flex-col gap-4 overflow-y-auto min-h-0`}
+            onClick={handleContentClick}
+          >
             {/* Video devices */}
-            <div>
+            <div onClick={handleContentClick}>
               <div className="text-lg font-medium mb-2 dark:text-gray-100">
                 {t('camera')}
               </div>
@@ -333,7 +353,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             </div>
 
             {/* Audio devices */}
-            <div>
+            <div onClick={handleContentClick}>
               <div className="text-lg font-medium mb-2 dark:text-gray-100">
                 {t('microphone')}
               </div>

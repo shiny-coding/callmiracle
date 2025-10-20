@@ -215,7 +215,10 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
           <div className="w-full h-full flex items-center justify-center bg-black">
             {!remoteVideoEnabled && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
-                <VideocamOffIcon className="text-red-400 w-64 h-64" />
+                <VideocamOffIcon
+                  className="text-red-400"
+                  sx={{ width: 64, height: 64 }}
+                />
               </div>
             )}
             <video

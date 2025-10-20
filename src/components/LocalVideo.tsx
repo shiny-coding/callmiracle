@@ -48,6 +48,7 @@ export default function LocalVideo({ onClose, showDeviceSelection = true, compac
   const { localStream } = useWebRTCContext()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState<string>('')
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number>(4 / 3) // Default 4:3
 
   const videoDevices = useDeviceSelection({
     kind: 'videoinput',
@@ -77,19 +78,50 @@ export default function LocalVideo({ onClose, showDeviceSelection = true, compac
     }
   }, [localStream, localVideoEnabled])
 
+  // Update aspect ratio when video metadata loads
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const handleLoadedMetadata = () => {
+      if (video.videoWidth && video.videoHeight) {
+        const aspectRatio = video.videoWidth / video.videoHeight
+        console.log('[LocalVideo] Video dimensions:', video.videoWidth, 'x', video.videoHeight, 'aspect ratio:', aspectRatio)
+        setVideoAspectRatio(aspectRatio)
+      }
+    }
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata)
+
+    // Check if metadata already loaded
+    if (video.videoWidth && video.videoHeight) {
+      handleLoadedMetadata()
+    }
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+    }
+  }, [localStream])
+
   const containerStyle = compact
     ? { width: '100%', height: '100%' }
     : connectionStatus === 'connected'
-    ? { width: '200px', height: '150px' }
-    : { width: '400px', height: '300px' }
+    ? {
+        height: '150px',
+        width: `${150 * videoAspectRatio}px`
+      }
+    : {
+        height: '300px',
+        width: `${300 * videoAspectRatio}px`
+      }
 
   return (
-    <div className={`relative ${compact ? 'w-full h-full' : 'w-full max-w-[400px] mx-auto'}`}>
+    <div className={`relative ${compact ? 'w-full h-full' : connectionStatus === 'connected' ? '' : 'w-full max-w-[400px] mx-auto'}`}>
       {error && !compact && (
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
       <div style={containerStyle}
-        className={`relative mx-auto ${compact ? '' : 'rounded-lg bg-gray-800'}`}>
+        className={`relative ${compact ? '' : connectionStatus === 'connected' ? 'rounded-lg bg-gray-800' : 'rounded-lg bg-gray-800 mx-auto'}`}>
         <video
           ref={videoRef}
           autoPlay

@@ -74,10 +74,8 @@ export default function ConnectedCallLayout() {
 
           {/* Local video overlay at bottom right */}
           {localVideoEnabled && (
-            <div className="absolute bottom-14 right-2 w-48 z-10">
-              <div className="aspect-video">
-                <LocalVideo showDeviceSelection={false} compact={true} />
-              </div>
+            <div className="absolute bottom-14 right-2 z-10">
+              <LocalVideo showDeviceSelection={false} compact={false} />
             </div>
           )}
         </>
