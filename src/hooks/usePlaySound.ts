@@ -84,9 +84,13 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
           playPromiseRef.current = null
         })
         .catch(err => {
-          // Only log errors that aren't AbortError (which is expected when stopping)
-          if (err.name !== 'AbortError') {
+          // Suppress expected errors:
+          // - AbortError: when stopping
+          // - NotAllowedError: browser autoplay policy (requires user interaction)
+          if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
             console.error(`Error playing sound ${soundPath}:`, err)
+          } else if (err.name === 'NotAllowedError') {
+            console.log(`Sound ${soundPath} blocked by browser autoplay policy - requires user interaction`)
           }
           setIsPlaying(false)
           playPromiseRef.current = null
