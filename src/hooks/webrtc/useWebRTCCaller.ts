@@ -273,7 +273,7 @@ export function useWebRTCCaller({
   }
 
   const cleanup = () => {
-    console.log('Cleaning up caller')
+    clientLogger.debug('WebRTC: Cleaning up caller')
     if (peerConnection.current) {
       peerConnection.current.close()
       peerConnection.current = null
@@ -281,6 +281,16 @@ export function useWebRTCCaller({
     remoteStreamRef.current = null
     setActive(false)
     setCallId(null)
+
+    // Stop local stream tracks and clear stream
+    if (localStream) {
+      clientLogger.debug('WebRTC: Stopping local stream tracks')
+      localStream.getTracks().forEach(track => {
+        clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+        track.stop()
+      })
+      setLocalStream(undefined)
+    }
   }
 
   const hangup = createHangup(cleanup)

@@ -153,6 +153,7 @@ export function useWebRTCCallee({
   }
 
   const cleanup = () => {
+    console.log('WebRTC: Cleaning up callee')
     if (peerConnection.current) {
       peerConnection.current.close()
       peerConnection.current = null
@@ -162,6 +163,16 @@ export function useWebRTCCallee({
     setIncomingRequest(null)
     setActive(false)
     setCallId(null)
+
+    // Stop local stream tracks and clear stream
+    if (localStream) {
+      console.log('WebRTC: Stopping local stream tracks')
+      localStream.getTracks().forEach(track => {
+        console.log('WebRTC: Stopping track:', track.kind, track.id)
+        track.stop()
+      })
+      setLocalStream(undefined)
+    }
   }
 
   const hangup = createHangup(cleanup)

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { IconButton } from '@mui/material';
 import VideocamOffIcon from '@mui/icons-material/VideocamOff';
+import MicOffIcon from '@mui/icons-material/MicOff';
 import HdIcon from '@mui/icons-material/Hd';
 import FitScreenIcon from '@mui/icons-material/FitScreen';
 import { useTranslations } from 'next-intl';
@@ -154,10 +155,19 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
           {connectionStatus === 'connected' && showTopControls && (
             <div className="absolute top-0 left-0 right-0 pt-2 px-4 z-20">
               <div className="flex justify-between items-center">
-                {/* Left side: Name only */}
+                {/* Left side: Name with mic status */}
                 <div className="flex items-center gap-2">
-                  <div className="text-white text-sm">
+                  <div className="text-white text-sm flex items-center gap-1">
                     {targetUser?.name}
+                    {!remoteAudioEnabled && (
+                      <MicOffIcon
+                        sx={{
+                          color: '#f87171',
+                          filter: 'drop-shadow(0 0 2px black)',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
 

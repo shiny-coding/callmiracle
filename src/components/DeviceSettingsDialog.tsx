@@ -51,7 +51,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     setLocalVideoEnabled: state.setLocalVideoEnabled,
     setLocalAudioEnabled: state.setLocalAudioEnabled
   }))
-  const { localStream, connectionStatus } = useWebRTCContext()
+  const { localStream, connectionStatus, sendWantedMediaState } = useWebRTCContext()
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLandscape, setIsLandscape] = useState(true)
@@ -216,13 +216,20 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     if (deviceId === 'disabled') {
       console.log('[DeviceSettings] Disabling video')
       setLocalVideoEnabled(false)
+      // Notify peer if in a call
+      if (connectionStatus === 'connected') {
+        sendWantedMediaState()
+      }
     } else {
       console.log('[DeviceSettings] Enabling video and changing device')
       setLocalVideoEnabled(true)
       await videoDevices.handleDeviceChange(deviceId)
 
-      // If in a call, update the preview stream with the new device
+      // Notify peer if in a call
       if (connectionStatus === 'connected') {
+        sendWantedMediaState()
+
+        // Update the preview stream with the new device
         console.log('[DeviceSettings] Updating preview stream with new device')
         try {
           // Stop old preview stream
@@ -255,10 +262,19 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     if (deviceId === 'disabled') {
       console.log('[DeviceSettings] Disabling audio')
       setLocalAudioEnabled(false)
+      // Notify peer if in a call
+      if (connectionStatus === 'connected') {
+        sendWantedMediaState()
+      }
     } else {
       console.log('[DeviceSettings] Enabling audio and changing device')
       setLocalAudioEnabled(true)
       await audioDevices.handleDeviceChange(deviceId)
+
+      // Notify peer if in a call
+      if (connectionStatus === 'connected') {
+        sendWantedMediaState()
+      }
     }
   }
 
