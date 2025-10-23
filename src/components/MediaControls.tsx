@@ -39,12 +39,13 @@ export default function MediaControls({
 
   const { hasUnseenNotifications } = useNotifications()
   const { connectionStatus, sendWantedMediaState } = useWebRTCContext()
-  const { currentUser, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled } = useStore((state: any) => ({
+  const { currentUser, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, setDeviceSettingsOpen } = useStore((state: any) => ({
     currentUser: state.currentUser,
     localAudioEnabled: state.localAudioEnabled,
     localVideoEnabled: state.localVideoEnabled,
     setLocalAudioEnabled: state.setLocalAudioEnabled,
-    setLocalVideoEnabled: state.setLocalVideoEnabled
+    setLocalVideoEnabled: state.setLocalVideoEnabled,
+    setDeviceSettingsOpen: state.setDeviceSettingsOpen
   }))
   const { imageSrc } = useProfileImage(currentUser?._id, currentUser?.updatedAt)
   const router = useRouter()
@@ -77,10 +78,7 @@ export default function MediaControls({
   }
 
   const handleDeviceSettings = () => {
-    routerPush(router, '/settings', {
-      source: 'media_controls_device_settings',
-      connectionStatus
-    })
+    setDeviceSettingsOpen(true)
   }
 
   const handleLogout = () => {
