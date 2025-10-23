@@ -42,38 +42,6 @@ export function useWebRTCContext() {
   return context
 }
 
-function useInitializeLocalStream(setLocalStream: (stream: MediaStream | undefined) => void) {
-  useEffect(() => {
-    let activeStream: MediaStream | undefined
-
-    async function setupInitialStream() {
-      try {
-        const selectedDeviceId = typeof window !== 'undefined'
-          ? localStorage.getItem('selectedVideoDevice')
-          : null
-
-        const constraints = selectedDeviceId
-          ? { video: { deviceId: selectedDeviceId }, audio: true }
-          : { video: true, audio: true }
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints)
-        setLocalStream(stream)
-        activeStream = stream
-      } catch (error) {
-        setLocalStream(undefined)
-      }
-    }
-
-    setupInitialStream()
-
-    return () => {
-      if (activeStream) {
-        activeStream.getTracks().forEach(track => track.stop())
-      }
-    }
-  }, [setLocalStream])
-}
-
 export function WebRTCProvider({ 
   children, 
 }: WebRTCProviderProps) {
@@ -142,7 +110,8 @@ export function WebRTCProvider({
     localStream,
     remoteVideoRef,
     callUser,
-    attemptReconnect
+    attemptReconnect,
+    setLocalStream
   }
   
   const caller = useWebRTCCaller(childProps)
@@ -154,9 +123,6 @@ export function WebRTCProvider({
     setConnectionStatus('reconnecting')
     attemptReconnect()
   }, [connectionStatus, localStream])
-
-  // Initialize localStream from selected video device on mount
-  useInitializeLocalStream(setLocalStream)
 
   useEffect(() => {
     const unsubscribe = subscribeToCallEvents(async (callEvent) => {

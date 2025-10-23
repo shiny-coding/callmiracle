@@ -12,6 +12,7 @@ interface UseWebRTCCallerProps {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   callUser: any
   attemptReconnect: () => Promise<void>
+  setLocalStream: (stream: MediaStream | undefined) => void
 }
 
 const UPDATE_MEETING_STATUS = gql`
@@ -28,7 +29,8 @@ export function useWebRTCCaller({
   localStream,
   remoteVideoRef,
   callUser,
-  attemptReconnect
+  attemptReconnect,
+  setLocalStream
 }: UseWebRTCCallerProps) {
   const {
     createPeerConnection,
@@ -39,7 +41,8 @@ export function useWebRTCCaller({
     createHangup,
     dispatchPendingIceCandidates,
     applyLocalQuality,
-    handleConnectionStateChange
+    handleConnectionStateChange,
+    ensureMediaStream
   } = useWebRTCCommon(callUser)
 
   const [active, setActive] = useState(false)
@@ -144,20 +147,15 @@ export function useWebRTCCaller({
   }
 
   const doCall = async (user: User, isReconnect: boolean, meetingId: string | null, meetingLastCallTime: number | null) => {
-    if (!user || !localStream) {
-      clientLogger.warn('WebRTC: Cannot initialize call - missing requirements', { 
-        hasUserId: !!user, 
-        hasLocalStream: !!localStream,
-        userId: user?._id,
-        userName: user?.name
-      })
+    if (!user) {
+      clientLogger.warn('WebRTC: Cannot initialize call - missing user')
       return
     }
 
     setMeetingId(meetingId)
     setMeetingLastCallTime(meetingLastCallTime)
 
-    clientLogger.info('WebRTC: Initializing call connection', { 
+    clientLogger.info('WebRTC: Initializing call connection', {
       targetUserId: user._id,
       targetUserName: user.name,
       isReconnect: isReconnect,
@@ -173,8 +171,11 @@ export function useWebRTCCaller({
     setActive(true)
     setRole('caller')
     setTargetUser(user)
-    
+
     try {
+      // Ensure we have a valid media stream
+      const streamToUse = await ensureMediaStream(localStream, setLocalStream)
+
       // Initialize call and get callId if not reconnecting
       if (!isReconnect) {
         clientLogger.debug('WebRTC: Initiating new call', { 
@@ -224,7 +225,8 @@ export function useWebRTCCaller({
       pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
       pc.onconnectionstatechange = () => handleConnectionStateChange(pc, peerConnection, active, attemptReconnect)
 
-      addLocalStream(pc, localStream, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
+      clientLogger.debug('WebRTC: Adding local stream to peer connection')
+      addLocalStream(pc, streamToUse, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
       setupIceCandidateHandler(pc, user._id)
 
       clientLogger.debug('WebRTC: Creating and sending offer', { 

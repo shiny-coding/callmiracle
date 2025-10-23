@@ -345,6 +345,48 @@ export function useWebRTCCommon(callUser: any) {
     }
   }
 
+  /**
+   * Ensures a valid media stream exists, creating a new one if needed.
+   * Handles cases where:
+   * - No stream exists (creates new)
+   * - Stream exists but tracks are ended (refreshes)
+   * - Stream exists and is valid (returns existing)
+   */
+  const ensureMediaStream = async (
+    currentStream: MediaStream | undefined,
+    setLocalStream: (stream: MediaStream | undefined) => void
+  ): Promise<MediaStream> => {
+    if (currentStream) {
+      const tracks = currentStream.getTracks()
+      const hasEndedTracks = tracks.some(track => track.readyState === 'ended')
+
+      if (hasEndedTracks) {
+        console.log('WebRTC: LocalStream has ended tracks, creating new stream')
+        // Stop old tracks
+        tracks.forEach(track => track.stop())
+      } else {
+        console.log('WebRTC: Using existing localStream')
+        return currentStream
+      }
+    } else {
+      console.log('WebRTC: No localStream exists, creating new stream')
+    }
+
+    // Create new stream
+    const selectedVideoDevice = typeof window !== 'undefined'
+      ? localStorage.getItem('selectedVideoDevice') || undefined
+      : undefined
+
+    const constraints: MediaStreamConstraints = {
+      video: selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
+      audio: true
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints)
+    setLocalStream(stream)
+    return stream
+  }
+
   return {
     createPeerConnection,
     addLocalStream,
@@ -357,6 +399,7 @@ export function useWebRTCCommon(callUser: any) {
     sendWantedMediaStateImpl,
     createHangup,
     applyLocalQuality,
-    handleConnectionStateChange
+    handleConnectionStateChange,
+    ensureMediaStream
   }
 } 

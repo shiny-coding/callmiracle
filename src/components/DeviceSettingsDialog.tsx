@@ -141,15 +141,25 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           previewStreamRef.current = stream
           setPreviewStream(stream)
         } else {
-          console.log('[DeviceSettings] Not in call - using localStream directly')
-          // When not in a call, use the existing localStream
-          if (localStream && localVideoEnabled) {
-            console.log('[DeviceSettings] Using existing localStream for preview')
-            setPreviewStream(localStream)
-          } else {
-            console.log('[DeviceSettings] No localStream available')
-            setPreviewStream(null)
+          console.log('[DeviceSettings] Not in call - creating preview stream for device settings')
+
+          // Stop old preview stream if exists
+          if (previewStreamRef.current) {
+            console.log('[DeviceSettings] Stopping old preview stream')
+            previewStreamRef.current.getTracks().forEach(track => track.stop())
           }
+
+          const constraints: MediaStreamConstraints = {
+            video: selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
+            audio: false // No audio needed for preview
+          }
+
+          console.log('[DeviceSettings] Getting user media with constraints:', constraints)
+          const stream = await navigator.mediaDevices.getUserMedia(constraints)
+          console.log('[DeviceSettings] Preview stream created, tracks:', stream.getTracks().length)
+
+          previewStreamRef.current = stream
+          setPreviewStream(stream)
         }
       } catch (err) {
         console.error('[DeviceSettings] Error creating preview stream:', err)

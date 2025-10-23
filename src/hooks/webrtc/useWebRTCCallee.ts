@@ -8,13 +8,15 @@ interface UseWebRTCCalleeProps {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   callUser: any
   attemptReconnect: () => Promise<void>
+  setLocalStream: (stream: MediaStream | undefined) => void
 }
 
 export function useWebRTCCallee({
   localStream,
   remoteVideoRef,
   callUser,
-  attemptReconnect
+  attemptReconnect,
+  setLocalStream
 }: UseWebRTCCalleeProps) {
   const {
     createPeerConnection,
@@ -25,7 +27,8 @@ export function useWebRTCCallee({
     dispatchPendingIceCandidates,
     clearPendingCandidates,
     handleConnectionStateChange,
-    createHangup
+    createHangup,
+    ensureMediaStream
   } = useWebRTCCommon(callUser)
 
   const [active, setActive] = useState(false)
@@ -59,10 +62,8 @@ export function useWebRTCCallee({
 
   const handleAcceptCall = async (reconnectRequest: IncomingRequest | null = null) => {
     const requestToAccept = reconnectRequest || incomingRequest
-    if (!requestToAccept || !localStream) {
-      console.log('WebRTC: Cannot accept call - missing requirements', { 
-        hasIncomingRequest: !!requestToAccept, hasLocalStream: !!localStream 
-      })
+    if (!requestToAccept) {
+      console.log('WebRTC: Cannot accept call - missing incoming request')
       return
     }
 
@@ -78,7 +79,10 @@ export function useWebRTCCallee({
       setTargetUser(requestToAccept.from)
       setQualityRemoteWantsFromUs(requestToAccept.quality)
       setCallId(requestToAccept.callId)
-      
+
+      // Ensure we have a valid media stream
+      const streamToUse = await ensureMediaStream(localStream, setLocalStream)
+
       const pc = createPeerConnection()
       peerConnection.current = pc
 
@@ -86,7 +90,7 @@ export function useWebRTCCallee({
       pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
       pc.onconnectionstatechange = () => handleConnectionStateChange(pc, peerConnection, active, attemptReconnect)
 
-      addLocalStream(pc, localStream, false, localVideoEnabled, localAudioEnabled, requestToAccept.quality)
+      addLocalStream(pc, streamToUse, false, localVideoEnabled, localAudioEnabled, requestToAccept.quality)
 
       // Set remote description (offer)
       const offer = JSON.parse(requestToAccept.offer)
