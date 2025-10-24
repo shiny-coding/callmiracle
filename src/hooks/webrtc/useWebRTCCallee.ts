@@ -69,6 +69,7 @@ export function useWebRTCCallee({
 
     try {
       console.log('WebRTC: Accepting call from:', requestToAccept.from.name, 'with callId:', requestToAccept.callId)
+
       if ( reconnectRequest ) {
         cleanup();
         setConnectionStatus('reconnecting')
@@ -81,7 +82,7 @@ export function useWebRTCCallee({
       setCallId(requestToAccept.callId)
 
       // Ensure we have a valid media stream
-      const streamToUse = await ensureMediaStream(localStream, setLocalStream)
+      const streamToUse = await ensureMediaStream(localStream, setLocalStream, localVideoEnabled, localAudioEnabled)
 
       const pc = createPeerConnection()
       peerConnection.current = pc

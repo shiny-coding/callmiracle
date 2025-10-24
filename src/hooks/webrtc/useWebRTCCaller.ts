@@ -174,7 +174,7 @@ export function useWebRTCCaller({
 
     try {
       // Ensure we have a valid media stream
-      const streamToUse = await ensureMediaStream(localStream, setLocalStream)
+      const streamToUse = await ensureMediaStream(localStream, setLocalStream, localVideoEnabled, localAudioEnabled)
 
       // Initialize call and get callId if not reconnecting
       if (!isReconnect) {

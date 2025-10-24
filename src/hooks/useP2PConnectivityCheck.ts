@@ -16,11 +16,37 @@ export interface NetworkDiagnostics {
   rtt?: number
 }
 
+const P2P_CHECK_STORAGE_KEY = 'p2p-connectivity-checked'
+const P2P_STATUS_STORAGE_KEY = 'p2p-connectivity-status'
+const P2P_DIAGNOSTICS_STORAGE_KEY = 'p2p-connectivity-diagnostics'
+
+const getInitialStatus = (): P2PStatus => {
+  if (typeof window === 'undefined') return 'checking'
+  const stored = sessionStorage.getItem(P2P_STATUS_STORAGE_KEY)
+  return (stored as P2PStatus) || 'checking'
+}
+
+const getInitialDiagnostics = (): NetworkDiagnostics | null => {
+  if (typeof window === 'undefined') return null
+  const stored = sessionStorage.getItem(P2P_DIAGNOSTICS_STORAGE_KEY)
+  try {
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 export function useP2PConnectivityCheck() {
-  const [status, setStatus] = useState<P2PStatus>('checking')
+  const [status, setStatus] = useState<P2PStatus>(getInitialStatus)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [diagnostics, setDiagnostics] = useState<NetworkDiagnostics | null>(null)
+  const [diagnostics, setDiagnostics] = useState<NetworkDiagnostics | null>(getInitialDiagnostics)
   const checkInProgressRef = useRef(false)
+
+  // Use sessionStorage instead of ref so it persists across component remounts
+  // IMPORTANT: Only consider it checked if we have BOTH the flag AND the actual status
+  const hasValidStoredResult = typeof window !== 'undefined' &&
+    sessionStorage.getItem(P2P_CHECK_STORAGE_KEY) === 'true' &&
+    sessionStorage.getItem(P2P_STATUS_STORAGE_KEY) !== null
 
   const checkP2PConnectivity = useCallback(async () => {
     // Prevent concurrent checks
@@ -112,64 +138,61 @@ export function useP2PConnectivityCheck() {
       setDiagnostics(networkDiagnostics)
 
       // Determine status
+      const finalStatus = hasPublicIP ? 'online' : 'online-blocked'
+
       if (hasPublicIP) {
         setStatus('online')
       } else {
         setStatus('online-blocked')
         setIsDialogOpen(true)
       }
+
+      // Store status and diagnostics in sessionStorage
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(P2P_STATUS_STORAGE_KEY, finalStatus)
+        sessionStorage.setItem(P2P_DIAGNOSTICS_STORAGE_KEY, JSON.stringify(networkDiagnostics))
+      }
     } catch (error) {
       console.error('P2P connectivity check failed:', error)
       setStatus('offline')
       setDiagnostics(null)
+
+      // Store offline status in sessionStorage
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(P2P_STATUS_STORAGE_KEY, 'offline')
+        sessionStorage.removeItem(P2P_DIAGNOSTICS_STORAGE_KEY)
+      }
       setIsDialogOpen(true)
     } finally {
       checkInProgressRef.current = false
+      // Mark check as complete in sessionStorage (persists across component remounts)
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(P2P_CHECK_STORAGE_KEY, 'true')
+      }
     }
   }, [])
 
-  // Initial check on mount
+  // Initial check on mount - only run once per session
   useEffect(() => {
-    checkP2PConnectivity()
-  }, [checkP2PConnectivity])
+    if (!hasValidStoredResult) {
+      // Clean up incomplete/old sessionStorage data if it exists
+      if (typeof window !== 'undefined') {
+        const hasOldFlag = sessionStorage.getItem(P2P_CHECK_STORAGE_KEY) === 'true'
+        const hasStatus = sessionStorage.getItem(P2P_STATUS_STORAGE_KEY) !== null
 
-  // Listen for online/offline events
-  useEffect(() => {
-    const handleOnline = () => {
-      checkP2PConnectivity()
-    }
-
-    const handleOffline = () => {
-      setStatus('offline')
-    }
-
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [checkP2PConnectivity])
-
-  // Listen for network changes (connection type changes)
-  useEffect(() => {
-    if ('connection' in navigator) {
-      const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection
-
-      if (connection) {
-        const handleConnectionChange = () => {
-          checkP2PConnectivity()
-        }
-
-        connection.addEventListener('change', handleConnectionChange)
-
-        return () => {
-          connection.removeEventListener('change', handleConnectionChange)
+        if (hasOldFlag && !hasStatus) {
+          sessionStorage.removeItem(P2P_CHECK_STORAGE_KEY)
         }
       }
+
+      checkP2PConnectivity()
     }
-  }, [checkP2PConnectivity])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run on mount, check sessionStorage inside
+
+  // Removed automatic network event listeners - only check on initial mount or manual recheck
+  // Users reported that P2P check was being re-triggered after calls ended
+  // Now only checks once on page load or when user manually clicks recheck button
 
   const closeDialog = useCallback(() => {
     setIsDialogOpen(false)
@@ -181,6 +204,12 @@ export function useP2PConnectivityCheck() {
 
   const recheckManually = useCallback(() => {
     // Keep dialog open and just recheck
+    // Clear all sessionStorage flags so the check runs and stores new results
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(P2P_CHECK_STORAGE_KEY)
+      sessionStorage.removeItem(P2P_STATUS_STORAGE_KEY)
+      sessionStorage.removeItem(P2P_DIAGNOSTICS_STORAGE_KEY)
+    }
     checkP2PConnectivity()
   }, [checkP2PConnectivity])
 

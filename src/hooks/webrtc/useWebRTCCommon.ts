@@ -132,17 +132,25 @@ export function useWebRTCCommon(callUser: any) {
 
     if (isInitiator) {
       if (!pc.getTransceivers().length) {
+        // Always add audio transceiver - either sendrecv or recvonly
         if (localAudioEnabled) {
           pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] })
+        } else {
+          pc.addTransceiver('audio', { direction: 'recvonly' })
         }
+
+        // Always add video transceiver - either sendrecv or recvonly
         if (localVideoEnabled) {
           pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
+        } else {
+          pc.addTransceiver('video', { direction: 'recvonly' })
         }
       }
     }
 
     for (const track of stream.getTracks()) {
       const existingSender = pc.getSenders().find(s => s.track?.kind === track.kind)
+
       if (existingSender) {
         if (track.kind === 'video' && !localVideoEnabled) {
           track.enabled = false
@@ -168,9 +176,9 @@ export function useWebRTCCommon(callUser: any) {
     for (const transceiver of pc.getTransceivers()) {
       const kind = transceiver.sender.track?.kind || transceiver.mid
       if (kind === 'video' || kind === '1') {
-        transceiver.direction = localVideoEnabled ? 'sendrecv' : 'inactive'
+        transceiver.direction = localVideoEnabled ? 'sendrecv' : 'recvonly'
       } else if (kind === 'audio' || kind === '0') {
-        transceiver.direction = localAudioEnabled ? 'sendrecv' : 'inactive'
+        transceiver.direction = localAudioEnabled ? 'sendrecv' : 'recvonly'
       }
     }
   }
@@ -354,15 +362,28 @@ export function useWebRTCCommon(callUser: any) {
    */
   const ensureMediaStream = async (
     currentStream: MediaStream | undefined,
-    setLocalStream: (stream: MediaStream | undefined) => void
+    setLocalStream: (stream: MediaStream | undefined) => void,
+    localVideoEnabled: boolean,
+    localAudioEnabled: boolean
   ): Promise<MediaStream> => {
     if (currentStream) {
       const tracks = currentStream.getTracks()
       const hasEndedTracks = tracks.some(track => track.readyState === 'ended')
 
+      // Check if existing stream matches current enabled state
+      const hasVideoTrack = tracks.some(track => track.kind === 'video')
+      const hasAudioTrack = tracks.some(track => track.kind === 'audio')
+      const streamMatchesState =
+        (localVideoEnabled === hasVideoTrack) &&
+        (localAudioEnabled === hasAudioTrack)
+
       if (hasEndedTracks) {
         console.log('WebRTC: LocalStream has ended tracks, creating new stream')
         // Stop old tracks
+        tracks.forEach(track => track.stop())
+      } else if (!streamMatchesState) {
+        console.log('WebRTC: LocalStream tracks do not match enabled state, creating new stream')
+        // Stop old tracks since we need a different configuration
         tracks.forEach(track => track.stop())
       } else {
         console.log('WebRTC: Using existing localStream')
@@ -372,14 +393,24 @@ export function useWebRTCCommon(callUser: any) {
       console.log('WebRTC: No localStream exists, creating new stream')
     }
 
-    // Create new stream
+    // Create new stream - only request tracks that are enabled
+    // If both audio and video are disabled, create an empty MediaStream
+    if (!localVideoEnabled && !localAudioEnabled) {
+      console.log('WebRTC: Both audio and video disabled, creating empty stream')
+      const emptyStream = new MediaStream()
+      setLocalStream(emptyStream)
+      return emptyStream
+    }
+
     const selectedVideoDevice = typeof window !== 'undefined'
       ? localStorage.getItem('selectedVideoDevice') || undefined
       : undefined
 
     const constraints: MediaStreamConstraints = {
-      video: selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
-      audio: true
+      video: localVideoEnabled
+        ? (selectedVideoDevice ? { deviceId: selectedVideoDevice } : true)
+        : false,
+      audio: localAudioEnabled
     }
 
     const stream = await navigator.mediaDevices.getUserMedia(constraints)
