@@ -82,18 +82,9 @@ const nextConfig = {
   serverExternalPackages: ['winston-loki', 'snappy', '@napi-rs/snappy-win32-x64-msvc', 'ioredis', 'bcrypt', '@mapbox/node-pre-gyp'],
   images: {
     unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        pathname: '/profiles/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        pathname: '/groups/**',
-      },
-    ],
+    // remotePatterns not needed - all images are served from same origin
+    // via API routes (/api/images/profiles, /api/images/groups)
+    // Only add remotePatterns if you load images from external domains (CDN, S3, etc.)
   },
   async rewrites() {
     return [
