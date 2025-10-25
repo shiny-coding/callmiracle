@@ -24,7 +24,9 @@ jobs:
             
             # Pull latest changes
             echo "Pulling latest changes..."
+            git stash push -m "Auto-stash before deploy"
             git pull
+            git stash pop || echo "No stash to pop or conflicts encountered"
             
             echo "Installing dependencies..."
             yarn install
