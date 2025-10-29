@@ -7,7 +7,7 @@ import { useStore } from './useStore'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 import { GET_MESSAGES_QUERY } from '@/components/MessagesList'
 
-const GET_CONVERSATIONS = gql`
+export const GET_CONVERSATIONS = gql`
   query GetConversations {
     getConversations {
       _id

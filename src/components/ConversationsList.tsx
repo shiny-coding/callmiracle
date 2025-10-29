@@ -6,7 +6,7 @@ import { Paper, Typography, IconButton, Avatar, Box } from '@mui/material'
 import MessageIcon from '@mui/icons-material/Message'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { Conversation, User } from '@/generated/graphql'
-import { useConversations } from '@/store/ConversationsProvider'
+import { useConversations, GET_CONVERSATIONS } from '@/store/ConversationsProvider'
 import { useStore } from '@/store/useStore'
 import LoadingDialog from '@/components/LoadingDialog'
 import PageHeader from '@/components/PageHeader'
@@ -54,25 +54,34 @@ export default function ConversationsList() {
   const sortedConversations = [...allConversations].sort((a, b) => b.updatedAt - a.updatedAt)
 
   const [getUser, { data: newUserData, loading: newUserLoading }] = useLazyQuery<{ getUser: User }>(GET_USER)
-  const [markConversationRead] = useMutation(MARK_CONVERSATION_READ)
+  const [markConversationRead] = useMutation(MARK_CONVERSATION_READ, {
+    refetchQueries: [{ query: GET_CONVERSATIONS }],
+    awaitRefetchQueries: true,
+  })
 
   useEffect(() => {
     // Only auto-select a conversation on initial load
     if (!hasInitializedRef.current && !withUserId && sortedConversations.length > 0) {
       hasInitializedRef.current = true
-      
+
       // Check if the stored lastConversationId exists in current conversations
-      const lastConversation = lastConversationId 
+      const lastConversation = lastConversationId
         ? sortedConversations.find(c => c._id === lastConversationId)
         : null
-      
-      if (lastConversation) {
-        setSelectedConversationId(lastConversationId)
-      } else {
-        setSelectedConversationId(sortedConversations[0]._id)
+
+      const selectedId = lastConversation ? lastConversationId : sortedConversations[0]._id
+      setSelectedConversationId(selectedId)
+
+      // Mark the auto-selected conversation as read
+      if (selectedId && !selectedId.startsWith('temp_')) {
+        markConversationRead({
+          variables: { conversationId: selectedId }
+        }).catch(error => {
+          console.error('Error marking auto-selected conversation as read:', error)
+        })
       }
     }
-    
+
     // If a conversation is selected but no longer exists in the list, clear the selection
     // (but don't auto-select another one to avoid unwanted switching)
     if (selectedConversationId && !selectedConversationId.startsWith('temp_') && sortedConversations.length > 0) {
@@ -81,24 +90,31 @@ export default function ConversationsList() {
         setSelectedConversationId(null)
       }
     }
-  }, [sortedConversations, withUserId, lastConversationId, selectedConversationId])
+  }, [sortedConversations, withUserId, lastConversationId, selectedConversationId, markConversationRead])
 
   useEffect(() => {
     if (withUserId && conversations) {
       const existingConvo = conversations.find(
         c => c.user1Id === withUserId || c.user2Id === withUserId
       )
-      
+
       if (existingConvo) {
         setSelectedConversationId(existingConvo._id)
         setTempConversation(null)
         // Mark this as initialized since we're selecting based on URL param
         hasInitializedRef.current = true
+
+        // Mark conversation as read when navigating from toast notification
+        markConversationRead({
+          variables: { conversationId: existingConvo._id }
+        }).catch(error => {
+          console.error('Error marking conversation as read from toast:', error)
+        })
       } else if (currentUser?._id !== withUserId) {
         getUser({ variables: { userId: withUserId } })
       }
     }
-  }, [withUserId, conversations, getUser, currentUser?._id])
+  }, [withUserId, conversations, getUser, currentUser?._id, markConversationRead])
   
   useEffect(() => {
     if (newUserData?.getUser && currentUser) {
@@ -159,7 +175,7 @@ export default function ConversationsList() {
           variables: { conversationId }
         })
         // Refetch conversations to update the UI
-        refetch()
+        await refetch()
       } catch (error) {
         console.error('Error marking conversation as read:', error)
       }
