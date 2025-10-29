@@ -23,15 +23,15 @@ export const subscriptions = {
   onSubscriptionEvent: {
     subscribe: async (_: any, { userId }: { userId: string }, { db }: { db: any }) => {
       const logger = await getLogger()
-      
+
       // Get subscriber user info
       const subscriberUser = await db.collection('users').findOne({ _id: new ObjectId(userId) })
       const subscriberUserName = subscriberUser?.name || 'Unknown User'
-      
+
       // Subscribe to user-specific topic
       const userTopic = `SUBSCRIPTION_EVENT:${userId}`
       const globalTopic = `SUBSCRIPTION_EVENT:ALL`
-      
+
       logger.info('User subscribing to real-time events', {
         subscriberUserName,
         userTopic,
@@ -66,8 +66,30 @@ export const subscriptions = {
       
       const userIteratorWithContext = addSubscriberContext(userIterator)
       const globalIteratorWithContext = addSubscriberContext(globalIterator)
-      
-      return mergeAsyncIterators([userIteratorWithContext, globalIteratorWithContext])
+
+      const mergedIterator = mergeAsyncIterators([userIteratorWithContext, globalIteratorWithContext])
+
+      // Wrap with cleanup to decrement listener count
+      return {
+        [Symbol.asyncIterator]() {
+          const iterator = mergedIterator[Symbol.asyncIterator]()
+          return {
+            next: () => iterator.next(),
+            return: async () => {
+              logger.info('User unsubscribed from real-time events', {
+                subscriberUserName
+              })
+
+              // Cleanup both iterators
+              if (userIterator.return) await userIterator.return()
+              if (globalIterator.return) await globalIterator.return()
+
+              return { done: true, value: undefined }
+            },
+            throw: (error: any) => iterator.throw?.(error) || Promise.reject(error)
+          }
+        }
+      }
     },
     resolve: async (payload: SubscriptionEventPayload) => {
       // Recreate logger from serialized context (functions don't survive Redis serialization)

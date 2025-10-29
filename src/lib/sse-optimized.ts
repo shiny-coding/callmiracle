@@ -11,6 +11,10 @@
 
 import { subscriptionsConfig } from '@/config'
 import type { ExecutionResult } from 'graphql'
+import {
+  activeSubscriptionsMetric,
+  subscriptionDurationHistogram
+} from '@/utils/metrics'
 
 interface SSEEvent {
   id?: string
@@ -33,6 +37,10 @@ export function createOptimizedSSEResponse(
   let eventId = 0
   let heartbeatInterval: NodeJS.Timeout | undefined
   let isClosed = false
+  const subscriptionStartTime = Date.now()
+
+  // Track subscription metrics
+  activeSubscriptionsMetric.add(1)
 
   const stream = new ReadableStream<Uint8Array>({
     start(controllerArg) {
@@ -111,6 +119,22 @@ export function createOptimizedSSEResponse(
       clearInterval(heartbeatInterval)
     }
 
+    // Track subscription metrics
+    const subscriptionDuration = (Date.now() - subscriptionStartTime) / 1000
+    activeSubscriptionsMetric.add(-1) // Decrement active count
+    subscriptionDurationHistogram.record(subscriptionDuration)
+
+    if (error) {
+      logger.info('Subscription closed with error', {
+        duration: subscriptionDuration,
+        error: error.message
+      })
+    } else {
+      logger.info('Subscription closed cleanly', {
+        duration: subscriptionDuration
+      })
+    }
+
     try {
       if (error) {
         controller.error(error)
@@ -156,7 +180,7 @@ export function createOptimizedSSEResponse(
       const chunk = encoder.encode(sseData)
       controller.enqueue(chunk)
 
-      // Log performance for debugging
+      // Log event delivery
       if (event.event === 'next') {
         logger.debug('Optimized SSE: Event flushed immediately', { eventId: event.id })
       }
@@ -169,20 +193,32 @@ export function createOptimizedSSEResponse(
 
   /**
    * Process subscription with optimized handling - no buffering
+   * CRITICAL: Properly cleanup async iterator to prevent memory leaks
    */
   async function processSubscriptionOptimized(asyncIterable: AsyncIterable<any>): Promise<void> {
+    // Get the iterator directly so we can call cleanup methods
+    const iterator = asyncIterable[Symbol.asyncIterator]()
+
     try {
-      for await (const result of asyncIterable) {
-        // Check if stream is still open
+      while (true) {
+        // Check if stream is still open BEFORE getting next value
         if (isClosed) {
           logger.debug('Stream closed, stopping subscription processing')
+          break
+        }
+
+        // Get next value from iterator
+        const { value, done } = await iterator.next()
+
+        if (done) {
+          logger.debug('Subscription iterator completed naturally')
           break
         }
 
         // Send result IMMEDIATELY - zero buffering
         sendSSEEvent({
           event: 'next',
-          data: JSON.stringify(result),
+          data: JSON.stringify(value),
           id: String(++eventId)
         })
 
@@ -194,6 +230,19 @@ export function createOptimizedSSEResponse(
     } catch (error) {
       // Error logging handled by caller's catch block
       throw error
+    } finally {
+      // CRITICAL: Cleanup iterator and remove EventEmitter listeners
+      // This prevents the "MaxListenersExceededWarning" memory leak
+      if (iterator.return) {
+        try {
+          await iterator.return()
+          logger.debug('Subscription iterator cleaned up successfully')
+        } catch (cleanupError) {
+          logger.warn('Error during iterator cleanup', {
+            error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
+          })
+        }
+      }
     }
   }
 

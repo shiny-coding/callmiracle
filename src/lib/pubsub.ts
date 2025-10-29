@@ -39,7 +39,18 @@ function initializePubSub() {
       if (implementation === 'internal') {
         // Use in-memory PubSub (no external dependencies)
         pubsub = new PubSub()
-        logger.info('Internal PubSub initialized successfully')
+
+        // Set max listeners to support concurrent subscriptions
+        // For 100-1000 concurrent users, each subscribing to global topic
+        // Default: 2000 (supports up to 2000 concurrent subscriptions)
+        // Can be overridden via PUBSUB_MAX_LISTENERS env var
+        const maxListeners = parseInt(process.env.PUBSUB_MAX_LISTENERS || '2000')
+        if (pubsub.ee) {
+          pubsub.ee.setMaxListeners(maxListeners)
+          logger.info(`Internal PubSub initialized with maxListeners=${maxListeners}`)
+        } else {
+          logger.info('Internal PubSub initialized successfully')
+        }
       } else {
         // Use Redis-based PubSub (distributed)
         const Redis = require('ioredis')
@@ -98,7 +109,15 @@ function initializePubSub() {
           subscriber,
         })
 
-        logger.info('Redis PubSub initialized - testing connectivity')
+        // Set max listeners for Redis PubSub EventEmitters
+        // RedisPubSub uses internal EventEmitters for subscription management
+        const maxListeners = parseInt(process.env.PUBSUB_MAX_LISTENERS || '2000')
+        if (pubsub.ee) {
+          pubsub.ee.setMaxListeners(maxListeners)
+          logger.info(`Redis PubSub initialized with maxListeners=${maxListeners}`)
+        } else {
+          logger.info('Redis PubSub initialized - testing connectivity')
+        }
       }
     } catch (error) {
       logger.error(`Failed to initialize ${implementation} pubsub - shutting down server`, {

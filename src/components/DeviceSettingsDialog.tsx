@@ -74,12 +74,9 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   // Create and manage preview stream
   useEffect(() => {
     if (!open) {
-      console.log('[DeviceSettings] Dialog closed, cleaning up preview stream')
       // Cleanup when dialog closes
       if (previewStreamRef.current) {
-        console.log('[DeviceSettings] Stopping preview stream tracks')
         previewStreamRef.current.getTracks().forEach(track => {
-          console.log(`[DeviceSettings] Stopping track: ${track.kind}, id: ${track.id}, state: ${track.readyState}`)
           track.stop()
         })
         previewStreamRef.current = null
@@ -88,21 +85,8 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       return
     }
 
-    console.log('[DeviceSettings] Dialog opened, connectionStatus:', connectionStatus)
-    console.log('[DeviceSettings] localVideoEnabled:', localVideoEnabled)
-    console.log('[DeviceSettings] localStream exists:', !!localStream)
-
-    if (localStream) {
-      const videoTracks = localStream.getVideoTracks()
-      console.log('[DeviceSettings] localStream video tracks:', videoTracks.length)
-      videoTracks.forEach((track, idx) => {
-        console.log(`[DeviceSettings] Video track ${idx}: id=${track.id}, label=${track.label}, enabled=${track.enabled}, readyState=${track.readyState}, muted=${track.muted}`)
-      })
-    }
-
     async function createPreviewStream() {
       if (!localVideoEnabled) {
-        console.log('[DeviceSettings] Video disabled, clearing preview')
         if (previewStreamRef.current) {
           previewStreamRef.current.getTracks().forEach(track => track.stop())
           previewStreamRef.current = null
@@ -113,16 +97,13 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
       try {
         const selectedVideoDevice = localStorage.getItem('selectedVideoDevice') || ''
-        console.log('[DeviceSettings] Selected video device:', selectedVideoDevice)
 
         // During a call, create a separate preview stream
         // Not during a call, use the existing localStream
         if (connectionStatus === 'connected') {
-          console.log('[DeviceSettings] In call - creating separate preview stream')
-
+          
           // Stop old preview stream if exists
           if (previewStreamRef.current) {
-            console.log('[DeviceSettings] Stopping old preview stream')
             previewStreamRef.current.getTracks().forEach(track => track.stop())
           }
 
@@ -131,21 +112,13 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             audio: false // No audio needed for preview
           }
 
-          console.log('[DeviceSettings] Getting user media with constraints:', constraints)
           const stream = await navigator.mediaDevices.getUserMedia(constraints)
-          console.log('[DeviceSettings] Preview stream created, tracks:', stream.getTracks().length)
-          stream.getVideoTracks().forEach((track, idx) => {
-            console.log(`[DeviceSettings] Preview track ${idx}: id=${track.id}, label=${track.label}, enabled=${track.enabled}, readyState=${track.readyState}`)
-          })
 
           previewStreamRef.current = stream
           setPreviewStream(stream)
         } else {
-          console.log('[DeviceSettings] Not in call - creating preview stream for device settings')
-
           // Stop old preview stream if exists
           if (previewStreamRef.current) {
-            console.log('[DeviceSettings] Stopping old preview stream')
             previewStreamRef.current.getTracks().forEach(track => track.stop())
           }
 
@@ -154,9 +127,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             audio: false // No audio needed for preview
           }
 
-          console.log('[DeviceSettings] Getting user media with constraints:', constraints)
           const stream = await navigator.mediaDevices.getUserMedia(constraints)
-          console.log('[DeviceSettings] Preview stream created, tracks:', stream.getTracks().length)
 
           previewStreamRef.current = stream
           setPreviewStream(stream)
@@ -173,24 +144,10 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   // Attach preview stream to video element
   useEffect(() => {
     if (videoRef.current && open) {
-      console.log('[DeviceSettings] Attaching stream to video element, previewStream exists:', !!previewStream)
       if (previewStream && localVideoEnabled) {
-        console.log('[DeviceSettings] Setting video srcObject')
         videoRef.current.srcObject = previewStream
 
-        // Log when video starts playing
-        const handlePlay = () => console.log('[DeviceSettings] Video element started playing')
-        const handleError = (e: Event) => console.error('[DeviceSettings] Video element error:', e)
-
-        videoRef.current.addEventListener('play', handlePlay)
-        videoRef.current.addEventListener('error', handleError)
-
-        return () => {
-          videoRef.current?.removeEventListener('play', handlePlay)
-          videoRef.current?.removeEventListener('error', handleError)
-        }
       } else {
-        console.log('[DeviceSettings] Clearing video srcObject')
         videoRef.current.srcObject = null
       }
     }
@@ -211,17 +168,14 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   }, [])
 
   const handleVideoDeviceChange = async (deviceId: string) => {
-    console.log('[DeviceSettings] Video device change requested:', deviceId)
 
     if (deviceId === 'disabled') {
-      console.log('[DeviceSettings] Disabling video')
       setLocalVideoEnabled(false)
       // Notify peer if in a call
       if (connectionStatus === 'connected') {
         sendWantedMediaState()
       }
     } else {
-      console.log('[DeviceSettings] Enabling video and changing device')
       setLocalVideoEnabled(true)
       await videoDevices.handleDeviceChange(deviceId)
 
@@ -230,11 +184,9 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         sendWantedMediaState()
 
         // Update the preview stream with the new device
-        console.log('[DeviceSettings] Updating preview stream with new device')
         try {
           // Stop old preview stream
           if (previewStreamRef.current) {
-            console.log('[DeviceSettings] Stopping old preview stream before device change')
             previewStreamRef.current.getTracks().forEach(track => track.stop())
           }
 
@@ -243,9 +195,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             audio: false
           }
 
-          console.log('[DeviceSettings] Creating new preview stream with constraints:', constraints)
           const stream = await navigator.mediaDevices.getUserMedia(constraints)
-          console.log('[DeviceSettings] New preview stream created')
 
           previewStreamRef.current = stream
           setPreviewStream(stream)
@@ -257,10 +207,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   }
 
   const handleAudioDeviceChange = async (deviceId: string) => {
-    console.log('[DeviceSettings] Audio device change requested:', deviceId)
-
     if (deviceId === 'disabled') {
-      console.log('[DeviceSettings] Disabling audio')
       setLocalAudioEnabled(false)
       // Notify peer if in a call
       if (connectionStatus === 'connected') {

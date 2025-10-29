@@ -119,6 +119,19 @@ export const peakUsageWindowMetric = meter.createHistogram('peak_usage_window_sc
   valueType: ValueType.DOUBLE
 })
 
+// ================================
+// GraphQL Subscription Metrics
+// ================================
+
+export const activeSubscriptionsMetric = meter.createUpDownCounter('active_subscriptions', {
+  description: 'Number of currently active GraphQL subscriptions (SSE connections)',
+  valueType: ValueType.INT
+})
+
+export const subscriptionDurationHistogram = meter.createHistogram('subscription_duration_seconds', {
+  description: 'Duration of subscription connections in seconds (distribution for P50/P95/P99 percentiles)',
+  valueType: ValueType.DOUBLE
+})
 
 
 // // Graceful shutdown handler - keep console.log as logger may not be available during shutdown
