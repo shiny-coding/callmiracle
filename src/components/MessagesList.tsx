@@ -235,7 +235,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
             setMessages(updatedMessages)
 
             // Mark new messages for highlighting
-            const newIds = new Set(newMessages.map((m: Message) => m._id))
+            const newIds = new Set<string>(newMessages.map((m: Message) => String(m._id)))
             setNewMessageIds(newIds)
 
             // Remove highlight after 3 seconds
