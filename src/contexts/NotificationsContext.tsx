@@ -6,7 +6,7 @@ import { useStore } from '@/store/useStore'
 import { usePlaySound } from '@/hooks/usePlaySound'
 import { useTranslations } from 'next-intl'
 import { getNotificationMessage } from '@/utils/notificationUtils'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useClientPushNotifications } from '@/hooks/useClientPushNotifications'
 import { useSnackbar } from './SnackContext'
 import { NotificationType } from '@/generated/graphql'
@@ -89,6 +89,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const { subscribeToNotifications } = useSubscriptions()
   const t = useTranslations()
   const router = useRouter()
+  const pathname = usePathname()
   const { showSnackbar } = useSnackbar()
   
   useClientPushNotifications(currentUser)
@@ -119,15 +120,21 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         
         // Handle message notifications differently
         if (notificationEvent.type === NotificationType.MessageReceived) {
-          const messageText = `${notificationEvent.peerUserName}: ${notificationEvent.messageText}`
-          showSnackbar(messageText, 'info', () => {
-            routerPush(router, `/conversations?with=${notificationEvent.peerUserId}`, {
-              source: 'message_notification_snackbar_click',
-              peerUserId: notificationEvent.peerUserId,
-              notificationType: notificationEvent.type
-            })
-          })
+          // Don't show toast if user is already on the conversations page
+          const isOnConversationsPage = pathname?.includes('/conversations')
 
+          if (!isOnConversationsPage) {
+            const messageText = `${notificationEvent.peerUserName}: ${notificationEvent.messageText}`
+            showSnackbar(messageText, 'info', () => {
+              routerPush(router, `/conversations?with=${notificationEvent.peerUserId}`, {
+                source: 'message_notification_snackbar_click',
+                peerUserId: notificationEvent.peerUserId,
+                notificationType: notificationEvent.type
+              })
+            })
+          }
+
+          // Always play sound even if on conversations page
           if (!isMessagePlaying) {
             playMessageNotificationSound()
           }
@@ -157,7 +164,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     })
     
     return unsubscribe
-  }, [subscribeToNotifications, refetch, playMeetingNotificationSound, isMeetingPlaying, playMessageNotificationSound, isMessagePlaying, t, router, showSnackbar])
+  }, [subscribeToNotifications, refetch, playMeetingNotificationSound, isMeetingPlaying, playMessageNotificationSound, isMessagePlaying, t, router, pathname, showSnackbar])
   
   const setNotificationSeen = async (id: string) => {
     try {

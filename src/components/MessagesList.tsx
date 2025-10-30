@@ -67,7 +67,8 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
   const [isSending, setIsSending] = useState(false)
   const [loadingNewer, setLoadingNewer] = useState(false)
   const [pendingLoadNewMessages, setPendingLoadNewMessages] = useState(false)
-  
+  const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set())
+
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messageInputRef = useRef<HTMLDivElement>(null)
   const isFirstLoad = useRef(true)
@@ -136,6 +137,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
   // Reset messages when conversation changes
   useEffect(() => {
     setMessages([])
+    setNewMessageIds(new Set())
     isFirstLoad.current = true
     setHasMore(!isTempConversation)
   }, [conversationId, isTempConversation])
@@ -214,7 +216,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
 
     setLoadingNewer(true)
     setPendingLoadNewMessages(false)
-    
+
     const newestMessage = messages[0] // Since messages are reversed for display
     if (newestMessage) {
       try {
@@ -227,14 +229,23 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
             if (!fetchMoreResult?.getMessages?.length) {
               return prev
             }
-            
+
             const newMessages = fetchMoreResult.getMessages
             const updatedMessages = [...newMessages, ...messages]
             setMessages(updatedMessages)
-            
+
+            // Mark new messages for highlighting
+            const newIds = new Set(newMessages.map((m: Message) => m._id))
+            setNewMessageIds(newIds)
+
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+              setNewMessageIds(new Set())
+            }, 3000)
+
             // Scroll to bottom to show new messages
             setTimeout(scrollToBottom, 100)
-            
+
             // Return the updated query structure
             return {
               ...prev,
@@ -246,9 +257,9 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
         console.error('Error loading new messages:', error)
       }
     }
-    
+
     setLoadingNewer(false)
-    
+
     // If there was a pending load request, execute it now
     if (pendingLoadNewMessages) {
       setPendingLoadNewMessages(false)
@@ -364,7 +375,8 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
         {/* Messages list (reversed to show newest first) */}
         {[...messages].reverse().map((message) => {
           const isOwnMessage = message.userId === currentUser?._id
-          
+          const isNewMessage = newMessageIds.has(message._id)
+
           return (
             <Box
               key={message._id}
@@ -373,16 +385,16 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
               <div
                 className={`
                   max-w-[70%] p-3 relative brighter-bg
-                  ${isOwnMessage ? 'speech-bubble-right' : 'speech-bubble-left'
-                  }
+                  ${isOwnMessage ? 'speech-bubble-right' : 'speech-bubble-left'}
+                  ${isNewMessage ? 'message-flash' : ''}
                   rounded-xl shadow-lg
                 `}
               >
                 <Typography variant="body2" component="div" className="whitespace-pre-wrap break-words">
                   {formatTextWithLinks(message.message)}
                 </Typography>
-                <Typography 
-                  variant="caption" 
+                <Typography
+                  variant="caption"
                   className={`block mt-1 text-xs select-none ${
                     isOwnMessage ? 'text-blue-100' : 'text-gray-500'
                   }`}

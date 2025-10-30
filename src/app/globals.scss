@@ -277,3 +277,20 @@ body:before {
 .nextjs-static-indicator-toast-icon {
   display: none !important;
 }
+
+/* Flashing animation for new messages */
+@keyframes flash-message {
+  0%, 100% {
+    background-color: var(--brighter-color);
+  }
+  25%, 75% {
+    background-color: rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    background-color: rgba(59, 130, 246, 0.5);
+  }
+}
+
+.message-flash {
+  animation: flash-message 2s ease-in-out;
+}

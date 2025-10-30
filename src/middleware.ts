@@ -22,6 +22,35 @@ export async function middleware(request: NextRequest) {
   if (PUBLIC_FILE.test(pathname)) {
     return NextResponse.next()
   }
+
+  // Fix for reverse proxy sending comma-separated X-Forwarded-Host
+  // NextAuth cannot handle comma-separated hosts, so we extract the first one
+  if (pathname.startsWith('/api/auth')) {
+    const xForwardedHost = request.headers.get('x-forwarded-host')
+    const host = request.headers.get('host')
+
+    // If we have comma-separated hosts, extract the first one
+    if (xForwardedHost && xForwardedHost.includes(',')) {
+      const firstHost = xForwardedHost.split(',')[0].trim()
+      // Remove any protocol prefix if present
+      const cleanHost = firstHost.replace(/^https?:\/\//, '')
+
+      // Create new headers with cleaned host
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-forwarded-host', cleanHost)
+      requestHeaders.set('host', cleanHost)
+
+      // Create new request with cleaned headers
+      const newRequest = new NextRequest(request.url, {
+        headers: requestHeaders,
+        method: request.method,
+      })
+
+      return NextResponse.next({
+        request: newRequest
+      })
+    }
+  }
   
   // Check for authentication token for all non-auth routes
   let token: any = null
