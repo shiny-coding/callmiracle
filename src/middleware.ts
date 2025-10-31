@@ -24,38 +24,33 @@ export async function middleware(request: NextRequest) {
   }
 
   // Fix for reverse proxy sending comma-separated X-Forwarded-Host
-  // NextAuth cannot handle comma-separated hosts, so we extract the first one
-  if (pathname.startsWith('/api/auth')) {
-    const xForwardedHost = request.headers.get('x-forwarded-host')
-    const host = request.headers.get('host')
+  // This applies to ALL requests, not just /api/auth
+  // NextAuth, GraphQL, and other APIs cannot handle comma-separated hosts
+  const xForwardedHost = request.headers.get('x-forwarded-host')
 
-    // If we have comma-separated hosts, extract the first one
-    if (xForwardedHost && xForwardedHost.includes(',')) {
-      const firstHost = xForwardedHost.split(',')[0].trim()
-      // Remove any protocol prefix if present
-      const cleanHost = firstHost.replace(/^https?:\/\//, '')
+  // If we have comma-separated hosts, clean them and continue with cleaned request
+  if (xForwardedHost && xForwardedHost.includes(',')) {
+    const firstHost = xForwardedHost.split(',')[0].trim()
+    // Remove any protocol prefix if present (e.g., "https://call.callmiracle.com" -> "call.callmiracle.com")
+    const cleanHost = firstHost.replace(/^https?:\/\//, '')
 
-      // Create new headers with cleaned host
-      const requestHeaders = new Headers(request.headers)
-      requestHeaders.set('x-forwarded-host', cleanHost)
-      requestHeaders.set('host', cleanHost)
+    // Create new headers with cleaned host
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-forwarded-host', cleanHost)
+    requestHeaders.set('host', cleanHost)
 
-      // Create new request with cleaned headers
-      const newRequest = new NextRequest(request.url, {
-        headers: requestHeaders,
-        method: request.method,
-      })
-
-      return NextResponse.next({
-        request: newRequest
-      })
-    }
+    // Create new request with cleaned headers
+    // IMPORTANT: We reassign 'request' and continue execution, not return early
+    request = new NextRequest(request.url, {
+      headers: requestHeaders,
+      method: request.method,
+    })
   }
-  
+
   // Check for authentication token for all non-auth routes
   let token: any = null
   let sessionCookie: any = null
-  
+
   const cookies = request.cookies
   sessionCookie = cookies.get('next-auth.session-token') || cookies.get('__Secure-next-auth.session-token')
   
