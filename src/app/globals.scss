@@ -73,7 +73,9 @@ body:before {
   height: 100vh;
   overflow: hidden;
   z-index: 1200;
-  object-fit: cover;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   pointer-events: none;
   margin: 0;
   padding: 0;

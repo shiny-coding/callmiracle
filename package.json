@@ -22,6 +22,7 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f app",
     "docker:restart": "docker-compose restart app",
+    "docker:rebuild": "docker-compose build --no-cache app && docker-compose up -d app",
     "scale:up": "docker-compose -f docker-compose.scale.yml up -d",
     "scale:down": "docker-compose -f docker-compose.scale.yml down",
     "scale:logs": "docker-compose -f docker-compose.scale.yml logs -f",

@@ -14,21 +14,12 @@ interface DisconnectedLayoutProps {
 
 export default function DisconnectedLayout({ children }: DisconnectedLayoutProps) {
   const { connectionStatus, callee } = useWebRTCContext()
-  const videoRef = React.useRef<HTMLVideoElement>(null)
-  const showVideo = connectionStatus === 'calling' || connectionStatus === 'receiving-call' || connectionStatus === 'reconnecting' || connectionStatus === 'need-reconnect'
-
-  React.useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 0.5
-    }
-  }, [])
+  const showBackground = connectionStatus === 'calling' || connectionStatus === 'receiving-call' || connectionStatus === 'reconnecting' || connectionStatus === 'need-reconnect'
 
   return (
     <>
-      {showVideo && (
-        <video ref={videoRef} className="video-bg-dialog" autoPlay muted loop playsInline>
-          <source src="/fallingstars.mp4" type="video/mp4" />
-        </video>
+      {showBackground && (
+        <div className="video-bg-dialog" style={{ backgroundImage: 'url(/space7.jpg)' }} />
       )}
       <div className="flex flex-col w-full" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
         <TopControlsBar />
