@@ -40,6 +40,15 @@ export function useInitUser() {
 
   const authenticatedUserId = status === 'authenticated' ? session?.user?.id : null
 
+  // Handle expired/invalid token: status is authenticated but no user ID
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      signOut({ redirect: false }).then(() => {
+        window.location.href = '/auth/signin'
+      })
+    }
+  }, [status, authenticatedUserId])
+
   const { data, loading, error, refetch } = useQuery(GET_USER, {
     variables: { userId: authenticatedUserId || '', },
     skip: status !== 'authenticated' || !authenticatedUserId,

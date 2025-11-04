@@ -31,10 +31,14 @@ export function useDeviceSelection({
 
   // Fetch devices
   useEffect(() => {
+    let isMounted = true
+
     async function getDevices() {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices()
         const filteredDevices = devices.filter(d => d.kind === kind)
+
+        if (!isMounted) return
 
         if (getLabel) {
           // Filter and get labels for devices that support streaming
@@ -49,6 +53,8 @@ export function useDeviceSelection({
             }
           }
 
+          if (!isMounted) return
+
           setDevices(realDevices)
           setDeviceLabels(labels)
         } else {
@@ -58,7 +64,59 @@ export function useDeviceSelection({
         console.error('Error getting devices:', err)
       }
     }
+
+    // Initial device enumeration
     getDevices()
+
+    // Listen for device changes (connect/disconnect)
+    const handleDeviceChange = () => {
+      console.log('[useDeviceSelection] Device change detected, re-enumerating devices')
+      getDevices()
+    }
+
+    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange)
+
+    // Monitor permission changes
+    let permissionStatus: PermissionStatus | null = null
+    const permissionName = kind === 'videoinput' ? 'camera' : 'microphone'
+
+    const setupPermissionMonitoring = async () => {
+      try {
+        // @ts-ignore - TypeScript doesn't recognize 'camera' and 'microphone' as valid values
+        permissionStatus = await navigator.permissions.query({ name: permissionName })
+
+        const handlePermissionChange = () => {
+          console.log(`[useDeviceSelection] ${permissionName} permission changed to ${permissionStatus?.state}, re-enumerating devices`)
+          getDevices()
+        }
+
+        permissionStatus.addEventListener('change', handlePermissionChange)
+
+        // Store cleanup function
+        return () => {
+          permissionStatus?.removeEventListener('change', handlePermissionChange)
+        }
+      } catch (err) {
+        // Permission API might not be supported or permission name not recognized
+        console.log(`[useDeviceSelection] Permission monitoring not available for ${permissionName}:`, err)
+        return () => {}
+      }
+    }
+
+    let cleanupPermission: (() => void) | null = null
+    setupPermissionMonitoring().then(cleanup => {
+      if (isMounted) {
+        cleanupPermission = cleanup
+      } else {
+        cleanup()
+      }
+    })
+
+    return () => {
+      isMounted = false
+      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange)
+      cleanupPermission?.()
+    }
   }, [kind, getLabel])
 
   const handleDeviceChange = async (deviceId: string) => {

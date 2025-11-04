@@ -219,7 +219,7 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account, profile }) {
       const REFRESH_FROM_DB_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
-      
+
       if (user) {
         token.id = user.id
         token.name = user.name || user.email || 'Unknown User'
@@ -231,25 +231,25 @@ export const authOptions: NextAuthOptions = {
         const now = Date.now()
         const lastRefresh = token.lastDbRefresh as number || 0
         const shouldRefreshFromDb = now - lastRefresh > REFRESH_FROM_DB_INTERVAL
-        
+
         // Check if we need to fetch missing fields or refresh log levels
         const needsBasicFields = !token.name || !token.languages || token.languages.length === 0 || !token.logLevel || !token.clientLogLevel
-        
+
         if (needsBasicFields || shouldRefreshFromDb) {
           try {
             const client = await clientPromise;
             if (client) {
               const usersCollection = client.db().collection("users");
-              const dbUser = await usersCollection.findOne({ 
-                _id: new ObjectId(token.id as string) 
+              const dbUser = await usersCollection.findOne({
+                _id: new ObjectId(token.id as string)
               });
-              
+
               if (dbUser) {
                 token.name = dbUser.name;
                 token.languages = dbUser.languages;
                 token.logLevel = dbUser.logLevel || defaultLogLevel;
                 token.clientLogLevel = dbUser.clientLogLevel || defaultClientLogLevel;
-                
+
                 token.lastDbRefresh = now;
               }
             }
