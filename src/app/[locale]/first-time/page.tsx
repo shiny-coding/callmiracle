@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { routerPush } from '@/utils/routerHelper'
-import { 
-  Paper, 
-  Typography, 
-  Button, 
-  FormGroup, 
-  FormControlLabel, 
-  Checkbox,
+import {
+  Paper,
+  Typography,
+  Button,
+  FormGroup,
+  FormControlLabel,
   Divider,
   CircularProgress,
   FormControl,
@@ -77,20 +76,29 @@ export default function FirstTimePage() {
   // Auto-detect user's browser languages on mount
   useEffect(() => {
     if (typeof window !== 'undefined' && selectedLanguages.length === 0) {
-      const browserLangs = navigator.languages || [navigator.language]
       const detectedLanguages = new Set<string>()
-      
+
+      // First, add user's selected interface locale if it exists
+      if (currentUser?.locale) {
+        const localeMatch = LANGUAGES.find(l => l.code === currentUser.locale)
+        if (localeMatch) {
+          detectedLanguages.add(localeMatch.code)
+        }
+      }
+
+      // Then auto-detect from browser languages
+      const browserLangs = navigator.languages || [navigator.language]
       for (const lang of browserLangs) {
         const langCode = lang.toLowerCase().split('-')[0]
         const match = LANGUAGES.find(l => l.code === langCode)
         if (match) detectedLanguages.add(match.code)
       }
-      
+
       if (detectedLanguages.size > 0) {
         setSelectedLanguages(Array.from(detectedLanguages))
       }
     }
-  }, [])
+  }, [currentUser?.locale])
 
   // Reset selected groups when languages change
   useEffect(() => {
@@ -185,6 +193,7 @@ export default function FirstTimePage() {
             <LanguageSelector
               value={selectedLanguages}
               onChange={setSelectedLanguages}
+              showQuickSelectors={true}
             />
             
             {selectedLanguages.length === 0 && (
@@ -275,21 +284,13 @@ export default function FirstTimePage() {
               ) : (
                 <div className="space-y-4">
                   {publicGroups.map((group: Group) => (
-                    <div key={group._id} className="flex items-start gap-3">
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={selectedGroupIds.includes(group._id)}
-                            onChange={() => handleGroupToggle(group._id)}
-                          />
-                        }
-                        label=""
-                        className="m-0"
-                      />
-                      <div className="flex-grow">
-                        <GroupCard group={group} />
-                      </div>
-                    </div>
+                    <GroupCard
+                      key={group._id}
+                      group={group}
+                      firstTime={true}
+                      checked={selectedGroupIds.includes(group._id)}
+                      onToggle={handleGroupToggle}
+                    />
                   ))}
                 </div>
               )}

@@ -57,8 +57,42 @@ export function useDeviceSelection({
 
           setDevices(realDevices)
           setDeviceLabels(labels)
+
+          // Auto-select first device if none is selected and devices are available
+          const currentSelected = localStorage.getItem(storageKey) || ''
+          if (!currentSelected && realDevices.length > 0) {
+            const firstDevice = realDevices[0]
+            console.log(`[useDeviceSelection] Auto-selecting first ${kind}: ${firstDevice.deviceId}`)
+            setSelectedDevice(firstDevice.deviceId)
+            localStorage.setItem(storageKey, firstDevice.deviceId)
+          } else if (currentSelected && !realDevices.find(d => d.deviceId === currentSelected)) {
+            // If selected device is no longer available, select the first available one
+            if (realDevices.length > 0) {
+              const firstDevice = realDevices[0]
+              console.log(`[useDeviceSelection] Previously selected device not available, selecting first ${kind}: ${firstDevice.deviceId}`)
+              setSelectedDevice(firstDevice.deviceId)
+              localStorage.setItem(storageKey, firstDevice.deviceId)
+            }
+          }
         } else {
           setDevices(filteredDevices)
+
+          // Auto-select first device if none is selected and devices are available
+          const currentSelected = localStorage.getItem(storageKey) || ''
+          if (!currentSelected && filteredDevices.length > 0) {
+            const firstDevice = filteredDevices[0]
+            console.log(`[useDeviceSelection] Auto-selecting first ${kind}: ${firstDevice.deviceId}`)
+            setSelectedDevice(firstDevice.deviceId)
+            localStorage.setItem(storageKey, firstDevice.deviceId)
+          } else if (currentSelected && !filteredDevices.find(d => d.deviceId === currentSelected)) {
+            // If selected device is no longer available, select the first available one
+            if (filteredDevices.length > 0) {
+              const firstDevice = filteredDevices[0]
+              console.log(`[useDeviceSelection] Previously selected device not available, selecting first ${kind}: ${firstDevice.deviceId}`)
+              setSelectedDevice(firstDevice.deviceId)
+              localStorage.setItem(storageKey, firstDevice.deviceId)
+            }
+          }
         }
       } catch (err) {
         console.error('Error getting devices:', err)

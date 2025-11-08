@@ -378,6 +378,13 @@
   "typeMessage": "Type a message...",
   "errorLoadingMessages": "Error loading messages",
   "edited": "edited",
+  "permissionsRequired": "Permissions Required",
+  "permissionsExplanation": "CallMiracle needs access to your camera and microphone to enable video calls. These permissions are essential for the app to function.",
+  "permissionsNote": "Your privacy is important to us. You have full control over your camera and microphone settings at any time.",
+  "iosPermissionNote": "On iOS, the page needs to refresh to request permissions again.",
+  "later": "Later",
+  "refreshToAllow": "Refresh to Allow",
+  "allowPermissions": "Allow Permissions",
   "P2P": {
     "statusOnline": "P2P connections available",
     "statusOffline": "No internet connection",

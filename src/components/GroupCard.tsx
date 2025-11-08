@@ -1,6 +1,6 @@
 'use client'
 
-import { Typography, Button, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Chip } from '@mui/material'
+import { Typography, Button, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Chip, Checkbox } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Group } from '@/generated/graphql'
 import GroupIcon from '@mui/icons-material/Group'
@@ -23,9 +23,12 @@ import Image from 'next/image'
 
 interface GroupCardProps {
   group: Group
+  firstTime?: boolean
+  checked?: boolean
+  onToggle?: (groupId: string) => void
 }
 
-export default function GroupCard({ group }: GroupCardProps) {
+export default function GroupCard({ group, firstTime = false, checked = false, onToggle }: GroupCardProps) {
   const t = useTranslations()
   const { currentUser, setCurrentUser } = useStore( (state: any) => ({
     currentUser: state.currentUser,
@@ -38,13 +41,13 @@ export default function GroupCard({ group }: GroupCardProps) {
   const [actionType, setActionType] = useState<'join' | 'leave'>('join')
   const router = useRouter()
   const locale = useLocale()
-  
+
   // Check if user is already in this group
   const isInGroup = currentUser?.groups?.includes(group._id) || false
-  
+
   // Check if user is admin of this group
   const isAdmin = group.admins.includes(currentUser?._id || '')
-  
+
   // Check if user is owner of this group
   const isOwner = group.owner === currentUser?._id
 
@@ -97,6 +100,12 @@ export default function GroupCard({ group }: GroupCardProps) {
   }
 
   const handleGroupClick = () => {
+    // In firstTime mode, clicking the card toggles the checkbox
+    if (firstTime && onToggle) {
+      onToggle(group._id);
+      return;
+    }
+
     routerPush(router, `/${locale}/users?groupId=${group._id}`, {
       source: 'group_card_click',
       groupId: group._id,
@@ -112,6 +121,21 @@ export default function GroupCard({ group }: GroupCardProps) {
         className="cursor-pointer rounded-lg p-2 transition-colors"
         onClick={handleGroupClick}
       >
+        {firstTime && (
+          <div className="flex justify-center mb-2">
+            <Checkbox
+              checked={checked}
+              onChange={(e) => {
+                e.stopPropagation()
+                if (onToggle) {
+                  onToggle(group._id)
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+
         <div className="flex items-center gap-4 mb-2">
           <div className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded-full">
             {imageSrc ? (
@@ -167,7 +191,7 @@ export default function GroupCard({ group }: GroupCardProps) {
           </div>
         )}
 
-        {((isOwner || isAdmin) || group.language || (isInGroup && !isOwner) || !isInGroup) && (
+        {!firstTime && ((isOwner || isAdmin) || group.language || (isInGroup && !isOwner) || !isInGroup) && (
           <div className="flex items-center justify-between">
             <div className="flex flex-wrap gap-1 items-center">
               {/* Language chip */}
@@ -219,6 +243,18 @@ export default function GroupCard({ group }: GroupCardProps) {
                 {t('join')}
               </Button>
             )}
+          </div>
+        )}
+        {firstTime && group.language && (
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-1 items-center">
+              {/* Language chip */}
+              <Chip
+                label={LANGUAGES.find(lang => lang.code === group.language)?.name || group.language}
+                size="small"
+                className="text-xs text-white bg-gray-700"
+              />
+            </div>
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useDeviceSelection } from '@/hooks/useDeviceSelection'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
+import { useMediaPermissions } from '@/hooks/useMediaPermissions'
 import { useEffect, useRef, useState } from 'react'
 import { IconButton, Button, Dialog, DialogTitle, DialogContent } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
@@ -14,28 +15,43 @@ function cleanDeviceName(name: string): string {
   return name.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '').trim()
 }
 
-async function getVideoDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
+async function getVideoDeviceLabel(device: MediaDeviceInfo, existingStream?: MediaStream): Promise<string | null> {
   try {
-    if (device.deviceId) {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: device.deviceId }
-      })
-      const track = stream.getVideoTracks()[0]
-      const capabilities = track.getCapabilities()
+    if (!device.deviceId) return null
 
-      stream.getTracks().forEach(track => track.stop())
-
-      if (capabilities.facingMode) {
-        if (capabilities.facingMode.includes('user')) return 'Front Camera'
-        if (capabilities.facingMode.includes('environment')) return 'Back Camera'
-      }
-
-      return device.label || `Camera ${device.deviceId.slice(0, 5)}...`
+    // If device already has a label from permissions, use it to determine camera type
+    if (device.label) {
+      const labelLower = device.label.toLowerCase()
+      if (labelLower.includes('front') || labelLower.includes('user')) return 'Front Camera'
+      if (labelLower.includes('back') || labelLower.includes('rear') || labelLower.includes('environment')) return 'Back Camera'
     }
+
+    // Only create a new stream if we have an existing stream (permissions already granted)
+    // This avoids triggering permission prompts on iOS
+    if (existingStream) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: device.deviceId }
+        })
+        const track = stream.getVideoTracks()[0]
+        const capabilities = track.getCapabilities()
+
+        stream.getTracks().forEach(track => track.stop())
+
+        if (capabilities.facingMode) {
+          if (capabilities.facingMode.includes('user')) return 'Front Camera'
+          if (capabilities.facingMode.includes('environment')) return 'Back Camera'
+        }
+      } catch (err) {
+        // If stream creation fails, device is not available
+        return null
+      }
+    }
+
+    return device.label || `Camera ${device.deviceId.slice(0, 5)}...`
   } catch (err) {
     return null
   }
-  return null
 }
 
 interface DeviceSettingsDialogProps {
@@ -57,12 +73,37 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   const [isLandscape, setIsLandscape] = useState(true)
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null)
   const previewStreamRef = useRef<MediaStream | null>(null)
+  const { permissions, requestPermissions } = useMediaPermissions()
+
+  // Request permissions when dialog opens
+  useEffect(() => {
+    if (!open) return
+
+    async function ensurePermissions() {
+      // Check if permissions are already granted
+      if (permissions.camera === 'granted' && permissions.microphone === 'granted') {
+        console.log('[DeviceSettings] Permissions already granted')
+        return
+      }
+
+      // If permissions are still checking, wait
+      if (permissions.camera === 'checking' || permissions.microphone === 'checking') {
+        return
+      }
+
+      // Request permissions
+      console.log('[DeviceSettings] Requesting media permissions')
+      await requestPermissions()
+    }
+
+    ensurePermissions()
+  }, [open, permissions, requestPermissions])
 
   const videoDevices = useDeviceSelection({
     kind: 'videoinput',
     storageKey: 'selectedVideoDevice',
     isEnabled: localVideoEnabled,
-    getLabel: getVideoDeviceLabel
+    getLabel: (device) => getVideoDeviceLabel(device, previewStream || undefined)
   })
 
   const audioDevices = useDeviceSelection({

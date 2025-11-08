@@ -11,13 +11,14 @@ import { LANGUAGES } from '@/config/languages';
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import { useTranslations } from 'next-intl';
-import { FormGroup, Typography } from '@mui/material';
+import { FormGroup, Typography, FormControlLabel } from '@mui/material';
 
 interface LanguageSelectorProps {
   value: string[];
   onChange: (languages: string[]) => void;
   label?: string;
   availableLanguages?: string[];
+  showQuickSelectors?: boolean;
 }
 
 const ITEM_HEIGHT = 48;
@@ -40,7 +41,7 @@ function getStyles(name: string, selectedLangs: string[], theme: Theme) {
   };
 }
 
-export default function LanguageSelector({ value, onChange, label, availableLanguages }: LanguageSelectorProps) {
+export default function LanguageSelector({ value, onChange, label, availableLanguages, showQuickSelectors = false }: LanguageSelectorProps) {
   const t = useTranslations('Profile');
 
   const handleChange = (event: SelectChangeEvent<typeof value>) => {
@@ -48,6 +49,15 @@ export default function LanguageSelector({ value, onChange, label, availableLang
       target: { value: newValue },
     } = event;
     onChange(typeof newValue === 'string' ? newValue.split(',') : newValue);
+  };
+
+  const handleQuickLanguageToggle = (langCode: string) => {
+    const isSelected = value.includes(langCode);
+    if (isSelected) {
+      onChange(value.filter(code => code !== langCode));
+    } else {
+      onChange([...value, langCode]);
+    }
   };
 
   // Filter LANGUAGES if availableLanguages is provided
@@ -62,6 +72,30 @@ export default function LanguageSelector({ value, onChange, label, availableLang
           {label}
         </Typography>
       )}
+
+      {showQuickSelectors && (
+        <div className="mb-4 flex gap-4">
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={value.includes('en')}
+                onChange={() => handleQuickLanguageToggle('en')}
+              />
+            }
+            label="English"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={value.includes('ru')}
+                onChange={() => handleQuickLanguageToggle('ru')}
+              />
+            }
+            label="Russian - Русский"
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <FormControl sx={{ m: 1, width: 300 }}>
           <Select
@@ -73,8 +107,8 @@ export default function LanguageSelector({ value, onChange, label, availableLang
             renderValue={(selected) => (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {selected.map((langCode) => (
-                  <Chip 
-                    key={langCode} 
+                  <Chip
+                    key={langCode}
                     label={LANGUAGES.find(lang => lang.code === langCode)?.name}
                     onDelete={() => { onChange(selected.filter(code => code !== langCode)); }}
                     onMouseDown={(event) => { event.stopPropagation(); }}

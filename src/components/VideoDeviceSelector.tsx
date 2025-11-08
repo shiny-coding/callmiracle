@@ -8,31 +8,22 @@ interface VideoDeviceSelectorProps {
 
 async function getDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
   try {
-    // Try to get capabilities by creating a stream
-    if (device.deviceId) {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: device.deviceId }
-      })
-      const track = stream.getVideoTracks()[0]
-      const capabilities = track.getCapabilities()
+    if (!device.deviceId) return null
 
-      // Clean up the stream
-      stream.getTracks().forEach(track => track.stop())
-
-      if (capabilities.facingMode) {
-        if (capabilities.facingMode.includes('user')) return 'Front Camera'
-        if (capabilities.facingMode.includes('environment')) return 'Back Camera'
-      }
-
-      // If no clear indication, return the original label or a generic name
-      return device.label || `Camera ${device.deviceId.slice(0, 5)}...`
+    // If device already has a label from permissions, use it to determine camera type
+    if (device.label) {
+      const labelLower = device.label.toLowerCase()
+      if (labelLower.includes('front') || labelLower.includes('user')) return 'Front Camera'
+      if (labelLower.includes('back') || labelLower.includes('rear') || labelLower.includes('environment')) return 'Back Camera'
+      // Return the device label if it doesn't match known patterns
+      return device.label
     }
+
+    // Fallback to generic name
+    return `Camera ${device.deviceId.slice(0, 5)}...`
   } catch (err) {
-    // If we can't get a stream, it's likely a virtual camera
     return null
   }
-
-  return null
 }
 
 export default function VideoDeviceSelector({ onOpenChange }: VideoDeviceSelectorProps) {
