@@ -18,7 +18,8 @@ import {
   Radio,
   Select,
   MenuItem,
-  Alert
+  Alert,
+  TextField
 } from '@mui/material'
 import LanguageSelector from '@/components/LanguageSelector'
 import GroupCard from '@/components/GroupCard'
@@ -42,11 +43,19 @@ export default function FirstTimePage() {
   const { update: updateSession } = useSession()
   
 
+  const [name, setName] = useState<string>('')
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
   const [selectedSex, setSelectedSex] = useState<string>('')
   const [selectedBirthYear, setSelectedBirthYear] = useState<number | null>(null)
   const [showWarning, setShowWarning] = useState(false)
+
+  // Initialize name from currentUser
+  useEffect(() => {
+    if (currentUser?.name && !name) {
+      setName(currentUser.name)
+    }
+  }, [currentUser?.name])
 
   // Filter public groups based on selected languages
   const publicGroups = groups?.filter(group => 
@@ -119,7 +128,7 @@ export default function FirstTimePage() {
   }
 
   const handleNext = async () => {
-    if (selectedLanguages.length === 0 || !selectedSex || !selectedBirthYear) {
+    if (selectedLanguages.length === 0 || !selectedSex || !selectedBirthYear || !name.trim()) {
       return // Button should be disabled
     }
 
@@ -134,16 +143,17 @@ export default function FirstTimePage() {
     try {
       // Get current user groups
       const currentGroups = currentUser.groups || []
-      
+
       // Create a set of unique group IDs (combining existing and newly selected)
       const uniqueGroupIds = Array.from(new Set([
         ...currentGroups,
         ...selectedGroupIds
       ]))
-      
-      // Update user with selected languages, sex, birth year, and groups
+
+      // Update user with name, selected languages, sex, birth year, and groups
       const updatedUser = {
         ...currentUser,
+        name: name.trim(),
         languages: selectedLanguages,
         sex: selectedSex,
         birthYear: selectedBirthYear,
@@ -171,7 +181,7 @@ export default function FirstTimePage() {
     }
   }
 
-  const isNextDisabled = selectedLanguages.length === 0 || !selectedSex || !selectedBirthYear || updateLoading
+  const isNextDisabled = selectedLanguages.length === 0 || !selectedSex || !selectedBirthYear || !name.trim() || updateLoading
 
   return (
     <div className="h-full flex flex-col">
@@ -180,6 +190,27 @@ export default function FirstTimePage() {
           <Typography variant="h4" className="mb-6 text-center">
             {t('title')}
           </Typography>
+
+          {/* Name Section */}
+          <div className="mb-8">
+            <Typography variant="h6" className="mb-2">
+              {t('nameTitle')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" className="mb-4">
+              {t('nameDescription')}
+            </Typography>
+            <TextField
+              fullWidth
+              required
+              label={t('name')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              error={!name.trim() && name.length > 0}
+              helperText={!name.trim() && name.length > 0 ? t('nameRequired') : ''}
+            />
+          </div>
+
+          <Divider className="my-6" />
 
           {/* Languages Section */}
           <div className="mb-8">

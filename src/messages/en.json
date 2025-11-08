@@ -214,6 +214,10 @@
   },
   "FirstTime": {
     "title": "Welcome! Let's set up your profile",
+    "nameTitle": "What's your name?",
+    "nameDescription": "This is how others will see you",
+    "name": "Name",
+    "nameRequired": "Name is required",
     "languagesTitle": "What languages do you speak?",
     "languagesDescription": "Select all the languages you're comfortable speaking",
     "personalInfoTitle": "Personal Information",
