@@ -116,8 +116,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((notificationEvent: any) => {
       if (notificationEvent) {
-        // showBrowserNotification(notificationEvent, t, router)
-        
+        showBrowserNotification(notificationEvent, t, router)
+
         // Handle message notifications differently
         if (notificationEvent.type === NotificationType.MessageReceived) {
           // Don't show toast if user is already on the conversations page

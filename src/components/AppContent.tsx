@@ -12,6 +12,7 @@ import LoadingDialog from './LoadingDialog'
 import { vanillaStore } from '@/store/useStore'
 import { SnackbarProvider } from '@/contexts/SnackContext'
 import { InitialMessageHandler } from './InitialMessageHandler'
+import AddToHomeScreenDialog from './AddToHomeScreenDialog'
 
 interface AppContentProps {
   children: ReactNode
@@ -29,6 +30,7 @@ export function AppContent({ children }: AppContentProps) {
             <SnackbarProvider>
               <InitialMessageHandler />
               <NotificationsProvider>
+                <AddToHomeScreenDialog />
                 {children}
               </NotificationsProvider>
             </SnackbarProvider>

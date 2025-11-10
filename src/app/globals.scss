@@ -293,6 +293,22 @@ body:before {
   }
 }
 
+@keyframes flash-triangle {
+  0%, 100% {
+    border-color: transparent transparent var(--brighter-color) transparent;
+  }
+  25%, 75% {
+    border-color: transparent transparent rgba(59, 130, 246, 0.3) transparent;
+  }
+  50% {
+    border-color: transparent transparent rgba(59, 130, 246, 0.5) transparent;
+  }
+}
+
 .message-flash {
   animation: flash-message 2s ease-in-out;
+
+  &::before {
+    animation: flash-triangle 2s ease-in-out;
+  }
 }

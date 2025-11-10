@@ -50,12 +50,22 @@ export function useClientPushNotifications(currentUser: any) {
       if ('serviceWorker' in navigator && window.PushManager) {
         try {
           await navigator.serviceWorker.register('/sw.js')
+
+          // Check if running as PWA (standalone mode)
+          const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone
+          const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches
+          const isPWA = isStandalone || isDisplayModeStandalone
+
           if (Notification.permission === 'granted') {
             await subscribeToPushNotifications()
           } else if (Notification.permission === 'default') {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-              await subscribeToPushNotifications()
+            // If in PWA mode, automatically request permission
+            if (isPWA) {
+              console.log('PWA detected, requesting notification permission')
+              const permission = await Notification.requestPermission();
+              if (permission === 'granted') {
+                await subscribeToPushNotifications()
+              }
             }
           }
         } catch (error) {
