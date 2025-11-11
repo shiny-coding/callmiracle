@@ -44,7 +44,7 @@ export default function AddToHomeScreenDialog() {
 
     // Get stored state from localStorage
     const storedState = localStorage.getItem('addToHomeScreenState')
-    let state: AddToHomeScreenState = storedState
+    const state: AddToHomeScreenState = storedState
       ? JSON.parse(storedState)
       : { lastShown: null, timesShown: 0, dismissed: false }
 
