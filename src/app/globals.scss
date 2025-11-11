@@ -243,15 +243,15 @@ body:before {
 /* Speech bubble styles for comic-like message bubbles */
 .speech-bubble-left {
   border-bottom-left-radius: 0;
-  
+
   &::before {
     content: '';
     position: absolute;
     width: 0;
     height: 0;
     border-style: solid;
-    border-width: 0 0 10px 10px;
-    border-color: transparent transparent var(--brighter-color) transparent;
+    border-width: 0 0 7px 7px;
+    border-color: #0000 #0000 var(--brighter-color) #0000;
     z-index: 1;
     left: -7px;
     bottom: 0px;
@@ -267,8 +267,8 @@ body:before {
     width: 0;
     height: 0;
     border-style: solid;
-    border-width: 0 10px 10px 0;
-    border-color: transparent transparent var(--brighter-color) transparent;
+    border-width: 0 7px 7px 0;
+    border-color: #0000 #0000 var(--brighter-color) #0000;
     z-index: 1;
     right: -7px;
     bottom: 0px;
@@ -293,22 +293,42 @@ body:before {
   }
 }
 
-@keyframes flash-triangle {
+@keyframes flash-triangle-left {
   0%, 100% {
-    border-color: transparent transparent var(--brighter-color) transparent;
+    border-color: #0000 #0000 var(--brighter-color) #0000;
   }
   25%, 75% {
-    border-color: transparent transparent rgba(59, 130, 246, 0.3) transparent;
+    border-color: #0000 #0000 rgba(59, 130, 246, 0.3) #0000;
   }
   50% {
-    border-color: transparent transparent rgba(59, 130, 246, 0.5) transparent;
+    border-color: #0000 #0000 rgba(59, 130, 246, 0.5) #0000;
+  }
+}
+
+@keyframes flash-triangle-right {
+  0%, 100% {
+    border-color: #0000 #0000 var(--brighter-color) #0000;
+  }
+  25%, 75% {
+    border-color: #0000 #0000 rgba(59, 130, 246, 0.3) #0000;
+  }
+  50% {
+    border-color: #0000 #0000 rgba(59, 130, 246, 0.5) #0000;
   }
 }
 
 .message-flash {
   animation: flash-message 2s ease-in-out;
+}
 
+.speech-bubble-left.message-flash {
   &::before {
-    animation: flash-triangle 2s ease-in-out;
+    animation: flash-triangle-left 2s ease-in-out;
+  }
+}
+
+.speech-bubble-right.message-flash {
+  &::before {
+    animation: flash-triangle-right 2s ease-in-out;
   }
 }

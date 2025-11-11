@@ -71,51 +71,51 @@ function notificationPermissionGranted() {
 async function showBrowserNotification(notificationEvent: any, t: any, router: any) {
   if (!notificationPermissionGranted()) return
 
-  // For message notifications, use sender name as title and message as body
-  let title: string
-  let body: string
-  let url: string
-
-  if (notificationEvent.type === NotificationType.MessageReceived) {
-    title = notificationEvent.peerUserName || 'CallMiracle'
-    body = notificationEvent.messageText || ''
-    url = `/conversations?with=${notificationEvent.peerUserId}`
-  } else {
-    title = 'CallMiracle'
-    body = getNotificationMessage(notificationEvent, t)
-    url = `/list?meetingId=${notificationEvent.meeting?._id}`
-  }
-
   try {
-    // Check if service worker is available and controlling the page
+    // Check if service worker with push manager is active
+    // If so, skip browser notification as push notification will handle it
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       const registration = await navigator.serviceWorker.ready
-      await registration.showNotification(title, {
-        body,
-        icon: '/logo-192.png',
-        badge: '/logo-72.png',
-        data: { url }
-      })
+      const subscription = await registration.pushManager.getSubscription()
+
+      // If user has push subscription, don't show browser notification
+      // The push notification will be shown via service worker instead
+      if (subscription) {
+        console.log('Push subscription active, skipping browser notification')
+        return
+      }
+    }
+
+    // Show browser notification only if no push subscription exists
+    // For message notifications, use sender name as title and message as body
+    let title: string
+    let body: string
+
+    if (notificationEvent.type === NotificationType.MessageReceived) {
+      title = notificationEvent.peerUserName || 'CallMiracle'
+      body = notificationEvent.messageText || ''
     } else {
-      // Fallback to regular notification if no service worker
-      const notification = new window.Notification(title, {
-        body,
-        icon: '/logo-192.png'
-      })
-      notification.onclick = () => {
-        if (notificationEvent.type === NotificationType.MessageReceived && notificationEvent.peerUserId) {
-          routerPush(router, `/conversations?with=${notificationEvent.peerUserId}`, {
-            source: 'browser_notification_click',
-            notificationType: notificationEvent.type,
-            peerUserId: notificationEvent.peerUserId
-          })
-        } else if (notificationEvent.meeting?._id) {
-          routerPush(router, `/list?meetingId=${notificationEvent.meeting._id}`, {
-            source: 'browser_notification_click',
-            notificationType: notificationEvent.type,
-            meetingId: notificationEvent.meeting._id
-          })
-        }
+      title = 'CallMiracle'
+      body = getNotificationMessage(notificationEvent, t)
+    }
+
+    const notification = new window.Notification(title, {
+      body,
+      icon: '/logo-192.png'
+    })
+    notification.onclick = () => {
+      if (notificationEvent.type === NotificationType.MessageReceived && notificationEvent.peerUserId) {
+        routerPush(router, `/conversations?with=${notificationEvent.peerUserId}`, {
+          source: 'browser_notification_click',
+          notificationType: notificationEvent.type,
+          peerUserId: notificationEvent.peerUserId
+        })
+      } else if (notificationEvent.meeting?._id) {
+        routerPush(router, `/list?meetingId=${notificationEvent.meeting._id}`, {
+          source: 'browser_notification_click',
+          notificationType: notificationEvent.type,
+          meetingId: notificationEvent.meeting._id
+        })
       }
     }
   } catch (error) {
