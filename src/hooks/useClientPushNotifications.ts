@@ -17,7 +17,7 @@ const subscribeToPushNotifications = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
-  
+
       if (subscription === null) {
         const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!vapidPublicKey) {
@@ -29,7 +29,8 @@ const subscribeToPushNotifications = async () => {
           applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
         });
       }
-  
+
+      // Save subscription (duplicates are handled server-side)
       await fetch('/api/save-fcm-token', {
         method: 'POST',
         headers: {
@@ -47,30 +48,39 @@ export function useClientPushNotifications(currentUser: any) {
     if (!currentUser?._id) return
 
     const registerAndSubscribe = async () => {
-      if ('serviceWorker' in navigator && window.PushManager) {
-        try {
-          await navigator.serviceWorker.register('/sw.js')
+      if (!('serviceWorker' in navigator) || !window.PushManager) {
+        return
+      }
 
-          // Check if running as PWA (standalone mode)
-          const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone
-          const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches
-          const isPWA = isStandalone || isDisplayModeStandalone
+      try {
+        await navigator.serviceWorker.register('/sw.js')
 
-          if (Notification.permission === 'granted') {
-            await subscribeToPushNotifications()
-          } else if (Notification.permission === 'default') {
-            // If in PWA mode, automatically request permission
-            if (isPWA) {
-              console.log('PWA detected, requesting notification permission')
-              const permission = await Notification.requestPermission();
-              if (permission === 'granted') {
-                await subscribeToPushNotifications()
-              }
+        // Check platform
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+        const isAndroid = /Android/.test(navigator.userAgent)
+        const isDesktop = !isIOS && !isAndroid
+
+        // Check if running as PWA (standalone mode)
+        const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone
+        const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches
+        const isPWA = isStandalone || isDisplayModeStandalone
+
+        if (Notification.permission === 'granted') {
+          await subscribeToPushNotifications()
+        } else if (Notification.permission === 'default') {
+          // On mobile (iOS/Android): only request in PWA mode
+          // On Desktop: always request
+          const shouldRequest = isDesktop || isPWA
+
+          if (shouldRequest) {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+              await subscribeToPushNotifications()
             }
           }
-        } catch (error) {
-          console.error('Service Worker Error or Push Subscription failed', error)
         }
+      } catch (error) {
+        console.error('Service Worker Error or Push Subscription failed', error)
       }
     }
 

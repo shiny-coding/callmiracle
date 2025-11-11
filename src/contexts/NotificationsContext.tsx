@@ -68,19 +68,58 @@ function notificationPermissionGranted() {
   return typeof window !== 'undefined' && window.Notification && window.Notification.permission === 'granted'
 }
 
-function showBrowserNotification(notificationEvent: any, t: any, router: any) {
+async function showBrowserNotification(notificationEvent: any, t: any, router: any) {
   if (!notificationPermissionGranted()) return
 
-  const body = getNotificationMessage(notificationEvent, t)
-  const notification = new window.Notification('CallMiracle', { body })
-  notification.onclick = () => {
-    if (notificationEvent.meeting?._id) {
-      routerPush(router, `/list?meetingId=${notificationEvent.meeting._id}`, {
-        source: 'browser_notification_click',
-        notificationType: notificationEvent.type,
-        meetingId: notificationEvent.meeting._id
+  // For message notifications, use sender name as title and message as body
+  let title: string
+  let body: string
+  let url: string
+
+  if (notificationEvent.type === NotificationType.MessageReceived) {
+    title = notificationEvent.peerUserName || 'CallMiracle'
+    body = notificationEvent.messageText || ''
+    url = `/conversations?with=${notificationEvent.peerUserId}`
+  } else {
+    title = 'CallMiracle'
+    body = getNotificationMessage(notificationEvent, t)
+    url = `/list?meetingId=${notificationEvent.meeting?._id}`
+  }
+
+  try {
+    // Check if service worker is available and controlling the page
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      const registration = await navigator.serviceWorker.ready
+      await registration.showNotification(title, {
+        body,
+        icon: '/logo-192.png',
+        badge: '/logo-72.png',
+        data: { url }
       })
+    } else {
+      // Fallback to regular notification if no service worker
+      const notification = new window.Notification(title, {
+        body,
+        icon: '/logo-192.png'
+      })
+      notification.onclick = () => {
+        if (notificationEvent.type === NotificationType.MessageReceived && notificationEvent.peerUserId) {
+          routerPush(router, `/conversations?with=${notificationEvent.peerUserId}`, {
+            source: 'browser_notification_click',
+            notificationType: notificationEvent.type,
+            peerUserId: notificationEvent.peerUserId
+          })
+        } else if (notificationEvent.meeting?._id) {
+          routerPush(router, `/list?meetingId=${notificationEvent.meeting._id}`, {
+            source: 'browser_notification_click',
+            notificationType: notificationEvent.type,
+            meetingId: notificationEvent.meeting._id
+          })
+        }
+      }
     }
+  } catch (error) {
+    console.error('Error showing browser notification:', error)
   }
 }
 

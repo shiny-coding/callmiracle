@@ -82,7 +82,21 @@ export default function NotificationPermissionButton() {
       {permission === 'denied' && (
         <Alert severity="error">
           <NotificationsOffIcon className="mr-2" />
-          {t('notificationsDenied')}
+          <div>
+            <div>{t('notificationsDenied')}</div>
+            {showIOSInfo && (
+              <div className="mt-2 text-sm">
+                <strong>How to fix on iPhone:</strong>
+                <ol className="list-decimal list-inside mt-1">
+                  <li>Go to iPhone Settings app</li>
+                  <li>Scroll down and find &quot;CallMiracle&quot;</li>
+                  <li>Tap &quot;Notifications&quot;</li>
+                  <li>Toggle &quot;Allow Notifications&quot; ON</li>
+                  <li>Come back and reload the app</li>
+                </ol>
+              </div>
+            )}
+          </div>
         </Alert>
       )}
     </div>

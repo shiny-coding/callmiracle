@@ -103,19 +103,22 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
   // Get translations using next-intl
   const t = await getTranslations({ locale: userLocale })
   
+  let title: string
   let body: string
   let url: string
 
   if (notification.type === NotificationType.MessageReceived) {
-    body = `${notification.peerUserName}: ${notification.messageText}`
+    title = notification.peerUserName
+    body = notification.messageText || ''
     url = `/conversations?with=${notification.senderUserId?.toString()}`
   } else {
+    title = 'CallMiracle'
     body = getNotificationMessage(notification, t)
     url = `/list?meetingId=${notification.meetingId?.toString()}`
   }
 
   const payload = {
-    title: 'CallMiracle',
+    title,
     body,
     data: {
       url

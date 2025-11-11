@@ -12,7 +12,8 @@ import LoadingDialog from './LoadingDialog'
 import { vanillaStore } from '@/store/useStore'
 import { SnackbarProvider } from '@/contexts/SnackContext'
 import { InitialMessageHandler } from './InitialMessageHandler'
-import AddToHomeScreenDialog from './AddToHomeScreenDialog'
+import PWARequiredScreen from './PWARequiredScreen'
+import { useShouldShowPWAScreen } from '@/hooks/useShouldShowPWAScreen'
 
 interface AppContentProps {
   children: ReactNode
@@ -20,6 +21,8 @@ interface AppContentProps {
 
 export function AppContent({ children }: AppContentProps) {
   const { loading, error } = useInitUser()
+  const shouldShowPWAScreen = useShouldShowPWAScreen()
+
   if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
   return (
@@ -30,8 +33,11 @@ export function AppContent({ children }: AppContentProps) {
             <SnackbarProvider>
               <InitialMessageHandler />
               <NotificationsProvider>
-                <AddToHomeScreenDialog />
-                {children}
+                {shouldShowPWAScreen ? (
+                  <PWARequiredScreen />
+                ) : (
+                  children
+                )}
               </NotificationsProvider>
             </SnackbarProvider>
           </GroupsProvider>

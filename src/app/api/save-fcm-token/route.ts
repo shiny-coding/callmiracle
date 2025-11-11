@@ -27,10 +27,17 @@ export async function POST(request: NextRequest) {
 
     const client = await clientPromise
     const db = client.db()
-    
+
+    // First, remove any existing subscription with the same endpoint to avoid duplicates
+    await db.collection('users').updateOne(
+      { _id: new ObjectId(userId) },
+      { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } } as any
+    )
+
+    // Then add the new subscription
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $addToSet: { pushSubscriptions: subscription } }
+      { $push: { pushSubscriptions: subscription } } as any
     )
 
     if (result.modifiedCount === 0 && result.matchedCount === 0) {
@@ -38,12 +45,12 @@ export async function POST(request: NextRequest) {
       return new NextResponse(JSON.stringify({ message: 'User not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
 
-    // Only increment the metric when a new subscription was actually added
+    // Increment the metric when a subscription was saved
     if (result.modifiedCount > 0) {
       fcmTokenRegistrationsMetric.add(1)
-      logger.info('FCM token registered successfully - new subscription added', { 
-        userId, 
-        subscriptionEndpoint: subscription?.endpoint 
+      logger.info('FCM token registered successfully', {
+        userId,
+        subscriptionEndpoint: subscription?.endpoint
       })
     }
 
