@@ -40,28 +40,30 @@ export default function UserList() {
   // Check for groupId parameter and auto-select the group, then remove from URL
   useEffect(() => {
     const groupId = searchParams.get('groupId')
-    if (groupId && groups) {
-      // Check if the groupId exists in available groups
-      const groupExists = groups.some(group => group._id === groupId)
-      if (groupExists && !appliedSelectedGroups.includes(groupId)) {
+    if (groupId && groups && currentUser) {
+      // Check if the groupId exists in user's groups or is an open group
+      const group = groups.find(g => g._id === groupId)
+      const isUserInGroup = currentUser.groups?.includes(groupId)
+      const isOpenGroup = group?.open
+      if (group && (isUserInGroup || isOpenGroup) && !appliedSelectedGroups.includes(groupId)) {
         setAppliedSelectedGroups([groupId])
       }
-      
+
       // Remove groupId from URL immediately after using it
       const newSearchParams = new URLSearchParams(searchParams.toString())
       newSearchParams.delete('groupId')
       const newUrl = newSearchParams.toString()
       router.replace(`/users${newUrl ? `?${newUrl}` : ''}`, { scroll: false })
     }
-  }, [searchParams, groups, router, appliedSelectedGroups])
+  }, [searchParams, groups, currentUser, router, appliedSelectedGroups])
 
-  // Collect all available languages from users
-  let availableLanguages: string[] = []
-  if (users) {
-    availableLanguages = Array.from(
-      new Set(users.flatMap(user => user.languages))
-    )
-  }
+  // Get only languages that the current user speaks
+  const availableLanguages = currentUser?.languages || []
+
+  // Get groups that the current user is a member of OR that are open
+  const availableGroups = groups?.filter(group =>
+    currentUser?.groups?.includes(group._id) || group.open
+  ) || []
 
   const handleApplyFilters = (filters: {
     showOnlyFriends: boolean
@@ -175,7 +177,7 @@ export default function UserList() {
         appliedShowMales={appliedShowMales}
         appliedShowFemales={appliedShowFemales}
         availableLanguages={availableLanguages}
-        availableGroups={groups || []}
+        availableGroups={availableGroups}
         onApplyFilters={handleApplyFilters}
         onToggleFilters={setFiltersVisible}
       />
