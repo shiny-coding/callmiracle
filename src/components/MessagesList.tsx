@@ -349,7 +349,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       {/* Messages container */}
       <Box 
         ref={messagesContainerRef}
-        className="flex-grow overflow-y-auto p-4 space-y-3"
+        className="flex-grow overflow-y-auto p-4"
         onScroll={handleScroll}
         sx={{
           '&::-webkit-scrollbar': {
@@ -380,7 +380,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
           return (
             <Box
               key={message._id}
-              className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-2`}
+              className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-12sp`}
             >
               <div
                 className={`
@@ -417,17 +417,17 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       </Box>
 
       {/* Input area */}
-      <Paper className="border-t brighter-border p-4" elevation={0} sx={{ backgroundColor: 'var(--brighter-color)' }}>
+      <Paper className="border-t brighter-border" elevation={0} sx={{ backgroundColor: 'var(--brighter-color)', 'padding': 'var(--10sp)' }}>
         <Box className="flex gap-2 items-end">
           <Box className="flex-grow">
             <div
               ref={messageInputRef}
               contentEditable
-              className="brighter-border normal-bg min-h-[2.5rem] max-h-[6rem] overflow-y-auto p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="input-bg brighter-border normal-bg min-h-[2.5rem] max-h-[6rem] overflow-y-auto p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               style={{
                 lineHeight: '1.5',
                 wordWrap: 'break-word',
-                whiteSpace: 'pre-wrap'
+                whiteSpace: 'pre-wrap',
               }}
               onInput={(e) => {
                 const target = e.target as HTMLDivElement

@@ -201,8 +201,11 @@ export default function ConversationsList() {
       {/* Horizontal scrollable conversations bar */}
       <Box className="border-b border-[--border-color] bg-gray-800">
         <Box 
-          className="flex overflow-x-auto py-3 px-4 gap-3"
+          className="flex overflow-x-auto"
           sx={{
+            'padding': 'var(--10sp)',
+            'gap': 'var(--10sp)',
+            'backgroundColor': 'var(--input-bg)',
             '&::-webkit-scrollbar': {
               height: '6px',
             },

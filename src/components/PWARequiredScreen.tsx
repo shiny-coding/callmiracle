@@ -49,20 +49,22 @@ export default function PWARequiredScreen() {
       <div className="fixed inset-0 bg-gradient-to-b from-gray-900 to-black text-white overflow-auto z-50">
         <Container maxWidth="sm" className="py-8 px-4">
           {/* App Icon and Name */}
-          <div className="flex flex-col items-center gap-4 mb-8">
-            <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-lg">
-              <Image
-                src="/logo-192.png"
-                alt="CallMiracle"
-                width={96}
-                height={96}
-                className="w-full h-full"
-                unoptimized
-              />
+          <div className="flex justify-center mb-8">
+            <div className="relative inline-flex items-center">
+              <div className="absolute right-full mr-3 w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
+                <Image
+                  src="/logo-192.png"
+                  alt="CallMiracle"
+                  width={64}
+                  height={64}
+                  className="w-full h-full"
+                  unoptimized
+                />
+              </div>
+              <Typography variant="h4" className="font-bold">
+                CallMiracle
+              </Typography>
             </div>
-            <Typography variant="h4" className="font-bold text-center">
-              CallMiracle
-            </Typography>
           </div>
 
           {/* Main Message */}

@@ -13,7 +13,10 @@ import { vanillaStore } from '@/store/useStore'
 import { SnackbarProvider } from '@/contexts/SnackContext'
 import { InitialMessageHandler } from './InitialMessageHandler'
 import PWARequiredScreen from './PWARequiredScreen'
+import NotificationPermissionDeniedScreen from './NotificationPermissionDeniedScreen'
+import NotificationPermissionRequestScreen from './NotificationPermissionRequestScreen'
 import { useShouldShowPWAScreen } from '@/hooks/useShouldShowPWAScreen'
+import { useShouldShowNotificationDeniedScreen, useShouldShowNotificationRequestScreen } from '@/hooks/useShouldShowNotificationDeniedScreen'
 
 interface AppContentProps {
   children: ReactNode
@@ -22,6 +25,8 @@ interface AppContentProps {
 export function AppContent({ children }: AppContentProps) {
   const { loading, error } = useInitUser()
   const shouldShowPWAScreen = useShouldShowPWAScreen()
+  const shouldShowNotificationRequestScreen = useShouldShowNotificationRequestScreen()
+  const shouldShowNotificationDeniedScreen = useShouldShowNotificationDeniedScreen()
 
   if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
@@ -35,6 +40,10 @@ export function AppContent({ children }: AppContentProps) {
               <NotificationsProvider>
                 {shouldShowPWAScreen ? (
                   <PWARequiredScreen />
+                ) : shouldShowNotificationRequestScreen ? (
+                  <NotificationPermissionRequestScreen />
+                ) : shouldShowNotificationDeniedScreen ? (
+                  <NotificationPermissionDeniedScreen />
                 ) : (
                   children
                 )}

@@ -231,6 +231,12 @@ body:before {
       margin-top: var(--#{$i}sp);
       margin-bottom: var(--#{$i}sp);
     }
+    .mb-#{$i}sp {
+      margin-bottom: var(--#{$i}sp);
+    }
+    .mt-#{$i}sp {
+      margin-top: var(--#{$i}sp);
+    }
     .p-#{$i}sp {
       padding: var(--#{$i}sp);
     }

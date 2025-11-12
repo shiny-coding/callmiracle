@@ -67,18 +67,10 @@ export function useClientPushNotifications(currentUser: any) {
 
         if (Notification.permission === 'granted') {
           await subscribeToPushNotifications()
-        } else if (Notification.permission === 'default') {
-          // On mobile (iOS/Android): only request in PWA mode
-          // On Desktop: always request
-          const shouldRequest = isDesktop || isPWA
-
-          if (shouldRequest) {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-              await subscribeToPushNotifications()
-            }
-          }
         }
+        // Note: We no longer automatically request permission here
+        // Permission is now requested through NotificationPermissionRequestScreen
+        // to provide better UX and context to the user
       } catch (error) {
         console.error('Service Worker Error or Push Subscription failed', error)
       }
