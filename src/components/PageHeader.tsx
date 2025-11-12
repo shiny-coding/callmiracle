@@ -14,12 +14,35 @@ export default function PageHeader({ icon, title, children, className }: PageHea
 
   useEffect(() => {
     const checkCollapse = () => {
-      setIsCollapsed(window.innerHeight < COMPACT_LAYOUT_HEIGHT_THRESHOLD)
+      // Use visualViewport for better iOS support, fallback to window.innerHeight
+      const height = window.visualViewport?.height || window.innerHeight
+      setIsCollapsed(height < COMPACT_LAYOUT_HEIGHT_THRESHOLD)
     }
 
+    // Set initial value
     checkCollapse()
+
+    // Handle resize events
     window.addEventListener('resize', checkCollapse)
-    return () => window.removeEventListener('resize', checkCollapse)
+
+    // Handle orientation changes (important for iOS)
+    window.addEventListener('orientationchange', () => {
+      // Add a small delay to allow the browser to recalculate dimensions
+      setTimeout(checkCollapse, 100)
+    })
+
+    // Also listen to visualViewport resize if available (better for iOS)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', checkCollapse)
+    }
+
+    return () => {
+      window.removeEventListener('resize', checkCollapse)
+      window.removeEventListener('orientationchange', checkCollapse)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', checkCollapse)
+      }
+    }
   }, [])
 
   if (isCollapsed) {
