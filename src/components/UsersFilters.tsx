@@ -174,8 +174,8 @@ export default function UsersFilters({
     })
   }
 
-  // Languages
-  if (appliedSelectedLanguages.length > 0 && appliedSelectedLanguages.length < availableLanguages.length) {
+  // Languages (only show if there are multiple languages to filter)
+  if (availableLanguages.length > 1 && appliedSelectedLanguages.length > 0 && appliedSelectedLanguages.length < availableLanguages.length) {
     const languageNames = appliedSelectedLanguages
       .map(code => LANGUAGES.find(lang => lang.code === code)?.name || code)
       .join(', ')
@@ -196,8 +196,8 @@ export default function UsersFilters({
     })
   }
 
-  // Groups
-  if (appliedSelectedGroups.length > 0) {
+  // Groups (only show if there are multiple groups to filter)
+  if (availableGroups.length > 1 && appliedSelectedGroups.length > 0) {
     const groupNames = appliedSelectedGroups
       .map(groupId => availableGroups.find(g => g._id === groupId)?.name || groupId)
       .join(', ')
@@ -272,33 +272,32 @@ export default function UsersFilters({
   }
 
   return (
-    <>
-      <div className={`flex flex-col overflow-hidden flex-shrink-0 ${isExpanded ? 'flex-grow' : ''}`}>
-        <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
-          <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
-            {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
-          </IconButton>
-          <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
-            {t('filterUsers')}
-          </Typography>
+    <div className={`flex flex-col overflow-hidden flex-shrink-0 ${isExpanded ? 'flex-grow' : ''}`}>
+      <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
+        <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
+          {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
+        </IconButton>
+        <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
+          {t('filterUsers')}
+        </Typography>
+      </div>
+
+      {/* Active filter chips - displayed below toggler when collapsed */}
+      {!isExpanded && activeFilterChips.length > 0 && (
+        <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
+          {activeFilterChips.map((chip) => (
+            <StandardChip
+              key={chip.type}
+              label={chip.label}
+              onDelete={chip.onDelete}
+              deleteIcon={<CloseIcon />}
+            />
+          ))}
         </div>
+      )}
 
-        {/* Active filter chips - displayed below toggler when collapsed */}
-        {!isExpanded && activeFilterChips.length > 0 && (
-          <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
-            {activeFilterChips.map((chip) => (
-              <StandardChip
-                key={chip.type}
-                label={chip.label}
-                onDelete={chip.onDelete}
-                deleteIcon={<CloseIcon />}
-              />
-            ))}
-          </div>
-        )}
-
-        {isExpanded && (
-          <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4">
+      {isExpanded && (
+        <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4">
             <TextField
               fullWidth
               placeholder={t('searchByName')}
@@ -339,21 +338,24 @@ export default function UsersFilters({
                 />
               </div>
             </FormGroup>
-            <LanguageSelector
-              value={changedSelectedLanguages}
-              onChange={setChangedSelectedLanguages}
-              label={t('filterByLanguages')}
-              availableLanguages={availableLanguages}
-            />
-            <GroupSelector
-              value={changedSelectedGroups}
-              onChange={setChangedSelectedGroups}
-              label={t('filterByGroups')}
-              availableGroups={availableGroups}
-            />
+            {availableLanguages.length > 1 && (
+              <LanguageSelector
+                value={changedSelectedLanguages}
+                onChange={setChangedSelectedLanguages}
+                label={t('filterByLanguages')}
+                availableLanguages={availableLanguages}
+              />
+            )}
+            {availableGroups.length > 1 && (
+              <GroupSelector
+                value={changedSelectedGroups}
+                onChange={setChangedSelectedGroups}
+                label={t('filterByGroups')}
+                availableGroups={availableGroups}
+              />
+            )}
           </div>
         )}
-      </div>
 
       {/* Buttons bar, always shown when filters are expanded */}
       {isExpanded && (
@@ -377,6 +379,6 @@ export default function UsersFilters({
           )}
         </div>
       )}
-    </>
+    </div>
   )
 } 

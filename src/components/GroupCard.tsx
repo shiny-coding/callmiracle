@@ -225,6 +225,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                   handleJoinLeave('leave')
                 }}
                 disabled={updateLoading}
+                className="flex-shrink-0"
               >
                 {t('leave')}
               </Button>
@@ -239,6 +240,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                   handleJoinLeave('join')
                 }}
                 disabled={updateLoading || (!group.open && !isAdmin)}
+                className="flex-shrink-0"
               >
                 {t('join')}
               </Button>

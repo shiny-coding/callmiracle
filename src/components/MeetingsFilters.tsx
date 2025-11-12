@@ -120,8 +120,8 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
   // Build active filter chips data
   const activeFilterChips = []
 
-  // Groups
-  if (changedFilterGroups.length > 0 && changedFilterGroups.length < availableGroups.length) {
+  // Groups (only show if there are multiple groups to filter)
+  if (availableGroups.length > 1 && changedFilterGroups.length > 0 && changedFilterGroups.length < availableGroups.length) {
     const groupNames = changedFilterGroups.map(groupId =>
       groups?.find(g => g._id === groupId)?.name || groupId
     ).join(', ')
@@ -262,57 +262,60 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
   }
 
   return (
-    <>
-      <div className="flex flex-col overflow-hidden">
-        <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
-          <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
-            {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
-          </IconButton>
-          <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
-            {t('filterMeetings')}
-          </Typography>
-        </div>
+    <div className={`flex flex-col overflow-hidden ${isExpanded ? 'flex-grow' : ''}`}>
+      <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
+        <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
+          {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
+        </IconButton>
+        <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
+          {t('filterMeetings')}
+        </Typography>
+      </div>
 
-        {/* Active filter chips - displayed below toggler when collapsed */}
-        {!isExpanded && activeFilterChips.length > 0 && (
-          <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
-            {activeFilterChips.map((chip) => (
-              <StandardChip
-                key={chip.type}
-                label={chip.label}
-                onDelete={chip.onDelete}
-                deleteIcon={<CloseIcon />}
-              />
-            ))}
-          </div>
-        )}
-
-        {isExpanded && (
-          <div 
-            ref={scrollableContainerRef} 
-            className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4"
-          >
-            <GroupSelector
-              value={changedFilterGroups}
-              onChange={setChangedFilterGroups}
-              label={t('filterByGroups')}
-              availableGroups={availableGroups}
+      {/* Active filter chips - displayed below toggler when collapsed */}
+      {!isExpanded && activeFilterChips.length > 0 && (
+        <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
+          {activeFilterChips.map((chip) => (
+            <StandardChip
+              key={chip.type}
+              label={chip.label}
+              onDelete={chip.onDelete}
+              deleteIcon={<CloseIcon />}
             />
+          ))}
+        </div>
+      )}
+
+      {isExpanded && (
+        <div
+          ref={scrollableContainerRef}
+          className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4"
+        >
+            {availableGroups.length > 1 && (
+              <GroupSelector
+                value={changedFilterGroups}
+                onChange={setChangedFilterGroups}
+                label={t('filterByGroups')}
+                availableGroups={availableGroups}
+              />
+            )}
             {selectedGroups.map(group => (
               <InterestSelector
                 key={group._id}
                 value={changedFilterInterests}
                 onChange={setChangedFilterInterests}
-                label={`${t('filterByInterests')} - ${group.name}`}
+                label={t('filterByInterests')}
                 interestsPairs={group.interestsPairs || []}
               />
             ))}
-            <LanguageSelector
-              value={changedFilterLanguages}
-              onChange={setChangedFilterLanguages}
-              label={t('filterByLanguage')}
-              availableLanguages={currentUser?.languages || []}
-            />
+            {(currentUser?.languages || []).length > 1 && (
+              <LanguageSelector
+                value={changedFilterLanguages}
+                onChange={setChangedFilterLanguages}
+                label={t('filterByLanguage')}
+                availableLanguages={currentUser?.languages || []}
+              />
+            )}
             <FormGroup>
               <FormControlLabel
                 control={
@@ -371,7 +374,6 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
             </div>
           </div>
         )}
-      </div>
 
       {/* Buttons bar, always shown when filters are expanded */}
       {isExpanded && (
@@ -395,6 +397,6 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
           )}
         </div>
       )}
-    </>
+    </div>
   )
 } 
