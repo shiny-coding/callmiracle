@@ -313,7 +313,7 @@ export default function FirstTimePage() {
                   {t('noGroupsMessage')}
                 </Typography>
               ) : (
-                <div className="space-y-4">
+                <div className="flex flex-col gap-20sp">
                   {publicGroups.map((group: Group) => (
                     <GroupCard
                       key={group._id}

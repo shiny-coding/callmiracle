@@ -119,133 +119,144 @@ export default function UserCard({
 
   return (
     <>
-      <div 
-        className="flex items-center gap-4 mb-4 cursor-pointer"
-        onClick={() => setDetailsPopupOpen(true)}
-      >
-        <div className="relative">
-          <UserAvatar 
-            user={user}
-            userName={user.name}
-            size="lg"
-          />
-        </div>
-        <div className="flex-grow">
-          <Typography variant="h6" className="text-white">
-            {user.name}
-          </Typography>
-          
-          {user.about && (
-            <Typography variant="body2" className="text-gray-300 mt-1">
-              {user.about}
+      <div className="p-5sp relative">
+        <div
+          className="flex items-center gap-4 mb-4 cursor-pointer"
+          onClick={() => setDetailsPopupOpen(true)}
+        >
+          <div className="relative">
+            <UserAvatar
+              user={user}
+              userName={user.name}
+              size="lg"
+            />
+          </div>
+          <div className="flex-grow">
+            <Typography variant="h6" className="text-white">
+              {user.name}
             </Typography>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {canRemoveFromGroup && !isGroupOwner && (
-            <IconButton
-              onClick={(e) => {
-                e.stopPropagation()
-                setRemoveConfirmOpen(true)
-              }}
-              className="text-red-400 hover:bg-red-900"
-              title={t('removeFromGroup')}
-            >
-              <RemoveCircleIcon />
-            </IconButton>
-          )}
-          {showMessageButton && !isCurrentUser && (
-            <IconButton
-              onClick={(e) => {
-                e.stopPropagation()
-                routerPush(router, `/${locale}/conversations?with=${user._id}`, {
-                  source: 'user_card_message_button',
-                  targetUserId: user._id,
-                  targetUserName: user.name
-                })
-              }}
-              className="text-white hover:bg-gray-600"
-              title={t('sendMessage')}
-            >
-              <MessageIcon />
-            </IconButton>
-          )}
-          {showHistoryButton && !isCurrentUser && (
-            <IconButton
-              onClick={(e) => {
-                e.stopPropagation()
-                setSelectedUser(user)
-              }}
-              className="text-white hover:bg-gray-600"
-            >
-              <HistoryIcon />
-            </IconButton>
-          )}
-          {showCallButton && !isCurrentUser && (
-            <IconButton 
-              onClick={(e) => {
-                e.stopPropagation()
-                handleCall()
-              }}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <CallIcon className="text-white" />
-            </IconButton>
-          )}
-        </div>
-      </div>
 
-      {showDetails && user.languages.length > 0 && (
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-1">
-            {user.languages.map(lang => {
-              const language = LANGUAGES.find(l => l.code === lang)
-              return (
-                <Chip
-                  key={lang}
-                  label={language?.name || lang}
-                  size="small"
-                  className="text-xs text-white bg-gray-700"
-                />
-              )
-            })}
+            {user.about && (
+              <Typography variant="body2" className="text-gray-300 mt-1">
+                {user.about}
+              </Typography>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {canRemoveFromGroup && !isGroupOwner && (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setRemoveConfirmOpen(true)
+                }}
+                className="text-red-400 hover:bg-red-900"
+                title={t('removeFromGroup')}
+              >
+                <RemoveCircleIcon />
+              </IconButton>
+            )}
           </div>
         </div>
-      )}
 
-      {isBlocked && (
-        <LockIcon 
-          className="text-red-500 absolute bottom-7 right-7" 
-          fontSize="small"
-          titleAccess={existingBlock?.all ? t('userBlocked') : t('someInterestsBlocked')}
-        />
-      )}
+        {showDetails && user.languages.length > 0 && (
+          <div className="mb-4">
+            <div className="flex flex-wrap gap-1">
+              {user.languages.map(lang => {
+                const language = LANGUAGES.find(l => l.code === lang)
+                return (
+                  <Chip
+                    key={lang}
+                    label={language?.name || lang}
+                    size="small"
+                    className="text-xs text-white bg-gray-700"
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
 
-      {currentUser?._id && currentUser?._id !== user._id && (
-        <Button
-          variant={isFriend ? "outlined" : "contained"}
-          color={isFriend ? "success" : "primary"}
-          size="small"
-          startIcon={isFriend ? <CheckIcon /> : <PersonAddIcon />}
-          onClick={handleFriendToggle}
-          disabled={updateLoading}
-          className="mr-2"
-        >
-          {isFriend ? t('friend') : t('addFriend')}
-        </Button>
-      )}
+        {isBlocked && (
+          <LockIcon
+            className="text-red-500 absolute bottom-7 right-7"
+            fontSize="small"
+            titleAccess={existingBlock?.all ? t('userBlocked') : t('someInterestsBlocked')}
+          />
+        )}
 
-      {isCurrentUser && (
-        <Button
-          variant="outlined"
-          color="primary"
-          size="small"
-          disabled
-          className="mr-2"
-        >
-          {t('me')}
-        </Button>
-      )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Action buttons to the left */}
+          <div className="flex gap-2">
+            {showMessageButton && !isCurrentUser && (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation()
+                  routerPush(router, `/${locale}/conversations?with=${user._id}`, {
+                    source: 'user_card_message_button',
+                    targetUserId: user._id,
+                    targetUserName: user.name
+                  })
+                }}
+                className="text-white hover:bg-gray-600"
+                title={t('sendMessage')}
+              >
+                <MessageIcon />
+              </IconButton>
+            )}
+            {showHistoryButton && !isCurrentUser && (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedUser(user)
+                }}
+                className="text-white hover:bg-gray-600"
+              >
+                <HistoryIcon />
+              </IconButton>
+            )}
+            {showCallButton && !isCurrentUser && (
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleCall()
+                }}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CallIcon className="text-white" />
+              </IconButton>
+            )}
+          </div>
+
+          {/* Add friend or Me button to the right */}
+          <div className="ml-auto">
+            {currentUser?._id && currentUser?._id !== user._id && (
+              <Button
+                variant={isFriend ? "outlined" : "contained"}
+                color={isFriend ? "success" : "primary"}
+                size="small"
+                startIcon={isFriend ? <CheckIcon /> : <PersonAddIcon />}
+                onClick={handleFriendToggle}
+                disabled={updateLoading}
+                className="flex-shrink-0"
+              >
+                {isFriend ? t('friend') : t('addFriend')}
+              </Button>
+            )}
+
+            {isCurrentUser && (
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                disabled
+                className="flex-shrink-0"
+              >
+                {t('me')}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
 
       <UserDetailsPopup
         user={user}

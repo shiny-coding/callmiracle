@@ -243,6 +243,9 @@ body:before {
     .m-#{$i}sp {
       margin: var(--#{$i}sp);
     }
+    .gap-#{$i}sp {
+      gap: var(--#{$i}sp);
+    }
   }
 }
 

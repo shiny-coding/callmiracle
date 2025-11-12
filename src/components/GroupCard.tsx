@@ -118,7 +118,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
   return (
     <>
       <div
-        className="cursor-pointer rounded-lg p-2 transition-colors"
+        className="cursor-pointer rounded-lg p-5sp transition-colors"
         onClick={handleGroupClick}
       >
         {firstTime && (
@@ -192,7 +192,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
         )}
 
         {!firstTime && ((isOwner || isAdmin) || group.language || (isInGroup && !isOwner) || !isInGroup) && (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-1 items-center">
               {/* Language chip */}
               {group.language && (
@@ -214,37 +214,39 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 </Typography>
               )}
             </div>
-            {isInGroup && !isOwner ? (
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                startIcon={<ExitToAppIcon />}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleJoinLeave('leave')
-                }}
-                disabled={updateLoading}
-                className="flex-shrink-0"
-              >
-                {t('leave')}
-              </Button>
-            ) : !isInGroup && (
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleJoinLeave('join')
-                }}
-                disabled={updateLoading || (!group.open && !isAdmin)}
-                className="flex-shrink-0"
-              >
-                {t('join')}
-              </Button>
-            )}
+            <div className="ml-auto flex">
+              {isInGroup && !isOwner ? (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  startIcon={<ExitToAppIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleJoinLeave('leave')
+                  }}
+                  disabled={updateLoading}
+                  className="flex-shrink-0"
+                >
+                  {t('leave')}
+                </Button>
+              ) : !isInGroup && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleJoinLeave('join')
+                  }}
+                  disabled={updateLoading || (!group.open && !isAdmin)}
+                  className="flex-shrink-0"
+                >
+                  {t('join')}
+                </Button>
+              )}
+            </div>
           </div>
         )}
         {firstTime && group.language && (
