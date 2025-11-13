@@ -20,18 +20,18 @@ export enum MeetingError {
 
 export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, { db }: Context) : Promise<MeetingOutput> => {
   const logger = await getLogger()
-  const { 
+  const {
     groupId,
     userName,
-    interests, 
-    timeSlots, 
-    minDurationM, 
+    interests,
+    timeSlots,
+    minDurationM,
     preferEarlier,
     allowedMales,
     allowedFemales,
     allowedMinAge,
     allowedMaxAge,
-    languages,
+    language,
     meetingToConnectId,
     transparency
   } = input
@@ -70,7 +70,7 @@ export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, {
     allowedFemales,
     allowedMinAge,
     allowedMaxAge,
-    languages,
+    language,
     startTime: null,
     peerMeetingId : null,
     status: MeetingStatus.Seeking

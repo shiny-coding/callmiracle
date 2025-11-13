@@ -394,13 +394,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
               </>
             ) : null
           }
-          {meetingPassed && meeting.totalDurationS && meeting.totalDurationS > 0 && (
-            <Chip
-              label={`${t('callDuration')}: ${formatDuration(meeting.totalDurationS)}`}
-              size="small"
-              className={`text-xs text-white bg-gray-500`}
-            />
-          )}
           {meetingPassed && (
             <Chip
               label={getFirstSlotDay()}
@@ -443,8 +436,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
       {meeting.totalDurationS && (
         <div className="flex items-center gap-2">
-          <TimerIcon className="text-blue-400" />
-          <Typography variant="body2">
+          <TimerIcon className={meetingColor} />
+          <Typography variant="body2" className={textColor}>
             {t('totalDuration')}: {formatDuration(meeting.totalDurationS)}
           </Typography>
         </div>

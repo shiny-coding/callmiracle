@@ -322,6 +322,7 @@ export default function ProfileForm() {
           value={tempLanguages}
           onChange={setTempLanguages}
           label={t('iSpeak')}
+          showQuickSelectors={true}
         />
         <FormControl>
           <FormLabel id="sex-radio-group">{t('sex')}</FormLabel>

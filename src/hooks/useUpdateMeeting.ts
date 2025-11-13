@@ -17,7 +17,7 @@ const CREATE_OR_UPDATE_MEETING = gql`
         allowedFemales
         allowedMinAge
         allowedMaxAge
-        languages
+        language
         startTime
         peerMeetingId
       }

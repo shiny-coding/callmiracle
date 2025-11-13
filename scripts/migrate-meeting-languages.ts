@@ -15,20 +15,26 @@ async function migrateMeetingLanguages() {
     const db = client.db();
     const meetingsCollection = db.collection('meetings');
 
-    // Find all meetings that have the old 'languages' field (array)
-    const meetingsWithLanguagesArray = await meetingsCollection.find({
-      languages: { $exists: true, $type: 'array' }
+    // Find all meetings that need migration:
+    // 1. Have old 'languages' field (array)
+    // 2. Don't have 'language' field set (null or missing)
+    const meetingsToMigrate = await meetingsCollection.find({
+      $or: [
+        { languages: { $exists: true, $type: 'array' } },
+        { language: { $exists: false } },
+        { language: null }
+      ]
     }).toArray();
 
-    console.log(`Found ${meetingsWithLanguagesArray.length} meetings to migrate`);
+    console.log(`Found ${meetingsToMigrate.length} meetings to migrate`);
 
     let migratedCount = 0;
     let skippedCount = 0;
 
-    for (const meeting of meetingsWithLanguagesArray) {
-      const languages = meeting.languages as string[];
+    for (const meeting of meetingsToMigrate) {
+      const languages = meeting.languages as string[] | undefined;
 
-      if (languages && languages.length > 0) {
+      if (languages && Array.isArray(languages) && languages.length > 0) {
         // Take the first language from the array
         const language = languages[0];
 
@@ -44,8 +50,8 @@ async function migrateMeetingLanguages() {
         migratedCount++;
         console.log(`Migrated meeting ${meeting._id}: ${JSON.stringify(languages)} -> ${language}`);
       } else {
-        // If languages array is empty, we need to get the group's language
-        console.warn(`Meeting ${meeting._id} has empty languages array, will try to get from group`);
+        // If languages array is empty or missing, we need to get the group's language
+        console.warn(`Meeting ${meeting._id} has no valid language, will try to get from group`);
 
         const groupsCollection = db.collection('groups');
         const group = await groupsCollection.findOne({ _id: meeting.groupId });
