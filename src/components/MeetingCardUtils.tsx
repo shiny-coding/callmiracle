@@ -102,6 +102,12 @@ export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor:
 
     if ( !languagesToShow || languagesToShow.length === 0 ) return null
 
+    // Hide language display if user only speaks one language and it matches the meeting's language
+    const userLanguages = currentUser?.languages || []
+    if (userLanguages.length === 1 && meeting.language === userLanguages[0]) {
+      return null
+    }
+
     return (
       <div className="flex items-center gap-2">
         <LanguageIcon className={meetingColor} fontSize="small" />

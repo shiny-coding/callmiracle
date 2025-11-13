@@ -134,22 +134,21 @@ export function getSharedInterests(
 
 /**
  * Gets the shared languages between a meeting and its peer meeting
- * 
+ *
  * @param meeting The primary meeting
  * @param peerMeeting The peer meeting
  * @returns Array of shared languages
  */
 export function getSharedLanguages(
-  meeting: { languages: string[], peerMeetingId?: string | null },
-  peerMeeting?: { languages: string[] } | null
+  meeting: { language: string, peerMeetingId?: string | null },
+  peerMeeting?: { language: string } | null
 ): string[] {
   if (!meeting.peerMeetingId || !peerMeeting) {
-    return meeting.languages
+    return [meeting.language]
   }
-  
-  return meeting.languages.filter(language => 
-    peerMeeting.languages.includes(language)
-  )
+
+  // Return array with the language if both meetings share it, otherwise empty array
+  return meeting.language === peerMeeting.language ? [meeting.language] : []
 } 
 
 export function class2Hex(tailwindColor: string) {

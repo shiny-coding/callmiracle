@@ -52,11 +52,8 @@ export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]): 
     if (age2 < meeting1.allowedMinAge || age2 > meeting1.allowedMaxAge) return false;
   }
   
-  // Check language overlap
-  const languageOverlap = meeting1.languages.filter((lang: string) => 
-    meeting2.languages.includes(lang)
-  );
-  if (languageOverlap.length === 0) return false;
+  // Check language match
+  if (meeting1.language !== meeting2.language) return false;
   
   // Use getNonBlockedInterests for both meetings
   const interests1 = getNonBlockedInterests(meeting1, user1, user2);

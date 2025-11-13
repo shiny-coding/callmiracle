@@ -55,7 +55,7 @@ type Meeting {
   userId: ID!
   groupId: ID!
   userName: String
-  languages: [String!]!
+  language: String!
   interests: [String!]!
   timeSlots: [Float!]!
   lastSlotEnd: Float!
@@ -275,7 +275,7 @@ input MeetingInput {
   userId: ID!
   groupId: ID!
   userName: String
-  languages: [String!]!
+  language: String!
   interests: [String!]!
   timeSlots: [Float!]!
   minDurationM: Int!

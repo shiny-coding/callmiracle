@@ -49,7 +49,8 @@
     "test:pipeline": "node scripts/test-full-pipeline.js",
     "redis:monitor": "node redis-monitor.js",
     "tunnel": "bash scripts/ssh-tunnel.sh",
-    "tunnel:persistent": "bash scripts/ssh-tunnel-persistent.sh"
+    "tunnel:persistent": "bash scripts/ssh-tunnel-persistent.sh",
+    "migrate:languages": "npx tsx scripts/migrate-meeting-languages.ts"
   },
   "dependencies": {
     "@apollo/client": "^3.12.5",

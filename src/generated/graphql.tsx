@@ -195,7 +195,7 @@ export type Meeting = {
   createdAt?: Maybe<Scalars['Date']['output']>;
   groupId: Scalars['ID']['output'];
   interests: Array<Scalars['String']['output']>;
-  languages: Array<Scalars['String']['output']>;
+  language: Scalars['String']['output'];
   lastCallTime?: Maybe<Scalars['Float']['output']>;
   lastMissedCallTime?: Maybe<Scalars['Float']['output']>;
   lastSlotEnd: Scalars['Float']['output'];
@@ -220,7 +220,7 @@ export type MeetingInput = {
   allowedMinAge: Scalars['Int']['input'];
   groupId: Scalars['ID']['input'];
   interests: Array<Scalars['String']['input']>;
-  languages: Array<Scalars['String']['input']>;
+  language: Scalars['String']['input'];
   meetingToConnectId?: InputMaybe<Scalars['ID']['input']>;
   minDurationM: Scalars['Int']['input'];
   peerMeetingId?: InputMaybe<Scalars['ID']['input']>;

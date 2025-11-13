@@ -24,7 +24,7 @@ const GET_NOTIFICATIONS = gql`
       meeting {
         _id
         userId
-        languages
+        language
         interests
         timeSlots
         minDurationM

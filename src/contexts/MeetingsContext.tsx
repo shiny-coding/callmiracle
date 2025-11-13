@@ -13,7 +13,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
         userId
         groupId
         userName
-        languages
+        language
         interests
         timeSlots
         minDurationM
@@ -33,7 +33,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
         _id
         userId
         groupId
-        languages
+        language
         interests
       }
       peerUser {
@@ -73,7 +73,7 @@ export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
         _id
         timeSlots
         interests
-        languages
+        language
         minDurationM
         userId
         groupId

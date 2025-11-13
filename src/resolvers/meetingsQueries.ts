@@ -228,7 +228,7 @@ const getFutureMeetingsWithPeers = async (_: any, {
         }
 
         if (filterLanguages && filterLanguages.length > 0) {
-          if (!meeting.languages.some(lang => filterLanguages.includes(lang))) {
+          if (!filterLanguages.includes(meeting.language)) {
             passedFilters = false
           }
         }

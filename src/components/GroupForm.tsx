@@ -24,7 +24,7 @@ import PageHeader from './PageHeader'
 import GroupIcon from '@mui/icons-material/Group'
 import InterestsPairsEditor from './InterestsPairsEditor'
 import InterestsDescriptionsEditor from './InterestsDescriptionsEditor'
-import LanguageSelector from './LanguageSelector'
+import { LANGUAGES } from '@/config/languages'
 import { useDropzone } from 'react-dropzone'
 import { useCallback } from 'react'
 import { useGroupImage } from '@/hooks/useGroupImage'
@@ -506,11 +506,22 @@ export default function GroupForm() {
           </FormControl>
 
           <div className="space-y-2">
-            <LanguageSelector
-              value={[language]}
-              onChange={(languages) => setLanguage(languages[0] || 'ru')}
-              label={t('groupLanguage')}
-            />
+            <FormControl fullWidth>
+              <InputLabel className="text-gray-300">{t('groupLanguage')}</InputLabel>
+              <Select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                variant="outlined"
+                className="text-white"
+                label={t('groupLanguage')}
+              >
+                {LANGUAGES.map((lang) => (
+                  <MenuItem key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <div className="text-sm text-gray-400">
               {t('groupLanguageDescription')}
             </div>

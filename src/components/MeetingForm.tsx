@@ -62,7 +62,6 @@ export default function MeetingForm() {
   const [tempAllowedMales, setTempAllowedMales] = useState(true)
   const [tempAllowedFemales, setTempAllowedFemales] = useState(true)
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([10, 100])
-  const [tempLanguages, setTempLanguages] = useState<string[]>([])
   const [showNameInCalendar, setShowNameInCalendar] = useState<boolean>(false)
   const [userDetailsPopupOpen, setUserDetailsPopupOpen] = useState(false)
   const { updateMeeting, loading } = useUpdateMeeting()
@@ -121,7 +120,6 @@ export default function MeetingForm() {
         meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
         meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
       ])
-      setTempLanguages(meeting.languages)
       setShowNameInCalendar(meeting.transparency === MeetingTransparency.Transparent)
     } else if (meetingToConnect) {
       // Connecting to existing meeting
@@ -147,13 +145,6 @@ export default function MeetingForm() {
       setTempInterests([])
     }
   }, [selectedGroupId, meeting, meetingToConnect])
-
-  // Set language from selected group
-  useEffect(() => {
-    if (selectedGroupId && selectedGroup?.language) {
-      setTempLanguages([selectedGroup.language])
-    }
-  }, [selectedGroupId, selectedGroup])
 
   // Add new useEffect to validate time slot durations
   useEffect(() => {
@@ -268,7 +259,7 @@ export default function MeetingForm() {
       allowedFemales: tempAllowedFemales,
       allowedMinAge: tempAgeRange[0],
       allowedMaxAge: tempAgeRange[1],
-      languages: tempLanguages,
+      language: selectedGroup?.language || 'en',
       peerMeetingId: meeting?.peerMeetingId || undefined,
       userId: currentUser?._id || '',
       meetingToConnectId,
