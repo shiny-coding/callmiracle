@@ -24,6 +24,7 @@ import { handleMeetingSaveResult, calculateHasValidDuration, trySelectHourSlots,
 import PageHeader from './PageHeader'
 import UserAvatar from './UserAvatar'
 import UserDetailsPopup from './UserDetailsPopup'
+import { LANGUAGES } from '@/config/languages'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -319,12 +320,19 @@ export default function MeetingForm() {
             </Typography>
           </div>
         ) : userGroups.length > 1 ? (
-          <SingleGroupSelector
-            value={selectedGroupId}
-            onChange={setSelectedGroupId}
-            label={t('selectGroup')}
-            availableGroups={userGroups}
-          />
+          <>
+            <SingleGroupSelector
+              value={selectedGroupId}
+              onChange={setSelectedGroupId}
+              label={t('selectGroup')}
+              availableGroups={userGroups}
+            />
+            {selectedGroupId && selectedGroup && (
+              <Typography variant="body2" color="text.secondary" className="text-sm mt-1">
+                {t('language')}: {LANGUAGES.find(lang => lang.code === selectedGroup.language)?.name || selectedGroup.language}
+              </Typography>
+            )}
+          </>
         ) : null}
         {!selectedGroupId && !meetingToConnect && userGroups.length > 1 && (
           <Typography color="error" className="text-sm">

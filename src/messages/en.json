@@ -11,6 +11,7 @@
   "pleaseSelectGroup": "Please select a group",
   "pleaseSelectTimeSlots": "Please select at least one time slot",
   "pleaseSelectLanguages": "Please select at least one language",
+  "language": "Language",
   "showMyNameNextToMeetingInCalendar": "Show my name next to meeting in Calendar",
   "online": "Online",
   "offline": "Offline",

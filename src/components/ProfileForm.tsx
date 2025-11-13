@@ -22,7 +22,6 @@ import PageHeader from './PageHeader'
 import { routerPush } from '@/utils/routerHelper'
 import Typography from '@mui/material/Typography'
 import { useServer } from '@/contexts/ServerContext'
-import NotificationPermissionButton from './NotificationPermissionButton'
 
 const DELETE_USER = gql`
   mutation DeleteUser($userId: ID!) {
@@ -381,11 +380,6 @@ export default function ProfileForm() {
             )}
           </FormControl>
         )}
-
-        {/* Notification Permission */}
-        <div className="mt-4">
-          <NotificationPermissionButton />
-        </div>
 
         <div className="mt-4 pt-4 border-t panel-border">
           <Button 
