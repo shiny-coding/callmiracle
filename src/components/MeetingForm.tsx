@@ -11,7 +11,6 @@ import { Meeting, MeetingStatus, MeetingTransparency } from '@/generated/graphql
 import { NetworkStatus } from '@apollo/client'
 import InterestSelector from './InterestSelector'
 import TimeSlotsGrid, { TimeSlot } from './TimeSlotsGrid'
-import LanguageSelector from './LanguageSelector'
 import SingleGroupSelector from './SingleGroupSelector'
 import { getAvailableTimeSlots, getTimeSlotsFromMeeting, isMeetingPassed } from '@/utils/meetingUtils'
 import CircularProgress from '@mui/material/CircularProgress'
@@ -25,7 +24,6 @@ import { handleMeetingSaveResult, calculateHasValidDuration, trySelectHourSlots,
 import PageHeader from './PageHeader'
 import UserAvatar from './UserAvatar'
 import UserDetailsPopup from './UserDetailsPopup'
-import { LANGUAGES } from '@/config/languages'
 
 export default function MeetingForm() {
   const t = useTranslations()
@@ -36,12 +34,10 @@ export default function MeetingForm() {
   const { id: meetingId } = useParams()
   const meeting = myMeetingsWithPeers.find(m => m.meeting._id === meetingId)?.meeting
 
-  const { currentUser, lastMeetingGroup, setLastMeetingGroup, lastMeetingLanguage, setLastMeetingLanguage } = useStore(state => ({ 
+  const { currentUser, lastMeetingGroup, setLastMeetingGroup } = useStore(state => ({
     currentUser: state.currentUser,
     lastMeetingGroup: state.lastMeetingGroup,
-    setLastMeetingGroup: state.setLastMeetingGroup,
-    lastMeetingLanguage: state.lastMeetingLanguage,
-    setLastMeetingLanguage: state.setLastMeetingLanguage
+    setLastMeetingGroup: state.setLastMeetingGroup
   }))
   const router = useRouter()
 
@@ -66,17 +62,9 @@ export default function MeetingForm() {
   const [tempAllowedMales, setTempAllowedMales] = useState(true)
   const [tempAllowedFemales, setTempAllowedFemales] = useState(true)
   const [tempAgeRange, setTempAgeRange] = useState<[number, number]>([10, 100])
-  const [tempLanguages, setTempLanguagesState] = useState<string[]>(
-    lastMeetingLanguage || currentUser?.languages || []
-  )
+  const [tempLanguages, setTempLanguages] = useState<string[]>([])
   const [showNameInCalendar, setShowNameInCalendar] = useState<boolean>(false)
   const [userDetailsPopupOpen, setUserDetailsPopupOpen] = useState(false)
-  
-  // Wrapper function to save to store when languages change
-  const setTempLanguages = (languages: string[]) => {
-    setTempLanguagesState(languages)
-    setLastMeetingLanguage(languages.length > 0 ? languages : null)
-  }
   const { updateMeeting, loading } = useUpdateMeeting()
   const [hasValidDuration, setHasValidDuration] = useState(true)
   const { refetchMeetings } = useMeetings()
@@ -133,26 +121,25 @@ export default function MeetingForm() {
         meeting.allowedMinAge !== undefined ? meeting.allowedMinAge : 10,
         meeting.allowedMaxAge !== undefined ? meeting.allowedMaxAge : 100
       ])
-      setTempLanguagesState(meeting.languages)
+      setTempLanguages(meeting.languages)
       setShowNameInCalendar(meeting.transparency === MeetingTransparency.Transparent)
     } else if (meetingToConnect) {
       // Connecting to existing meeting
       setSelectedGroupId(meetingToConnect.groupId || '')
       setMinDurationM(meetingToConnect.minDurationM || 60)
-      
-      // Set languages to intersection of meeting languages and current user's languages
-      const meetingLanguages = meetingToConnect.languages || []
-      const userLanguages = currentUser?.languages || []
-      const languageIntersection = meetingLanguages.filter(lang => userLanguages.includes(lang))
-      setTempLanguagesState(languageIntersection)
     } else {
-      // Creating new meeting - use lastMeetingGroup if available and user is still in that group
-      if (lastMeetingGroup && currentUser?.groups?.includes(lastMeetingGroup)) {
+      // Creating new meeting
+      // If user belongs to only one group, automatically select it
+      if (userGroups.length === 1) {
+        setSelectedGroupId(userGroups[0]._id)
+      }
+      // Otherwise use lastMeetingGroup if available and user is still in that group
+      else if (lastMeetingGroup && currentUser?.groups?.includes(lastMeetingGroup)) {
         setSelectedGroupId(lastMeetingGroup)
       }
       setShowNameInCalendar(false)
     }
-  }, [meeting, meetingToConnect, lastMeetingGroup, currentUser?.groups])
+  }, [meeting, meetingToConnect, lastMeetingGroup, currentUser?.groups, userGroups])
 
   // Clear interests when group changes (unless it's the initial load)
   useEffect(() => {
@@ -160,6 +147,13 @@ export default function MeetingForm() {
       setTempInterests([])
     }
   }, [selectedGroupId, meeting, meetingToConnect])
+
+  // Set language from selected group
+  useEffect(() => {
+    if (selectedGroupId && selectedGroup?.language) {
+      setTempLanguages([selectedGroup.language])
+    }
+  }, [selectedGroupId, selectedGroup])
 
   // Add new useEffect to validate time slot durations
   useEffect(() => {
@@ -333,15 +327,15 @@ export default function MeetingForm() {
               {userGroups.find(group => group._id === meetingToConnect.groupId)?.name || t('unknownGroup')}
             </Typography>
           </div>
-        ) : (
+        ) : userGroups.length > 1 ? (
           <SingleGroupSelector
             value={selectedGroupId}
             onChange={setSelectedGroupId}
             label={t('selectGroup')}
             availableGroups={userGroups}
           />
-        )}
-        {!selectedGroupId && !meetingToConnect && (
+        ) : null}
+        {!selectedGroupId && !meetingToConnect && userGroups.length > 1 && (
           <Typography color="error" className="text-sm">
             {t('pleaseSelectGroup')}
           </Typography>
@@ -362,37 +356,6 @@ export default function MeetingForm() {
           </Typography>
         )}
 
-        <Typography variant="subtitle1" className="mt-4">
-          {t('languages')}
-        </Typography>
-        {meetingToConnect ? (
-          <div>
-            <div className="p-3 rounded-lg">
-              {tempLanguages.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {tempLanguages.map(langCode => {
-                    const language = LANGUAGES.find(lang => lang.code === langCode)
-                    return (
-                      <span key={langCode} className="px-2 py-1 text-sm">
-                        {language?.name || langCode}
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <LanguageSelector
-            value={tempLanguages}
-            onChange={setTempLanguages}
-          />
-        )}
-        {tempLanguages.length === 0 && (
-          <Typography color="error" className="text-sm">
-            {meetingToConnect ? t('noCommonLanguages') : t('pleaseSelectLanguages')}
-          </Typography>
-        )}
         <Typography variant="subtitle1" className="mt-4">
           {t('preferences')}
         </Typography>
@@ -527,21 +490,23 @@ export default function MeetingForm() {
           </Button>
         )}
         <div className="flex flex-col justify-start gap-2 mr-auto">
-          {!selectedGroupId && (
+          {!selectedGroupId && userGroups.length > 1 ? (
             <Typography color="warning" className="text-sm">
               {t('pleaseSelectGroup')}
             </Typography>
-          )}
-          {selectedGroupId && tempInterests.length === 0 && (
+          ) : selectedGroupId && tempInterests.length === 0 ? (
             <Typography color="warning" className="text-sm">
               {t('pleaseSelectInterest')}
             </Typography>
-          )}
-          {selectedTimeSlots.length > 0 && !hasValidDuration && (
+          ) : selectedGroupId && tempInterests.length > 0 && selectedTimeSlots.length === 0 ? (
+            <Typography color="warning" className="text-sm">
+              {t('selectAdjacentSlots', { minutes: minDurationM })}
+            </Typography>
+          ) : selectedTimeSlots.length > 0 && !hasValidDuration ? (
             <Typography color="warning" className="text-sm">
               {t('insufficientDuration', { minutes: minDurationM })}
             </Typography>
-          )}
+          ) : null}
         </div>
         <Button onClick={handleCancel}>
           {t('cancel')}
@@ -549,12 +514,11 @@ export default function MeetingForm() {
         <Button
           onClick={handleSave}
           variant="contained"
-          disabled={loading || 
+          disabled={loading ||
             isCancellingMeeting ||
             !selectedGroupId ||
-            selectedTimeSlots.length === 0 || 
-            tempInterests.length === 0 || 
-            tempLanguages.length === 0 ||
+            selectedTimeSlots.length === 0 ||
+            tempInterests.length === 0 ||
             !hasValidDuration}
         >
           {meeting ? t('update') : t('create')}

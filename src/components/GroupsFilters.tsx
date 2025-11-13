@@ -7,6 +7,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
 import StandardChip from './StandardChip'
+import FilterChipsContainer from './FilterChipsContainer'
 
 interface GroupsFiltersProps {
   // Applied filters (from parent state)
@@ -202,7 +203,7 @@ export default function GroupsFilters({
 
         {/* Active filter chips - displayed below toggler when collapsed */}
         {!isExpanded && activeFilterChips.length > 0 && (
-          <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
+          <FilterChipsContainer>
             {activeFilterChips.map((chip) => (
               <StandardChip
                 key={chip.type}
@@ -211,7 +212,7 @@ export default function GroupsFilters({
                 deleteIcon={<CloseIcon />}
               />
             ))}
-          </div>
+          </FilterChipsContainer>
         )}
 
         {isExpanded && (

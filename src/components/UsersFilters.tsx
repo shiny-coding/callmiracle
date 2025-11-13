@@ -11,6 +11,7 @@ import GroupSelector from './GroupSelector'
 import { Group } from '@/generated/graphql'
 import StandardChip from './StandardChip'
 import { LANGUAGES } from '@/config/languages'
+import FilterChipsContainer from './FilterChipsContainer'
 
 interface UsersFiltersProps {
   // Applied filters (from parent state)
@@ -284,7 +285,7 @@ export default function UsersFilters({
 
       {/* Active filter chips - displayed below toggler when collapsed */}
       {!isExpanded && activeFilterChips.length > 0 && (
-        <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
+        <FilterChipsContainer>
           {activeFilterChips.map((chip) => (
             <StandardChip
               key={chip.type}
@@ -293,7 +294,7 @@ export default function UsersFilters({
               deleteIcon={<CloseIcon />}
             />
           ))}
-        </div>
+        </FilterChipsContainer>
       )}
 
       {isExpanded && (

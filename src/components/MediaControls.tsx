@@ -8,6 +8,7 @@ import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { useState } from 'react'
 import NotificationBadge from './NotificationBadge'
 import NotificationsPopup from './NotificationsPopup'
@@ -91,18 +92,31 @@ export default function MediaControls({
     })
   }
 
+  const handleRefresh = () => {
+    window.location.reload()
+  }
+
   return (
     <>
       <div className={`flex items-center gap-4 ${className}`}>
         {showNotifications && (
-          <IconButton
-            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-            onClick={() => setNotificationsOpen(true)}
-          >
-            <NotificationBadge show={hasUnseenNotifications}>
-              <NotificationsIcon className="text-white" />
-            </NotificationBadge>
-          </IconButton>
+          <>
+            <IconButton
+              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+              onClick={handleRefresh}
+              title="Refresh Page (Debug)"
+            >
+              <RefreshIcon className="text-white" />
+            </IconButton>
+            <IconButton
+              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+              onClick={() => setNotificationsOpen(true)}
+            >
+              <NotificationBadge show={hasUnseenNotifications}>
+                <NotificationsIcon className="text-white" />
+              </NotificationBadge>
+            </IconButton>
+          </>
         )}
 
         {showMediaButtons && (

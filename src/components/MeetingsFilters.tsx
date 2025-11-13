@@ -13,6 +13,7 @@ import { useGroups } from '@/store/GroupsProvider'
 import CloseIcon from '@mui/icons-material/Close'
 import StandardChip from './StandardChip'
 import { LANGUAGES } from '@/config/languages'
+import FilterChipsContainer from './FilterChipsContainer'
 interface MeetingsFiltersProps {
   onToggleFilters: (visible: boolean) => void // Callback to inform parent about changes
 }
@@ -274,7 +275,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
 
       {/* Active filter chips - displayed below toggler when collapsed */}
       {!isExpanded && activeFilterChips.length > 0 && (
-        <div className="flex flex-wrap gap-1 px-2 pb-2" style={{ gap: '0.2rem' }}>
+        <FilterChipsContainer>
           {activeFilterChips.map((chip) => (
             <StandardChip
               key={chip.type}
@@ -283,7 +284,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
               deleteIcon={<CloseIcon />}
             />
           ))}
-        </div>
+        </FilterChipsContainer>
       )}
 
       {isExpanded && (

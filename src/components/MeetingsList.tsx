@@ -162,7 +162,7 @@ export default function MeetingsList() {
                     width: '100%',
                     transform: `translateY(${virtualItem.start}px)`,
                     display: 'block',
-                    paddingBottom: '16px', // space-y-4 equivalent
+                    paddingBottom: 'var(--20sp)',
                   }}
                 >
                   {isEmptyState ? (
