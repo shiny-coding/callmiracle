@@ -8,6 +8,7 @@ import { useMediaPermissions } from '@/hooks/useMediaPermissions'
 import { useEffect, useRef, useState } from 'react'
 import { IconButton, Button, Dialog, DialogTitle, DialogContent } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import clientLogger from '@/utils/clientLogger'
 
 // Clean up device name by removing hardware IDs like (046d:082d)
 function cleanDeviceName(name: string): string {
@@ -24,31 +25,14 @@ async function getVideoDeviceLabel(device: MediaDeviceInfo, existingStream?: Med
       const labelLower = device.label.toLowerCase()
       if (labelLower.includes('front') || labelLower.includes('user')) return 'Front Camera'
       if (labelLower.includes('back') || labelLower.includes('rear') || labelLower.includes('environment')) return 'Back Camera'
+
+      // Return the label as-is if it doesn't match known patterns
+      return device.label
     }
 
-    // Only create a new stream if we have an existing stream (permissions already granted)
-    // This avoids triggering permission prompts on iOS
-    if (existingStream) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: device.deviceId }
-        })
-        const track = stream.getVideoTracks()[0]
-        const capabilities = track.getCapabilities()
-
-        stream.getTracks().forEach(track => track.stop())
-
-        if (capabilities.facingMode) {
-          if (capabilities.facingMode.includes('user')) return 'Front Camera'
-          if (capabilities.facingMode.includes('environment')) return 'Back Camera'
-        }
-      } catch (err) {
-        // If stream creation fails, device is not available
-        return null
-      }
-    }
-
-    return device.label || `Camera ${device.deviceId.slice(0, 5)}...`
+    // Don't create test streams - causes issues on iOS
+    // Just return a generic label
+    return `Camera ${device.deviceId.slice(0, 5)}...`
   } catch (err) {
     return null
   }
@@ -112,22 +96,60 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     isEnabled: localAudioEnabled
   })
 
-  // Create and manage preview stream
+  // Cleanup preview stream immediately when dialog closes
   useEffect(() => {
     if (!open) {
-      // Cleanup when dialog closes
-      if (previewStreamRef.current) {
-        previewStreamRef.current.getTracks().forEach(track => {
-          track.stop()
-        })
-        previewStreamRef.current = null
+      clientLogger.info('[DeviceSettings] Dialog closed, starting cleanup', {
+        hasPreviewStream: !!previewStreamRef.current,
+        trackCount: previewStreamRef.current?.getTracks().length || 0
+      })
+
+      // Cleanup function for iOS camera indicator
+      const cleanup = () => {
+        // Pause video first
+        if (videoRef.current) {
+          videoRef.current.pause()
+          videoRef.current.srcObject = null
+          videoRef.current.removeAttribute('src')
+          videoRef.current.load()
+        }
+
+        // Stop all tracks
+        if (previewStreamRef.current) {
+          const tracks = previewStreamRef.current.getTracks()
+          tracks.forEach(track => {
+            clientLogger.info('[DeviceSettings] Stopping track on dialog close', {
+              trackId: track.id,
+              kind: track.kind,
+              label: track.label,
+              readyState: track.readyState
+            })
+            track.stop()
+          })
+          previewStreamRef.current = null
+        }
         setPreviewStream(null)
       }
+
+      cleanup()
+      clientLogger.info('[DeviceSettings] Cleanup completed on dialog close')
       return
+    } else {
+      clientLogger.info('[DeviceSettings] Dialog opened', {
+        localVideoEnabled,
+        connectionStatus
+      })
     }
 
     async function createPreviewStream() {
       if (!localVideoEnabled) {
+        clientLogger.info('[DeviceSettings] Video disabled, cleaning up preview stream')
+        // Clear video element srcObject first
+        if (videoRef.current) {
+          videoRef.current.srcObject = null
+        }
+
+        // Then stop all tracks
         if (previewStreamRef.current) {
           previewStreamRef.current.getTracks().forEach(track => track.stop())
           previewStreamRef.current = null
@@ -138,11 +160,20 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
       try {
         const selectedVideoDevice = localStorage.getItem('selectedVideoDevice') || ''
+        clientLogger.info('[DeviceSettings] Creating preview stream', {
+          selectedVideoDevice: selectedVideoDevice.slice(0, 20) + '...',
+          connectionStatus,
+          hasOldStream: !!previewStreamRef.current
+        })
 
         // During a call, create a separate preview stream
         // Not during a call, use the existing localStream
         if (connectionStatus === 'connected') {
-          
+          // Clear video element srcObject first
+          if (videoRef.current) {
+            videoRef.current.srcObject = null
+          }
+
           // Stop old preview stream if exists
           if (previewStreamRef.current) {
             previewStreamRef.current.getTracks().forEach(track => track.stop())
@@ -154,10 +185,23 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           }
 
           const stream = await navigator.mediaDevices.getUserMedia(constraints)
+          const tracks = stream.getVideoTracks()
+
+          clientLogger.info('[DeviceSettings] Preview stream created (connected)', {
+            streamId: stream.id,
+            trackCount: tracks.length,
+            trackLabel: tracks[0]?.label,
+            trackId: tracks[0]?.id
+          })
 
           previewStreamRef.current = stream
           setPreviewStream(stream)
         } else {
+          // Clear video element srcObject first
+          if (videoRef.current) {
+            videoRef.current.srcObject = null
+          }
+
           // Stop old preview stream if exists
           if (previewStreamRef.current) {
             previewStreamRef.current.getTracks().forEach(track => track.stop())
@@ -169,17 +213,56 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           }
 
           const stream = await navigator.mediaDevices.getUserMedia(constraints)
+          const tracks = stream.getVideoTracks()
+
+          clientLogger.info('[DeviceSettings] Preview stream created (not connected)', {
+            streamId: stream.id,
+            trackCount: tracks.length,
+            trackLabel: tracks[0]?.label,
+            trackId: tracks[0]?.id
+          })
 
           previewStreamRef.current = stream
           setPreviewStream(stream)
         }
       } catch (err) {
-        console.error('[DeviceSettings] Error creating preview stream:', err)
+        clientLogger.error('[DeviceSettings] Error creating preview stream', {
+          error: err instanceof Error ? err.message : String(err)
+        })
         setPreviewStream(null)
       }
     }
 
     createPreviewStream()
+
+    // Cleanup function that runs when effect dependencies change or component unmounts
+    return () => {
+      clientLogger.info('[DeviceSettings] useEffect cleanup running', {
+        hasPreviewStream: !!previewStreamRef.current,
+        trackCount: previewStreamRef.current?.getTracks().length || 0
+      })
+
+      if (videoRef.current) {
+        videoRef.current.pause()
+        videoRef.current.srcObject = null
+        videoRef.current.removeAttribute('src')
+        videoRef.current.load()
+      }
+
+      if (previewStreamRef.current) {
+        const tracks = previewStreamRef.current.getTracks()
+        tracks.forEach(track => {
+          clientLogger.info('[DeviceSettings] Stopping track in useEffect cleanup', {
+            trackId: track.id,
+            kind: track.kind,
+            label: track.label,
+            readyState: track.readyState
+          })
+          track.stop()
+        })
+        previewStreamRef.current = null
+      }
+    }
   }, [open, localStream, localVideoEnabled, connectionStatus])
 
   // Attach preview stream to video element
@@ -209,40 +292,85 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   }, [])
 
   const handleVideoDeviceChange = async (deviceId: string) => {
-
     if (deviceId === 'disabled') {
+      clientLogger.info('[DeviceSettings] Video device disabled')
       setLocalVideoEnabled(false)
       // Notify peer if in a call
       if (connectionStatus === 'connected') {
         sendWantedMediaState()
       }
     } else {
+      clientLogger.info('[DeviceSettings] Changing video device', {
+        newDeviceId: deviceId.slice(0, 20) + '...',
+        hasOldStream: !!previewStreamRef.current,
+        oldTrackCount: previewStreamRef.current?.getTracks().length || 0
+      })
+
       setLocalVideoEnabled(true)
       await videoDevices.handleDeviceChange(deviceId)
 
       // Notify peer if in a call
       if (connectionStatus === 'connected') {
         sendWantedMediaState()
+      }
 
-        // Update the preview stream with the new device
-        try {
-          // Stop old preview stream
-          if (previewStreamRef.current) {
-            previewStreamRef.current.getTracks().forEach(track => track.stop())
-          }
-
-          const constraints: MediaStreamConstraints = {
-            video: { deviceId },
-            audio: false
-          }
-
-          const stream = await navigator.mediaDevices.getUserMedia(constraints)
-
-          previewStreamRef.current = stream
-          setPreviewStream(stream)
-        } catch (err) {
-          console.error('[DeviceSettings] Error updating preview stream:', err)
+      // Always recreate the preview stream with the new device
+      try {
+        // Clear video element srcObject first (critical for iOS)
+        if (videoRef.current) {
+          clientLogger.info('[DeviceSettings] Clearing video element for device change')
+          videoRef.current.pause()
+          videoRef.current.srcObject = null
+          videoRef.current.removeAttribute('src')
+          videoRef.current.load()
         }
+
+        // Stop old preview stream
+        if (previewStreamRef.current) {
+          const tracks = previewStreamRef.current.getTracks()
+          tracks.forEach(track => {
+            clientLogger.info('[DeviceSettings] Stopping old track before device change', {
+              trackId: track.id,
+              kind: track.kind,
+              label: track.label,
+              readyState: track.readyState
+            })
+            track.stop()
+          })
+          previewStreamRef.current = null
+        }
+
+        // Wait a bit for cleanup to complete on iOS
+        clientLogger.info('[DeviceSettings] Waiting 100ms for iOS cleanup')
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        const constraints: MediaStreamConstraints = {
+          video: { deviceId },
+          audio: false
+        }
+
+        clientLogger.info('[DeviceSettings] Requesting new stream with device', {
+          deviceId: deviceId.slice(0, 20) + '...'
+        })
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        const tracks = stream.getVideoTracks()
+
+        clientLogger.info('[DeviceSettings] New stream acquired', {
+          streamId: stream.id,
+          trackCount: tracks.length,
+          trackLabel: tracks[0]?.label,
+          trackId: tracks[0]?.id,
+          trackReadyState: tracks[0]?.readyState
+        })
+
+        previewStreamRef.current = stream
+        setPreviewStream(stream)
+      } catch (err) {
+        clientLogger.error('[DeviceSettings] Error updating preview stream', {
+          error: err instanceof Error ? err.message : String(err),
+          deviceId: deviceId.slice(0, 20) + '...'
+        })
+        setPreviewStream(null)
       }
     }
   }
@@ -266,17 +394,51 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     }
   }
 
+  const handleClose = () => {
+    clientLogger.info('[DeviceSettings] handleClose called', {
+      hasPreviewStream: !!previewStreamRef.current,
+      trackCount: previewStreamRef.current?.getTracks().length || 0
+    })
+
+    // Immediate cleanup for iOS
+    if (videoRef.current) {
+      clientLogger.info('[DeviceSettings] Clearing video element in handleClose')
+      videoRef.current.pause()
+      videoRef.current.srcObject = null
+      videoRef.current.removeAttribute('src')
+      videoRef.current.load()
+    }
+
+    if (previewStreamRef.current) {
+      const tracks = previewStreamRef.current.getTracks()
+      tracks.forEach(track => {
+        clientLogger.info('[DeviceSettings] Stopping track in handleClose', {
+          trackId: track.id,
+          kind: track.kind,
+          label: track.label,
+          readyState: track.readyState
+        })
+        track.stop()
+      })
+      previewStreamRef.current = null
+    }
+    setPreviewStream(null)
+
+    clientLogger.info('[DeviceSettings] handleClose completed, calling onClose')
+    onClose()
+  }
+
   const handleContentClick = (e: React.MouseEvent) => {
     // Close dialog if clicking directly on the content area (not on buttons)
     if (e.target === e.currentTarget) {
-      onClose()
+      handleClose()
     }
   }
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="lg"
       fullWidth
       PaperProps={{
@@ -289,7 +451,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {t('deviceSettings')}
         <IconButton
-          onClick={onClose}
+          onClick={handleClose}
           size="small"
           aria-label={t('close')}
           title={t('close')}

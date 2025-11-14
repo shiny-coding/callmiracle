@@ -36,9 +36,21 @@ export const authOptions: NextAuthOptions = {
   logger: {
     error: (code, metadata) => {
       // Suppress JWT_SESSION_ERROR logging as it's a normal occurrence for expired tokens
-      if (code !== 'JWT_SESSION_ERROR') {
-        console.error(`[next-auth][error][${code}]`, metadata)
+      if (code === 'JWT_SESSION_ERROR') {
+        return
       }
+
+      // Suppress CLIENT_FETCH_ERROR with "Load failed" as it's caused by navigation aborts
+      // Real auth errors will have different messages (unauthorized, network error, etc.)
+      if (code === 'CLIENT_FETCH_ERROR' &&
+          metadata &&
+          typeof metadata === 'object' &&
+          'message' in metadata &&
+          metadata.message === 'Load failed') {
+        return
+      }
+
+      console.error(`[next-auth][error][${code}]`, metadata)
     },
     warn: (code) => console.warn(`[next-auth][warn][${code}]`),
     debug: () => {}, // Disabled

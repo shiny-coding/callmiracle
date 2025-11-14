@@ -1,5 +1,5 @@
 // Version number - update this when you make changes to force update
-const VERSION = '1.0.3'
+const VERSION = '1.0.4'
 console.log('Service Worker version:', VERSION)
 
 // Install event - activate immediately
@@ -68,10 +68,10 @@ self.addEventListener('notificationclick', event => {
 
   event.waitUntil(
     Promise.all(trackingPromises).then(() =>
-      clients.matchAll({ 
-      type: 'window',
-      includeUncontrolled: true 
-    }).then(clientsArr => {
+      clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+      }).then(clientsArr => {
       // Look for an existing window that we can navigate to the target URL
       const existingClient = clientsArr.find(client => {
         // Check if there's a window open to our domain
@@ -98,6 +98,6 @@ self.addEventListener('notificationclick', event => {
       console.error('Error handling notification click:', error)
       // Fallback: try to open new window
       return clients.openWindow(targetUrl)
-    })
+    }))
   )
 }) 
