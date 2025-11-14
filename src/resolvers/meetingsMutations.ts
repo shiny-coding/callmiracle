@@ -26,6 +26,10 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
     const _peerMeetingId = meeting?.peerMeetingId
     const currentStatus = meeting?.status
 
+    // Check if meeting has already passed BEFORE updating status
+    // This is important because we need to check the original meeting state
+    const meetingHasPassed = meeting ? isMeetingPassed(meeting as unknown as Meeting) : false
+
     // Create update object with only provided fields
     const updateFields: any = {}
     if (status !== undefined) {
@@ -36,16 +40,16 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
       }
     }
     if (lastCallTime !== undefined) updateFields.lastCallTime = lastCallTime
-    
+
     // Update the meeting
     const updatedMeeting = await db.collection('meetings').findOneAndUpdate(
       { _id },
       { $set: updateFields },
       { returnDocument: 'after' }
     )
-    
+
     if (!updatedMeeting) {
-      logger.error('Meeting not found for status update', { 
+      logger.error('Meeting not found for status update', {
         meetingId: _id.toString(),
         requestedStatus: status,
         requestedLastCallTime: lastCallTime
@@ -53,7 +57,7 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
       throw new Error('Meeting not found ' + _id.toString())
     }
 
-    logger.info('Updated meeting status', { 
+    logger.info('Updated meeting status', {
       meetingId: updatedMeeting._id.toString(),
       newStatus: status,
       lastCallTime,
@@ -75,7 +79,7 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
     const peerMeeting = _peerMeetingId ? await db.collection('meetings').findOne({ _id: _peerMeetingId }) : null
 
     const disconnectPeer = status === MeetingStatus.Cancelled || status === MeetingStatus.Finished
-    
+
     // If status is CANCELLED or FINISHED and this meeting has a peer, handle peer notification
     if (_peerMeetingId) {
 
@@ -84,7 +88,7 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
         updateFields.status = peerMeeting?.linkedToPeer ? MeetingStatus.Finished : MeetingStatus.Seeking
         updateFields.peerMeetingId = null
         updateFields.startTime = null
-        logger.info('Disconnecting peer meeting', { 
+        logger.info('Disconnecting peer meeting', {
           peerMeetingId: _peerMeetingId.toString(),
           newPeerStatus: updateFields.status,
           linkedToPeer: peerMeeting?.linkedToPeer
@@ -101,9 +105,7 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
           updateFields
         })
 
-        // Check if meeting has already passed before sending notifications
-        const meetingHasPassed = isMeetingPassed(updatedMeeting as unknown as Meeting)
-
+        // Use the meetingHasPassed value we calculated before updating the status
         if (!meetingHasPassed) {
           if ( status === MeetingStatus.Finished ) {
             await publishMeetingNotification(NotificationType.MeetingFinished, db, peerMeeting, updatedMeeting)

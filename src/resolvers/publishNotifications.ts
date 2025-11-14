@@ -18,7 +18,7 @@ export async function publishMeetingNotification(notificationType: NotificationT
   }
   
   // Create a notification in the database
-  await db.collection('notifications').insertOne({
+  const notificationResult = await db.collection('notifications').insertOne({
     userId: peerUser._id,
     userName: peerUser.name,
     type: notificationType,
@@ -26,26 +26,30 @@ export async function publishMeetingNotification(notificationType: NotificationT
     meetingId: peerMeeting._id,
     createdAt: new Date()
   })
-  
+
+  const notificationId = notificationResult.insertedId
+
   // Publish notification event
   const topic = `SUBSCRIPTION_EVENT:${peerMeeting.userId.toString()}`
-  publishSubscriptionEvent(topic, { 
+  publishSubscriptionEvent(topic, {
     notificationEvent: { type: notificationType as NotificationType, meeting: peerMeeting, peerUserName: meeting.userName },
-    logger 
+    logger
   })
-  
+
   logger.info('Published meeting notification event', {
     notificationType,
     peerUserName: peerUser.name,
     peerUserId: peerMeeting.userId.toString(),
     meetingId: peerMeeting._id.toString(),
-    initiatorUserName: meeting.userName
+    initiatorUserName: meeting.userName,
+    notificationId: notificationId.toString()
   })
 
   await publishPushNotification(db, peerUser, {
     type: notificationType,
     peerUserName: meeting.userName,
-    meetingId: peerMeeting._id
+    meetingId: peerMeeting._id,
+    notificationId
   })
 }
 
@@ -81,5 +85,13 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
     senderId: senderUser._id.toString(),
     messageLength: messageText.length,
     conversationId: conversationId.toString()
+  })
+
+  // Send push notification for message
+  await publishPushNotification(db, targetUser, {
+    type: NotificationType.MessageReceived,
+    peerUserName: senderUser.name,
+    messageText: messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText,
+    senderUserId: senderUser._id
   })
 }

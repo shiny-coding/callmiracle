@@ -12,11 +12,12 @@ import { getLogger } from '@/utils/logger'
 
 
 type PushNotification = {
-  type: NotificationType, 
-  peerUserName: string, 
+  type: NotificationType,
+  peerUserName: string,
   meetingId?: ObjectId,
   messageText?: string,
-  senderUserId?: ObjectId
+  senderUserId?: ObjectId,
+  notificationId?: ObjectId
 }
 
 // VAPID keys should be generated once and stored securely as environment variables.
@@ -121,7 +122,8 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
     title,
     body,
     data: {
-      url
+      url,
+      notificationId: notification.notificationId?.toString()
     }
   }
 

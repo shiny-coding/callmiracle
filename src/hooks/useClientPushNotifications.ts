@@ -53,7 +53,21 @@ export function useClientPushNotifications(currentUser: any) {
       }
 
       try {
-        await navigator.serviceWorker.register('/sw.js')
+        // Register service worker (will check for updates on registration)
+        // updateViaCache: 'none' ensures changes are picked up immediately
+        const registration = await navigator.serviceWorker.register('/sw.js', {
+          updateViaCache: 'none'
+        })
+
+        // Check for updates when the page becomes visible
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === 'visible') {
+            registration.update().catch(err => {
+              console.error('Failed to update service worker:', err)
+            })
+          }
+        }
+        document.addEventListener('visibilitychange', handleVisibilityChange)
 
         // Check platform
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)

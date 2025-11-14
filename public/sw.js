@@ -1,3 +1,21 @@
+// Version number - update this when you make changes to force update
+const VERSION = '1.0.3'
+console.log('Service Worker version:', VERSION)
+
+// Install event - activate immediately
+self.addEventListener('install', event => {
+  console.log('Service Worker installing, version:', VERSION)
+  self.skipWaiting() // Force the waiting service worker to become the active service worker
+})
+
+// Activate event - take control of all pages immediately
+self.addEventListener('activate', event => {
+  console.log('Service Worker activating, version:', VERSION)
+  event.waitUntil(
+    self.clients.claim() // Take control of all pages immediately
+  )
+})
+
 self.addEventListener('push', event => {
   const data = event.data.json()
   console.log('New push notification', data)
@@ -7,7 +25,8 @@ self.addEventListener('push', event => {
     icon: '/logo-192.png',
     badge: '/logo-72.png',
     data: {
-      url: data.data.url
+      url: data.data.url,
+      notificationId: data.data.notificationId
     }
   }
 
@@ -19,16 +38,37 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close()
 
-  // Track notification click
-  fetch('/api/track-notification-click', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
-  }).catch(err => console.error('Failed to track notification click:', err))
+  const notificationId = event.notification.data?.notificationId
+  console.log('Notification clicked, notificationId:', notificationId, 'data:', event.notification.data)
 
   const targetUrl = event.notification.data?.url || '/'
-  
+
+  // Wait for both fetch requests to complete before navigating
+  const trackingPromises = [
+    fetch('/api/track-notification-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).catch(err => console.error('Failed to track notification click:', err))
+  ]
+
+  if (notificationId) {
+    console.log('Marking notification as seen:', notificationId)
+    trackingPromises.push(
+      fetch('/api/mark-notification-seen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationId }),
+        credentials: 'include'
+      }).catch(err => console.error('Failed to mark notification as seen:', err))
+    )
+  } else {
+    console.log('No notificationId found in notification data')
+  }
+
   event.waitUntil(
-    clients.matchAll({ 
+    Promise.all(trackingPromises).then(() =>
+      clients.matchAll({ 
       type: 'window',
       includeUncontrolled: true 
     }).then(clientsArr => {
