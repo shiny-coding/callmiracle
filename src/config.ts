@@ -29,4 +29,22 @@ export const subscriptionsConfig = {
     // Enable immediate flushing for real-time experience
     immediateFlush: process.env.SSE_IMMEDIATE_FLUSH !== 'false'
   }
+} as const;
+
+// Broadcast Batching Configuration
+export const broadcastConfig = {
+  // Server-side: Batch broadcast events within this interval (milliseconds)
+  // Multiple MEETING_UPDATED events within this window will be batched into a single broadcast
+  // Set to 0 to disable batching (immediate broadcasts)
+  batchIntervalMs: parseInt(process.env.BROADCAST_BATCH_INTERVAL_MS || '3000'),
+} as const;
+
+// Client-side Refetch Configuration
+export const refetchConfig = {
+  // Client-side: Minimum delay before refetching after receiving broadcast (milliseconds)
+  minDelayMs: parseInt(process.env.NEXT_PUBLIC_REFETCH_MIN_DELAY_MS || '1000'),
+
+  // Client-side: Maximum delay before refetching after receiving broadcast (milliseconds)
+  // Clients will wait a random time between min and max to scatter database load
+  maxDelayMs: parseInt(process.env.NEXT_PUBLIC_REFETCH_MAX_DELAY_MS || '5000'),
 } as const; 

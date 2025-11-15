@@ -3,20 +3,28 @@ import { ObjectId } from 'mongodb'
 import { BroadcastType } from '@/generated/graphql'
 import { getLogger } from '@/utils/logger'
 import { publishSubscriptionEvent } from '@/utils/pubsubHelper'
+import { scheduleBroadcast } from './broadcastScheduler'
 
+/**
+ * @deprecated Use scheduleBroadcast() instead for batched broadcasts
+ * This function is kept for backward compatibility and immediate broadcasts
+ */
 export async function publishBroadcastEvent(broadcastType: BroadcastType) {
   const logger = await getLogger()
   const topic = `SUBSCRIPTION_EVENT:ALL`
-  publishSubscriptionEvent(topic, { 
+  publishSubscriptionEvent(topic, {
     broadcastEvent: { type: broadcastType },
     logger
   })
-  
-  logger.info('Publishing broadcast event for all users', {
+
+  logger.info('Publishing broadcast event for all users (immediate)', {
     broadcastType,
     topic
   })
 }
+
+// Export the scheduler for use in mutations
+export { scheduleBroadcast }
 
 export const notificationsMutations = {
   setNotificationSeen: async (_: any, { id }: { id: string }, { db }: Context) => {

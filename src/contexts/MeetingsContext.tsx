@@ -1,9 +1,10 @@
 import { MeetingWithPeer, Meeting, NotificationEvent, BroadcastEvent } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { ApolloError, gql, useQuery, NetworkStatus } from '@apollo/client'
-import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useSubscriptions } from './SubscriptionsContext'
 import { shallow } from 'zustand/shallow'
+import { refetchConfig } from '@/config'
 
 export const GET_MEETINGS_WITH_PEERS = gql`
   query GetMyMeetingsWithPeers($userId: ID!) {
@@ -117,8 +118,9 @@ interface MeetingsProviderProps {
 export function MeetingsProvider({ children }: MeetingsProviderProps) {
   const [highlightedMeetingId, setHighlightedMeetingId] = useState<string | null>(null)
   const [isUserInitiatedLoading, setIsUserInitiatedLoading] = useState(false)
-  
-  const { 
+  const scheduledRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const {
     currentUser,
     filterInterests,
     filterLanguages,
@@ -213,24 +215,56 @@ export function MeetingsProvider({ children }: MeetingsProviderProps) {
     await refetchFutureMeetingsWithPeersQuery();
   }, [refetchMyMeetingsWithPeersQuery, refetchFutureMeetingsWithPeersQuery])
 
+  /**
+   * Schedule a refetch with random delay to scatter load across clients
+   * This is used for broadcast events where we want to avoid thundering herd
+   */
+  const scheduleScatteredRefetch = useCallback(() => {
+    // Clear any existing scheduled refetch
+    if (scheduledRefetchTimeoutRef.current) {
+      clearTimeout(scheduledRefetchTimeoutRef.current)
+    }
+
+    // Calculate random delay between min and max
+    const { minDelayMs, maxDelayMs } = refetchConfig
+    const delay = Math.random() * (maxDelayMs - minDelayMs) + minDelayMs
+
+    scheduledRefetchTimeoutRef.current = setTimeout(() => {
+      refetchMeetings(false)
+      scheduledRefetchTimeoutRef.current = null
+    }, delay)
+  }, [refetchMeetings])
+
+  // Cleanup scheduled refetch on unmount
+  useEffect(() => {
+    return () => {
+      if (scheduledRefetchTimeoutRef.current) {
+        clearTimeout(scheduledRefetchTimeoutRef.current)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((event: NotificationEvent) => {
       if (event.type.startsWith('MEETING_')) {
-        console.log('Refetching meetings because of meeting notification')
-        refetchMeetings(false); // Event-triggered, not user-initiated
+        console.log('Refetching meetings immediately because of meeting notification (user-specific event)')
+        // User-specific notifications refetch immediately (e.g., meeting connected/disconnected)
+        refetchMeetings(false);
       }
     })
-    
+
     return unsubscribe
   }, [subscribeToNotifications, refetchMeetings])
 
   useEffect(() => {
     const unsubscribe = subscribeToBroadcastEvents((event: BroadcastEvent) => {
-      refetchMeetings(false); // Event-triggered, not user-initiated
+      console.log('Received broadcast event, scheduling scattered refetch')
+      // Broadcast events use scattered refetch to avoid thundering herd
+      scheduleScatteredRefetch();
     })
-    
+
     return unsubscribe
-  }, [subscribeToBroadcastEvents, refetchMeetings])
+  }, [subscribeToBroadcastEvents, scheduleScatteredRefetch])
   
   return (
     <MeetingsContext.Provider

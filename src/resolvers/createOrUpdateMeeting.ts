@@ -3,7 +3,7 @@ import { canConnectMeetings, MeetingAlreadyConnected, MeetingDoNotSufficientlyOv
 import { Context } from "@apollo/client/react/types/types"
 import { BroadcastType, Meeting, MeetingOutput, MeetingStatus } from "@/generated/graphql"
 import { SLOT_DURATION } from "@/utils/meetingUtils"
-import { publishBroadcastEvent } from "./notificationsMutations"
+import { scheduleBroadcast } from "./notificationsMutations"
 import { tryConnectMeetings } from "./connectMeetings"
 import { createdMeetingsMetric, matchedMeetingsMetric, hourlyMeetingCreationsMetric, hourlyMatchingSuccessMetric } from "@/utils/metrics"
 import { getLogger } from "@/utils/logger"
@@ -129,7 +129,7 @@ async function createOrUpdateMeetingAndTryJoin(isNew: boolean,_meetingId: Object
       hourlyMatchingSuccessMetric.add(1, { hour: currentHour.toString() })
     }
 
-    publishBroadcastEvent(BroadcastType.MeetingUpdated)
+    scheduleBroadcast(BroadcastType.MeetingUpdated)
 
     return {
       meeting: meeting as any as Meeting,
@@ -164,8 +164,8 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
           createdMeetingsMetric.add(1)
           hourlyMeetingCreationsMetric.add(1, { hour: currentHour.toString() })
           await incrementUserMeetingsStats(db, _userId, { joinedCount: 1 })
-          
-          publishBroadcastEvent(BroadcastType.MeetingUpdated)
+
+          scheduleBroadcast(BroadcastType.MeetingUpdated)
         }
         return meetingOutput
       }

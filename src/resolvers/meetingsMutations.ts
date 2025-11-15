@@ -5,7 +5,7 @@ import { createOrUpdateMeeting } from './createOrUpdateMeeting';
 import { publishMeetingNotification } from './publishNotifications';
 import { calledMeetingsMetric, cancelledMeetingsMetric, deletedMeetingsMetric } from '@/utils/metrics';
 import { getLogger } from '@/utils/logger';
-import { publishBroadcastEvent } from './notificationsMutations';
+import { scheduleBroadcast } from './notificationsMutations';
 import { incrementUserMeetingsStats } from '@/utils/meetingsStatsUtils';
 import { isMeetingPassed } from '@/utils/meetingUtils';
 
@@ -117,7 +117,7 @@ const updateMeetingStatus = async (_: any, { input }: { input: UpdateMeetingStat
       }
     } else if (currentStatus === MeetingStatus.Seeking) {
       // if the meeting was in seeking status, notify all users that the meeting was updated
-      publishBroadcastEvent(BroadcastType.MeetingUpdated)
+      scheduleBroadcast(BroadcastType.MeetingUpdated)
     }
     
     return updatedMeeting
@@ -204,7 +204,7 @@ export const meetingsMutations = {
 
       if (!meeting.peerMeetingId && meeting.status === MeetingStatus.Seeking) {
         // if the meeting was in seeking status, notify all users that the meeting was deleted
-        publishBroadcastEvent(BroadcastType.MeetingUpdated)
+        scheduleBroadcast(BroadcastType.MeetingUpdated)
       }
       
       return { _id }
