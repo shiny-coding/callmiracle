@@ -9,10 +9,13 @@ import MicOffIcon from '@mui/icons-material/MicOff'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import BugReportIcon from '@mui/icons-material/BugReport'
+import LanguageIcon from '@mui/icons-material/Language'
 import { useState } from 'react'
 import NotificationBadge from './NotificationBadge'
 import NotificationsPopup from './NotificationsPopup'
-import LocaleSelector from './LocaleSelector'
+import LanguageDialog from './LanguageDialog'
+import LogViewerDialog from './LogViewerDialog'
 import { signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -37,6 +40,8 @@ export default function MediaControls({
 }: MediaControlsProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null)
+  const [logViewerOpen, setLogViewerOpen] = useState(false)
+  const [languageDialogOpen, setLanguageDialogOpen] = useState(false)
 
   const { hasUnseenNotifications } = useNotifications()
   const { connectionStatus, sendWantedMediaState } = useWebRTCContext()
@@ -51,6 +56,7 @@ export default function MediaControls({
   const { imageSrc } = useProfileImage(currentUser?._id, currentUser?.updatedAt)
   const router = useRouter()
   const t = useTranslations('Profile')
+  const tRoot = useTranslations()
 
   const handleAudioToggle = () => {
     setLocalAudioEnabled(!localAudioEnabled)
@@ -62,8 +68,8 @@ export default function MediaControls({
     sendWantedMediaState()
   }
 
-  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setProfileMenuAnchor(event.currentTarget)
+  const handleProfileMenuToggle = (event: React.MouseEvent<HTMLElement>) => {
+    setProfileMenuAnchor(profileMenuAnchor ? null : event.currentTarget)
   }
 
   const handleProfileMenuClose = () => {
@@ -93,30 +99,32 @@ export default function MediaControls({
   }
 
   const handleRefresh = () => {
+    handleProfileMenuClose()
     window.location.reload()
+  }
+
+  const handleViewLogs = () => {
+    handleProfileMenuClose()
+    setLogViewerOpen(true)
+  }
+
+  const handleLanguageClick = () => {
+    handleProfileMenuClose()
+    setLanguageDialogOpen(true)
   }
 
   return (
     <>
       <div className={`flex items-center gap-4 ${className}`}>
         {showNotifications && (
-          <>
-            <IconButton
-              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-              onClick={handleRefresh}
-              title="Refresh Page (Debug)"
-            >
-              <RefreshIcon className="text-white" />
-            </IconButton>
-            <IconButton
-              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
-              onClick={() => setNotificationsOpen(true)}
-            >
-              <NotificationBadge show={hasUnseenNotifications}>
-                <NotificationsIcon className="text-white" />
-              </NotificationBadge>
-            </IconButton>
-          </>
+          <IconButton
+            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
+            onClick={() => setNotificationsOpen(true)}
+          >
+            <NotificationBadge show={hasUnseenNotifications}>
+              <NotificationsIcon className="text-white" />
+            </NotificationBadge>
+          </IconButton>
         )}
 
         {showMediaButtons && (
@@ -156,7 +164,7 @@ export default function MediaControls({
         {showProfile && (
           <IconButton
             className="bg-black/30 backdrop-blur-sm hover:bg-black/40 p-0"
-            onClick={handleProfileMenuOpen}
+            onClick={handleProfileMenuToggle}
             style={{ width: 40, height: 40 }}
           >
             <Avatar
@@ -210,8 +218,24 @@ export default function MediaControls({
           </ListItemIcon>
           <ListItemText primary={t('title')} />
         </MenuItem>
-        <MenuItem>
-          <LocaleSelector />
+        <MenuItem onClick={handleLanguageClick}>
+          <ListItemIcon>
+            <LanguageIcon sx={{ color: 'white' }} />
+          </ListItemIcon>
+          <ListItemText primary={tRoot('selectInterfaceLanguage')} />
+        </MenuItem>
+        <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+        <MenuItem onClick={handleRefresh}>
+          <ListItemIcon>
+            <RefreshIcon sx={{ color: 'white' }} />
+          </ListItemIcon>
+          <ListItemText primary={tRoot('Profile.refreshPage')} />
+        </MenuItem>
+        <MenuItem onClick={handleViewLogs}>
+          <ListItemIcon>
+            <BugReportIcon sx={{ color: 'white' }} />
+          </ListItemIcon>
+          <ListItemText primary={tRoot('Profile.viewClientLogs')} />
         </MenuItem>
         <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
         <MenuItem onClick={handleLogout}>
@@ -226,6 +250,18 @@ export default function MediaControls({
       <NotificationsPopup
         open={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
+      />
+
+      {/* Log Viewer Dialog */}
+      <LogViewerDialog
+        open={logViewerOpen}
+        onClose={() => setLogViewerOpen(false)}
+      />
+
+      {/* Language Dialog */}
+      <LanguageDialog
+        open={languageDialogOpen}
+        onClose={() => setLanguageDialogOpen(false)}
       />
     </>
   )

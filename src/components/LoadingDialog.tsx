@@ -1,8 +1,10 @@
 import { Typography, Dialog, DialogContent, IconButton } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import { useState } from "react";
+import { useTranslations } from 'next-intl';
 
 export default function LoadingDialog({ loading, error }: { loading: boolean, error: any }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(true);
 
   const handleClose = () => {
@@ -34,7 +36,7 @@ export default function LoadingDialog({ loading, error }: { loading: boolean, er
           </IconButton>
         )}
         <Typography className="text-white text-center text-lg pr-8">
-          {loading ? 'Loading...' : (error?.message || error || 'An error occurred')}
+          {loading ? t('loading') : (error?.message || error || t('error'))}
         </Typography>
       </DialogContent>
     </Dialog>

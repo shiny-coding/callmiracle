@@ -76,7 +76,7 @@ export default function LogViewerDialog({ open, onClose }: LogViewerDialogProps)
         alignItems: 'center',
         borderBottom: '1px solid #333'
       }}>
-        <span>Client Logs ({logs.length})</span>
+        <span>Logs ({logs.length})</span>
         <div className="flex gap-2">
           <Button
             onClick={handleClear}
@@ -94,7 +94,7 @@ export default function LogViewerDialog({ open, onClose }: LogViewerDialogProps)
             variant="outlined"
             disabled={logs.length === 0}
           >
-            {copied ? 'Copied!' : 'Copy All'}
+            {copied ? 'Copied!' : 'Copy'}
           </Button>
           <IconButton
             onClick={onClose}

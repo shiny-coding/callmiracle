@@ -1,5 +1,6 @@
 {
   "loading": "Loading...",
+  "error": "An error occurred",
   "name": "Name",
   "searchByName": "Search by name",
   "uploadGroupImage": "Upload group image",
@@ -36,6 +37,8 @@
     "iSpeak": "I speak",
     "logout": "Logout",
     "close": "Close",
+    "refreshPage": "Refresh Page",
+    "viewClientLogs": "View Client Logs",
     "deleteAccount": "Delete Account",
     "deleteAccountConfirmMessage": "Are you sure you want to delete your account? This action cannot be undone.",
     "deleteAccountConfirmTitle": "Delete Account",
@@ -235,7 +238,11 @@
   "yes": "Yes",
   "no": "No",
   "markAllAsSeen": "Mark All As Seen",
-  "selectInterfaceLanguage": "Select interface language",
+  "selectInterfaceLanguage": "Interface Language",
+  "Languages": {
+    "english": "English",
+    "russian": "Русский"
+  },
   "Auth": {
     "signIn": "Sign In",
     "register": "Register",

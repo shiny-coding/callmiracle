@@ -8,7 +8,6 @@ import GroupIcon from '@mui/icons-material/Group'
 import ListIcon from '@mui/icons-material/List'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import MessageIcon from '@mui/icons-material/Message'
-import BugReportIcon from '@mui/icons-material/BugReport'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useRouter, usePathname } from 'next/navigation'
 import { useLocale } from 'next-intl'
@@ -22,8 +21,6 @@ import P2PConnectionDialog from './P2PConnectionDialog'
 import { useP2PConnectivityCheck } from '@/hooks/useP2PConnectivityCheck'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { getHighestPriorityMeetingColor, class2Hex } from '@/utils/meetingUtils'
-import LogViewerDialog from './LogViewerDialog'
-import { useState } from 'react'
 
 interface ControlsBarProps {
   position: 'top' | 'bottom'
@@ -37,7 +34,6 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   const currentUser = useStore((state: any) => state.currentUser)
   const { status: p2pStatus, isDialogOpen, diagnostics, closeDialog, openDialog, recheckManually } = useP2PConnectivityCheck()
   const { myMeetingsWithPeers } = useMeetings()
-  const [logViewerOpen, setLogViewerOpen] = useState(false)
 
   const handleP2PIconClick = () => {
     // Always open dialog, even when checking
@@ -80,36 +76,22 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   // Top bar layout (non-compact)
   if (position === 'top' && !isCompact) {
     return (
-      <>
-        <div className={`p-3 w-full flex items-center bg-gradient-to-t from-transparent to-white/30 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
-          <div className="flex items-center gap-2">
-            <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
-            <IconButton
-              onClick={() => setLogViewerOpen(true)}
-              size="small"
-              className="hover:bg-white/10"
-              title="View Client Logs"
-            >
-              <BugReportIcon className="text-white" />
-            </IconButton>
-          </div>
-
-          <div className="flex items-center">
-            <MediaControls showNotifications={false} showMediaButtons={true} showProfile={false} />
-          </div>
-
-          <div className="flex gap-3 items-center overflow-hidden">
-            <div className="text-sm text-white/80 capitalize overflow-hidden text-ellipsis whitespace-nowrap">
-              {currentUser?.name}
-            </div>
-            <MediaControls showNotifications={false} showMediaButtons={false} showProfile={true} />
-          </div>
+      <div className={`p-3 w-full flex items-center bg-gradient-to-t from-transparent to-white/30 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
+        <div className="flex items-center gap-2">
+          <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
         </div>
-        <LogViewerDialog
-          open={logViewerOpen}
-          onClose={() => setLogViewerOpen(false)}
-        />
-      </>
+
+        <div className="flex items-center">
+          <MediaControls showNotifications={false} showMediaButtons={true} showProfile={false} />
+        </div>
+
+        <div className="flex gap-3 items-center overflow-hidden">
+          <div className="text-sm text-white/80 capitalize overflow-hidden text-ellipsis whitespace-nowrap">
+            {currentUser?.name}
+          </div>
+          <MediaControls showNotifications={false} showMediaButtons={false} showProfile={true} />
+        </div>
+      </div>
     )
   }
 

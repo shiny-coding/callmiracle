@@ -5,7 +5,7 @@ import { useDeviceSelection } from '@/hooks/useDeviceSelection'
 import { useStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useMediaPermissions } from '@/hooks/useMediaPermissions'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { IconButton, Button, Dialog, DialogTitle, DialogContent } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import clientLogger from '@/utils/clientLogger'
@@ -16,25 +16,49 @@ function cleanDeviceName(name: string): string {
   return name.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '').trim()
 }
 
-async function getVideoDeviceLabel(device: MediaDeviceInfo, existingStream?: MediaStream): Promise<string | null> {
+async function getVideoDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
   try {
-    if (!device.deviceId) return null
+    clientLogger.info('[getVideoDeviceLabel] Processing device', {
+      deviceId: device.deviceId?.slice(0, 10),
+      label: device.label,
+      kind: device.kind
+    })
+
+    if (!device.deviceId) {
+      clientLogger.info('[getVideoDeviceLabel] No deviceId, returning fallback')
+      return `Camera (no ID)`
+    }
 
     // If device already has a label from permissions, use it to determine camera type
     if (device.label) {
       const labelLower = device.label.toLowerCase()
-      if (labelLower.includes('front') || labelLower.includes('user')) return 'Front Camera'
-      if (labelLower.includes('back') || labelLower.includes('rear') || labelLower.includes('environment')) return 'Back Camera'
+      if (labelLower.includes('front') || labelLower.includes('user')) {
+        clientLogger.info('[getVideoDeviceLabel] Detected front camera')
+        return 'Front Camera'
+      }
+      if (labelLower.includes('back') || labelLower.includes('rear') || labelLower.includes('environment')) {
+        clientLogger.info('[getVideoDeviceLabel] Detected back camera')
+        return 'Back Camera'
+      }
 
       // Return the label as-is if it doesn't match known patterns
+      clientLogger.info('[getVideoDeviceLabel] Using original label', { label: device.label })
       return device.label
     }
 
     // Don't create test streams - causes issues on iOS
     // Just return a generic label
-    return `Camera ${device.deviceId.slice(0, 5)}...`
+    const genericLabel = `Camera ${device.deviceId.slice(0, 5)}...`
+    clientLogger.info('[getVideoDeviceLabel] No label, using generic', { label: genericLabel })
+    return genericLabel
   } catch (err) {
-    return null
+    // Even on error, return a fallback label so the device isn't filtered out
+    const fallbackLabel = device.label || `Camera ${device.deviceId?.slice(0, 5) || 'Unknown'}...`
+    clientLogger.error('[getVideoDeviceLabel] Error processing device, using fallback', {
+      fallbackLabel,
+      error: err instanceof Error ? err.message : String(err)
+    })
+    return fallbackLabel
   }
 }
 
@@ -68,7 +92,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     async function ensurePermissions() {
       // Check if permissions are already granted
       if (permissions.camera === 'granted' && permissions.microphone === 'granted') {
-        console.log('[DeviceSettings] Permissions already granted')
+        clientLogger.info('[DeviceSettings] Permissions already granted')
         return
       }
 
@@ -78,18 +102,25 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       }
 
       // Request permissions
-      console.log('[DeviceSettings] Requesting media permissions')
+      clientLogger.info('[DeviceSettings] Requesting media permissions')
       await requestPermissions()
     }
 
     ensurePermissions()
   }, [open, permissions, requestPermissions])
 
+  // Memoize getLabel to prevent unnecessary re-enumeration of devices
+  // Note: We don't include previewStream in dependencies because we don't actually use it
+  // in getVideoDeviceLabel, and including it would cause unnecessary re-enumeration
+  const getVideoLabel = useCallback((device: MediaDeviceInfo) => {
+    return getVideoDeviceLabel(device)
+  }, [])
+
   const videoDevices = useDeviceSelection({
     kind: 'videoinput',
     storageKey: 'selectedVideoDevice',
     isEnabled: localVideoEnabled,
-    getLabel: (device) => getVideoDeviceLabel(device, previewStream || undefined)
+    getLabel: getVideoLabel
   })
 
   const audioDevices = useDeviceSelection({
@@ -97,6 +128,28 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     storageKey: 'selectedAudioDevice',
     isEnabled: localAudioEnabled
   })
+
+  // Debug logging for device lists
+  useEffect(() => {
+    clientLogger.info('[DeviceSettings] Video devices updated', {
+      count: videoDevices.devices.length,
+      devices: videoDevices.devices.map(d => ({
+        id: d.deviceId.slice(0, 10),
+        label: videoDevices.deviceLabels[d.deviceId] || d.label
+      })),
+      selectedDevice: videoDevices.selectedDevice,
+      localVideoEnabled
+    })
+  }, [videoDevices.devices, videoDevices.deviceLabels, videoDevices.selectedDevice, localVideoEnabled])
+
+  useEffect(() => {
+    clientLogger.info('[DeviceSettings] Audio devices updated', {
+      count: audioDevices.devices.length,
+      devices: audioDevices.devices.map(d => d.label),
+      selectedDevice: audioDevices.selectedDevice,
+      localAudioEnabled
+    })
+  }, [audioDevices.devices, audioDevices.selectedDevice, localAudioEnabled])
 
   // Cleanup preview stream immediately when dialog closes
   useEffect(() => {
@@ -383,9 +436,15 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   }
 
   const handleVideoDeviceChange = async (deviceId: string) => {
+    clientLogger.info('[DeviceSettings] handleVideoDeviceChange called', { deviceId })
     if (deviceId === 'disabled') {
-      clientLogger.info('[DeviceSettings] Video device disabled')
+      clientLogger.info('[DeviceSettings] Disabling video, saving to localStorage')
       setLocalVideoEnabled(false)
+      // Save explicit disabled state to localStorage
+      localStorage.setItem('selectedVideoDevice', 'disabled')
+      clientLogger.info('[DeviceSettings] localStorage updated', {
+        selectedVideoDevice: localStorage.getItem('selectedVideoDevice')
+      })
       // Notify peer if in a call
       if (connectionStatus === 'connected') {
         sendWantedMediaState()
@@ -399,7 +458,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       }
 
       // Non-iOS: Standard deviceId-based switching
-      clientLogger.info('[DeviceSettings] Video device change requested', {
+      clientLogger.info('[DeviceSettings] Enabling video and changing device', {
         newDeviceId: deviceId.slice(0, 20) + '...'
       })
 
@@ -416,12 +475,14 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   const handleAudioDeviceChange = async (deviceId: string) => {
     if (deviceId === 'disabled') {
       setLocalAudioEnabled(false)
+      // Save explicit disabled state to localStorage
+      localStorage.setItem('selectedAudioDevice', 'disabled')
       // Notify peer if in a call
       if (connectionStatus === 'connected') {
         sendWantedMediaState()
       }
     } else {
-      console.log('[DeviceSettings] Enabling audio and changing device')
+      clientLogger.info('[DeviceSettings] Enabling audio and changing device')
       setLocalAudioEnabled(true)
       await audioDevices.handleDeviceChange(deviceId)
 
@@ -552,13 +613,22 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
                 </Button>
 
                 {/* iOS: Show separate buttons for front/back camera */}
-                {isIOS && localVideoEnabled && (
+                {isIOS && (
                   <>
                     <Button
                       fullWidth
-                      variant={currentFacingMode === 'user' ? "contained" : "outlined"}
+                      variant={localVideoEnabled && currentFacingMode === 'user' ? "contained" : "outlined"}
                       onClick={() => {
-                        if (currentFacingMode !== 'user') {
+                        // Enable video if disabled
+                        if (!localVideoEnabled) {
+                          clientLogger.info('[DeviceSettings] Enabling front camera from disabled state')
+                          setLocalVideoEnabled(true)
+                          localStorage.setItem('selectedVideoDevice', 'front')
+                          setCurrentFacingMode('user')
+                          if (connectionStatus === 'connected') {
+                            sendWantedMediaState()
+                          }
+                        } else if (currentFacingMode !== 'user') {
                           handleIOSCameraToggle()
                         }
                       }}
@@ -568,9 +638,18 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
                     </Button>
                     <Button
                       fullWidth
-                      variant={currentFacingMode === 'environment' ? "contained" : "outlined"}
+                      variant={localVideoEnabled && currentFacingMode === 'environment' ? "contained" : "outlined"}
                       onClick={() => {
-                        if (currentFacingMode !== 'environment') {
+                        // Enable video if disabled
+                        if (!localVideoEnabled) {
+                          clientLogger.info('[DeviceSettings] Enabling back camera from disabled state')
+                          setLocalVideoEnabled(true)
+                          localStorage.setItem('selectedVideoDevice', 'back')
+                          setCurrentFacingMode('environment')
+                          if (connectionStatus === 'connected') {
+                            sendWantedMediaState()
+                          }
+                        } else if (currentFacingMode !== 'environment') {
                           handleIOSCameraToggle()
                         }
                       }}

@@ -1,5 +1,6 @@
 {
   "loading": "Загрузка...",
+  "error": "Произошла ошибка",
   "name": "Имя",
   "searchByName": "Поиск по имени",
   "uploadGroupImage": "Загрузить изображение группы",
@@ -36,6 +37,8 @@
     "iSpeak": "Я говорю на",
     "logout": "Выйти",
     "close": "Закрыть",
+    "refreshPage": "Обновить страницу",
+    "viewClientLogs": "Просмотреть логи",
     "deleteAccount": "Удалить аккаунт",
     "deleteAccountConfirmMessage": "Вы уверены, что хотите удалить свой аккаунт? Это действие нельзя отменить.",
     "deleteAccountConfirmTitle": "Удалить аккаунт",
@@ -226,7 +229,11 @@
   "onlyFriends": "Только друзья",
   "friend": "Друг",
   "addFriend": "Добавить в друзья",
-  "selectInterfaceLanguage": "Выберите язык интерфейса",
+  "selectInterfaceLanguage": "Язык интерфейса",
+  "Languages": {
+    "english": "English",
+    "russian": "Русский"
+  },
   "Auth": {
     "signIn": "Вход",
     "register": "Регистрация",
