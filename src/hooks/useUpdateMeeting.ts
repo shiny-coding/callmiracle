@@ -43,7 +43,7 @@ export const useUpdateMeeting = () => {
           userName: currentUser?.name,
         }
       },
-      refetchQueries: ['GetMeetingsWithPeers']
+      refetchQueries: ['GetMyMeetingsWithPeers', 'GetFutureMeetingsWithPeers']
     })
 
     return data.createOrUpdateMeeting
