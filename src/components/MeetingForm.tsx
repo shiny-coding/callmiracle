@@ -1,8 +1,10 @@
 'use client'
 
-import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider, Snackbar, Alert } from '@mui/material'
+import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider, Snackbar, Alert, Paper } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import CancelIcon from '@mui/icons-material/Cancel'
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { useLocale, useTranslations } from 'next-intl'
 import { useUpdateMeeting } from '@/hooks/useUpdateMeeting'
 import { useStore } from '@/store/useStore'
@@ -48,6 +50,10 @@ export default function MeetingForm() {
   const meetingWithPeerToConnect = futureMeetingsWithPeers.find(m => m.meeting._id === meetingToConnectId)
   const meetingToConnect = meetingWithPeerToConnect?.meeting
 
+  // Track if meeting became unavailable after initial load
+  const [meetingBecameUnavailable, setMeetingBecameUnavailable] = useState(false)
+  const [initialMeetingToConnectFound, setInitialMeetingToConnectFound] = useState(false)
+
   // Get groups current user is in - memoize to prevent infinite re-renders
   const userGroups = useMemo(() => 
     groups?.filter(group => currentUser?.groups?.includes(group._id)) || [],
@@ -87,6 +93,23 @@ export default function MeetingForm() {
 
   // Determine if we are joining and which sex to allow
   const joiningSex = meetingWithPeerToConnect?.peerUser?.sex
+
+  // Detect if a meeting that was supposed to be connected to became unavailable
+  useEffect(() => {
+    if (loadingFutureMeetingsWithPeers) return
+
+    // If we have meetingToConnectId in URL
+    if (meetingToConnectId) {
+      // If meeting was found, mark it
+      if (meetingToConnect) {
+        setInitialMeetingToConnectFound(true)
+      }
+      // If meeting was initially found but now it's gone, mark as unavailable
+      else if (initialMeetingToConnectFound && !meetingToConnect) {
+        setMeetingBecameUnavailable(true)
+      }
+    }
+  }, [meetingToConnectId, meetingToConnect, initialMeetingToConnectFound, loadingFutureMeetingsWithPeers])
 
   useEffect(() => {
     if (loadingMyMeetingsWithPeers || loadingFutureMeetingsWithPeers) return
@@ -280,7 +303,7 @@ export default function MeetingForm() {
           <CircularProgress color="inherit" />
         </div>
       )}
-      <PageHeader 
+      <PageHeader
         title={meetingToConnectId ? t('connectWithMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
         className="sticky top-0 bg-inherit z-10"
       >
@@ -288,8 +311,35 @@ export default function MeetingForm() {
           <CloseIcon />
         </IconButton>
       </PageHeader>
+
+      {/* Meeting No Longer Available Message */}
+      {meetingBecameUnavailable && (
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex items-center justify-center">
+          <Paper elevation={3} className="p-8 max-w-md w-full text-center">
+            <ErrorOutlineIcon
+              sx={{ fontSize: 64, color: 'error.main', mb: 2 }}
+            />
+            <Typography variant="h5" gutterBottom className="font-semibold">
+              {t('meetingNoLongerAvailable')}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" className="mb-4">
+              {t('meetingNoLongerAvailableDescription')}
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<ArrowBackIcon />}
+              onClick={() => router.back()}
+              fullWidth
+            >
+              {t('returnToCalendar')}
+            </Button>
+          </Paper>
+        </div>
+      )}
+
       {/* Scrollable Content */}
-      <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
+      {!meetingBecameUnavailable && (
+        <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
         {/* User Info Display - only show when connecting to transparent meeting */}
         {meetingToConnect && meetingToConnect.transparency === MeetingTransparency.Transparent && meetingWithPeerToConnect?.peerUser && (
           <div className="flex items-center gap-3 p-3 rounded-lg">
@@ -474,7 +524,10 @@ export default function MeetingForm() {
           </Typography>
         )}
       </div>
+      )}
+
       {/* Bottom Controls Bar */}
+      {!meetingBecameUnavailable && (
       <div className="sticky bottom-0 left-0 w-full normal-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10 flex-wrap">
         {meeting && !isMeetingPassed(meeting) && (
           <Button
@@ -523,6 +576,8 @@ export default function MeetingForm() {
           {meeting ? t('update') : t('create')}
         </Button>
       </div>
+      )}
+
       <ConfirmDialog
         open={confirmCancelOpen}
         title={t('confirmCancelTitle')}
