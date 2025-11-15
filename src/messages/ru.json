@@ -107,6 +107,8 @@
   "filterByLanguages": "Фильтр по языкам",
   "cameraDisabled": "Камера отключена",
   "camera": "Камера",
+  "frontCamera": "Передняя камера",
+  "backCamera": "Задняя камера",
   "microphone": "Микрофон",
   "microphoneDisabled": "Микрофон отключен",
   "deviceSettings": "Настройки устройств",

@@ -53,7 +53,6 @@ class ClientLogger {
 
   // Set the client log level (called when session is available)
   setLogLevel(level: string) {
-    console.log('[ClientLogger] Setting log level to:', level)
     this.clientLogLevel = level
   }
 
@@ -65,16 +64,11 @@ class ClientLogger {
   }
   
   private sendToServer = async (level: string, message: string, meta: LogMeta = {}) => {
-    if (!this.isEnabled) {
-      console.log('[ClientLogger] sendToServer skipped - not enabled')
-      return
-    }
+    if (!this.isEnabled) return
 
     try {
       // Use user's clientLogLevel to determine what to send to server
       const shouldSend = this.shouldLog(level)
-
-      console.log('[ClientLogger] sendToServer:', { level, message: message.slice(0, 50), shouldSend, currentLogLevel: this.clientLogLevel })
 
       if (shouldSend) {
         fetch('/api/log', {
@@ -90,14 +84,12 @@ class ClientLogger {
               timestamp: new Date().toISOString()
             }
           })
-        }).then(() => {
-          console.log('[ClientLogger] Successfully sent to server:', level, message.slice(0, 30))
-        }).catch((err) => {
-          console.error('[ClientLogger] Failed to send to server:', err)
+        }).catch(() => {
+          // Silent fail for logging - don't spam console
         })
       }
     } catch (error) {
-      console.error('[ClientLogger] sendToServer error:', error)
+      // Silent fail for logging
     }
   }
   
@@ -202,7 +194,7 @@ if (typeof window !== 'undefined') {
       type: 'unhandled_error'
     })
   })
-  
+
   window.addEventListener('unhandledrejection', (event) => {
     clientLogger.error('Unhandled promise rejection', {
       reason: event.reason?.message || String(event.reason),
@@ -210,6 +202,83 @@ if (typeof window !== 'undefined') {
       type: 'unhandled_rejection'
     })
   })
+
+  // Intercept console.error and console.warn to capture them in our logger
+  const originalConsoleError = console.error
+  const originalConsoleWarn = console.warn
+
+  // Flag to prevent infinite loops when our logger calls console methods
+  let isLoggingToConsole = false
+
+  console.error = (...args: any[]) => {
+    // Call original console.error so it still shows in browser console
+    originalConsoleError.apply(console, args)
+
+    // Prevent infinite loop if clientLogger.error calls console.error
+    if (isLoggingToConsole) return
+
+    try {
+      isLoggingToConsole = true
+
+      // Extract error information
+      const firstArg = args[0]
+      let message = 'Console error'
+      let meta: LogMeta = {}
+
+      if (firstArg instanceof Error) {
+        message = firstArg.message
+        meta.stack = firstArg.stack
+        meta.name = firstArg.name
+      } else if (typeof firstArg === 'string') {
+        message = firstArg
+      } else {
+        message = String(firstArg)
+      }
+
+      // Include additional arguments if present
+      if (args.length > 1) {
+        meta.additionalArgs = args.slice(1)
+      }
+
+      // Add to our logger
+      clientLogger.error(`[Console] ${message}`, { ...meta, type: 'console_error' })
+    } finally {
+      isLoggingToConsole = false
+    }
+  }
+
+  console.warn = (...args: any[]) => {
+    // Call original console.warn so it still shows in browser console
+    originalConsoleWarn.apply(console, args)
+
+    // Prevent infinite loop if clientLogger.warn calls console.warn
+    if (isLoggingToConsole) return
+
+    try {
+      isLoggingToConsole = true
+
+      // Extract warning information
+      const firstArg = args[0]
+      let message = 'Console warning'
+      let meta: LogMeta = {}
+
+      if (typeof firstArg === 'string') {
+        message = firstArg
+      } else {
+        message = String(firstArg)
+      }
+
+      // Include additional arguments if present
+      if (args.length > 1) {
+        meta.additionalArgs = args.slice(1)
+      }
+
+      // Add to our logger
+      clientLogger.warn(`[Console] ${message}`, { ...meta, type: 'console_warn' })
+    } finally {
+      isLoggingToConsole = false
+    }
+  }
 }
 
 export default clientLogger 

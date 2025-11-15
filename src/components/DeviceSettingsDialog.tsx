@@ -57,7 +57,9 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   const [isLandscape, setIsLandscape] = useState(true)
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null)
   const previewStreamRef = useRef<MediaStream | null>(null)
-  const { permissions, requestPermissions } = useMediaPermissions()
+  const isCreatingStreamRef = useRef(false) // Prevent concurrent stream creation
+  const [currentFacingMode, setCurrentFacingMode] = useState<'user' | 'environment'>('user') // For iOS camera switching
+  const { permissions, requestPermissions, isIOS } = useMediaPermissions()
 
   // Request permissions when dialog opens
   useEffect(() => {
@@ -142,6 +144,14 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     }
 
     async function createPreviewStream() {
+      // Prevent concurrent stream creation
+      if (isCreatingStreamRef.current) {
+        clientLogger.info('[DeviceSettings] Skipping createPreviewStream - already creating', {
+          currentFlag: isCreatingStreamRef.current
+        })
+        return
+      }
+
       if (!localVideoEnabled) {
         clientLogger.info('[DeviceSettings] Video disabled, cleaning up preview stream')
         // Clear video element srcObject first
@@ -158,12 +168,17 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         return
       }
 
+      isCreatingStreamRef.current = true
+      clientLogger.info('[DeviceSettings] Setting isCreatingStreamRef to true in createPreviewStream')
       try {
         const selectedVideoDevice = localStorage.getItem('selectedVideoDevice') || ''
         clientLogger.info('[DeviceSettings] Creating preview stream', {
           selectedVideoDevice: selectedVideoDevice.slice(0, 20) + '...',
           connectionStatus,
-          hasOldStream: !!previewStreamRef.current
+          hasOldStream: !!previewStreamRef.current,
+          flagState: isCreatingStreamRef.current,
+          isIOS,
+          currentFacingMode
         })
 
         // During a call, create a separate preview stream
@@ -179,8 +194,11 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             previewStreamRef.current.getTracks().forEach(track => track.stop())
           }
 
+          // On iOS, use facingMode instead of deviceId for better compatibility
           const constraints: MediaStreamConstraints = {
-            video: selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
+            video: isIOS
+              ? { facingMode: currentFacingMode }
+              : selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
             audio: false // No audio needed for preview
           }
 
@@ -207,8 +225,11 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             previewStreamRef.current.getTracks().forEach(track => track.stop())
           }
 
+          // On iOS, use facingMode instead of deviceId for better compatibility
           const constraints: MediaStreamConstraints = {
-            video: selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
+            video: isIOS
+              ? { facingMode: currentFacingMode }
+              : selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
             audio: false // No audio needed for preview
           }
 
@@ -230,6 +251,9 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           error: err instanceof Error ? err.message : String(err)
         })
         setPreviewStream(null)
+      } finally {
+        clientLogger.info('[DeviceSettings] Resetting isCreatingStreamRef to false in createPreviewStream finally')
+        isCreatingStreamRef.current = false
       }
     }
 
@@ -239,7 +263,8 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     return () => {
       clientLogger.info('[DeviceSettings] useEffect cleanup running', {
         hasPreviewStream: !!previewStreamRef.current,
-        trackCount: previewStreamRef.current?.getTracks().length || 0
+        trackCount: previewStreamRef.current?.getTracks().length || 0,
+        flagState: isCreatingStreamRef.current
       })
 
       if (videoRef.current) {
@@ -291,6 +316,72 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     return () => window.removeEventListener('resize', checkAspectRatio)
   }, [])
 
+  // iOS-specific: Toggle between front and back camera using facingMode
+  const handleIOSCameraToggle = async () => {
+    const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user'
+
+    clientLogger.info('[DeviceSettings] iOS camera toggle requested', {
+      currentFacingMode,
+      newFacingMode
+    })
+
+    try {
+      // Stop current stream
+      if (previewStreamRef.current) {
+        const tracks = previewStreamRef.current.getTracks()
+        tracks.forEach(track => {
+          clientLogger.info('[DeviceSettings] Stopping track for iOS camera toggle', {
+            trackId: track.id,
+            readyState: track.readyState
+          })
+          track.stop()
+        })
+        previewStreamRef.current = null
+      }
+      setPreviewStream(null)
+
+      // Clear video element
+      if (videoRef.current) {
+        videoRef.current.pause()
+        videoRef.current.srcObject = null
+        videoRef.current.removeAttribute('src')
+        videoRef.current.load()
+      }
+
+      // Update facingMode
+      setCurrentFacingMode(newFacingMode)
+
+      // Wait for iOS to release camera hardware
+      clientLogger.info('[DeviceSettings] Waiting 100ms for iOS camera release before requesting new facingMode')
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Request new stream with new facingMode
+      const constraints: MediaStreamConstraints = {
+        video: { facingMode: newFacingMode },
+        audio: false
+      }
+
+      clientLogger.info('[DeviceSettings] Requesting new stream with facingMode', { facingMode: newFacingMode })
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      const tracks = stream.getVideoTracks()
+
+      clientLogger.info('[DeviceSettings] New iOS camera stream acquired', {
+        streamId: stream.id,
+        trackCount: tracks.length,
+        trackLabel: tracks[0]?.label,
+        facingMode: newFacingMode
+      })
+
+      previewStreamRef.current = stream
+      setPreviewStream(stream)
+    } catch (err) {
+      clientLogger.error('[DeviceSettings] Error toggling iOS camera', {
+        error: err instanceof Error ? err.message : String(err),
+        attemptedFacingMode: newFacingMode
+      })
+    }
+  }
+
   const handleVideoDeviceChange = async (deviceId: string) => {
     if (deviceId === 'disabled') {
       clientLogger.info('[DeviceSettings] Video device disabled')
@@ -300,10 +391,16 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         sendWantedMediaState()
       }
     } else {
-      clientLogger.info('[DeviceSettings] Changing video device', {
-        newDeviceId: deviceId.slice(0, 20) + '...',
-        hasOldStream: !!previewStreamRef.current,
-        oldTrackCount: previewStreamRef.current?.getTracks().length || 0
+      // On iOS, we don't use deviceId-based switching, only facingMode toggle
+      if (isIOS) {
+        clientLogger.info('[DeviceSettings] iOS detected - ignoring deviceId-based switch, use facingMode toggle instead')
+        setLocalVideoEnabled(true)
+        return
+      }
+
+      // Non-iOS: Standard deviceId-based switching
+      clientLogger.info('[DeviceSettings] Video device change requested', {
+        newDeviceId: deviceId.slice(0, 20) + '...'
       })
 
       setLocalVideoEnabled(true)
@@ -312,65 +409,6 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       // Notify peer if in a call
       if (connectionStatus === 'connected') {
         sendWantedMediaState()
-      }
-
-      // Always recreate the preview stream with the new device
-      try {
-        // Clear video element srcObject first (critical for iOS)
-        if (videoRef.current) {
-          clientLogger.info('[DeviceSettings] Clearing video element for device change')
-          videoRef.current.pause()
-          videoRef.current.srcObject = null
-          videoRef.current.removeAttribute('src')
-          videoRef.current.load()
-        }
-
-        // Stop old preview stream
-        if (previewStreamRef.current) {
-          const tracks = previewStreamRef.current.getTracks()
-          tracks.forEach(track => {
-            clientLogger.info('[DeviceSettings] Stopping old track before device change', {
-              trackId: track.id,
-              kind: track.kind,
-              label: track.label,
-              readyState: track.readyState
-            })
-            track.stop()
-          })
-          previewStreamRef.current = null
-        }
-
-        // Wait a bit for cleanup to complete on iOS
-        clientLogger.info('[DeviceSettings] Waiting 100ms for iOS cleanup')
-        await new Promise(resolve => setTimeout(resolve, 100))
-
-        const constraints: MediaStreamConstraints = {
-          video: { deviceId },
-          audio: false
-        }
-
-        clientLogger.info('[DeviceSettings] Requesting new stream with device', {
-          deviceId: deviceId.slice(0, 20) + '...'
-        })
-        const stream = await navigator.mediaDevices.getUserMedia(constraints)
-        const tracks = stream.getVideoTracks()
-
-        clientLogger.info('[DeviceSettings] New stream acquired', {
-          streamId: stream.id,
-          trackCount: tracks.length,
-          trackLabel: tracks[0]?.label,
-          trackId: tracks[0]?.id,
-          trackReadyState: tracks[0]?.readyState
-        })
-
-        previewStreamRef.current = stream
-        setPreviewStream(stream)
-      } catch (err) {
-        clientLogger.error('[DeviceSettings] Error updating preview stream', {
-          error: err instanceof Error ? err.message : String(err),
-          deviceId: deviceId.slice(0, 20) + '...'
-        })
-        setPreviewStream(null)
       }
     }
   }
@@ -400,22 +438,13 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       trackCount: previewStreamRef.current?.getTracks().length || 0
     })
 
-    // Immediate cleanup for iOS
-    if (videoRef.current) {
-      clientLogger.info('[DeviceSettings] Clearing video element in handleClose')
-      videoRef.current.pause()
-      videoRef.current.srcObject = null
-      videoRef.current.removeAttribute('src')
-      videoRef.current.load()
-    }
-
+    // Stop all tracks
     if (previewStreamRef.current) {
       const tracks = previewStreamRef.current.getTracks()
       tracks.forEach(track => {
         clientLogger.info('[DeviceSettings] Stopping track in handleClose', {
           trackId: track.id,
           kind: track.kind,
-          label: track.label,
           readyState: track.readyState
         })
         track.stop()
@@ -423,6 +452,15 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       previewStreamRef.current = null
     }
     setPreviewStream(null)
+
+    // Clear video element
+    if (videoRef.current) {
+      clientLogger.info('[DeviceSettings] Clearing video element in handleClose')
+      videoRef.current.pause()
+      videoRef.current.srcObject = null
+      videoRef.current.removeAttribute('src')
+      videoRef.current.load()
+    }
 
     clientLogger.info('[DeviceSettings] handleClose completed, calling onClose')
     onClose()
@@ -513,8 +551,38 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
                   {t('cameraDisabled')}
                 </Button>
 
-                {/* Available devices */}
-                {videoDevices.devices.map(device => (
+                {/* iOS: Show separate buttons for front/back camera */}
+                {isIOS && localVideoEnabled && (
+                  <>
+                    <Button
+                      fullWidth
+                      variant={currentFacingMode === 'user' ? "contained" : "outlined"}
+                      onClick={() => {
+                        if (currentFacingMode !== 'user') {
+                          handleIOSCameraToggle()
+                        }
+                      }}
+                      sx={{ justifyContent: 'flex-start !important', textAlign: 'left', px: 3 }}
+                    >
+                      {t('frontCamera') || 'Front Camera'}
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant={currentFacingMode === 'environment' ? "contained" : "outlined"}
+                      onClick={() => {
+                        if (currentFacingMode !== 'environment') {
+                          handleIOSCameraToggle()
+                        }
+                      }}
+                      sx={{ justifyContent: 'flex-start !important', textAlign: 'left', px: 3 }}
+                    >
+                      {t('backCamera') || 'Back Camera'}
+                    </Button>
+                  </>
+                )}
+
+                {/* Non-iOS: Available devices */}
+                {!isIOS && videoDevices.devices.map(device => (
                   <Button
                     key={device.deviceId}
                     fullWidth

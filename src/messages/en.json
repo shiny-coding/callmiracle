@@ -108,6 +108,8 @@
   "filterByLanguages": "Filter by languages",
   "cameraDisabled": "Camera disabled",
   "camera": "Camera",
+  "frontCamera": "Front Camera",
+  "backCamera": "Back Camera",
   "microphone": "Microphone",
   "microphoneDisabled": "Microphone disabled",
   "deviceSettings": "Device Settings",
