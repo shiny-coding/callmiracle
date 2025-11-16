@@ -79,8 +79,9 @@ class ClientLogger {
             meta: {
               ...meta,
               url: window.location.href,
-              userAgent: navigator.userAgent,
-              timestamp: new Date().toISOString()
+              userAgent: navigator.userAgent
+              // No timestamp - Loki will timestamp when log is received
+              // This avoids issues with client clock skew
             }
           })
         }).catch(() => {

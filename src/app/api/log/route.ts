@@ -33,16 +33,17 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Enrich metadata with client-specific information
+    // Enrich metadata with server-specific information
     const enrichedMeta = {
       ...meta,
       source: 'client',
-      clientTimestamp: meta?.timestamp,
-      serverTimestamp: new Date().toISOString(),
-      clientUserAgent: request.headers.get('user-agent'),
-      clientIp: request.headers.get('x-forwarded-for') || 
-                request.headers.get('x-real-ip') || 
+      // Add client IP (not available on client side)
+      clientIp: request.headers.get('x-forwarded-for') ||
+                request.headers.get('x-real-ip') ||
                 'unknown'
+      // Note: timestamp already in meta from client (when event occurred)
+      // Note: userAgent already in meta from client, no need to duplicate
+      // Note: Loki adds its own ingestion timestamp, no need for serverTimestamp
     }
     
     // Log using the same pattern as server-side, but with [CLIENT] prefix
