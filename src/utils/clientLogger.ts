@@ -71,16 +71,44 @@ class ClientLogger {
     }
 
     return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        // If mapping takes too long, keep stack as-is and add originalStack
+        resolve({
+          ...meta,
+          originalStack: meta.stack
+        })
+      }, 2000) // 2 second timeout
+
       try {
-        mapStackTrace(meta.stack, (mappedStack) => {
+        const originalStack = meta.stack
+        const originalLines = originalStack.split('\n')
+
+        mapStackTrace(originalStack, (mappedStack) => {
+          clearTimeout(timeout)
+
+          // Debug: log what we got
+          console.log('[SourceMap] Original lines:', originalLines.length)
+          console.log('[SourceMap] Mapped lines:', mappedStack.length)
+          console.log('[SourceMap] Mapped result:', mappedStack)
+
+          const mappedString = mappedStack.join('\n')
+
+          // Always include both stacks
+          // stack = mapped version (may contain some unmapped lines)
+          // originalStack = original webpack chunks
           resolve({
             ...meta,
-            stack: mappedStack.join('\n')
+            stack: mappedString,
+            originalStack: meta.stack
           })
         })
       } catch (error) {
-        // If mapping fails, return original meta
-        resolve(meta)
+        clearTimeout(timeout)
+        // If mapping fails, keep stack as-is and add originalStack
+        resolve({
+          ...meta,
+          originalStack: meta.stack
+        })
       }
     })
   }
