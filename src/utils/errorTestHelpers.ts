@@ -35,8 +35,8 @@ export function processTestOperation(operation: string): void {
   })
 
   // Simulate some logic before error
-  const timestamp = new Date().toISOString()
-  const errorMessage = `Test exception from ${operation} at ${timestamp} - check Grafana for stack trace!`
+
+  const errorMessage = `Test exception from ${operation}!`
 
   // Call deeper function
   throwTestError(errorMessage)

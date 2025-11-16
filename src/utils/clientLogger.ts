@@ -1,5 +1,7 @@
 'use client'
 
+import { mapStackTrace } from 'sourcemapped-stacktrace'
+
 // Client-side logger that can optionally send logs to server
 interface LogMeta {
   [key: string]: any
@@ -61,7 +63,28 @@ class ClientLogger {
     const messageIndex = levels.indexOf(messageLevel)
     return messageIndex >= currentIndex
   }
-  
+
+  // Helper to map stack trace using source maps
+  private mapStackTraceIfPresent = async (meta: LogMeta): Promise<LogMeta> => {
+    if (!meta.stack || typeof meta.stack !== 'string') {
+      return meta
+    }
+
+    return new Promise((resolve) => {
+      try {
+        mapStackTrace(meta.stack, (mappedStack) => {
+          resolve({
+            ...meta,
+            stack: mappedStack.join('\n')
+          })
+        })
+      } catch (error) {
+        // If mapping fails, return original meta
+        resolve(meta)
+      }
+    })
+  }
+
   private sendToServer = async (level: string, message: string, meta: LogMeta = {}) => {
     if (!this.isEnabled) return
 
@@ -70,6 +93,9 @@ class ClientLogger {
       const shouldSend = this.shouldLog(level)
 
       if (shouldSend) {
+        // Map stack trace if present
+        const mappedMeta = await this.mapStackTraceIfPresent(meta)
+
         fetch('/api/log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -77,7 +103,7 @@ class ClientLogger {
             level,
             message,
             meta: {
-              ...meta,
+              ...mappedMeta,
               url: window.location.href,
               userAgent: navigator.userAgent
               // No timestamp - Loki will timestamp when log is received
@@ -210,11 +236,15 @@ if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
     // Use errorSilent because browser will show the error natively
     // We only want to send to Grafana, not duplicate in console
+    const hasStack = !!event.error?.stack
     clientLogger.errorSilent('Unhandled JavaScript error', {
       message: event.error?.message || event.message,
-      filename: event.filename,
-      lineno: event.lineno,
-      colno: event.colno,
+      // Only include filename/lineno/colno if no stack trace (fallback info)
+      ...(hasStack ? {} : {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+      }),
       stack: event.error?.stack,
       type: 'unhandled_error'
     })

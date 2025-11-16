@@ -12,6 +12,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import LanguageIcon from '@mui/icons-material/Language'
 import ErrorIcon from '@mui/icons-material/Error'
+import InfoIcon from '@mui/icons-material/Info'
 import { useState } from 'react'
 import NotificationBadge from './NotificationBadge'
 import NotificationsPopup from './NotificationsPopup'
@@ -26,6 +27,7 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useStore } from '@/store/useStore'
 import { useProfileImage } from '@/hooks/useProfileImage'
 import { triggerMenuException, triggerMenuPromiseRejection, triggerComplexException } from '@/utils/errorTestTriggers'
+import clientLogger from '@/utils/clientLogger'
 
 interface MediaControlsProps {
   showNotifications?: boolean
@@ -131,6 +133,24 @@ export default function MediaControls({
     handleProfileMenuClose()
     // Trigger error with complex metadata for testing
     triggerComplexException()
+  }
+
+  const handleTriggerLogs = () => {
+    handleProfileMenuClose()
+
+    clientLogger.debug('Debug log test', {
+      testType: 'menu_trigger'
+    })
+
+    clientLogger.info('Info log test', {
+      testType: 'menu_trigger',
+      userAction: 'test_logging'
+    })
+
+    clientLogger.warn('Warning log test', {
+      testType: 'menu_trigger',
+      warningReason: 'This is a test warning'
+    })
   }
 
   return (
@@ -256,6 +276,20 @@ export default function MediaControls({
             <BugReportIcon sx={{ color: 'white' }} />
           </ListItemIcon>
           <ListItemText primary={tRoot('Profile.viewClientLogs')} />
+        </MenuItem>
+        <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+        <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
+          {tRoot('Profile.logTestingTools')}
+        </ListSubheader>
+        <MenuItem onClick={handleTriggerLogs}>
+          <ListItemIcon>
+            <InfoIcon sx={{ color: 'cyan' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary={tRoot('Profile.triggerLogs')}
+            secondary={tRoot('Profile.triggerLogsDesc')}
+            secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
+          />
         </MenuItem>
         <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
         <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
