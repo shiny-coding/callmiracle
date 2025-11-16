@@ -4,11 +4,14 @@ const withNextIntl = createNextIntlPlugin();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // save this just in case
+  // Enable source maps for better error tracking in both dev and production
   productionBrowserSourceMaps: true,
-  webpack: (config, { isServer }) => {
-    if (config.mode !== 'development') {
-      config.devtool = 'source-map';
+  webpack: (config, { isServer, dev }) => {
+    // Always enable source maps for better error tracking
+    if (dev) {
+      config.devtool = 'eval-source-map'; // Fast rebuild with source maps in dev
+    } else {
+      config.devtool = 'source-map'; // Full source maps in production
     }
     config.ignoreWarnings = [
       {

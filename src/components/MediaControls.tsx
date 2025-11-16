@@ -1,6 +1,6 @@
 'use client'
 
-import { IconButton, Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material'
+import { IconButton, Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider, ListSubheader } from '@mui/material'
 import NotificationsIcon from '@mui/icons-material/Notifications'
 import SettingsIcon from '@mui/icons-material/Settings'
 import LogoutIcon from '@mui/icons-material/Logout'
@@ -11,6 +11,7 @@ import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import BugReportIcon from '@mui/icons-material/BugReport'
 import LanguageIcon from '@mui/icons-material/Language'
+import ErrorIcon from '@mui/icons-material/Error'
 import { useState } from 'react'
 import NotificationBadge from './NotificationBadge'
 import NotificationsPopup from './NotificationsPopup'
@@ -24,6 +25,7 @@ import { useNotifications } from '@/contexts/NotificationsContext'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useStore } from '@/store/useStore'
 import { useProfileImage } from '@/hooks/useProfileImage'
+import { triggerMenuException, triggerMenuPromiseRejection, triggerComplexException } from '@/utils/errorTestTriggers'
 
 interface MediaControlsProps {
   showNotifications?: boolean
@@ -111,6 +113,24 @@ export default function MediaControls({
   const handleLanguageClick = () => {
     handleProfileMenuClose()
     setLanguageDialogOpen(true)
+  }
+
+  const handleTriggerException = () => {
+    handleProfileMenuClose()
+    // Trigger multi-file call stack error for testing
+    triggerMenuException()
+  }
+
+  const handleTriggerPromiseRejection = () => {
+    handleProfileMenuClose()
+    // Trigger promise rejection error for testing
+    triggerMenuPromiseRejection()
+  }
+
+  const handleTriggerComplexException = () => {
+    handleProfileMenuClose()
+    // Trigger error with complex metadata for testing
+    triggerComplexException()
   }
 
   return (
@@ -236,6 +256,40 @@ export default function MediaControls({
             <BugReportIcon sx={{ color: 'white' }} />
           </ListItemIcon>
           <ListItemText primary={tRoot('Profile.viewClientLogs')} />
+        </MenuItem>
+        <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+        <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
+          {tRoot('Profile.errorTestingTools')}
+        </ListSubheader>
+        <MenuItem onClick={handleTriggerException}>
+          <ListItemIcon>
+            <ErrorIcon sx={{ color: 'orange' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary={tRoot('Profile.throwError')}
+            secondary={tRoot('Profile.throwErrorDesc')}
+            secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
+          />
+        </MenuItem>
+        <MenuItem onClick={handleTriggerPromiseRejection}>
+          <ListItemIcon>
+            <ErrorIcon sx={{ color: 'red' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary={tRoot('Profile.rejectPromise')}
+            secondary={tRoot('Profile.rejectPromiseDesc')}
+            secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
+          />
+        </MenuItem>
+        <MenuItem onClick={handleTriggerComplexException}>
+          <ListItemIcon>
+            <ErrorIcon sx={{ color: 'purple' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary={tRoot('Profile.complexError')}
+            secondary={tRoot('Profile.complexErrorDesc')}
+            secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
+          />
         </MenuItem>
         <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
         <MenuItem onClick={handleLogout}>

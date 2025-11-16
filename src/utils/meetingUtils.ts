@@ -265,6 +265,18 @@ export function getHighestPriorityMeetingColor(meetings: Meeting[]): string | nu
 }
 
 export function canEditMeeting(meeting: Meeting) {
+  const now = new Date().getTime()
+
+  // Find the last slot end time
+  const lastSlotEnd = meeting.timeSlots && meeting.timeSlots.length > 0
+    ? Math.max(...meeting.timeSlots) + SLOT_DURATION
+    : null
+
+  // Don't allow editing if last slot ended more than an hour ago
+  if (lastSlotEnd && lastSlotEnd < now - 60 * 60 * 1000) {
+    return false
+  }
+
   return (meeting.status === MeetingStatus.Cancelled || (meeting.status === MeetingStatus.Seeking && !isMeetingPassed(meeting)))
 }
 

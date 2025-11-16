@@ -13,7 +13,6 @@ interface LogEntry {
 }
 
 class ClientLogger {
-  private isDevelopment = process.env.NODE_ENV === 'development'
   private isEnabled = typeof window !== 'undefined'
   private clientLogLevel = 'info' // Temporarily set to 'info' for debugging DeviceSettings
   private logBuffer: LogEntry[] = []
@@ -98,9 +97,7 @@ class ClientLogger {
 
     if (!this.shouldLog('debug')) return
 
-    if (this.isDevelopment) {
-      console.debug(this.formatMessage('debug', message, meta))
-    }
+    console.debug(this.formatMessage('debug', message, meta))
 
     // Send to server based on user's clientLogLevel
     this.sendToServer('debug', message, meta)
@@ -111,9 +108,7 @@ class ClientLogger {
 
     if (!this.shouldLog('info')) return
 
-    if (this.isDevelopment) {
-      console.info(this.formatMessage('info', message, meta))
-    }
+    console.info(this.formatMessage('info', message, meta))
 
     // Send to server based on user's clientLogLevel
     this.sendToServer('info', message, meta)
@@ -124,8 +119,15 @@ class ClientLogger {
 
     if (!this.shouldLog('warn')) return
 
-    if (this.isDevelopment) {
-      console.warn(this.formatMessage('warn', message, meta))
+    // Set flag to prevent console.warn interception for our own logs
+    if (typeof window !== 'undefined') {
+      (window as any).__clientLoggerLogging = true
+    }
+
+    console.warn(this.formatMessage('warn', message, meta))
+
+    if (typeof window !== 'undefined') {
+      (window as any).__clientLoggerLogging = false
     }
 
     // Send to server based on user's clientLogLevel
@@ -137,12 +139,32 @@ class ClientLogger {
 
     if (!this.shouldLog('error')) return
 
+    // Set flag to prevent console.error interception for our own logs
+    if (typeof window !== 'undefined') {
+      (window as any).__clientLoggerLogging = true
+    }
+
     console.error(this.formatMessage('error', message, meta))
+
+    if (typeof window !== 'undefined') {
+      (window as any).__clientLoggerLogging = false
+    }
 
     // Send to server based on user's clientLogLevel
     this.sendToServer('error', message, meta)
   }
-  
+
+  // Silent error - sends to server only, doesn't show in console
+  // Use for errors that browser will display natively (like unhandled errors)
+  errorSilent = (message: string, meta: LogMeta = {}) => {
+    this.addToBuffer('error', message, meta)
+
+    if (!this.shouldLog('error')) return
+
+    // Only send to server, don't show in console (browser will show it natively)
+    this.sendToServer('error', message, meta)
+  }
+
   // Wrapper for logging user actions
   userAction = (action: string, meta: LogMeta = {}) => {
     this.info(`User action: ${action}`, { action, ...meta })
@@ -185,7 +207,9 @@ export type { LogEntry }
 // Global error handler for unhandled client errors
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
-    clientLogger.error('Unhandled JavaScript error', {
+    // Use errorSilent because browser will show the error natively
+    // We only want to send to Grafana, not duplicate in console
+    clientLogger.errorSilent('Unhandled JavaScript error', {
       message: event.error?.message || event.message,
       filename: event.filename,
       lineno: event.lineno,
@@ -196,7 +220,8 @@ if (typeof window !== 'undefined') {
   })
 
   window.addEventListener('unhandledrejection', (event) => {
-    clientLogger.error('Unhandled promise rejection', {
+    // Use errorSilent because browser will show the rejection natively
+    clientLogger.errorSilent('Unhandled promise rejection', {
       reason: event.reason?.message || String(event.reason),
       stack: event.reason?.stack,
       type: 'unhandled_rejection'
@@ -210,75 +235,62 @@ if (typeof window !== 'undefined') {
   // Flag to prevent infinite loops when our logger calls console methods
   let isLoggingToConsole = false
 
-  console.error = (...args: any[]) => {
-    // Call original console.error so it still shows in browser console
-    originalConsoleError.apply(console, args)
-
-    // Prevent infinite loop if clientLogger.error calls console.error
-    if (isLoggingToConsole) return
-
-    try {
-      isLoggingToConsole = true
-
-      // Extract error information
-      const firstArg = args[0]
-      let message = 'Console error'
-      let meta: LogMeta = {}
-
-      if (firstArg instanceof Error) {
-        message = firstArg.message
-        meta.stack = firstArg.stack
-        meta.name = firstArg.name
-      } else if (typeof firstArg === 'string') {
-        message = firstArg
-      } else {
-        message = String(firstArg)
+  // Helper to create console interceptors with DRY principle
+  const createConsoleInterceptor = (
+    originalMethod: typeof console.error | typeof console.warn,
+    level: 'error' | 'warn',
+    defaultMessage: string
+  ) => {
+    return (...args: any[]) => {
+      // Skip interception for clientLogger's own logs (CHECK FIRST!)
+      if ((window as any).__clientLoggerLogging) {
+        originalMethod.apply(console, args)
+        return
       }
 
-      // Include additional arguments if present
-      if (args.length > 1) {
-        meta.additionalArgs = args.slice(1)
+      // Prevent infinite loop
+      if (isLoggingToConsole) {
+        originalMethod.apply(console, args)
+        return
       }
 
-      // Add to our logger
-      clientLogger.error(`[Console] ${message}`, { ...meta, type: 'console_error' })
-    } finally {
-      isLoggingToConsole = false
+      // Call original console method so it still shows in browser console
+      originalMethod.apply(console, args)
+
+      try {
+        isLoggingToConsole = true
+
+        // Extract message and metadata
+        const firstArg = args[0]
+        let message = defaultMessage
+        const meta: LogMeta = {}
+
+        if (firstArg instanceof Error) {
+          message = firstArg.message
+          meta.stack = firstArg.stack
+          meta.name = firstArg.name
+        } else if (typeof firstArg === 'string') {
+          message = firstArg
+        } else {
+          message = String(firstArg)
+        }
+
+        // Include additional arguments if present
+        if (args.length > 1) {
+          meta.additionalArgs = args.slice(1)
+        }
+
+        // Add to our logger with appropriate level
+        clientLogger[level](`[Console] ${message}`, { ...meta, type: `console_${level}` })
+      } finally {
+        isLoggingToConsole = false
+      }
     }
   }
 
-  console.warn = (...args: any[]) => {
-    // Call original console.warn so it still shows in browser console
-    originalConsoleWarn.apply(console, args)
-
-    // Prevent infinite loop if clientLogger.warn calls console.warn
-    if (isLoggingToConsole) return
-
-    try {
-      isLoggingToConsole = true
-
-      // Extract warning information
-      const firstArg = args[0]
-      let message = 'Console warning'
-      let meta: LogMeta = {}
-
-      if (typeof firstArg === 'string') {
-        message = firstArg
-      } else {
-        message = String(firstArg)
-      }
-
-      // Include additional arguments if present
-      if (args.length > 1) {
-        meta.additionalArgs = args.slice(1)
-      }
-
-      // Add to our logger
-      clientLogger.warn(`[Console] ${message}`, { ...meta, type: 'console_warn' })
-    } finally {
-      isLoggingToConsole = false
-    }
-  }
+  // Install interceptors
+  console.error = createConsoleInterceptor(originalConsoleError, 'error', 'Console error')
+  console.warn = createConsoleInterceptor(originalConsoleWarn, 'warn', 'Console warning')
 }
 
 export default clientLogger 
