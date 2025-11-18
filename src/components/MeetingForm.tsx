@@ -573,7 +573,7 @@ export default function MeetingForm() {
             tempInterests.length === 0 ||
             !hasValidDuration}
         >
-          {meeting ? t('update') : t('create')}
+          {meeting ? t('update') : meetingToConnect ? t('connectWithMeeting') : t('create')}
         </Button>
       </div>
       )}

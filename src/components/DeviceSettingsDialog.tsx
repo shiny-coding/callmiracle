@@ -75,7 +75,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     setLocalVideoEnabled: state.setLocalVideoEnabled,
     setLocalAudioEnabled: state.setLocalAudioEnabled
   }))
-  const { localStream, connectionStatus, sendWantedMediaState } = useWebRTCContext()
+  const { localStream, setLocalStream, connectionStatus, sendWantedMediaState, caller, callee } = useWebRTCContext()
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLandscape, setIsLandscape] = useState(true)
@@ -90,6 +90,20 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     if (!open) return
 
     async function ensurePermissions() {
+      // CRITICAL: On iOS, do NOT request permissions during an active call!
+      // iOS can only have one camera stream. Requesting permissions creates a test stream
+      // which can conflict with the active call stream, causing the video to freeze.
+      // This also prevents the double permission prompt issue on iOS.
+      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+
+      if (isIOS && isInCall) {
+        clientLogger.info('[DeviceSettings] iOS in call - skipping permission request to avoid camera conflict', {
+          connectionStatus,
+          permissionsState: permissions
+        })
+        return
+      }
+
       // Check if permissions are already granted
       if (permissions.camera === 'granted' && permissions.microphone === 'granted') {
         clientLogger.info('[DeviceSettings] Permissions already granted')
@@ -107,7 +121,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     }
 
     ensurePermissions()
-  }, [open, permissions, requestPermissions])
+  }, [open, permissions, requestPermissions, connectionStatus, isIOS])
 
   // Memoize getLabel to prevent unnecessary re-enumeration of devices
   // Note: We don't include previewStream in dependencies because we don't actually use it
@@ -154,9 +168,15 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   // Cleanup preview stream immediately when dialog closes
   useEffect(() => {
     if (!open) {
+      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+
       clientLogger.info('[DeviceSettings] Dialog closed, starting cleanup', {
         hasPreviewStream: !!previewStreamRef.current,
-        trackCount: previewStreamRef.current?.getTracks().length || 0
+        trackCount: previewStreamRef.current?.getTracks().length || 0,
+        connectionStatus,
+        isInCall,
+        isIOS,
+        previewIsLocalStream: previewStreamRef.current === localStream
       })
 
       // Cleanup function for iOS camera indicator
@@ -169,18 +189,31 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           videoRef.current.load()
         }
 
-        // Stop all tracks
+        // CRITICAL: On iOS during ANY call state, previewStreamRef points to localStream
+        // We must NOT stop those tracks or the call will end!
+        const shouldStopTracks = !(isIOS && isInCall && previewStreamRef.current === localStream)
+
         if (previewStreamRef.current) {
-          const tracks = previewStreamRef.current.getTracks()
-          tracks.forEach(track => {
-            clientLogger.info('[DeviceSettings] Stopping track on dialog close', {
-              trackId: track.id,
-              kind: track.kind,
-              label: track.label,
-              readyState: track.readyState
+          if (shouldStopTracks) {
+            // Safe to stop - this is a separate preview stream
+            const tracks = previewStreamRef.current.getTracks()
+            tracks.forEach(track => {
+              clientLogger.info('[DeviceSettings] Stopping preview track on dialog close', {
+                trackId: track.id,
+                kind: track.kind,
+                label: track.label,
+                readyState: track.readyState
+              })
+              track.stop()
             })
-            track.stop()
-          })
+          } else {
+            // Do NOT stop - this is the active call stream on iOS
+            clientLogger.info('[DeviceSettings] NOT stopping tracks - this is the active call stream on iOS', {
+              connectionStatus,
+              streamId: previewStreamRef.current.id,
+              trackCount: previewStreamRef.current.getTracks().length
+            })
+          }
           previewStreamRef.current = null
         }
         setPreviewStream(null)
@@ -236,37 +269,65 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
         // During a call, create a separate preview stream
         // Not during a call, use the existing localStream
-        if (connectionStatus === 'connected') {
-          // Clear video element srcObject first
-          if (videoRef.current) {
-            videoRef.current.srcObject = null
-          }
 
-          // Stop old preview stream if exists
-          if (previewStreamRef.current) {
-            previewStreamRef.current.getTracks().forEach(track => track.stop())
-          }
+        // On iOS, check if we're in ANY call-related state
+        const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
 
-          // On iOS, use facingMode instead of deviceId for better compatibility
-          const constraints: MediaStreamConstraints = {
-            video: isIOS
-              ? { facingMode: currentFacingMode }
-              : selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
-            audio: false // No audio needed for preview
-          }
-
-          const stream = await navigator.mediaDevices.getUserMedia(constraints)
-          const tracks = stream.getVideoTracks()
-
-          clientLogger.info('[DeviceSettings] Preview stream created (connected)', {
-            streamId: stream.id,
-            trackCount: tracks.length,
-            trackLabel: tracks[0]?.label,
-            trackId: tracks[0]?.id
+        if (isInCall && isIOS) {
+          // On iOS, CRITICAL: Cannot create a new stream during ANY call state!
+          // iOS Safari only allows ONE active camera stream at a time.
+          // Creating a new stream will end the active call stream.
+          // IMPORTANT: Even if localStream doesn't exist yet (call not accepted),
+          // we must NOT create a preview stream, as it will conflict with the
+          // stream that will be created when user accepts the call.
+          clientLogger.info('[DeviceSettings] iOS in call state - no preview stream during call', {
+            connectionStatus,
+            hasLocalStream: !!localStream,
+            localStreamId: localStream?.id,
+            trackCount: localStream?.getTracks().length || 0
           })
 
-          previewStreamRef.current = stream
-          setPreviewStream(stream)
+          // If localStream exists, use it for preview
+          if (localStream) {
+            previewStreamRef.current = localStream
+            setPreviewStream(localStream)
+          } else {
+            // No localStream yet (call not accepted) - don't create preview
+            previewStreamRef.current = null
+            setPreviewStream(null)
+          }
+        } else if (isInCall && !isIOS) {
+          // Non-iOS during call: Create separate preview stream
+          if (connectionStatus === 'connected') {
+            // Non-iOS: Can safely create separate preview stream
+            // Clear video element srcObject first
+            if (videoRef.current) {
+              videoRef.current.srcObject = null
+            }
+
+            // Stop old preview stream if exists
+            if (previewStreamRef.current) {
+              previewStreamRef.current.getTracks().forEach(track => track.stop())
+            }
+
+            const constraints: MediaStreamConstraints = {
+              video: selectedVideoDevice ? { deviceId: selectedVideoDevice } : true,
+              audio: false // No audio needed for preview
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints)
+            const tracks = stream.getVideoTracks()
+
+            clientLogger.info('[DeviceSettings] Preview stream created (connected, non-iOS)', {
+              streamId: stream.id,
+              trackCount: tracks.length,
+              trackLabel: tracks[0]?.label,
+              trackId: tracks[0]?.id
+            })
+
+            previewStreamRef.current = stream
+            setPreviewStream(stream)
+          }
         } else {
           // Clear video element srcObject first
           if (videoRef.current) {
@@ -314,10 +375,16 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
     // Cleanup function that runs when effect dependencies change or component unmounts
     return () => {
+      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+      const isActiveCallOnIOS = isIOS && isInCall
+
       clientLogger.info('[DeviceSettings] useEffect cleanup running', {
         hasPreviewStream: !!previewStreamRef.current,
         trackCount: previewStreamRef.current?.getTracks().length || 0,
-        flagState: isCreatingStreamRef.current
+        flagState: isCreatingStreamRef.current,
+        connectionStatus,
+        isInCall,
+        isActiveCallOnIOS
       })
 
       if (videoRef.current) {
@@ -327,21 +394,34 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         videoRef.current.load()
       }
 
+      // CRITICAL: On iOS during ANY call state, NEVER stop tracks!
+      // The preview stream will either be:
+      // 1. The current localStream (active call stream), OR
+      // 2. A new stream we're switching to (which will become localStream)
+      // In both cases, stopping tracks would kill the call stream.
       if (previewStreamRef.current) {
-        const tracks = previewStreamRef.current.getTracks()
-        tracks.forEach(track => {
-          clientLogger.info('[DeviceSettings] Stopping track in useEffect cleanup', {
-            trackId: track.id,
-            kind: track.kind,
-            label: track.label,
-            readyState: track.readyState
+        if (isActiveCallOnIOS) {
+          clientLogger.info('[DeviceSettings] NOT stopping tracks in useEffect cleanup - active call on iOS', {
+            connectionStatus,
+            streamId: previewStreamRef.current.id,
+            trackCount: previewStreamRef.current.getTracks().length
           })
-          track.stop()
-        })
+        } else {
+          const tracks = previewStreamRef.current.getTracks()
+          tracks.forEach(track => {
+            clientLogger.info('[DeviceSettings] Stopping track in useEffect cleanup', {
+              trackId: track.id,
+              kind: track.kind,
+              label: track.label,
+              readyState: track.readyState
+            })
+            track.stop()
+          })
+        }
         previewStreamRef.current = null
       }
     }
-  }, [open, localStream, localVideoEnabled, connectionStatus])
+  }, [open, localStream, localVideoEnabled, connectionStatus, isIOS])
 
   // Attach preview stream to video element
   useEffect(() => {
@@ -371,66 +451,120 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
   // iOS-specific: Toggle between front and back camera using facingMode
   const handleIOSCameraToggle = async () => {
+    const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
     const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user'
 
     clientLogger.info('[DeviceSettings] iOS camera toggle requested', {
       currentFacingMode,
-      newFacingMode
+      newFacingMode,
+      connectionStatus,
+      isInCall
     })
 
     try {
-      // Stop current stream
-      if (previewStreamRef.current) {
-        const tracks = previewStreamRef.current.getTracks()
-        tracks.forEach(track => {
-          clientLogger.info('[DeviceSettings] Stopping track for iOS camera toggle', {
-            trackId: track.id,
-            readyState: track.readyState
-          })
-          track.stop()
-        })
-        previewStreamRef.current = null
-      }
-      setPreviewStream(null)
-
-      // Clear video element
-      if (videoRef.current) {
-        videoRef.current.pause()
-        videoRef.current.srcObject = null
-        videoRef.current.removeAttribute('src')
-        videoRef.current.load()
-      }
-
-      // Update facingMode
-      setCurrentFacingMode(newFacingMode)
-
-      // Wait for iOS to release camera hardware
-      clientLogger.info('[DeviceSettings] Waiting 100ms for iOS camera release before requesting new facingMode')
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Request new stream with new facingMode
+      // Get new stream with new facingMode
       const constraints: MediaStreamConstraints = {
         video: { facingMode: newFacingMode },
         audio: false
       }
 
       clientLogger.info('[DeviceSettings] Requesting new stream with facingMode', { facingMode: newFacingMode })
-      const stream = await navigator.mediaDevices.getUserMedia(constraints)
-      const tracks = stream.getVideoTracks()
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints)
+      const newVideoTrack = newStream.getVideoTracks()[0]
 
       clientLogger.info('[DeviceSettings] New iOS camera stream acquired', {
-        streamId: stream.id,
-        trackCount: tracks.length,
-        trackLabel: tracks[0]?.label,
+        streamId: newStream.id,
+        trackId: newVideoTrack.id,
+        trackLabel: newVideoTrack.label,
         facingMode: newFacingMode
       })
 
-      previewStreamRef.current = stream
-      setPreviewStream(stream)
+      if (isInCall && localStream) {
+        // During a call: Create new stream and update localStream
+        // The WebRTCProvider will automatically replace tracks in the peer connection
+        clientLogger.info('[DeviceSettings] In call - creating new local stream with new camera')
+
+        // Get old video track to stop it later
+        const oldVideoTrack = localStream.getVideoTracks()[0]
+
+        // Create new MediaStream with new video track + existing audio track
+        const audioTrack = localStream.getAudioTracks()[0]
+        const newLocalStream = new MediaStream()
+        newLocalStream.addTrack(newVideoTrack)
+        if (audioTrack) {
+          newLocalStream.addTrack(audioTrack)
+        }
+
+        clientLogger.info('[DeviceSettings] Created new local stream', {
+          streamId: newLocalStream.id,
+          trackCount: newLocalStream.getTracks().length,
+          tracks: newLocalStream.getTracks().map(t => ({
+            kind: t.kind,
+            id: t.id,
+            label: t.label
+          }))
+        })
+
+        // Update the local stream - WebRTCProvider will handle track replacement
+        setLocalStream(newLocalStream)
+
+        // Stop the old video track
+        if (oldVideoTrack) {
+          oldVideoTrack.stop()
+          clientLogger.info('[DeviceSettings] Old video track stopped', {
+            trackId: oldVideoTrack.id
+          })
+        }
+
+        // Update preview
+        previewStreamRef.current = newLocalStream
+        setPreviewStream(newLocalStream)
+      } else {
+        // Not in a call: Just replace the preview stream
+        clientLogger.info('[DeviceSettings] Not in call - replacing preview stream only')
+
+        // Stop current preview stream
+        if (previewStreamRef.current) {
+          const tracks = previewStreamRef.current.getTracks()
+          tracks.forEach(track => {
+            clientLogger.info('[DeviceSettings] Stopping preview track for iOS camera toggle', {
+              trackId: track.id,
+              readyState: track.readyState
+            })
+            track.stop()
+          })
+        }
+
+        // Clear video element
+        if (videoRef.current) {
+          videoRef.current.pause()
+          videoRef.current.srcObject = null
+          videoRef.current.removeAttribute('src')
+          videoRef.current.load()
+        }
+
+        // Wait for iOS to release camera hardware
+        clientLogger.info('[DeviceSettings] Waiting 100ms for iOS camera release')
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        // Update preview
+        previewStreamRef.current = newStream
+        setPreviewStream(newStream)
+      }
+
+      // Update facingMode
+      setCurrentFacingMode(newFacingMode)
+      localStorage.setItem('selectedVideoDevice', newFacingMode === 'user' ? 'front' : 'back')
+
+      clientLogger.info('[DeviceSettings] Camera toggle completed successfully', {
+        newFacingMode,
+        isInCall
+      })
     } catch (err) {
       clientLogger.error('[DeviceSettings] Error toggling iOS camera', {
         error: err instanceof Error ? err.message : String(err),
-        attemptedFacingMode: newFacingMode
+        attemptedFacingMode: newFacingMode,
+        isInCall
       })
     }
   }
@@ -494,22 +628,38 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   }
 
   const handleClose = () => {
+    const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+    const previewIsLocalStream = previewStreamRef.current === localStream
+
     clientLogger.info('[DeviceSettings] handleClose called', {
       hasPreviewStream: !!previewStreamRef.current,
-      trackCount: previewStreamRef.current?.getTracks().length || 0
+      trackCount: previewStreamRef.current?.getTracks().length || 0,
+      isIOS,
+      isInCall,
+      previewIsLocalStream
     })
 
-    // Stop all tracks
+    // CRITICAL: On iOS during a call, previewStreamRef points to localStream (the active call stream)
+    // We must NOT stop those tracks or the call will end!
+    const shouldStopTracks = !(isIOS && isInCall && previewIsLocalStream)
+
     if (previewStreamRef.current) {
-      const tracks = previewStreamRef.current.getTracks()
-      tracks.forEach(track => {
-        clientLogger.info('[DeviceSettings] Stopping track in handleClose', {
-          trackId: track.id,
-          kind: track.kind,
-          readyState: track.readyState
+      if (shouldStopTracks) {
+        const tracks = previewStreamRef.current.getTracks()
+        tracks.forEach(track => {
+          clientLogger.info('[DeviceSettings] Stopping track in handleClose', {
+            trackId: track.id,
+            kind: track.kind,
+            readyState: track.readyState
+          })
+          track.stop()
         })
-        track.stop()
-      })
+      } else {
+        clientLogger.info('[DeviceSettings] NOT stopping tracks in handleClose - active call stream on iOS', {
+          streamId: previewStreamRef.current.id,
+          trackCount: previewStreamRef.current.getTracks().length
+        })
+      }
       previewStreamRef.current = null
     }
     setPreviewStream(null)

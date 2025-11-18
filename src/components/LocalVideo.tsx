@@ -7,29 +7,36 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useDeviceSelection } from '@/hooks/useDeviceSelection'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
+import clientLogger from '@/utils/clientLogger'
 
 async function getVideoDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
   try {
-    if (device.deviceId) {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: device.deviceId }
-      })
-      const track = stream.getVideoTracks()[0]
-      const capabilities = track.getCapabilities()
-
-      stream.getTracks().forEach(track => track.stop())
-
-      if (capabilities.facingMode) {
-        if (capabilities.facingMode.includes('user')) return 'Front Camera'
-        if (capabilities.facingMode.includes('environment')) return 'Back Camera'
-      }
-
-      return device.label || `Camera ${device.deviceId.slice(0, 5)}...`
+    if (!device.deviceId) {
+      return `Camera (no ID)`
     }
+
+    // CRITICAL: Do NOT create test streams!
+    // This component is used during ACTIVE calls. On iOS, creating a test stream
+    // will kill the active call stream because iOS only allows one camera stream.
+    // Instead, use the device label if available, or provide a generic label.
+
+    if (device.label) {
+      const labelLower = device.label.toLowerCase()
+      if (labelLower.includes('front') || labelLower.includes('user')) {
+        return 'Front Camera'
+      }
+      if (labelLower.includes('back') || labelLower.includes('rear') || labelLower.includes('environment')) {
+        return 'Back Camera'
+      }
+      return device.label
+    }
+
+    // No label available - return generic label
+    return `Camera ${device.deviceId.slice(0, 5)}...`
   } catch (err) {
-    return null
+    // Return fallback label on error
+    return device.label || `Camera ${device.deviceId?.slice(0, 5) || 'Unknown'}...`
   }
-  return null
 }
 
 interface LocalVideoProps {
@@ -67,8 +74,33 @@ export default function LocalVideo({ onClose, showDeviceSelection = true, compac
   useEffect(() => {
     if (videoRef.current) {
       if (localStream && localVideoEnabled) {
+        clientLogger.info('[LocalVideo] Attaching local stream to video element', {
+          streamId: localStream.id,
+          trackCount: localStream.getTracks().length,
+          tracks: localStream.getTracks().map(t => ({
+            kind: t.kind,
+            id: t.id,
+            readyState: t.readyState,
+            enabled: t.enabled
+          }))
+        })
+
         videoRef.current.srcObject = localStream
         setError('')
+
+        // CRITICAL: On iOS Safari, videos sometimes need explicit play() call
+        // even with autoPlay attribute
+        videoRef.current.play().then(() => {
+          clientLogger.info('[LocalVideo] Local video playing successfully')
+        }).catch(err => {
+          clientLogger.error('[LocalVideo] Failed to play local video', { error: err })
+          // Try again after a small delay (iOS sometimes needs this)
+          setTimeout(() => {
+            videoRef.current?.play().catch(e =>
+              clientLogger.error('[LocalVideo] Retry play failed', { error: e })
+            )
+          }, 100)
+        })
       } else {
         videoRef.current.srcObject = null
         if (!localStream) {

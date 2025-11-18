@@ -9,6 +9,7 @@ import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
 import { User } from '@/generated/graphql'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
+import clientLogger from '@/utils/clientLogger'
 
 interface WebRTCContextType {
   doCall: (user: User, isReconnect: boolean, meetingId: string | null, meetingLastCallTime: number | null) => Promise<void>
@@ -257,18 +258,88 @@ export function WebRTCProvider({
 
   // Watch for stream changes and update peer connections
   useEffect(() => {
-    if (!localStream) return
+    if (!localStream) {
+      clientLogger.debug('[WebRTCProvider] Track replacement effect: no localStream')
+      return
+    }
 
     // Get the active peer connection from either caller or callee
     const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
-    if (!activePeerConnection) return
+    if (!activePeerConnection) {
+      clientLogger.debug('[WebRTCProvider] Track replacement effect: no active peer connection', {
+        callerActive: caller.active,
+        calleeActive: callee.active
+      })
+      return
+    }
+
+    const role = caller.active ? 'caller' : 'callee'
+    const streamTracks = localStream.getTracks()
+
+    clientLogger.info('[WebRTCProvider] Replacing tracks in active peer connection', {
+      role,
+      streamId: localStream.id,
+      trackCount: streamTracks.length,
+      tracks: streamTracks.map(t => ({
+        kind: t.kind,
+        id: t.id,
+        label: t.label,
+        readyState: t.readyState,
+        enabled: t.enabled,
+        muted: t.muted,
+        settings: t.getSettings()
+      })),
+      connectionState: activePeerConnection.connectionState,
+      iceConnectionState: activePeerConnection.iceConnectionState,
+      signalingState: activePeerConnection.signalingState
+    })
 
     // Update tracks in the active peer connection
     const senders = activePeerConnection.getSenders()
+    clientLogger.debug('[WebRTCProvider] Current senders in peer connection', {
+      senderCount: senders.length,
+      senders: senders.map(s => ({
+        trackKind: s.track?.kind,
+        trackId: s.track?.id,
+        trackReadyState: s.track?.readyState,
+        trackEnabled: s.track?.enabled
+      }))
+    })
+
     localStream.getTracks().forEach(track => {
       const sender = senders.find(s => s.track?.kind === track.kind)
       if (sender) {
-        sender.replaceTrack(track)
+        const oldTrackId = sender.track?.id
+        const oldTrackReadyState = sender.track?.readyState
+
+        clientLogger.debug('[WebRTCProvider] Replacing track', {
+          kind: track.kind,
+          newTrackId: track.id,
+          newTrackReadyState: track.readyState,
+          newTrackEnabled: track.enabled,
+          newTrackMuted: track.muted,
+          oldTrackId,
+          oldTrackReadyState,
+          trackChanged: oldTrackId !== track.id
+        })
+
+        sender.replaceTrack(track).then(() => {
+          clientLogger.debug('[WebRTCProvider] Track replaced successfully', {
+            kind: track.kind,
+            newTrackId: track.id
+          })
+        }).catch(err => {
+          clientLogger.error('[WebRTCProvider] Failed to replace track', {
+            kind: track.kind,
+            trackId: track.id,
+            error: err
+          })
+        })
+      } else {
+        clientLogger.warn('[WebRTCProvider] No sender found for track', {
+          kind: track.kind,
+          trackId: track.id
+        })
       }
     })
   }, [localStream, caller.active, caller.peerConnection, callee.active, callee.peerConnection])
