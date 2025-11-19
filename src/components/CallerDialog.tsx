@@ -2,7 +2,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
-import UserCard from './UserCard'
+import CallUserInfo from './CallUserInfo'
 import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
@@ -102,7 +102,7 @@ export default function CallerDialog() {
         {tStatus(connectionStatus)}
       </DialogTitle>
       <DialogContent>
-        {showUserInfo && <UserCard user={targetUser} />}
+        {showUserInfo && <CallUserInfo user={targetUser} />}
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
         {(connectionStatus === 'no-answer' || connectionStatus === 'busy') &&
