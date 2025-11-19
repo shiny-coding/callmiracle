@@ -52,14 +52,24 @@ export default function ConnectedCallLayout() {
     const updateOrientation = () => {
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect()
+        const isLandscape = width > height
+
         // If width > height, stack horizontally (side by side), else vertically (top/bottom)
-        setIsSplitHorizontal(width > height)
+        setIsSplitHorizontal(isLandscape)
       }
     }
 
-    updateOrientation()
+    // Initial update with a small delay to ensure container is measured correctly
+    const timeoutId = setTimeout(updateOrientation, 100)
+
     window.addEventListener('resize', updateOrientation)
-    return () => window.removeEventListener('resize', updateOrientation)
+    window.addEventListener('orientationchange', updateOrientation)
+
+    return () => {
+      clearTimeout(timeoutId)
+      window.removeEventListener('resize', updateOrientation)
+      window.removeEventListener('orientationchange', updateOrientation)
+    }
   }, [])
 
   return (
