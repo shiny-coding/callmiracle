@@ -8,6 +8,7 @@ import LockIcon from '@mui/icons-material/Lock'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
+import PeopleIcon from '@mui/icons-material/People'
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useUpdateUser } from '@/hooks/useUpdateUser'
@@ -64,6 +65,14 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
     })
   }
 
+  const handleViewParticipants = () => {
+    routerPush(router, `/${locale}/users?groupId=${group._id}`, {
+      source: 'group_card_participants_button',
+      groupId: group._id,
+      groupName: group.name
+    })
+  }
+
   const handleConfirm = async () => {
     if (!currentUser) return
     
@@ -106,11 +115,8 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
       return;
     }
 
-    routerPush(router, `/${locale}/users?groupId=${group._id}`, {
-      source: 'group_card_click',
-      groupId: group._id,
-      groupName: group.name
-    })
+    // Otherwise, clicking the card does nothing
+    // Use the "Participants" button to view group members
   }
 
   const { imageSrc } = useGroupImage(group._id)
@@ -118,7 +124,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
   return (
     <>
       <div
-        className="cursor-pointer rounded-lg p-5sp transition-colors"
+        className={`rounded-lg p-5sp transition-colors ${firstTime ? 'cursor-pointer' : ''}`}
         onClick={handleGroupClick}
       >
         {firstTime && (
@@ -214,7 +220,20 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 </Typography>
               )}
             </div>
-            <div className="ml-auto flex">
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={<PeopleIcon />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleViewParticipants()
+                }}
+                className="flex-shrink-0"
+              >
+                {t('participants')}
+              </Button>
               {isInGroup && !isOwner ? (
                 <Button
                   variant="outlined"

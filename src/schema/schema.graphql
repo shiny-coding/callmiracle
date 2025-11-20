@@ -302,12 +302,21 @@ type CallHistoryEntry {
   totalCalls: Int!
 }
 
+type IndividualCallHistoryEntry {
+  callId: ID!
+  user: User!
+  callTime: Float!
+  durationS: Int!
+  initiatedByMe: Boolean!
+}
+
 type Query {
   getUser(userId: ID!): User
   getUsers: [User!]!
   getGroups(userId: ID!): [Group!]!
   getCalls: [Call!]!
   getCallHistory(userId: ID!): [CallHistoryEntry!]!
+  getIndividualCallHistory(userId: ID!): [IndividualCallHistoryEntry!]!
   getDetailedCallHistory(userId: ID!, targetUserId: ID!): [Call!]!
   getMyMeetingsWithPeers(userId: ID!): [MeetingWithPeer!]!
   getNotifications(userId: ID!): [Notification!]!

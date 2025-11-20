@@ -80,4 +80,56 @@ export const callsQueries = {
 
     return calls
   },
+  getIndividualCallHistory: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+    const _userId = new ObjectId(userId)
+
+    const calls = await db.collection('calls').find<Call>({
+      $or: [
+        { initiatorUserId: _userId },
+        { targetUserId: _userId }
+      ],
+      type: 'finished'
+    })
+    .sort({ _id: -1 }) // Sort by most recent first
+    .toArray()
+
+    // Get all unique user IDs
+    const userIds = new Set<string>()
+    for (const call of calls) {
+      const otherUserId = call.initiatorUserId.toString() === _userId.toString()
+        ? call.targetUserId.toString()
+        : call.initiatorUserId.toString()
+      userIds.add(otherUserId)
+    }
+
+    // Fetch all users at once
+    const users = await db.collection('users').find({
+      _id: { $in: Array.from(userIds).map(id => new ObjectId(id)) }
+    }).toArray()
+
+    const usersMap = new Map()
+    for (const user of users) {
+      usersMap.set(user._id.toString(), user)
+    }
+
+    // Format response
+    const result = []
+    for (const call of calls) {
+      const isInitiator = call.initiatorUserId.toString() === _userId.toString()
+      const otherUserId = isInitiator ? call.targetUserId.toString() : call.initiatorUserId.toString()
+      const user = usersMap.get(otherUserId)
+
+      if (!user) continue
+
+      result.push({
+        callId: call._id,
+        user: user,
+        callTime: (call._id as any as ObjectId).getTimestamp().getTime(),
+        durationS: call.durationS,
+        initiatedByMe: isInitiator
+      })
+    }
+
+    return result
+  },
 } 

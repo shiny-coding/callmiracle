@@ -145,6 +145,15 @@ export type GroupInput = {
   transparency: MeetingTransparency;
 };
 
+export type IndividualCallHistoryEntry = {
+  __typename?: 'IndividualCallHistoryEntry';
+  callId: Scalars['ID']['output'];
+  callTime: Scalars['Float']['output'];
+  durationS: Scalars['Int']['output'];
+  initiatedByMe: Scalars['Boolean']['output'];
+  user: User;
+};
+
 export type InstrumentationComponents = {
   __typename?: 'InstrumentationComponents';
   graphql: Scalars['Boolean']['output'];
@@ -442,6 +451,7 @@ export type Query = {
   getDetailedCallHistory: Array<Call>;
   getFutureMeetingsWithPeers: Array<MeetingWithPeer>;
   getGroups: Array<Group>;
+  getIndividualCallHistory: Array<IndividualCallHistoryEntry>;
   getMessages: Array<Message>;
   getMyMeetingsWithPeers: Array<MeetingWithPeer>;
   getNotifications: Array<Notification>;
@@ -475,6 +485,11 @@ export type QueryGetFutureMeetingsWithPeersArgs = {
 
 
 export type QueryGetGroupsArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetIndividualCallHistoryArgs = {
   userId: Scalars['ID']['input'];
 };
 

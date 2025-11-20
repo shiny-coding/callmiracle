@@ -158,7 +158,6 @@ export default function MediaControls({
       <div className={`flex items-center gap-4 ${className}`}>
         {showNotifications && (
           <IconButton
-            className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
             onClick={() => setNotificationsOpen(true)}
           >
             <NotificationBadge show={hasUnseenNotifications}>
@@ -170,7 +169,6 @@ export default function MediaControls({
         {showMediaButtons && (
           <>
             <IconButton
-              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
               onClick={handleAudioToggle}
             >
               {localAudioEnabled ? (
@@ -181,7 +179,6 @@ export default function MediaControls({
             </IconButton>
 
             <IconButton
-              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
               onClick={handleVideoToggle}
             >
               {localVideoEnabled ? (
@@ -192,7 +189,6 @@ export default function MediaControls({
             </IconButton>
 
             <IconButton
-              className="bg-black/30 backdrop-blur-sm hover:bg-black/40"
               onClick={handleDeviceSettings}
               title="Device Settings"
             >
@@ -203,7 +199,7 @@ export default function MediaControls({
 
         {showProfile && (
           <IconButton
-            className="bg-black/30 backdrop-blur-sm hover:bg-black/40 p-0"
+            className="p-0"
             onClick={handleProfileMenuToggle}
             style={{ width: 40, height: 40 }}
           >
@@ -211,8 +207,6 @@ export default function MediaControls({
               sx={{
                 width: 40,
                 height: 40,
-                bgcolor: 'rgba(0, 0, 0, 0.3)',
-                backdropFilter: 'blur(4px)',
                 color: 'white',
                 fontWeight: 'bold'
               }}

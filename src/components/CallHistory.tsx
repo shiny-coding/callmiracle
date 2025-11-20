@@ -1,8 +1,7 @@
 import { gql, useQuery } from '@apollo/client'
 import { Paper, List, ListItem, Typography, Chip, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import { CallHistoryEntry, User } from '@/generated/graphql'
-import UserCard from './UserCard'
+import CallHistoryUserInfo from './CallHistoryUserInfo'
 import { formatDuration } from '@/utils/formatDuration'
 import { useStore } from '@/store/useStore'
 import LoadingDialog from './LoadingDialog'
@@ -13,18 +12,19 @@ import PageHeader from './PageHeader'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
 
-const CALL_HISTORY = gql`
-  query CallHistory($userId: ID!) {
-    getCallHistory(userId: $userId) {
+const INDIVIDUAL_CALL_HISTORY = gql`
+  query IndividualCallHistory($userId: ID!) {
+    getIndividualCallHistory(userId: $userId) {
+      callId
       user {
         _id
         name
         sex
         languages
       }
-      lastCallAt
+      callTime
       durationS
-      totalCalls
+      initiatedByMe
     }
   }
 `
@@ -34,12 +34,12 @@ export default function CallHistory() {
   const router = useRouter()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  const { data, loading, error } = useQuery(CALL_HISTORY, {
+  const { data, loading, error } = useQuery(INDIVIDUAL_CALL_HISTORY, {
     variables: { userId: currentUser?._id }
   })
   const t = useTranslations()
 
-  const callHistory = data?.getCallHistory || []
+  const callHistory = data?.getIndividualCallHistory || []
 
   // Set up virtualizer
   const virtualizer = useVirtualizer({
@@ -51,12 +51,14 @@ export default function CallHistory() {
 
   if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
-  const formatDate = (timestamp: number) => {
+  const formatDateTime = (timestamp: number) => {
     const date = new Date(timestamp)
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleString(undefined, {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     })
   }
 
@@ -113,31 +115,18 @@ export default function CallHistory() {
                 >
                   <ListItem className="flex flex-col items-start hover:bg-gray-700 rounded-lg">
                     <div className="w-full">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex-grow">
-                          <UserCard
-                            user={entry.user}
-                            showDetails={false}
-                            showCallButton={true}
-                            showHistoryButton={true}
-                          />
-                        </div>
-                      </div>
+                      <CallHistoryUserInfo user={entry.user} />
+
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Chip
-                          label={`${entry.totalCalls} calls`}
+                          label={formatDateTime(entry.callTime)}
                           size="small"
                           className="text-xs text-white bg-gray-700"
                         />
                         <Chip
-                          label={`Last call: ${formatDate(entry.lastCallAt)}`}
+                          label={formatDuration(entry.durationS)}
                           size="small"
-                          className="text-xs text-white bg-gray-700"
-                        />
-                        <Chip
-                          label={`Total duration: ${formatDuration(entry.durationS)}`}
-                          size="small"
-                          className="text-xs text-white bg-gray-700"
+                          className="text-xs text-white bg-blue-700"
                         />
                       </div>
                     </div>
