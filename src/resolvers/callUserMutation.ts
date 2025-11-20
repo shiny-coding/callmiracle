@@ -215,6 +215,8 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     answer: { videoEnabled, audioEnabled, quality, answer },
     'ice-candidate': { iceCandidate },
     finished: { },
+    expired: { },
+    busy: { },
     updateMediaState: { videoEnabled, audioEnabled, quality }
   }
 

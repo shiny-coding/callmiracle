@@ -7,6 +7,7 @@ import { useWebRTCCallee } from '@/hooks/webrtc/useWebRTCCallee'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
 import { useEffect } from 'react'
+import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 
 interface CalleeDialogProps {
   callee: any
@@ -20,9 +21,9 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     connectionStatus: state.connectionStatus
   }))
 
-  const isReconnecting = connectionStatus === 'reconnecting' || connectionStatus === 'need-reconnect'
+  const isReconnecting = connectionStatus === ConnectionStatus.RECONNECTING || connectionStatus === ConnectionStatus.NEED_RECONNECT
   const open = isReconnecting || !!callee.incomingRequest
-  const isReceivingCall = connectionStatus === 'receiving-call'
+  const isReceivingCall = connectionStatus === ConnectionStatus.RECEIVING_CALL
   const user = callee.incomingRequest?.from || null
   const onAccept = callee.handleAcceptCall
   const onReject = callee.handleRejectCall
@@ -31,18 +32,36 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const meetingLastCallTime = callee.incomingRequest?.meetingLastCallTime
   const showUserInfo = !meetingId || meetingLastCallTime
 
-  const isConnecting = connectionStatus === 'connecting'
+  const isConnecting = connectionStatus === ConnectionStatus.CONNECTING
   const onCancelReconnect = callee.hangup
 
   const { play: playRingingSound, stop: stopRingingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
 
   useEffect(() => {
-    if (open && connectionStatus === 'receiving-call') {
+    if (open && connectionStatus === ConnectionStatus.RECEIVING_CALL) {
       playRingingSound()
     } else {
       stopRingingSound()
     }
   }, [open, connectionStatus])
+
+  // Auto-dismiss dialog when call ends or expires
+  useEffect(() => {
+    const shouldDismiss =
+      connectionStatus === ConnectionStatus.TIMEOUT ||
+      connectionStatus === ConnectionStatus.EXPIRED ||
+      connectionStatus === ConnectionStatus.FINISHED ||
+      connectionStatus === ConnectionStatus.REJECTED ||
+      connectionStatus === ConnectionStatus.FAILED ||
+      connectionStatus === ConnectionStatus.BUSY ||
+      connectionStatus === ConnectionStatus.NO_ANSWER ||
+      connectionStatus === ConnectionStatus.DISCONNECTED
+
+    if (callee.incomingRequest && shouldDismiss) {
+      console.log('CalleeDialog: Auto-dismissing due to connection status:', connectionStatus)
+      callee.setIncomingRequest(null)
+    }
+  }, [connectionStatus, callee])
 
   if (!user) return null
 

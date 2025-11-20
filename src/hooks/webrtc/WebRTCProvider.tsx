@@ -4,7 +4,7 @@ import { useSubscription, useMutation } from '@apollo/client'
 import { useStore, syncStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
-import { CALL_USER, type ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
+import { CALL_USER, ConnectionStatus, type IncomingRequest } from './useWebRTCCommon'
 import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
 import { User } from '@/generated/graphql'
@@ -120,8 +120,8 @@ export function WebRTCProvider({
 
   // Attempt reconnection on mount if we have stored call state
   useEffect(() => {
-    if (connectionStatus !== 'need-reconnect' || !localStream) return;
-    setConnectionStatus('reconnecting')
+    if (connectionStatus !== ConnectionStatus.NEED_RECONNECT || !localStream) return;
+    setConnectionStatus(ConnectionStatus.RECONNECTING)
     attemptReconnect()
   }, [connectionStatus, localStream])
 
@@ -154,12 +154,12 @@ export function WebRTCProvider({
           setCallId(callEvent.callId ?? null)
           setTargetUser(callEvent.from)
           setRole('callee')
-          setConnectionStatus('receiving-call')
+          setConnectionStatus(ConnectionStatus.RECEIVING_CALL)
           callee.active = true
         }
       } else if (callEvent.type === 'need-reconnect') {
         console.log('WebRTC: Received need-reconnect request, reconnecting')
-        setConnectionStatus('reconnecting')
+        setConnectionStatus(ConnectionStatus.RECONNECTING)
         await caller.doCall( callEvent.from, true, meetingId, meetingLastCallTime )
       } else if (callEvent.type === 'finished') {
         console.log('WebRTC: Received finished request, cleaning up')
@@ -169,7 +169,7 @@ export function WebRTCProvider({
         } else if (callee.active) {
           await callee.cleanup()
         }
-        setConnectionStatus('finished')
+        setConnectionStatus(ConnectionStatus.FINISHED)
         setRemoteVideoEnabled(false)
         setRemoteAudioEnabled(false)
         clearCallState()
@@ -201,7 +201,7 @@ export function WebRTCProvider({
         setRemoteVideoEnabled(callEvent.videoEnabled as boolean)
         setRemoteAudioEnabled(callEvent.audioEnabled as boolean)
         callee.setIncomingRequest(callEvent as IncomingRequest)
-        if ( connectionStatus === 'reconnecting' || connectionStatus === 'connected' ) {
+        if ( connectionStatus === ConnectionStatus.RECONNECTING || connectionStatus === ConnectionStatus.CONNECTED ) {
           console.log('WebRTC: Reconnecting, automatically accepting call')
           callee.handleAcceptCall(callEvent as IncomingRequest)
         }
@@ -231,17 +231,17 @@ export function WebRTCProvider({
       else if (callEvent.type === 'expired') { // Handle expired connection
         console.log('WebRTC: Received expired signal, cleaning up')
         callee.cleanup()
-        setConnectionStatus('timeout')
+        setConnectionStatus(ConnectionStatus.TIMEOUT)
         setRemoteVideoEnabled(false)
         setRemoteAudioEnabled(false)
         clearCallState()
-      } 
+      }
       else if (callEvent.type === 'busy') { // Handle busy signal
         console.log('WebRTC: Received busy signal')
         if (caller.active) {
           await caller.cleanup()
-        
-          setConnectionStatus('busy')
+
+          setConnectionStatus(ConnectionStatus.BUSY)
           setRemoteVideoEnabled(false)
           setRemoteAudioEnabled(false)
           clearCallState()
@@ -367,7 +367,7 @@ export function WebRTCProvider({
     } else if (callee.active) {
       await callee.hangup()
     }
-    setConnectionStatus('finished')
+    setConnectionStatus(ConnectionStatus.FINISHED)
     setRemoteVideoEnabled(false)
     setRemoteAudioEnabled(false)
     clearCallState()
@@ -388,7 +388,7 @@ export function WebRTCProvider({
 
   const value: WebRTCContextType = {
     doCall: caller.doCall,
-    connectionStatus: connectionStatus || 'disconnected',
+    connectionStatus: connectionStatus || ConnectionStatus.DISCONNECTED,
     incomingRequest: callee.incomingRequest,
     handleAcceptCall: callee.handleAcceptCall,
     handleRejectCall: callee.handleRejectCall,

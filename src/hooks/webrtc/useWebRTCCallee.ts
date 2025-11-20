@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useWebRTCCommon } from './useWebRTCCommon'
+import { useWebRTCCommon, ConnectionStatus } from './useWebRTCCommon'
 import type { IncomingRequest } from './useWebRTCCommon'
 import { useStore } from '@/store/useStore'
 
@@ -72,9 +72,9 @@ export function useWebRTCCallee({
 
       if ( reconnectRequest ) {
         cleanup();
-        setConnectionStatus('reconnecting')
+        setConnectionStatus(ConnectionStatus.RECONNECTING)
       } else {
-        setConnectionStatus('connecting')
+        setConnectionStatus(ConnectionStatus.CONNECTING)
       }
       setActive(true)
       setTargetUser(requestToAccept.from)
@@ -122,7 +122,7 @@ export function useWebRTCCallee({
       setIncomingRequest(null)
     } catch (error) {
       console.error('Error accepting call:', error)
-      setConnectionStatus('failed')
+      setConnectionStatus(ConnectionStatus.FAILED)
       cleanup()
     }
   }
@@ -130,7 +130,7 @@ export function useWebRTCCallee({
   const handleRejectCall = async () => {
     console.log('Rejecting call from:', incomingRequest?.from.name)
     setIncomingRequest(null)
-    setConnectionStatus('rejected')
+    setConnectionStatus(ConnectionStatus.REJECTED)
     setActive(false)
     setTargetUser(null)
     setCallId(null)

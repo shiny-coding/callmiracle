@@ -21,21 +21,24 @@ export const CALL_USER = gql`
   }
 `
 
-export type ConnectionStatus = 
-  | 'disconnected' 
-  | 'calling' 
-  | 'connecting'
-  | 'need-reconnect'
-  | 'reconnecting'
-  | 'connected' 
-  | 'failed' 
-  | 'rejected' 
-  | 'timeout' 
-  | 'finished'
-  | 'expired'
-  | 'receiving-call'
-  | 'busy'
-  | 'no-answer'
+export const ConnectionStatus = {
+  DISCONNECTED: 'disconnected',
+  CALLING: 'calling',
+  CONNECTING: 'connecting',
+  NEED_RECONNECT: 'need-reconnect',
+  RECONNECTING: 'reconnecting',
+  CONNECTED: 'connected',
+  FAILED: 'failed',
+  REJECTED: 'rejected',
+  TIMEOUT: 'timeout',
+  FINISHED: 'finished',
+  EXPIRED: 'expired',
+  RECEIVING_CALL: 'receiving-call',
+  BUSY: 'busy',
+  NO_ANSWER: 'no-answer'
+} as const
+
+export type ConnectionStatus = typeof ConnectionStatus[keyof typeof ConnectionStatus]
 
 export interface IncomingRequest {
   offer: string
@@ -64,7 +67,7 @@ export function useWebRTCCommon(callUser: any) {
 
     if (pc.connectionState === 'connected') {
       clientLogger.info('[WebRTC] Connection established successfully')
-      setConnectionStatus('connected')
+      setConnectionStatus(ConnectionStatus.CONNECTED)
     } else if (pc.connectionState === 'failed') {
       clientLogger.error('[WebRTC] Connection failed', {
         iceConnectionState: pc.iceConnectionState,
@@ -75,10 +78,10 @@ export function useWebRTCCommon(callUser: any) {
 
       console.log('WebRTC: onconnectionstatechange gone failed')
       if ( active ) {
-        setConnectionStatus('reconnecting')
+        setConnectionStatus(ConnectionStatus.RECONNECTING)
         attemptReconnect()
       } else {
-        setConnectionStatus('failed')
+        setConnectionStatus(ConnectionStatus.FAILED)
       }
     }
   }
@@ -502,7 +505,7 @@ export function useWebRTCCommon(callUser: any) {
       const { targetUser, callId } = syncStore()
       console.log('WebRTC: Hanging up call')
       cleanup()
-      setConnectionStatus('disconnected')
+      setConnectionStatus(ConnectionStatus.DISCONNECTED)
 
       // Send finished signal if we have a target
       if (targetUser) {

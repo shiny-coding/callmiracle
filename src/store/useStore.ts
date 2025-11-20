@@ -119,7 +119,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       currentUserId: null,
       deviceSettingsOpen: false,
       callId: null,
-      connectionStatus: 'disconnected',
+      connectionStatus: ConnectionStatus.DISCONNECTED,
       targetUser: null,
       role: null,
       lastConnectedTime: null,
@@ -149,7 +149,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       },
       setConnectionStatus: (connectionStatus) => {
         set({ connectionStatus })
-        if (connectionStatus === 'connected') {
+        if (connectionStatus === ConnectionStatus.CONNECTED) {
           set({ lastConnectedTime: Date.now() })
         }
       },
@@ -216,16 +216,16 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       onRehydrateStorage: () => (state?: AppState, error?: Error) => {
         if (state && !rehydrated) {
           rehydrated = true
-          if ( state.connectionStatus === 'connected' ) {
+          if ( state.connectionStatus === ConnectionStatus.CONNECTED ) {
             const timeSinceLastConnection = Date.now() - (state.lastConnectedTime ?? 0)
             if (timeSinceLastConnection < TWO_MINUTES) {
-              state.setConnectionStatus('need-reconnect')
+              state.setConnectionStatus(ConnectionStatus.NEED_RECONNECT)
             } else {
-              state.setConnectionStatus('disconnected')
+              state.setConnectionStatus(ConnectionStatus.DISCONNECTED)
               state.clearCallState()
             }
           } else {
-            state.setConnectionStatus('disconnected')
+            state.setConnectionStatus(ConnectionStatus.DISCONNECTED)
             state.clearCallState()
           }
         }
