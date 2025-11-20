@@ -5,16 +5,17 @@ import { callDurationHistogram, totalCallDurationMetric } from '@/utils/metrics'
 import { getLogger } from '@/utils/logger'
 import { publishSubscriptionEvent } from '@/utils/pubsubHelper'
 import { incrementUserMeetingsStats } from '@/utils/meetingsStatsUtils'
+import { publishPushNotification } from './pushNotifications'
 
 // Helper function to publish meeting discall notification
 export async function publishCallNotification(notificationType: NotificationType, db: any, initiator: User, targetUser: User, call: Call, showInitiatorName: boolean = true) {
   const logger = await getLogger()
-  
+
   // Use initiator name if showInitiatorName is true, otherwise null for anonymous calls
   const peerUserName = showInitiatorName ? initiator.name : null
-  
+
   // Create a notification in the database
-  await db.collection('notifications').insertOne({
+  const notificationResult = await db.collection('notifications').insertOne({
     userId: targetUser._id,
     userName: targetUser.name,
     type: notificationType,
@@ -22,14 +23,24 @@ export async function publishCallNotification(notificationType: NotificationType
     peerUserName,
     createdAt: new Date()
   })
-  
+
   // Publish notification event
   const topic = `SUBSCRIPTION_EVENT:${targetUser._id.toString()}`
-  publishSubscriptionEvent(topic, { 
+  publishSubscriptionEvent(topic, {
     notificationEvent: { type: notificationType as NotificationType, peerUserName },
-    logger 
+    logger
   })
-  
+
+  // Send push notification
+  await publishPushNotification(db, targetUser, {
+    type: notificationType,
+    peerUserName: peerUserName || '',
+    meetingId: call.meetingId ? new ObjectId(call.meetingId) : undefined,
+    notificationId: notificationResult.insertedId,
+    callId: call._id ? new ObjectId(call._id) : undefined,
+    initiatorUserId: new ObjectId(initiator._id)
+  })
+
   logger.info('Published call notification event', {
     notificationType,
     targetUserName: targetUser.name,
@@ -81,6 +92,19 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       meetingId: _meetingId
     })
     _callId = _call.insertedId
+
+    // Get the newly created call for notification
+    call = await db.collection('calls').findOne<Call>({ _id: _callId })
+
+    // Send immediate push notification for incoming call
+    // Determine if we should show the caller's name based on meeting transparency
+    let showInitiatorName = true
+    if (_meetingId) {
+      const meeting = await db.collection('meetings').findOne<Meeting>({ _id: _meetingId })
+      // Show name only if there was at least one successful call in this meeting before
+      showInitiatorName = !!meeting?.lastCallTime || meeting?.transparency === MeetingTransparency.Transparent
+    }
+    await publishCallNotification(NotificationType.IncomingCall, db, initiator, targetUser, call as Call, showInitiatorName)
   } 
   if (!_callId) {
     throw new Error('CallId is required')

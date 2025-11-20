@@ -414,6 +414,7 @@ export type NotificationEvent = {
 };
 
 export enum NotificationType {
+  IncomingCall = 'INCOMING_CALL',
   MeetingConnected = 'MEETING_CONNECTED',
   MeetingDisconnected = 'MEETING_DISCONNECTED',
   MeetingFinished = 'MEETING_FINISHED',

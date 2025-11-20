@@ -1,5 +1,5 @@
 // Version number - update this when you make changes to force update
-const VERSION = '1.0.4'
+const VERSION = '1.0.6'
 console.log('Service Worker version:', VERSION)
 
 // Install event - activate immediately
@@ -26,8 +26,21 @@ self.addEventListener('push', event => {
     badge: '/logo-72.png',
     data: {
       url: data.data.url,
-      notificationId: data.data.notificationId
-    }
+      notificationId: data.data.notificationId,
+      callId: data.data.callId,
+      meetingId: data.data.meetingId,
+      initiatorUserId: data.data.initiatorUserId,
+      notificationType: data.data.notificationType
+    },
+    tag: data.tag,
+    requireInteraction: data.requireInteraction || false,
+    actions: data.actions || [],
+    vibrate: data.data.notificationType === 'INCOMING_CALL' ? [200, 100, 200, 100, 200, 100, 200] : [200]
+  }
+
+  // Trigger vibration for incoming calls (if supported)
+  if (data.data.notificationType === 'INCOMING_CALL' && 'vibrate' in navigator) {
+    navigator.vibrate([200, 100, 200, 100, 200, 100, 200])
   }
 
   event.waitUntil(
@@ -36,18 +49,63 @@ self.addEventListener('push', event => {
 })
 
 self.addEventListener('notificationclick', event => {
+  const action = event.action
+  const notificationData = event.notification.data
+  const notificationId = notificationData?.notificationId
+  const callId = notificationData?.callId
+  const meetingId = notificationData?.meetingId
+  const initiatorUserId = notificationData?.initiatorUserId
+  const notificationType = notificationData?.notificationType
+
+  console.log('Notification clicked', {
+    action,
+    notificationId,
+    callId,
+    meetingId,
+    initiatorUserId,
+    notificationType
+  })
+
+  // Close notification for all actions
   event.notification.close()
 
-  const notificationId = event.notification.data?.notificationId
-  console.log('Notification clicked, notificationId:', notificationId, 'data:', event.notification.data)
+  // Handle different actions
+  if (action === 'decline') {
+    // For decline action, just close the notification and don't open the app
+    console.log('Call declined by user')
 
-  const targetUrl = event.notification.data?.url || '/'
+    // Track the decline action
+    event.waitUntil(
+      fetch('/api/track-notification-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decline', callId }),
+        credentials: 'include'
+      }).catch(err => console.error('Failed to track decline action:', err))
+    )
+    return
+  }
+
+  // For answer action or default click, open the app
+  let targetUrl = notificationData?.url || '/'
+
+  // If it's an incoming call and user clicked answer
+  if (action === 'answer' && notificationType === 'INCOMING_CALL') {
+    if (meetingId) {
+      // Meeting call - go to meeting page
+      targetUrl = `/list?meetingId=${meetingId}&autoAnswer=true`
+    } else if (initiatorUserId) {
+      // Direct call - go to call history with that user
+      targetUrl = `/call-history?with=${initiatorUserId}&autoAnswer=true`
+    }
+  }
 
   // Wait for both fetch requests to complete before navigating
   const trackingPromises = [
     fetch('/api/track-notification-click', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: action || 'click', callId }),
       credentials: 'include'
     }).catch(err => console.error('Failed to track notification click:', err))
   ]

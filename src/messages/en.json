@@ -228,7 +228,13 @@
     "meetingPartnerUpdated": "Your meeting with a partner has been updated",
     "meetingWithFinished": "Your meeting with {name} has been finished",
     "missedCall": "Missed call from {name}",
-    "missedCallAnonymous": "Missed call on meeting"
+    "missedCallAnonymous": "Missed call on meeting",
+    "incomingCall": "Incoming call from {name}",
+    "incomingCallAnonymous": "Incoming call"
+  },
+  "notificationActions": {
+    "answer": "Answer",
+    "decline": "Decline"
   },
   "totalDuration": "Total call duration",
   "finishMeeting": "Finish",

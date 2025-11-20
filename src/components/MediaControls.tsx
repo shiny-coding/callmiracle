@@ -102,8 +102,42 @@ export default function MediaControls({
     })
   }
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     handleProfileMenuClose()
+
+    // Force service worker update and hard refresh
+    if ('serviceWorker' in navigator) {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations()
+
+        // Update all service worker registrations
+        const updatePromises = registrations.map(async (registration) => {
+          await registration.update()
+
+          // Unregister the service worker to ensure fresh reload
+          await registration.unregister()
+        })
+
+        await Promise.all(updatePromises)
+
+        clientLogger.info('Service workers unregistered for hard refresh')
+      } catch (error) {
+        clientLogger.error('Failed to unregister service workers', { error })
+      }
+    }
+
+    // Clear all caches
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys()
+        await Promise.all(cacheNames.map(name => caches.delete(name)))
+        clientLogger.info('All caches cleared')
+      } catch (error) {
+        clientLogger.error('Failed to clear caches', { error })
+      }
+    }
+
+    // Hard reload the page
     window.location.reload()
   }
 

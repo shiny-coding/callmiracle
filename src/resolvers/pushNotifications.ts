@@ -17,7 +17,9 @@ type PushNotification = {
   meetingId?: ObjectId,
   messageText?: string,
   senderUserId?: ObjectId,
-  notificationId?: ObjectId
+  notificationId?: ObjectId,
+  callId?: ObjectId,
+  initiatorUserId?: ObjectId
 }
 
 // VAPID keys should be generated once and stored securely as environment variables.
@@ -107,11 +109,46 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
   let title: string
   let body: string
   let url: string
+  let tag: string | undefined
+  let requireInteraction: boolean = false
+  let actions: Array<{ action: string; title: string }> | undefined
 
   if (notification.type === NotificationType.MessageReceived) {
     title = notification.peerUserName
     body = notification.messageText || ''
     url = `/conversations?with=${notification.senderUserId?.toString()}`
+  } else if (notification.type === NotificationType.IncomingCall) {
+    title = 'CallMiracle'
+    body = getNotificationMessage(notification, t)
+    // For meeting calls, go to meeting page; for direct calls, go to call history
+    if (notification.meetingId) {
+      url = `/list?meetingId=${notification.meetingId.toString()}`
+    } else if (notification.initiatorUserId) {
+      url = `/call-history?with=${notification.initiatorUserId.toString()}`
+    } else {
+      url = '/'
+    }
+    tag = `call-${notification.callId?.toString()}`
+    requireInteraction = true
+    actions = [
+      { action: 'answer', title: t('notificationActions.answer') },
+      { action: 'decline', title: t('notificationActions.decline') }
+    ]
+  } else if (notification.type === NotificationType.MissedCall) {
+    title = 'CallMiracle'
+    body = getNotificationMessage(notification, t)
+    // For meeting calls, go to meeting page; for direct calls, go to call history
+    if (notification.meetingId) {
+      url = `/list?meetingId=${notification.meetingId.toString()}`
+    } else if (notification.initiatorUserId) {
+      url = `/call-history?with=${notification.initiatorUserId.toString()}`
+    } else {
+      url = '/'
+    }
+    // Use the same tag as the incoming call so it replaces the notification
+    tag = notification.callId ? `call-${notification.callId.toString()}` : undefined
+    requireInteraction = false
+    actions = undefined // Remove actions for missed call
   } else {
     title = 'CallMiracle'
     body = getNotificationMessage(notification, t)
@@ -121,9 +158,16 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
   const payload = {
     title,
     body,
+    tag,
+    requireInteraction,
+    actions,
     data: {
       url,
-      notificationId: notification.notificationId?.toString()
+      notificationId: notification.notificationId?.toString(),
+      callId: notification.callId?.toString(),
+      meetingId: notification.meetingId?.toString(),
+      initiatorUserId: notification.initiatorUserId?.toString(),
+      notificationType: notification.type
     }
   }
 

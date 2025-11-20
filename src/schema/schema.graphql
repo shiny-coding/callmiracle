@@ -10,6 +10,7 @@ enum NotificationType {
   MEETING_FINISHED
   MESSAGE_RECEIVED
   MISSED_CALL
+  INCOMING_CALL
 }
 
 enum MeetingTransparency {
