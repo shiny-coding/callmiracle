@@ -155,6 +155,13 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = subscribeToNotifications((notificationEvent: any) => {
       if (notificationEvent) {
+        // Skip showing browser notification and snackbar for INCOMING_CALL
+        // The app handles this via CalleeDialog when in foreground
+        if (notificationEvent.type === NotificationType.IncomingCall) {
+          console.log('Skipping snackbar/browser notification for INCOMING_CALL - handled by CalleeDialog')
+          return
+        }
+
         showBrowserNotification(notificationEvent, t, router)
 
         // Handle message notifications differently
@@ -194,14 +201,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
             playMeetingNotificationSound()
           }
         }
-        
+
         // Only refetch for non-message notifications (since message notifications aren't stored in DB)
         if (notificationEvent.type !== NotificationType.MessageReceived) {
           refetch()
         }
       }
     })
-    
+
     return unsubscribe
   }, [subscribeToNotifications, refetch, playMeetingNotificationSound, isMeetingPlaying, playMessageNotificationSound, isMessagePlaying, t, router, pathname, showSnackbar])
   

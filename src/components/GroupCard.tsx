@@ -197,75 +197,77 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
           </div>
         )}
 
-        {!firstTime && ((isOwner || isAdmin) || group.language || (isInGroup && !isOwner) || !isInGroup) && (
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-1 items-center">
-              {/* Language chip */}
-              {group.language && (
-                <Chip
-                  label={LANGUAGES.find(lang => lang.code === group.language)?.name || group.language}
-                  size="small"
-                  className="text-xs text-white bg-gray-700"
-                />
-              )}
+        {!firstTime && (group.language || isOwner || isAdmin) && (
+          <div className="flex flex-wrap gap-1 items-center mb-2">
+            {/* Language chip */}
+            {group.language && (
+              <Chip
+                label={LANGUAGES.find(lang => lang.code === group.language)?.name || group.language}
+                size="small"
+                className="text-xs text-white bg-gray-700"
+              />
+            )}
 
-              {/* Badge */}
-              {isOwner ? (
-                <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
-                  {t('owner')}
-                </Typography>
-              ) : isAdmin && (
-                <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
-                  {t('admin')}
-                </Typography>
-              )}
-            </div>
-            <div className="ml-auto flex gap-2">
+            {/* Badge */}
+            {isOwner ? (
+              <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
+                {t('owner')}
+              </Typography>
+            ) : isAdmin && (
+              <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
+                {t('admin')}
+              </Typography>
+            )}
+          </div>
+        )}
+
+        {/* Participants and Join/Leave buttons on separate line */}
+        {!firstTime && (
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              startIcon={<PeopleIcon />}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleViewParticipants()
+              }}
+              className="flex-shrink-0"
+            >
+              {t('participants')}
+            </Button>
+            {isInGroup && !isOwner ? (
               <Button
                 variant="outlined"
-                color="primary"
+                color="error"
                 size="small"
-                startIcon={<PeopleIcon />}
+                startIcon={<ExitToAppIcon />}
                 onClick={(e) => {
                   e.stopPropagation()
-                  handleViewParticipants()
+                  handleJoinLeave('leave')
                 }}
+                disabled={updateLoading}
                 className="flex-shrink-0"
               >
-                {t('participants')}
+                {t('leave')}
               </Button>
-              {isInGroup && !isOwner ? (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  size="small"
-                  startIcon={<ExitToAppIcon />}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleJoinLeave('leave')
-                  }}
-                  disabled={updateLoading}
-                  className="flex-shrink-0"
-                >
-                  {t('leave')}
-                </Button>
-              ) : !isInGroup && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleJoinLeave('join')
-                  }}
-                  disabled={updateLoading || (!group.open && !isAdmin)}
-                  className="flex-shrink-0"
-                >
-                  {t('join')}
-                </Button>
-              )}
-            </div>
+            ) : !isInGroup && (
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleJoinLeave('join')
+                }}
+                disabled={updateLoading || (!group.open && !isAdmin)}
+                className="flex-shrink-0"
+              >
+                {t('join')}
+              </Button>
+            )}
           </div>
         )}
         {firstTime && group.language && (

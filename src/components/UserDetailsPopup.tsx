@@ -5,6 +5,7 @@ import { Dialog, DialogContent, Typography, Button, Checkbox, FormControlLabel, 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import CloseIcon from '@mui/icons-material/Close'
+import HistoryIcon from '@mui/icons-material/History'
 import { InterestsBlock, User } from '@/generated/graphql'
 import { useTranslations } from 'next-intl'
 import { useStore } from '@/store/useStore'
@@ -12,6 +13,7 @@ import { useUpdateUser } from '@/hooks/useUpdateUser'
 import { LANGUAGES } from '@/config/languages'
 import { formatTextWithLinks } from '@/utils/formatTextWithLinks'
 import { useMeetings } from '@/contexts/MeetingsContext'
+import { useDetailedCallHistory } from '@/store/DetailedCallHistoryProvider'
 import InterestSelector from './InterestSelector'
 import { useGroups } from '@/store/GroupsProvider'
 import Image from 'next/image'
@@ -25,12 +27,13 @@ interface UserDetailsPopupProps {
 
 export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPopupProps) {
   const t = useTranslations()
-  const { currentUser, setCurrentUser } = useStore(state => ({ 
-    currentUser: state.currentUser, 
-    setCurrentUser: state.setCurrentUser 
+  const { currentUser, setCurrentUser } = useStore(state => ({
+    currentUser: state.currentUser,
+    setCurrentUser: state.setCurrentUser
   }))
   const { groups } = useGroups()
   const { updateUserData } = useUpdateUser()
+  const { setSelectedUser } = useDetailedCallHistory()
   const [showFullImage, setShowFullImage] = useState(false)
   const { imageSrc } = useProfileImage(user._id)
 
@@ -261,6 +264,23 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
               <Typography className="whitespace-pre-wrap">
                 {formatTextWithLinks(user.contacts)}
               </Typography>
+            </div>
+          )}
+
+          {/* Call History button - only show if not current user */}
+          {currentUser?._id !== user._id && (
+            <div className="flex justify-start">
+              <Button
+                startIcon={<HistoryIcon />}
+                onClick={() => {
+                  setSelectedUser(user)
+                  onClose()
+                }}
+                variant="outlined"
+                size="small"
+              >
+                {t('callHistory')}
+              </Button>
             </div>
           )}
 

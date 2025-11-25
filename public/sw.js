@@ -1,5 +1,5 @@
 // Version number - update this when you make changes to force update
-const VERSION = '1.0.6'
+const VERSION = '1.0.7'
 console.log('Service Worker version:', VERSION)
 
 // Install event - activate immediately
@@ -38,13 +38,33 @@ self.addEventListener('push', event => {
     vibrate: data.data.notificationType === 'INCOMING_CALL' ? [200, 100, 200, 100, 200, 100, 200] : [200]
   }
 
-  // Trigger vibration for incoming calls (if supported)
-  if (data.data.notificationType === 'INCOMING_CALL' && 'vibrate' in navigator) {
-    navigator.vibrate([200, 100, 200, 100, 200, 100, 200])
-  }
-
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    (async () => {
+      // For incoming calls, check if app is visible in foreground
+      if (data.data.notificationType === 'INCOMING_CALL') {
+        const clientsList = await clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true
+        })
+
+        // Check if any client window is visible (focused or visible)
+        const hasVisibleClient = clientsList.some(client =>
+          client.visibilityState === 'visible'
+        )
+
+        if (hasVisibleClient) {
+          console.log('App is visible in foreground, skipping INCOMING_CALL notification')
+          return // Don't show notification if app is in foreground
+        }
+      }
+
+      // Trigger vibration for incoming calls (if supported)
+      if (data.data.notificationType === 'INCOMING_CALL' && 'vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200, 100, 200])
+      }
+
+      await self.registration.showNotification(data.title, options)
+    })()
   )
 })
 

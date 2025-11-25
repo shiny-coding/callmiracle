@@ -5,14 +5,12 @@ import { useTranslations } from 'next-intl'
 import { User, Group } from '@/generated/graphql'
 import { LANGUAGES } from '@/config/languages'
 import CallIcon from '@mui/icons-material/Call'
-import HistoryIcon from '@mui/icons-material/History'
 import LockIcon from '@mui/icons-material/Lock'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
-import CheckIcon from '@mui/icons-material/Check'
+import HowToRegIcon from '@mui/icons-material/HowToReg'
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle'
 import MessageIcon from '@mui/icons-material/Message'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
-import { useDetailedCallHistory } from '@/store/DetailedCallHistoryProvider'
 import { useState } from 'react'
 import UserDetailsPopup from './UserDetailsPopup'
 import { useStore } from '@/store/useStore'
@@ -28,16 +26,14 @@ interface UserCardProps {
   user: User
   showDetails?: boolean
   showCallButton?: boolean
-  showHistoryButton?: boolean
   showMessageButton?: boolean
   filteringByGroup?: Group | null // The group being filtered by, if any
 }
 
-export default function UserCard({ 
-  user, 
-  showDetails = true, 
+export default function UserCard({
+  user,
+  showDetails = true,
   showCallButton = false,
-  showHistoryButton = false,
   showMessageButton = false,
   filteringByGroup = null
 }: UserCardProps) {
@@ -45,9 +41,9 @@ export default function UserCard({
   const { doCall } = useWebRTCContext()
   const router = useRouter()
   const locale = useLocale()
-  const { setSelectedUser } = useDetailedCallHistory()
   const [detailsPopupOpen, setDetailsPopupOpen] = useState(false)
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false)
+  const [friendConfirmOpen, setFriendConfirmOpen] = useState(false)
   const { currentUser, setCurrentUser } = useStore( (state: any) => ({
     currentUser: state.currentUser,
     setCurrentUser: state.setCurrentUser
@@ -78,14 +74,17 @@ export default function UserCard({
     await doCall(user, false, null, null)
   }
 
-  const handleFriendToggle = (e: React.MouseEvent) => {
+  const handleFriendButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    
+    setFriendConfirmOpen(true)
+  }
+
+  const handleFriendToggle = () => {
     if (!currentUser) return
-    
+
     // Create a copy of the current friends list
     const updatedFriends = [...(currentUser.friends || [])]
-    
+
     if (isFriend) {
       // Remove friend
       const index = updatedFriends.indexOf(user._id)
@@ -102,6 +101,7 @@ export default function UserCard({
       friends: updatedFriends
     })
     updateUserData()
+    setFriendConfirmOpen(false)
   }
 
   const handleRemoveFromGroup = async () => {
@@ -142,7 +142,24 @@ export default function UserCard({
               </Typography>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {isCurrentUser && (
+              <Chip
+                label={t('me')}
+                size="small"
+                className="bg-green-600 text-white text-xs"
+              />
+            )}
+            {currentUser?._id && !isCurrentUser && (
+              <IconButton
+                onClick={handleFriendButtonClick}
+                disabled={updateLoading}
+                className={isFriend ? "text-green-500 hover:bg-green-900" : "text-blue-400 hover:bg-blue-900"}
+                title={isFriend ? t('friend') : t('addFriend')}
+              >
+                {isFriend ? <HowToRegIcon /> : <PersonAddIcon />}
+              </IconButton>
+            )}
             {canRemoveFromGroup && !isGroupOwner && (
               <IconButton
                 onClick={(e) => {
@@ -203,17 +220,6 @@ export default function UserCard({
                 <MessageIcon />
               </IconButton>
             )}
-            {showHistoryButton && !isCurrentUser && (
-              <IconButton
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setSelectedUser(user)
-                }}
-                className="text-white hover:bg-gray-600"
-              >
-                <HistoryIcon />
-              </IconButton>
-            )}
             {showCallButton && !isCurrentUser && (
               <IconButton
                 onClick={(e) => {
@@ -224,35 +230,6 @@ export default function UserCard({
               >
                 <CallIcon className="text-white" />
               </IconButton>
-            )}
-          </div>
-
-          {/* Add friend or Me button to the right */}
-          <div className="ml-auto">
-            {currentUser?._id && currentUser?._id !== user._id && (
-              <Button
-                variant={isFriend ? "outlined" : "contained"}
-                color={isFriend ? "success" : "primary"}
-                size="small"
-                startIcon={isFriend ? <CheckIcon /> : <PersonAddIcon />}
-                onClick={handleFriendToggle}
-                disabled={updateLoading}
-                className="flex-shrink-0"
-              >
-                {isFriend ? t('friend') : t('addFriend')}
-              </Button>
-            )}
-
-            {isCurrentUser && (
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                disabled
-                className="flex-shrink-0"
-              >
-                {t('me')}
-              </Button>
             )}
           </div>
         </div>
@@ -278,19 +255,53 @@ export default function UserCard({
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => setRemoveConfirmOpen(false)}
             disabled={removeLoading}
           >
             {t('cancel')}
           </Button>
-          <Button 
+          <Button
             onClick={handleRemoveFromGroup}
             color="error"
             variant="contained"
             disabled={removeLoading}
           >
             {t('removeFromGroup')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add/Remove friend confirmation dialog */}
+      <Dialog
+        open={friendConfirmOpen}
+        onClose={() => setFriendConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{isFriend ? t('removeFriend') : t('addFriend')}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {isFriend
+              ? t('confirmRemoveFriend', { userName: user.name })
+              : t('confirmAddFriend', { userName: user.name })
+            }
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setFriendConfirmOpen(false)}
+            disabled={updateLoading}
+          >
+            {t('cancel')}
+          </Button>
+          <Button
+            onClick={handleFriendToggle}
+            color={isFriend ? "error" : "primary"}
+            variant="contained"
+            disabled={updateLoading}
+          >
+            {isFriend ? t('removeFriend') : t('addFriend')}
           </Button>
         </DialogActions>
       </Dialog>

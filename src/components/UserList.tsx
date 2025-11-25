@@ -224,7 +224,6 @@ export default function UserList() {
                         showDetails={true}
                         showCallButton={true}
                         showMessageButton={true}
-                        showHistoryButton={true}
                         filteringByGroup={filteringGroup}
                       />
                     </div>

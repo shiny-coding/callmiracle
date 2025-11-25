@@ -281,6 +281,18 @@ export function WebRTCProvider({
           await callee.cleanup()
         }
 
+        // Ensure peer connections are closed (using refs to avoid stale closure)
+        if (caller.peerConnection.current) {
+          clientLogger.info('WebRTC: Closing caller peer connection on finished')
+          caller.peerConnection.current.close()
+          caller.peerConnection.current = null
+        }
+        if (callee.peerConnection.current) {
+          clientLogger.info('WebRTC: Closing callee peer connection on finished')
+          callee.peerConnection.current.close()
+          callee.peerConnection.current = null
+        }
+
         // Ensure local stream tracks are stopped (using ref to avoid stale closure)
         const currentStream = localStreamRef.current
         if (currentStream) {
@@ -358,6 +370,18 @@ export function WebRTCProvider({
         console.log('WebRTC: Received expired signal, cleaning up')
         callee.cleanup()
 
+        // Ensure peer connections are closed (using refs to avoid stale closure)
+        if (caller.peerConnection.current) {
+          clientLogger.info('WebRTC: Closing caller peer connection on expired')
+          caller.peerConnection.current.close()
+          caller.peerConnection.current = null
+        }
+        if (callee.peerConnection.current) {
+          clientLogger.info('WebRTC: Closing callee peer connection on expired')
+          callee.peerConnection.current.close()
+          callee.peerConnection.current = null
+        }
+
         // Ensure local stream tracks are stopped (using ref to avoid stale closure)
         const currentStream = localStreamRef.current
         if (currentStream) {
@@ -381,26 +405,38 @@ export function WebRTCProvider({
         console.log('WebRTC: Received busy signal')
         if (caller.active) {
           await caller.cleanup()
-
-          // Ensure local stream tracks are stopped (using ref to avoid stale closure)
-          const currentStream = localStreamRef.current
-          if (currentStream) {
-            clientLogger.info('WebRTC: Stopping local stream tracks on busy', {
-              streamId: currentStream.id,
-              trackCount: currentStream.getTracks().length
-            })
-            currentStream.getTracks().forEach(track => {
-              clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
-              track.stop()
-            })
-            setLocalStream(undefined)
-          }
-
-          setConnectionStatus(ConnectionStatus.BUSY)
-          setRemoteVideoEnabled(false)
-          setRemoteAudioEnabled(false)
-          clearCallState()
         }
+
+        // Ensure peer connections are closed (using refs to avoid stale closure)
+        if (caller.peerConnection.current) {
+          clientLogger.info('WebRTC: Closing caller peer connection on busy')
+          caller.peerConnection.current.close()
+          caller.peerConnection.current = null
+        }
+        if (callee.peerConnection.current) {
+          clientLogger.info('WebRTC: Closing callee peer connection on busy')
+          callee.peerConnection.current.close()
+          callee.peerConnection.current = null
+        }
+
+        // Ensure local stream tracks are stopped (using ref to avoid stale closure)
+        const currentStream = localStreamRef.current
+        if (currentStream) {
+          clientLogger.info('WebRTC: Stopping local stream tracks on busy', {
+            streamId: currentStream.id,
+            trackCount: currentStream.getTracks().length
+          })
+          currentStream.getTracks().forEach(track => {
+            clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+            track.stop()
+          })
+          setLocalStream(undefined)
+        }
+
+        setConnectionStatus(ConnectionStatus.BUSY)
+        setRemoteVideoEnabled(false)
+        setRemoteAudioEnabled(false)
+        clearCallState()
       }
       // Handle unknown request type
       else {
@@ -521,6 +557,18 @@ export function WebRTCProvider({
       await caller.hangup()
     } else if (callee.active) {
       await callee.hangup()
+    }
+
+    // Ensure peer connections are closed (using refs to avoid stale closure)
+    if (caller.peerConnection.current) {
+      clientLogger.info('WebRTC: Closing caller peer connection on hangup')
+      caller.peerConnection.current.close()
+      caller.peerConnection.current = null
+    }
+    if (callee.peerConnection.current) {
+      clientLogger.info('WebRTC: Closing callee peer connection on hangup')
+      callee.peerConnection.current.close()
+      callee.peerConnection.current = null
     }
 
     // Ensure local stream tracks are stopped (using ref to avoid stale closure)

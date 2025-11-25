@@ -247,6 +247,9 @@
   "onlyFriends": "Только друзья",
   "friend": "Друг",
   "addFriend": "Добавить в друзья",
+  "removeFriend": "Удалить из друзей",
+  "confirmAddFriend": "Добавить {userName} в друзья?",
+  "confirmRemoveFriend": "Удалить {userName} из друзей?",
   "selectInterfaceLanguage": "Язык интерфейса",
   "Languages": {
     "english": "English",
