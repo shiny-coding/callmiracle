@@ -130,6 +130,8 @@
   "calling": "Вызов...",
   "connecting": "Подключение...",
   "callAgain": "Вызвать снова",
+  "callEnded": "Звонок завершён",
+  "callDuration": "Длительность",
   "callHistory": "История звонков",
   "callHistoryWith": "История звонков с",
   "noCallHistory": "История звонков пуста",

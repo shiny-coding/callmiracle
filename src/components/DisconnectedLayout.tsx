@@ -8,6 +8,7 @@ import BottomControlsBar from './BottomControlsBar'
 import DetailedCallHistoryDialog from './DetailedCallHistoryDialog'
 import CallerDialog from './CallerDialog'
 import CalleeDialog from './CalleeDialog'
+import CallEndedDialog from './CallEndedDialog'
 
 interface DisconnectedLayoutProps {
   children: React.ReactNode
@@ -38,6 +39,7 @@ export default function DisconnectedLayout({ children }: DisconnectedLayoutProps
         <DetailedCallHistoryDialog />
         <CallerDialog />
         <CalleeDialog callee={callee} />
+        <CallEndedDialog />
       </div>
     </>
   )

@@ -64,18 +64,24 @@ export function useWebRTCContext() {
   return context
 }
 
-export function WebRTCProvider({ 
-  children, 
+export function WebRTCProvider({
+  children,
 }: WebRTCProviderProps) {
   const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(false)
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(false)
   const [localStream, setLocalStream] = useState<MediaStream>()
+  const localStreamRef = useRef<MediaStream | undefined>(undefined)
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
   const [callUser] = useMutation(CALL_USER)
   const [getPendingCall] = useLazyQuery(GET_PENDING_CALL, { fetchPolicy: 'network-only' })
   const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon(callUser)
   const { subscribeToCallEvents } = useSubscriptions()
   const pendingCallCheckedRef = useRef(false)
+
+  // Keep localStreamRef in sync with localStream state
+  useEffect(() => {
+    localStreamRef.current = localStream
+  }, [localStream])
 
   const {
     currentUser,
@@ -90,6 +96,7 @@ export function WebRTCProvider({
     setCallId,
     meetingId,
     meetingLastCallTime,
+    setCallEndedInfo,
   } = useStore((state) => ({
     currentUser: state.currentUser,
     callId: state.callId,
@@ -103,6 +110,7 @@ export function WebRTCProvider({
     setCallId: state.setCallId,
     meetingId: state.meetingId,
     meetingLastCallTime: state.meetingLastCallTime,
+    setCallEndedInfo: state.setCallEndedInfo,
   }))
 
   const attemptReconnect = async () => {
@@ -233,13 +241,60 @@ export function WebRTCProvider({
         setConnectionStatus(ConnectionStatus.RECONNECTING)
         await caller.doCall( callEvent.from, true, meetingId, meetingLastCallTime )
       } else if (callEvent.type === 'finished') {
-        console.log('WebRTC: Received finished request, cleaning up')
+        // Read lastConnectedTime directly from store to avoid stale closure
+        const currentLastConnectedTime = syncStore().lastConnectedTime
+
+        clientLogger.info('WebRTC: Received finished request', {
+          from: callEvent.from?.name,
+          fromId: callEvent.from?._id,
+          lastConnectedTime: currentLastConnectedTime,
+          now: Date.now()
+        })
+
+        // Calculate call duration if we were connected
+        const durationS = currentLastConnectedTime
+          ? Math.floor((Date.now() - currentLastConnectedTime) / 1000)
+          : 0
+
+        clientLogger.info('WebRTC: Call ended info calculation', {
+          durationS,
+          hasFrom: !!callEvent.from,
+          willShowDialog: !!(callEvent.from && durationS > 0)
+        })
+
+        // Show call ended dialog with partner info and duration
+        if (callEvent.from && durationS > 0) {
+          clientLogger.info('WebRTC: Setting call ended info', {
+            user: callEvent.from.name,
+            durationS
+          })
+          setCallEndedInfo({
+            user: callEvent.from,
+            durationS
+          })
+        }
+
         // Handle finished status
         if (caller.active) {
           await caller.cleanup()
         } else if (callee.active) {
           await callee.cleanup()
         }
+
+        // Ensure local stream tracks are stopped (using ref to avoid stale closure)
+        const currentStream = localStreamRef.current
+        if (currentStream) {
+          clientLogger.info('WebRTC: Stopping local stream tracks on call finished', {
+            streamId: currentStream.id,
+            trackCount: currentStream.getTracks().length
+          })
+          currentStream.getTracks().forEach(track => {
+            clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+            track.stop()
+          })
+          setLocalStream(undefined)
+        }
+
         setConnectionStatus(ConnectionStatus.FINISHED)
         setRemoteVideoEnabled(false)
         setRemoteAudioEnabled(false)
@@ -302,6 +357,21 @@ export function WebRTCProvider({
       else if (callEvent.type === 'expired') { // Handle expired connection
         console.log('WebRTC: Received expired signal, cleaning up')
         callee.cleanup()
+
+        // Ensure local stream tracks are stopped (using ref to avoid stale closure)
+        const currentStream = localStreamRef.current
+        if (currentStream) {
+          clientLogger.info('WebRTC: Stopping local stream tracks on expired', {
+            streamId: currentStream.id,
+            trackCount: currentStream.getTracks().length
+          })
+          currentStream.getTracks().forEach(track => {
+            clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+            track.stop()
+          })
+          setLocalStream(undefined)
+        }
+
         setConnectionStatus(ConnectionStatus.TIMEOUT)
         setRemoteVideoEnabled(false)
         setRemoteAudioEnabled(false)
@@ -311,6 +381,20 @@ export function WebRTCProvider({
         console.log('WebRTC: Received busy signal')
         if (caller.active) {
           await caller.cleanup()
+
+          // Ensure local stream tracks are stopped (using ref to avoid stale closure)
+          const currentStream = localStreamRef.current
+          if (currentStream) {
+            clientLogger.info('WebRTC: Stopping local stream tracks on busy', {
+              streamId: currentStream.id,
+              trackCount: currentStream.getTracks().length
+            })
+            currentStream.getTracks().forEach(track => {
+              clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+              track.stop()
+            })
+            setLocalStream(undefined)
+          }
 
           setConnectionStatus(ConnectionStatus.BUSY)
           setRemoteVideoEnabled(false)
@@ -438,6 +522,21 @@ export function WebRTCProvider({
     } else if (callee.active) {
       await callee.hangup()
     }
+
+    // Ensure local stream tracks are stopped (using ref to avoid stale closure)
+    const currentStream = localStreamRef.current
+    if (currentStream) {
+      clientLogger.info('WebRTC: Stopping local stream tracks on hangup', {
+        streamId: currentStream.id,
+        trackCount: currentStream.getTracks().length
+      })
+      currentStream.getTracks().forEach(track => {
+        clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+        track.stop()
+      })
+      setLocalStream(undefined)
+    }
+
     setConnectionStatus(ConnectionStatus.FINISHED)
     setRemoteVideoEnabled(false)
     setRemoteAudioEnabled(false)

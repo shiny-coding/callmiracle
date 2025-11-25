@@ -78,6 +78,13 @@ export interface AppState {
   // Last conversation for remembering user's last viewed conversation
   lastConversationId: string | null
   setLastConversationId: (conversationId: string | null) => void
+
+  // Call ended info for showing dialog when partner ends call
+  callEndedInfo: {
+    user: User
+    durationS: number
+  } | null
+  setCallEndedInfo: (info: AppState['callEndedInfo']) => void
 }
 
 // Define which parts of AppState are persisted
@@ -139,6 +146,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       lastMeetingGroup: null,
       lastMeetingLanguage: null,
       lastConversationId: null,
+      callEndedInfo: null,
       setCurrentUser: (currentUser) => {
         set({ currentUser })
       },
@@ -185,6 +193,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       setLastMeetingGroup: (groupId) => set({ lastMeetingGroup: groupId }),
       setLastMeetingLanguage: (languages) => set({ lastMeetingLanguage: languages }),
       setLastConversationId: (conversationId) => set({ lastConversationId: conversationId }),
+      setCallEndedInfo: (info) => set({ callEndedInfo: info }),
     }),
     {
       name: 'app-storage',
