@@ -147,7 +147,7 @@ export default function UserCard({
               <Chip
                 label={t('me')}
                 size="small"
-                className="bg-green-600 text-white text-xs"
+                className="bg-green-600 text-white text-xs mr-2"
               />
             )}
             {currentUser?._id && !isCurrentUser && (
