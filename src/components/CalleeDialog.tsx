@@ -6,7 +6,7 @@ import { useStore } from '@/store/useStore'
 import { useWebRTCCallee } from '@/hooks/webrtc/useWebRTCCallee'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 
 interface CalleeDialogProps {
@@ -20,16 +20,27 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const { connectionStatus } = useStore((state) => ({
     connectionStatus: state.connectionStatus
   }))
+  const { doCall } = useWebRTCContext()
+
+  // Preserve caller information even after call expires
+  const [lastIncomingRequest, setLastIncomingRequest] = useState<any>(null)
+
+  useEffect(() => {
+    if (callee.incomingRequest) {
+      setLastIncomingRequest(callee.incomingRequest)
+    }
+  }, [callee.incomingRequest])
 
   const isReconnecting = connectionStatus === ConnectionStatus.RECONNECTING || connectionStatus === ConnectionStatus.NEED_RECONNECT
-  const open = isReconnecting || !!callee.incomingRequest
+  const isMissedCall = connectionStatus === ConnectionStatus.TIMEOUT || connectionStatus === ConnectionStatus.EXPIRED
+  const open = isReconnecting || !!callee.incomingRequest || isMissedCall
   const isReceivingCall = connectionStatus === ConnectionStatus.RECEIVING_CALL
-  const user = callee.incomingRequest?.from || null
+  const user = callee.incomingRequest?.from || lastIncomingRequest?.from || null
   const onAccept = callee.handleAcceptCall
   const onReject = callee.handleRejectCall
 
-  const meetingId = callee.incomingRequest?.meetingId
-  const meetingLastCallTime = callee.incomingRequest?.meetingLastCallTime
+  const meetingId = callee.incomingRequest?.meetingId || lastIncomingRequest?.meetingId
+  const meetingLastCallTime = callee.incomingRequest?.meetingLastCallTime || lastIncomingRequest?.meetingLastCallTime
   const showUserInfo = !meetingId || meetingLastCallTime
 
   const isConnecting = connectionStatus === ConnectionStatus.CONNECTING
@@ -45,30 +56,24 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     }
   }, [open, connectionStatus])
 
-  // Auto-dismiss dialog when call ends or expires
-  useEffect(() => {
-    const shouldDismiss =
-      connectionStatus === ConnectionStatus.TIMEOUT ||
-      connectionStatus === ConnectionStatus.EXPIRED ||
-      connectionStatus === ConnectionStatus.FINISHED ||
-      connectionStatus === ConnectionStatus.REJECTED ||
-      connectionStatus === ConnectionStatus.FAILED ||
-      connectionStatus === ConnectionStatus.BUSY ||
-      connectionStatus === ConnectionStatus.NO_ANSWER ||
-      connectionStatus === ConnectionStatus.DISCONNECTED
+  const handleClose = () => {
+    callee.setIncomingRequest(null)
+    setLastIncomingRequest(null)
+  }
 
-    if (callee.incomingRequest && shouldDismiss) {
-      console.log('CalleeDialog: Auto-dismissing due to connection status:', connectionStatus)
-      callee.setIncomingRequest(null)
+  const handleCallBack = async () => {
+    if (user && meetingId) {
+      handleClose()
+      await doCall(user, false, meetingId, meetingLastCallTime)
     }
-  }, [connectionStatus, callee])
+  }
 
   if (!user) return null
 
   return (
     <Dialog
       open={open}
-      onClose={onReject}
+      onClose={isMissedCall ? handleClose : onReject}
       hideBackdrop={isReceivingCall}
       PaperProps={{
         className: 'bg-gray-900 text-white min-w-[300px]'
@@ -83,7 +88,11 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
       }}
     >
       <DialogTitle className="flex justify-between items-center">
-        {tStatus(connectionStatus)}
+        {isMissedCall
+          ? (showUserInfo
+              ? t('notificationMessages.missedCall', { name: user.name })
+              : t('notificationMessages.missedCallAnonymous'))
+          : tStatus(connectionStatus)}
       </DialogTitle>
       <DialogContent>
         {meetingId && (
@@ -94,22 +103,35 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
         {showUserInfo && <CallUserInfo user={user} />}
       </DialogContent>
       <DialogActions className="border-t border-gray-800">
-        {!isReconnecting && (
-        <Button onClick={onReject} variant="contained" color="error">
-          {tVideoChat('reject')}
-          </Button>
-        )}
-        {!isReconnecting && !isConnecting && (
-          <Button onClick={() => {
-            onAccept(null)
-          }} variant="contained" color="success">
-            {tVideoChat('accept')}
-          </Button>
-        )}
-        {isReconnecting && (
-        <Button onClick={onCancelReconnect} variant="contained" color="warning">
-          {t('cancel')}
-          </Button>
+        {isMissedCall ? (
+          <>
+            <Button onClick={handleClose} variant="contained" color="inherit">
+              {t('close')}
+            </Button>
+            <Button onClick={handleCallBack} variant="contained" color="success">
+              {t('callAgain')}
+            </Button>
+          </>
+        ) : (
+          <>
+            {!isReconnecting && (
+              <Button onClick={onReject} variant="contained" color="error">
+                {tVideoChat('reject')}
+              </Button>
+            )}
+            {!isReconnecting && !isConnecting && (
+              <Button onClick={() => {
+                onAccept(null)
+              }} variant="contained" color="success">
+                {tVideoChat('accept')}
+              </Button>
+            )}
+            {isReconnecting && (
+              <Button onClick={onCancelReconnect} variant="contained" color="warning">
+                {t('cancel')}
+              </Button>
+            )}
+          </>
         )}
       </DialogActions>
     </Dialog>

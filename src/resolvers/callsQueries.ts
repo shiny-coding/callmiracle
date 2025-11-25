@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { Context } from './types'
-import { Call } from '@/generated/graphql'
+import { Call, User, Meeting } from '@/generated/graphql'
 
 export const callsQueries = {
   getCalls: async (_: any, __: any, { db }: Context) => {
@@ -131,5 +131,58 @@ export const callsQueries = {
     }
 
     return result
+  },
+
+  getPendingCall: async (_: any, { userId }: { userId: string }, { db }: Context) => {
+    const _userId = new ObjectId(userId)
+
+    // Find a call where this user is the target and there's a pending offer
+    // The call must be in 'initiated' state (not yet answered, finished, or expired)
+    const call = await db.collection('calls').findOne({
+      targetUserId: _userId,
+      type: 'initiated',
+      pendingOffer: { $exists: true }
+    })
+
+    if (!call || !call.pendingOffer) {
+      return null
+    }
+
+    // Check if the offer is not too old (e.g., within last 60 seconds)
+    const offerAge = Date.now() - new Date(call.pendingOffer.createdAt).getTime()
+    if (offerAge > 60000) {
+      // Offer is too old, clear it
+      await db.collection('calls').updateOne(
+        { _id: call._id },
+        { $unset: { pendingOffer: '' } }
+      )
+      return null
+    }
+
+    // Get the initiator user info
+    const initiator = await db.collection('users').findOne<User>({ _id: call.initiatorUserId })
+    if (!initiator) {
+      return null
+    }
+
+    // Get meeting info if this is a meeting call
+    let meetingLastCallTime: number | null = null
+    if (call.meetingId) {
+      const meeting = await db.collection('meetings').findOne<Meeting>({ _id: call.meetingId })
+      if (meeting) {
+        meetingLastCallTime = meeting.lastCallTime || null
+      }
+    }
+
+    return {
+      callId: call._id.toString(),
+      from: initiator,
+      meetingId: call.meetingId?.toString() || null,
+      meetingLastCallTime,
+      offer: call.pendingOffer.offer,
+      videoEnabled: call.pendingOffer.videoEnabled,
+      audioEnabled: call.pendingOffer.audioEnabled,
+      quality: call.pendingOffer.quality
+    }
   },
 } 

@@ -41,11 +41,16 @@ export const ConnectionStatus = {
 export type ConnectionStatus = typeof ConnectionStatus[keyof typeof ConnectionStatus]
 
 export interface IncomingRequest {
+  type?: string
   offer: string
-  iceCandidate: string
+  iceCandidate?: string
   callId: string
   quality: VideoQuality
   from: User
+  meetingId?: string
+  meetingLastCallTime?: number
+  videoEnabled?: boolean
+  audioEnabled?: boolean
 }
 
 export function useWebRTCCommon(callUser: any) {

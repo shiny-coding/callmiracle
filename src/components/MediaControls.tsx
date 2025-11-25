@@ -15,12 +15,11 @@ import ErrorIcon from '@mui/icons-material/Error'
 import InfoIcon from '@mui/icons-material/Info'
 import { useState } from 'react'
 import NotificationBadge from './NotificationBadge'
-import NotificationsPopup from './NotificationsPopup'
 import LanguageDialog from './LanguageDialog'
 import LogViewerDialog from './LogViewerDialog'
 import { signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useRouter, usePathname } from 'next/navigation'
+import { useTranslations, useLocale } from 'next-intl'
 import { routerPush } from '@/utils/routerHelper'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
@@ -42,7 +41,6 @@ export default function MediaControls({
   showProfile = true,
   className = ''
 }: MediaControlsProps) {
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null)
   const [logViewerOpen, setLogViewerOpen] = useState(false)
   const [languageDialogOpen, setLanguageDialogOpen] = useState(false)
@@ -59,8 +57,13 @@ export default function MediaControls({
   }))
   const { imageSrc } = useProfileImage(currentUser?._id, currentUser?.updatedAt)
   const router = useRouter()
+  const pathname = usePathname()
+  const locale = useLocale()
   const t = useTranslations('Profile')
   const tRoot = useTranslations()
+
+  const notificationsPath = `/${locale}/notifications`
+  const selectedColor = '#60a5fa'
 
   const handleAudioToggle = () => {
     setLocalAudioEnabled(!localAudioEnabled)
@@ -192,10 +195,13 @@ export default function MediaControls({
       <div className={`flex items-center gap-4 ${className}`}>
         {showNotifications && (
           <IconButton
-            onClick={() => setNotificationsOpen(true)}
+            onClick={() => routerPush(router, '/notifications', {
+              source: 'media_controls_notifications'
+            })}
+            style={{ color: pathname === notificationsPath ? selectedColor : undefined }}
           >
             <NotificationBadge show={hasUnseenNotifications}>
-              <NotificationsIcon className="text-white" />
+              <NotificationsIcon className={pathname === notificationsPath ? '' : 'text-white'} />
             </NotificationBadge>
           </IconButton>
         )}
@@ -361,12 +367,6 @@ export default function MediaControls({
           <ListItemText primary={t('logout')} />
         </MenuItem>
       </Menu>
-
-      {/* Notifications Popup */}
-      <NotificationsPopup
-        open={notificationsOpen}
-        onClose={() => setNotificationsOpen(false)}
-      />
 
       {/* Log Viewer Dialog */}
       <LogViewerDialog

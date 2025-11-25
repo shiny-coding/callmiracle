@@ -14,29 +14,37 @@ export async function publishCallNotification(notificationType: NotificationType
   // Use initiator name if showInitiatorName is true, otherwise null for anonymous calls
   const peerUserName = showInitiatorName ? initiator.name : null
 
-  // Create a notification in the database
-  const notificationResult = await db.collection('notifications').insertOne({
-    userId: targetUser._id,
-    userName: targetUser.name,
-    type: notificationType,
-    seen: false,
-    peerUserName,
-    createdAt: new Date()
-  })
+  // INCOMING_CALL is a transient real-time event - only send push notification, no DB record
+  // If the call is missed, MISSED_CALL will create the DB record
+  const isIncomingCall = notificationType === NotificationType.IncomingCall
+  let notificationId: ObjectId | undefined
 
-  // Publish notification event
+  if (!isIncomingCall) {
+    // Create a notification in the database (only for non-INCOMING_CALL types)
+    const notificationResult = await db.collection('notifications').insertOne({
+      userId: targetUser._id,
+      userName: targetUser.name,
+      type: notificationType,
+      seen: false,
+      peerUserName,
+      createdAt: new Date()
+    })
+    notificationId = notificationResult.insertedId
+  }
+
+  // Publish notification event (for real-time updates in the app)
   const topic = `SUBSCRIPTION_EVENT:${targetUser._id.toString()}`
   publishSubscriptionEvent(topic, {
     notificationEvent: { type: notificationType as NotificationType, peerUserName },
     logger
   })
 
-  // Send push notification
+  // Send push notification (always sent, including for INCOMING_CALL)
   await publishPushNotification(db, targetUser, {
     type: notificationType,
     peerUserName: peerUserName || '',
     meetingId: call.meetingId ? new ObjectId(call.meetingId) : undefined,
-    notificationId: notificationResult.insertedId,
+    notificationId,
     callId: call._id ? new ObjectId(call._id) : undefined,
     initiatorUserId: new ObjectId(initiator._id)
   })
@@ -47,7 +55,8 @@ export async function publishCallNotification(notificationType: NotificationType
     targetUserId: targetUser._id.toString(),
     initiatorName: initiator.name,
     showInitiatorName,
-    callId: call._id?.toString()
+    callId: call._id?.toString(),
+    storedInDb: !isIncomingCall
   })
 }
 
@@ -113,11 +122,29 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
   // Get current call state
   call = await db.collection('calls').findOne<Call>({ _id: _callId })
 
+  // Store offer data in call record so callee can retrieve it if they missed the real-time event
+  if (type === 'offer') {
+    await db.collection('calls').updateOne(
+      { _id: _callId },
+      {
+        $set: {
+          pendingOffer: {
+            offer,
+            videoEnabled,
+            audioEnabled,
+            quality,
+            createdAt: new Date()
+          }
+        }
+      }
+    )
+  }
+
   if (type === 'answer') {
-    // Update call status to connected
+    // Update call status to connected and clear pending offer
     call = await db.collection('calls').findOneAndUpdate(
       { _id: _callId },
-      { $set: { type: 'connected' } },
+      { $set: { type: 'connected' }, $unset: { pendingOffer: '' } },
       { returnDocument: 'after' }
     ) as Call|null
 
@@ -132,10 +159,10 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
         }
       : { type: 'expired', durationM: 0 }
 
-    // Update call status
+    // Update call status and clear pending offer
     call = await db.collection('calls').findOneAndUpdate(
       { _id: _callId },
-      { $set: updateFields },
+      { $set: updateFields, $unset: { pendingOffer: '' } },
       { returnDocument: 'after' }
     ) as Call|null
 

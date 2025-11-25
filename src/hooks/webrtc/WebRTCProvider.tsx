@@ -1,6 +1,6 @@
 'use client'
 import { useState, createContext, useContext, ReactNode, useRef, useEffect } from 'react'
-import { useSubscription, useMutation } from '@apollo/client'
+import { useMutation, useLazyQuery, gql } from '@apollo/client'
 import { useStore, syncStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
 import { useWebRTCCallee } from './useWebRTCCallee'
@@ -10,6 +10,27 @@ import { useWebRTCCommon } from './useWebRTCCommon'
 import { User } from '@/generated/graphql'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
 import clientLogger from '@/utils/clientLogger'
+
+const GET_PENDING_CALL = gql`
+  query GetPendingCall($userId: ID!) {
+    getPendingCall(userId: $userId) {
+      callId
+      from {
+        _id
+        name
+        sex
+        languages
+        updatedAt
+      }
+      meetingId
+      meetingLastCallTime
+      offer
+      videoEnabled
+      audioEnabled
+      quality
+    }
+  }
+`
 
 interface WebRTCContextType {
   doCall: (user: User, isReconnect: boolean, meetingId: string | null, meetingLastCallTime: number | null) => Promise<void>
@@ -51,8 +72,10 @@ export function WebRTCProvider({
   const [localStream, setLocalStream] = useState<MediaStream>()
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
   const [callUser] = useMutation(CALL_USER)
+  const [getPendingCall] = useLazyQuery(GET_PENDING_CALL, { fetchPolicy: 'network-only' })
   const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon(callUser)
   const { subscribeToCallEvents } = useSubscriptions()
+  const pendingCallCheckedRef = useRef(false)
 
   const {
     currentUser,
@@ -124,6 +147,54 @@ export function WebRTCProvider({
     setConnectionStatus(ConnectionStatus.RECONNECTING)
     attemptReconnect()
   }, [connectionStatus, localStream])
+
+  // Check for pending calls when app opens (e.g., from notification click)
+  useEffect(() => {
+    if (!currentUser?._id || pendingCallCheckedRef.current || callId) return
+
+    pendingCallCheckedRef.current = true
+
+    const checkPendingCall = async () => {
+      try {
+        clientLogger.info('Checking for pending call', { userId: currentUser._id })
+        const { data } = await getPendingCall({ variables: { userId: currentUser._id } })
+
+        if (data?.getPendingCall) {
+          const pendingCall = data.getPendingCall
+          clientLogger.info('Found pending call', {
+            callId: pendingCall.callId,
+            from: pendingCall.from.name,
+            meetingId: pendingCall.meetingId
+          })
+
+          // Restore the incoming call state
+          setCallId(pendingCall.callId)
+          setTargetUser(pendingCall.from)
+          setRole('callee')
+          setConnectionStatus(ConnectionStatus.RECEIVING_CALL)
+          setRemoteVideoEnabled(pendingCall.videoEnabled)
+          setRemoteAudioEnabled(pendingCall.audioEnabled)
+
+          // Set the incoming request with offer data for CalleeDialog
+          callee.setIncomingRequest({
+            type: 'offer',
+            from: pendingCall.from,
+            callId: pendingCall.callId,
+            meetingId: pendingCall.meetingId,
+            meetingLastCallTime: pendingCall.meetingLastCallTime,
+            offer: pendingCall.offer,
+            videoEnabled: pendingCall.videoEnabled,
+            audioEnabled: pendingCall.audioEnabled,
+            quality: pendingCall.quality
+          } as IncomingRequest)
+        }
+      } catch (err) {
+        clientLogger.error('Failed to check pending call', { error: err })
+      }
+    }
+
+    checkPendingCall()
+  }, [currentUser?._id, callId])
 
   useEffect(() => {
     const unsubscribe = subscribeToCallEvents(async (callEvent) => {

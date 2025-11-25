@@ -10,6 +10,10 @@ import { NotificationType } from '@/generated/graphql'
 import { useRouter } from 'next/navigation'
 import { getNotificationMessage } from '@/utils/notificationUtils'
 import { routerPush } from '@/utils/routerHelper'
+import NotificationsIcon from '@mui/icons-material/Notifications'
+import CloseIcon from '@mui/icons-material/Close'
+import PageHeader from './PageHeader'
+import LoadingDialog from './LoadingDialog'
 
 interface NotificationsListProps {
   onClose?: () => void
@@ -30,8 +34,7 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
   const { setHighlightedMeetingId } = useMeetings()
   const router = useRouter()
   
-  if (loading && notifications.length === 0) return <Typography>Loading...</Typography>
-  if (error) return <Typography color="error">Error loading notifications</Typography>
+  if (loading || error) return <LoadingDialog loading={loading} error={error} />
 
   const handleGoToMeeting = (notification: any) => {
     setNotificationSeen(notification._id)
@@ -47,74 +50,102 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
 
   const handleMarkAllAsSeen = () => {
     setAllNotificationsSeen()
-    onClose?.()
+    handleClose()
+  }
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose()
+    } else {
+      // Check if there's history to go back to, otherwise go to calendar
+      if (window.history.length > 1) {
+        router.back()
+      } else {
+        routerPush(router, '/calendar', { source: 'notifications_close_fallback' })
+      }
+    }
   }
 
   return (
-    <Paper className="px-1sp py-1 bg-gray-800">
+    <Paper className="bg-gray-800 flex flex-col h-full">
+      <PageHeader
+        icon={<NotificationsIcon />}
+        title={t('notifications')}
+      >
+        <IconButton
+          onClick={handleClose}
+          aria-label={t('close')}
+          title={t('close')}
+          size="small"
+        >
+          <CloseIcon />
+        </IconButton>
+      </PageHeader>
+
+      <div className="flex-grow overflow-y-auto px-4 pt-2">
+        <List>
+          {notifications.length === 0 ? (
+            <Typography className="text-gray-400 text-center py-4">
+              {t('noNotifications')}
+            </Typography>
+          ) : (
+            notifications.map((notification: any) => (
+              <ListItem
+                key={notification._id}
+                className={`flex flex-col p-4 ${notification.seen ? 'bg-gray-700' : 'bg-gray-600'} rounded-lg mb-2`}
+              >
+                <div className="w-full">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center">
+                      {!notification.seen && (
+                        <Badge color="primary" variant="dot" className="mr-2" />
+                      )}
+                      <Typography variant="subtitle1">
+                        {getNotificationMessage(notification, t)}
+                      </Typography>
+                    </div>
+                    <Chip
+                      size="small"
+                      label={formatRelativeTime(notification.createdAt)}
+                      className="!text-xs bg-gray-500 !ml-2"
+                    />
+                  </div>
+
+                  {(notification.type === NotificationType.MeetingConnected || notification.type === NotificationType.MeetingDisconnected) &&
+                    notification.meeting && (
+                    <div className="flex mt-3 gap-2">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="info"
+                        startIcon={<ArrowRightIcon />}
+                        className="text-xs"
+                        onClick={() => handleGoToMeeting(notification)}
+                      >
+                        {t('goToMeeting')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </ListItem>
+            ))
+          )}
+        </List>
+      </div>
+
       {notifications.length > 0 && (
-        <Box className="flex justify-end mb-3">
+        <Box className="px-4 py-3" style={{ borderTop: '1px solid var(--border-color)' }}>
           <Button
-            size="small"
+            fullWidth
             variant="outlined"
             startIcon={<DoneAllIcon />}
             onClick={handleMarkAllAsSeen}
             disabled={markingAllSeen || !hasUnseenNotifications}
-            className="text-xs"
           >
             {t('markAllAsSeen')}
           </Button>
         </Box>
       )}
-      
-      <List>
-        {notifications.length === 0 ? (
-          <Typography className="text-gray-400 text-center py-4">
-            {t('noNotifications')}
-          </Typography>
-        ) : (
-          notifications.map((notification: any) => (
-            <ListItem 
-              key={notification._id} 
-              className={`flex flex-col p-4 ${notification.seen ? 'bg-gray-700' : 'bg-gray-600'} rounded-lg mb-2`}
-            >
-              <div className="w-full">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center">
-                    {!notification.seen && (
-                      <Badge color="primary" variant="dot" className="mr-2" />
-                    )}
-                    <Typography variant="subtitle1">
-                      {getNotificationMessage(notification, t)}
-                    </Typography>
-                  </div>
-                  <Chip 
-                    size="small" 
-                    label={formatRelativeTime(notification.createdAt)} 
-                    className="!text-xs bg-gray-500 !ml-2"
-                  />
-                </div>
-                
-                {(notification.type === NotificationType.MeetingConnected || notification.type === NotificationType.MeetingDisconnected) &&
-                  notification.meeting && (
-                  <div className="flex mt-3 gap-2">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="info"
-                      startIcon={<ArrowRightIcon />}
-                      className="text-xs"
-                      onClick={() => handleGoToMeeting(notification)}
-                    >
-                      {t('goToMeeting')}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </ListItem>
-          ))
-        )}
-      </List>
     </Paper>
   )
 } 

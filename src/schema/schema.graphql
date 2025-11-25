@@ -311,6 +311,17 @@ type IndividualCallHistoryEntry {
   initiatedByMe: Boolean!
 }
 
+type PendingCall {
+  callId: ID!
+  from: User!
+  meetingId: ID
+  meetingLastCallTime: Float
+  offer: String!
+  videoEnabled: Boolean!
+  audioEnabled: Boolean!
+  quality: String
+}
+
 type Query {
   getUser(userId: ID!): User
   getUsers: [User!]!
@@ -334,6 +345,7 @@ type Query {
   ): [MeetingWithPeer!]!
   getConversations: [Conversation!]!
   getMessages(conversationId: ID!, beforeId: ID, afterId: ID): [Message!]!
+  getPendingCall(userId: ID!): PendingCall
 }
 
 type Mutation {

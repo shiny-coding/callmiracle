@@ -422,6 +422,18 @@ export enum NotificationType {
   MissedCall = 'MISSED_CALL'
 }
 
+export type PendingCall = {
+  __typename?: 'PendingCall';
+  audioEnabled: Scalars['Boolean']['output'];
+  callId: Scalars['ID']['output'];
+  from: User;
+  meetingId?: Maybe<Scalars['ID']['output']>;
+  meetingLastCallTime?: Maybe<Scalars['Float']['output']>;
+  offer: Scalars['String']['output'];
+  quality?: Maybe<Scalars['String']['output']>;
+  videoEnabled: Scalars['Boolean']['output'];
+};
+
 export type PushSubscription = {
   __typename?: 'PushSubscription';
   endpoint: Scalars['String']['output'];
@@ -456,6 +468,7 @@ export type Query = {
   getMessages: Array<Message>;
   getMyMeetingsWithPeers: Array<MeetingWithPeer>;
   getNotifications: Array<Notification>;
+  getPendingCall?: Maybe<PendingCall>;
   getUser?: Maybe<User>;
   getUsers: Array<User>;
 };
@@ -508,6 +521,11 @@ export type QueryGetMyMeetingsWithPeersArgs = {
 
 
 export type QueryGetNotificationsArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
+export type QueryGetPendingCallArgs = {
   userId: Scalars['ID']['input'];
 };
 
