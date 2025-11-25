@@ -31,9 +31,8 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     }
   }, [callee.incomingRequest])
 
-  const isReconnecting = connectionStatus === ConnectionStatus.RECONNECTING || connectionStatus === ConnectionStatus.NEED_RECONNECT
   const isMissedCall = connectionStatus === ConnectionStatus.TIMEOUT || connectionStatus === ConnectionStatus.EXPIRED
-  const open = isReconnecting || !!callee.incomingRequest || isMissedCall
+  const open = !!callee.incomingRequest || isMissedCall
   const isReceivingCall = connectionStatus === ConnectionStatus.RECEIVING_CALL
   const user = callee.incomingRequest?.from || lastIncomingRequest?.from || null
   const onAccept = callee.handleAcceptCall
@@ -44,7 +43,6 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const showUserInfo = !meetingId || meetingLastCallTime
 
   const isConnecting = connectionStatus === ConnectionStatus.CONNECTING
-  const onCancelReconnect = callee.hangup
 
   const { play: playRingingSound, stop: stopRingingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
 
@@ -64,7 +62,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const handleCallBack = async () => {
     if (user && meetingId) {
       handleClose()
-      await doCall(user, false, meetingId, meetingLastCallTime)
+      await doCall(user, meetingId, meetingLastCallTime)
     }
   }
 
@@ -114,21 +112,14 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
           </>
         ) : (
           <>
-            {!isReconnecting && (
-              <Button onClick={onReject} variant="contained" color="error">
-                {tVideoChat('reject')}
-              </Button>
-            )}
-            {!isReconnecting && !isConnecting && (
+            <Button onClick={onReject} variant="contained" color="error">
+              {tVideoChat('reject')}
+            </Button>
+            {!isConnecting && (
               <Button onClick={() => {
-                onAccept(null)
+                onAccept()
               }} variant="contained" color="success">
                 {tVideoChat('accept')}
-              </Button>
-            )}
-            {isReconnecting && (
-              <Button onClick={onCancelReconnect} variant="contained" color="warning">
-                {t('cancel')}
               </Button>
             )}
           </>

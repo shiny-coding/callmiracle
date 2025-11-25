@@ -230,7 +230,7 @@ input UserInput {
 input CallUserInput {
   targetUserId: ID!
   initiatorUserId: ID!
-  type: String!  # 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'updateMediaState' | 'expired' | 'reconnect'
+  type: String!  # 'initiate' | 'offer' | 'answer' | 'ice-candidate' | 'finished' | 'updateMediaState' | 'expired' | 'busy'
   offer: String
   answer: String
   iceCandidate: String

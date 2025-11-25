@@ -147,8 +147,6 @@
     "timeout": "No response",
     "finished": "Call Finished",
     "expired": "Call expired",
-    "need-reconnect": "Reconnecting...",
-    "reconnecting": "Reconnecting...",
     "receiving-call": "Receiving call...",
     "busy": "Busy",
     "no-answer": "No answer"

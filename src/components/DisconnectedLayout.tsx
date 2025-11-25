@@ -17,7 +17,7 @@ interface DisconnectedLayoutProps {
 export default function DisconnectedLayout({ children }: DisconnectedLayoutProps) {
   const pathname = usePathname()
   const { connectionStatus, callee } = useWebRTCContext()
-  const showBackground = connectionStatus === 'calling' || connectionStatus === 'receiving-call' || connectionStatus === 'reconnecting' || connectionStatus === 'need-reconnect'
+  const showBackground = connectionStatus === 'calling' || connectionStatus === 'receiving-call'
   const isFirstTimePage = pathname?.includes('/first-time')
 
   return (

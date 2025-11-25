@@ -33,7 +33,7 @@ export default function CallHistoryUserInfo({ user }: CallHistoryUserInfoProps) 
 
   const handleCall = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    await doCall(user, false, null, null)
+    await doCall(user, null, null)
   }
 
   const handleMessage = (e: React.MouseEvent) => {

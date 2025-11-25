@@ -33,7 +33,7 @@ const GET_PENDING_CALL = gql`
 `
 
 interface WebRTCContextType {
-  doCall: (user: User, isReconnect: boolean, meetingId: string | null, meetingLastCallTime: number | null) => Promise<void>
+  doCall: (user: User, meetingId: string | null, meetingLastCallTime: number | null) => Promise<void>
   connectionStatus: ConnectionStatus
   incomingRequest: IncomingRequest | null
   handleAcceptCall: () => void
@@ -113,48 +113,15 @@ export function WebRTCProvider({
     setCallEndedInfo: state.setCallEndedInfo,
   }))
 
-  const attemptReconnect = async () => {
-    if (!targetUser) {
-      throw new Error('target user set to null')
-    }
-    console.log('Attempting to reconnect to previous call:', { targetUser, callId, role })
-    try {
-      if (role === 'caller') {
-        await caller.doCall(targetUser, true, meetingId, meetingLastCallTime)
-      } else {
-        await callUser({
-          variables: {
-            input: {
-              type: 'need-reconnect',
-              targetUserId: targetUser._id,
-              initiatorUserId: currentUser?._id,
-              callId
-            }
-          }
-        })
-      }
-    } catch (err) {
-      console.error('Failed to reconnect:', err)
-      clearCallState()
-    }
-  }
   const childProps = {
     localStream,
     remoteVideoRef,
     callUser,
-    attemptReconnect,
     setLocalStream
   }
-  
+
   const caller = useWebRTCCaller(childProps)
   const callee = useWebRTCCallee(childProps)
-
-  // Attempt reconnection on mount if we have stored call state
-  useEffect(() => {
-    if (connectionStatus !== ConnectionStatus.NEED_RECONNECT || !localStream) return;
-    setConnectionStatus(ConnectionStatus.RECONNECTING)
-    attemptReconnect()
-  }, [connectionStatus, localStream])
 
   // Check for pending calls when app opens (e.g., from notification click)
   useEffect(() => {
@@ -236,10 +203,6 @@ export function WebRTCProvider({
           setConnectionStatus(ConnectionStatus.RECEIVING_CALL)
           callee.active = true
         }
-      } else if (callEvent.type === 'need-reconnect') {
-        console.log('WebRTC: Received need-reconnect request, reconnecting')
-        setConnectionStatus(ConnectionStatus.RECONNECTING)
-        await caller.doCall( callEvent.from, true, meetingId, meetingLastCallTime )
       } else if (callEvent.type === 'finished') {
         // Read lastConnectedTime directly from store to avoid stale closure
         const currentLastConnectedTime = syncStore().lastConnectedTime
@@ -339,10 +302,6 @@ export function WebRTCProvider({
         setRemoteVideoEnabled(callEvent.videoEnabled as boolean)
         setRemoteAudioEnabled(callEvent.audioEnabled as boolean)
         callee.setIncomingRequest(callEvent as IncomingRequest)
-        if ( connectionStatus === ConnectionStatus.RECONNECTING || connectionStatus === ConnectionStatus.CONNECTED ) {
-          console.log('WebRTC: Reconnecting, automatically accepting call')
-          callee.handleAcceptCall(callEvent as IncomingRequest)
-        }
       }
       // Handle ICE candidates
       else if (callEvent.type === 'ice-candidate') {

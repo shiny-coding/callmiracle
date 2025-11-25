@@ -94,7 +94,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       // iOS can only have one camera stream. Requesting permissions creates a test stream
       // which can conflict with the active call stream, causing the video to freeze.
       // This also prevents the double permission prompt issue on iOS.
-      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
 
       if (isIOS && isInCall) {
         clientLogger.info('[DeviceSettings] iOS in call - skipping permission request to avoid camera conflict', {
@@ -168,7 +168,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   // Cleanup preview stream immediately when dialog closes
   useEffect(() => {
     if (!open) {
-      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
 
       clientLogger.info('[DeviceSettings] Dialog closed, starting cleanup', {
         hasPreviewStream: !!previewStreamRef.current,
@@ -271,7 +271,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         // Not during a call, use the existing localStream
 
         // On iOS, check if we're in ANY call-related state
-        const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+        const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
 
         if (isInCall && isIOS) {
           // On iOS, CRITICAL: Cannot create a new stream during ANY call state!
@@ -375,7 +375,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
     // Cleanup function that runs when effect dependencies change or component unmounts
     return () => {
-      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+      const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
       const isActiveCallOnIOS = isIOS && isInCall
 
       clientLogger.info('[DeviceSettings] useEffect cleanup running', {
@@ -451,7 +451,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
   // iOS-specific: Toggle between front and back camera using facingMode
   const handleIOSCameraToggle = async () => {
-    const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+    const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
     const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user'
 
     clientLogger.info('[DeviceSettings] iOS camera toggle requested', {
@@ -628,7 +628,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   }
 
   const handleClose = () => {
-    const isInCall = ['receiving-call', 'calling', 'connecting', 'connected', 'reconnecting'].includes(connectionStatus)
+    const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
     const previewIsLocalStream = previewStreamRef.current === localStream
 
     clientLogger.info('[DeviceSettings] handleClose called', {

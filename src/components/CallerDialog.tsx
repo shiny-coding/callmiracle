@@ -21,7 +21,7 @@ export default function CallerDialog() {
   }))
   const tStatus = useTranslations('ConnectionStatus')
   const { doCall, callUser, caller } = useWebRTCContext()
-  const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer', 'reconnecting', 'need-reconnect'].includes(connectionStatus)
+  const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer'].includes(connectionStatus)
   const isCalling = connectionStatus === 'calling'
   const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
 
@@ -67,7 +67,7 @@ export default function CallerDialog() {
   if (!targetUser) return null
 
   const handleCallAgain = async () => {
-    await doCall(targetUser, false, meetingId, meetingLastCallTime)
+    await doCall(targetUser, meetingId, meetingLastCallTime)
   }
 
 

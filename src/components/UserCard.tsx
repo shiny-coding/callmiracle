@@ -71,7 +71,7 @@ export default function UserCard({
   const isGroupOwner = filteringByGroup?.owner === user._id
 
   const handleCall = async () => {
-    await doCall(user, false, null, null)
+    await doCall(user, null, null)
   }
 
   const handleFriendButtonClick = (e: React.MouseEvent) => {

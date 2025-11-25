@@ -114,7 +114,6 @@ type PersistedAppState = Pick<
   | 'lastConversationId'
 >;
 
-const TWO_MINUTES = 2 * 60 * 1000 // 2 minutes in milliseconds
 let rehydrated = false
 
 // Type for persist options
@@ -225,18 +224,9 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       onRehydrateStorage: () => (state?: AppState, error?: Error) => {
         if (state && !rehydrated) {
           rehydrated = true
-          if ( state.connectionStatus === ConnectionStatus.CONNECTED ) {
-            const timeSinceLastConnection = Date.now() - (state.lastConnectedTime ?? 0)
-            if (timeSinceLastConnection < TWO_MINUTES) {
-              state.setConnectionStatus(ConnectionStatus.NEED_RECONNECT)
-            } else {
-              state.setConnectionStatus(ConnectionStatus.DISCONNECTED)
-              state.clearCallState()
-            }
-          } else {
-            state.setConnectionStatus(ConnectionStatus.DISCONNECTED)
-            state.clearCallState()
-          }
+          // Always reset to disconnected on page load - no reconnection support
+          state.setConnectionStatus(ConnectionStatus.DISCONNECTED)
+          state.clearCallState()
         }
       }
     } as AppPersistOptions

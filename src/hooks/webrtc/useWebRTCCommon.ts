@@ -25,8 +25,6 @@ export const ConnectionStatus = {
   DISCONNECTED: 'disconnected',
   CALLING: 'calling',
   CONNECTING: 'connecting',
-  NEED_RECONNECT: 'need-reconnect',
-  RECONNECTING: 'reconnecting',
   CONNECTED: 'connected',
   FAILED: 'failed',
   REJECTED: 'rejected',
@@ -61,13 +59,12 @@ export function useWebRTCCommon(callUser: any) {
   }))
   const { refetchMyMeetingsWithPeers } = useMeetings()
 
-  const handleConnectionStateChange = (pc: RTCPeerConnection, peerConnection: React.MutableRefObject<RTCPeerConnection | null>, active: boolean, attemptReconnect: () => Promise<void>) => {
+  const handleConnectionStateChange = (pc: RTCPeerConnection, peerConnection: React.MutableRefObject<RTCPeerConnection | null>) => {
     clientLogger.debug('[WebRTC] Connection state changed', {
       connectionState: pc.connectionState,
       iceConnectionState: pc.iceConnectionState,
       iceGatheringState: pc.iceGatheringState,
-      signalingState: pc.signalingState,
-      active
+      signalingState: pc.signalingState
     })
 
     if (pc.connectionState === 'connected') {
@@ -75,19 +72,11 @@ export function useWebRTCCommon(callUser: any) {
       setConnectionStatus(ConnectionStatus.CONNECTED)
     } else if (pc.connectionState === 'failed') {
       clientLogger.error('[WebRTC] Connection failed', {
-        iceConnectionState: pc.iceConnectionState,
-        active
+        iceConnectionState: pc.iceConnectionState
       })
       pc.close()
       peerConnection.current = null
-
-      console.log('WebRTC: onconnectionstatechange gone failed')
-      if ( active ) {
-        setConnectionStatus(ConnectionStatus.RECONNECTING)
-        attemptReconnect()
-      } else {
-        setConnectionStatus(ConnectionStatus.FAILED)
-      }
+      setConnectionStatus(ConnectionStatus.FAILED)
     }
   }
 
