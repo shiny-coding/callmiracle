@@ -161,13 +161,13 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
 
           <div className="flex-grow">
             <div className="flex items-center gap-2">
-              <Typography variant="h6" className="text-white font-medium">
+              <Typography variant="h6" className="text-color font-medium">
                 {group.name}
               </Typography>
-              {!group.open && <LockIcon className="text-gray-400" fontSize="small" />}
+              {!group.open && <LockIcon className="dimmer-text-color" fontSize="small" />}
             </div>
 
-            <Typography variant="body2" className="text-gray-400">
+            <Typography variant="body2" className="dimmer-text-color">
               {group.open ? t('openGroup') : t('privateGroup')} · {t('participantCount', { count: group.usersCount || 0 })}
             </Typography>
           </div>
@@ -183,7 +183,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 aria-label={t('editGroup')}
                 title={t('editGroup')}
               >
-                <EditIcon className="text-gray-400 hover:text-white" />
+                <EditIcon className="dimmer-text-color" />
               </IconButton>
             )}
           </div>
@@ -191,7 +191,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
 
         {group.description && (
           <div className="mb-4">
-            <Typography variant="body2" className="text-gray-300">
+            <Typography variant="body2" className="dimmer-text-color">
               {group.description}
             </Typography>
           </div>

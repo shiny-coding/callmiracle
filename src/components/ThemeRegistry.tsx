@@ -25,14 +25,14 @@ const theme = createTheme({
     MuiFilledInput: {
       styleOverrides: {
         root: {
-          // backgroundColor: '#f0f0f0'
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
         }
       }
     },
     MuiInputBase: {
       styleOverrides: {
         root: {
-          backgroundColor: 'var(--input-bg)',
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
         }
       }
     },
@@ -174,6 +174,7 @@ const theme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
           '&:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline': {
             borderColor: 'var(--hover-input-border-color)',
           },
@@ -200,7 +201,7 @@ const theme = createTheme({
           // Ensure proper positioning
           '&.MuiInputLabel-shrink': {
             transform: 'translate(14px, -6px) scale(0.75)',
-            backgroundColor: 'var(--input-bg)',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
             padding: '0 4px',
             zIndex: 1,
           },

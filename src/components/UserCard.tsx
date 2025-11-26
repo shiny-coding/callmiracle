@@ -132,12 +132,12 @@ export default function UserCard({
             />
           </div>
           <div className="flex-grow">
-            <Typography variant="h6" className="text-white">
+            <Typography variant="h6" className="text-color">
               {user.name}
             </Typography>
 
             {user.about && (
-              <Typography variant="body2" className="text-gray-300 mt-1">
+              <Typography variant="body2" className="dimmer-text-color mt-1">
                 {user.about}
               </Typography>
             )}

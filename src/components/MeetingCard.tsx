@@ -51,7 +51,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
-  const textColor = meetingPassed ? "text-gray-400" : "text-gray-300";
+  const textColor = meetingPassed ? "dimmest-text-color" : "dimmer-text-color";
 
   const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, MeetingLanguagesChips, GenderChip,
           getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, t)

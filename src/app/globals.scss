@@ -83,6 +83,8 @@ body::before {
   --text-color: #000000;
   --dimmer-text-color: #4a4a4a;
   --dimmest-text-color: #888888;
+
+  --card-bg: rgb(0 143 151 / 10%);
 }
 
 .text-color {
@@ -127,7 +129,7 @@ body::before {
 
 /* Cards with semi-transparent white background */
 .card-bg {
-  background-color: rgba(255, 255, 255, 0.85) !important;
+  background-color: var(--card-bg) !important;
 }
 
 .input-bg {
