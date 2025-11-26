@@ -189,22 +189,47 @@ export default function GroupsFilters({
     onToggleFilters(false) // Inform parent about visibility change
   }
 
+  // Handle quick "Only mine" filter toggle (always visible)
+  const handleQuickMyGroupsToggle = (checked: boolean) => {
+    setChangedShowMyGroups(checked)
+    onApplyFilters({
+      showMyGroups: checked,
+      nameFilter: appliedNameFilter,
+      showOpenGroups: appliedShowOpenGroups,
+      showPrivateGroups: appliedShowPrivateGroups
+    })
+  }
+
   return (
     <>
       <div className={`flex flex-col overflow-hidden flex-shrink-0 ${isExpanded ? 'flex-grow' : ''}`}>
-        <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
-          <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
-            {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
-          </IconButton>
-          <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
-            {t('filterGroups')}
-          </Typography>
+        <div className="flex items-center py-2 gap-4" style={{ userSelect: 'none' }}>
+          <div className="flex items-center">
+            <IconButton size="small" onClick={handleToggleExpand} aria-label={isExpanded ? t('collapseFilters') : t('expandFilters')}>
+              {isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />}
+            </IconButton>
+            <Typography variant="subtitle1" component="span" onClick={handleToggleExpand} className="cursor-pointer">
+              {t('filterGroups')}
+            </Typography>
+          </div>
+          {/* Quick "Only mine" filter - always visible */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={appliedShowMyGroups}
+                onChange={e => handleQuickMyGroupsToggle(e.target.checked)}
+                size="small"
+              />
+            }
+            label={t('onlyMine')}
+            onClick={e => e.stopPropagation()}
+          />
         </div>
 
-        {/* Active filter chips - displayed below toggler when collapsed */}
-        {!isExpanded && activeFilterChips.length > 0 && (
+        {/* Active filter chips - displayed below toggler when collapsed (excluding myGroups since it has its own checkbox) */}
+        {!isExpanded && activeFilterChips.filter(chip => chip.type !== 'myGroups').length > 0 && (
           <FilterChipsContainer>
-            {activeFilterChips.map((chip) => (
+            {activeFilterChips.filter(chip => chip.type !== 'myGroups').map((chip) => (
               <StandardChip
                 key={chip.type}
                 label={chip.label}
@@ -245,15 +270,6 @@ export default function GroupsFilters({
                     />
                   }
                   label={t('privateGroups')}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={changedShowMyGroups}
-                      onChange={e => setChangedShowMyGroups(e.target.checked)}
-                    />
-                  }
-                  label={t('myGroups')}
                 />
               </div>
             </FormGroup>

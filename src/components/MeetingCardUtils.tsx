@@ -109,7 +109,7 @@ export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor:
     }
 
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <LanguageIcon className={meetingColor} fontSize="small" />
         <div className="flex flex-wrap gap-1">
           {languagesToShow.map(langCode => {

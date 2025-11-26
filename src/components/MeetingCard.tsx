@@ -5,9 +5,10 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import TimerIcon from '@mui/icons-material/Timer'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
 import MoodIcon from '@mui/icons-material/Mood'
 import GroupIcon from '@mui/icons-material/Group'
+import WcIcon from '@mui/icons-material/Wc'
+import CakeIcon from '@mui/icons-material/Cake'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { MeetingWithPeer, User } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
@@ -21,12 +22,12 @@ import { UPDATE_MEETING_LAST_CALL, useMeetingCardUtils } from './MeetingCardUtil
 import { differenceInSeconds, isWithinInterval } from 'date-fns'
 import { differenceInHours } from 'date-fns'
 import ConfirmDialog from './ConfirmDialog'
-import { useDeleteMeeting } from '@/hooks/useDeleteMeeting'
 import { combineAdjacentSlots } from '@/utils/meetingUtils'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { useGroups } from '@/store/GroupsProvider'
 import { useProfileImage } from '@/hooks/useProfileImage'
 import Image from 'next/image'
+import UserDetailsPopup from './UserDetailsPopup'
 
 interface MeetingCardProps {
   meetingWithPeer: MeetingWithPeer
@@ -43,14 +44,14 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
   const [updateMeetingStatus] = useMutation(UPDATE_MEETING_LAST_CALL)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const { refetchMeetings } = useMeetings()
-  const [confirmAction, setConfirmAction] = useState<'finish' | 'cancel' | 'delete' | null>(null)
+  const [confirmAction, setConfirmAction] = useState<'finish' | 'cancel' | null>(null)
   const { groups } = useGroups()
   const { imageSrc: peerImageSrc } = useProfileImage(meetingWithPeer.peerUser?._id)
+  const [userDetailsOpen, setUserDetailsOpen] = useState(false)
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
   const textColor = meetingPassed ? "text-gray-400" : "text-gray-300";
-  const { deleteMeeting } = useDeleteMeeting()
 
   const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, MeetingLanguagesChips, GenderChip,
           getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, t)
@@ -62,19 +63,19 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   // Reusable chip styling for passed vs active meetings
   const getChipSx = (isActive = isActiveNow) => ({
-    backgroundColor: isActive 
-      ? 'transparent !important' 
+    backgroundColor: isActive
+      ? 'transparent !important'
       : meetingPassed
-        ? 'transparent !important' 
+        ? 'transparent !important'
         : '#4B5563 !important',
     color: meetingPassed
-      ? `${class2Hex(PASSED_MEETING_COLOR)} !important` 
+      ? `${class2Hex(PASSED_MEETING_COLOR)} !important`
       : 'white !important',
-    border: isActive 
-      ? `2px solid ${class2Hex(ACTIVE_MEETING_COLOR)} !important` 
+    border: isActive
+      ? `1px solid ${class2Hex(ACTIVE_MEETING_COLOR)} !important`
       : meetingPassed
-        ? `2px solid ${class2Hex(PASSED_MEETING_COLOR)} !important` 
-        : `2px solid ${class2Hex(meetingColor)} !important`,
+        ? `1px solid ${class2Hex(PASSED_MEETING_COLOR)} !important`
+        : `1px solid ${class2Hex(meetingColor)} !important`,
   });
 
   const timeSlotsByDay = groupTimeSlotsByDay()
@@ -148,7 +149,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
   const isActiveNow = meetingIsActiveNow(meeting);
   const soonChipSx = getChipSx()
   if ( meetingStatusLabels.status === 'soon' ) {
-    soonChipSx.border = `2px solid ${class2Hex(ACTIVE_MEETING_COLOR)} !important`
+    soonChipSx.border = `1px solid ${class2Hex(ACTIVE_MEETING_COLOR)} !important`
   }
 
   useEffect(() => {
@@ -169,7 +170,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   const interestsToShow = getSharedInterests(meeting, meetingWithPeer.peerMeeting)
 
-  const openConfirmDialog = (action: 'finish' | 'cancel' | 'delete') => {
+  const openConfirmDialog = (action: 'finish' | 'cancel') => {
     setConfirmAction(action)
     setConfirmDialogOpen(true)
   }
@@ -183,25 +184,18 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   const handleCancelMeeting = async () => { openConfirmDialog('cancel') }
 
-  const handleDeleteConfirm = () => { openConfirmDialog('delete') }
-
   const confirmMeetingAction = async () => {
     try {
-      if (confirmAction === 'delete') {
-        // Call the passed onDelete handler
-        await deleteMeeting(meeting._id)
-      } else {
-        await updateMeetingStatus({
-          variables: {
-            input: {
-              _id: meeting._id,
-              status: confirmAction === 'finish' 
-                ? MeetingStatus.Finished 
-                : MeetingStatus.Cancelled
-            }
+      await updateMeetingStatus({
+        variables: {
+          input: {
+            _id: meeting._id,
+            status: confirmAction === 'finish'
+              ? MeetingStatus.Finished
+              : MeetingStatus.Cancelled
           }
-        })
-      }
+        }
+      })
       closeConfirmDialog()
       refetchMeetings(true)
     } catch (error) {
@@ -212,9 +206,23 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   return (
     <div className="flex flex-col gap-2 w-full relative">
+      {(meeting.status === MeetingStatus.Seeking || meeting.status === MeetingStatus.Found) && !meetingPassed && (
+        <div className="absolute top-0 left-0">
+          <IconButton
+            className="text-red-500 hover:bg-red-900 p-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCancelMeeting();
+            }}
+            size="small"
+          >
+            <CancelIcon fontSize="small" />
+          </IconButton>
+        </div>
+      )}
       <div className="absolute top-0 right-0">
         {canEditMeeting(meeting) && (
-          <IconButton 
+          <IconButton
             className="text-blue-400 hover:bg-gray-600 p-1"
             onClick={(e) => {
             e.stopPropagation();
@@ -226,21 +234,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
           </IconButton>
         )}
       </div>
-        <div className="absolute bottom-0 right-0">
-        {meetingPassed &&
-          <IconButton 
-            className="text-red-400 hover:bg-gray-600 p-1"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteConfirm()
-            }}
-            size="small"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        }
-      </div>
-      {/* <div className="absolute top-4 left-0">{meeting._id}</div> */}
 
       <div className="flex items-center justify-center">
         <Typography variant="subtitle2" 
@@ -283,7 +276,10 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                 </Button>
               )}
               {meeting.lastCallTime ? (
-                <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-80"
+                  onClick={() => setUserDetailsOpen(true)}
+                >
                   <div className="relative w-8 h-8 flex-shrink-0 overflow-hidden rounded-full">
                     {peerImageSrc ? (
                       <Image
@@ -309,9 +305,9 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
           
         </div>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <AccessTimeIcon className={meetingColor} fontSize="small" />
-        <div className="flex flex-wrap items-center gap-2 w-full">
+        <div className="flex flex-wrap items-center gap-2">
           {meeting.startTime && !meetingPassed &&
             <>
               <Chip
@@ -320,11 +316,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                 className={`text-xs`}
                 sx={soonChipSx}
               />
-              {!meetingPassed &&
-                <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
-                  {meeting.minDurationM} {t('min')}
-                </Typography>
-              }
             </>
           }
           {!meeting.startTime && !meetingPassed ? (
@@ -341,24 +332,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                       now.getTime() <= slot.end - minDurationMs + allowanceMs
                     );
 
-                    if (displayableSlots.length === 0 && index === Object.entries(timeSlotsByDay).length - 1) {
-                      // If all slots for the last day are filtered out, but we need to show duration
-                      return (
-                        <React.Fragment key={`${day}-duration-only`}>
-                          <Typography variant="body2" className={`${textColor} whitespace-nowrap flex items-center h-6`}>
-                            {day}
-                          </Typography>
-                          <div className="grid grid-cols-[repeat(auto-fill,110px)] gap-1">
-                            <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
-                                {meeting.minDurationM} {t('min')}
-                              </Typography>
-                          </div>
-                        </React.Fragment>
-                      )
-                    }
                     if (displayableSlots.length === 0) return null;
 
-                    const isLastEntry = index === Object.entries(timeSlotsByDay).length - 1
                     return (
                       <React.Fragment key={day}>
                         <Typography variant="body2" className={`${textColor} whitespace-nowrap flex items-center h-6`}>
@@ -370,7 +345,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                               start: new Date(start),
                               end: new Date(end)
                             }) && !!meeting.peerMeetingId
-                            
+
                             return (
                               <Chip
                                 key={`${start}-${end}`}
@@ -381,11 +356,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                               />
                             )
                           })}
-                          {isLastEntry && (
-                            <Typography variant="body2" className={`${textColor} flex items-center pl-1`}>
-                              {meeting.minDurationM} {t('min')}
-                            </Typography>
-                          )}
                         </div>
                       </React.Fragment>
                     )
@@ -404,13 +374,13 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
           )}
         </div>        
     </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <GroupIcon className={meetingColor} fontSize="small" />
         <Typography variant="body2" className={textColor}>
           {meetingGroup?.name || t('group')}
         </Typography>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <MoodIcon className={meetingColor} fontSize="small" />
         <div className="flex flex-wrap gap-2">
         {interestsToShow && interestsToShow.map(interest => (
@@ -425,17 +395,27 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         </div>
       </div>
       <MeetingLanguagesChips meetingColor={meetingColor} chipSx={getChipSx()} />
-      {!meeting.peerMeetingId && (
-        <div className="flex items-center gap-2">
-          <GenderChip />
-          <Typography variant="body2" className={textColor}>
-            {t('ageRange')}: {meeting.allowedMinAge}-{meeting.allowedMaxAge}
-          </Typography>
-        </div>
+      {!meeting.peerMeetingId && meeting.status !== MeetingStatus.Cancelled && meeting.status !== MeetingStatus.Finished && !meetingPassed && (
+        <>
+          {!(meeting.allowedMales && meeting.allowedFemales) && (
+            <div className="flex items-center justify-center gap-2">
+              <WcIcon className={meetingColor} fontSize="small" />
+              <GenderChip />
+            </div>
+          )}
+          {!(meeting.allowedMinAge === 10 && meeting.allowedMaxAge === 100) && (
+            <div className="flex items-center justify-center gap-2">
+              <CakeIcon className={meetingColor} fontSize="small" />
+              <Typography variant="body2" className={textColor}>
+                {meeting.allowedMinAge}-{meeting.allowedMaxAge}
+              </Typography>
+            </div>
+          )}
+        </>
       )}
 
       {meeting.totalDurationS && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <TimerIcon className={meetingColor} />
           <Typography variant="body2" className={textColor}>
             {t('totalDuration')}: {formatDuration(meeting.totalDurationS)}
@@ -443,7 +423,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         </div>
       )}
 
-      {!meetingPassed && meeting.status === MeetingStatus.Called ? (
+      {!meetingPassed && meeting.status === MeetingStatus.Called && (
         <div className="flex items-center gap-2">
           <Button
             className="max-w-min"
@@ -456,36 +436,27 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
             {t('finishMeeting')}
           </Button>
         </div>
-      ) : (meeting.status === MeetingStatus.Seeking || meeting.status === MeetingStatus.Found) && !meetingPassed && (
-        <div className="flex mt-2 items-center gap-2">
-          <Button
-            className="max-w-min"
-            variant="contained"
-            color="warning"
-            startIcon={<CancelIcon />}
-            onClick={handleCancelMeeting}
-            size="small"
-          >
-            {t('cancelMeeting')}
-          </Button>
-        </div>
       )}
 
       <ConfirmDialog
         open={confirmDialogOpen}
         title={
-          confirmAction === 'finish' ? t('confirmFinishTitle') : 
-          confirmAction === 'cancel' ? t('confirmCancelTitle') :
-          t('deleteMeeting')
+          confirmAction === 'finish' ? t('confirmFinishTitle') : t('confirmCancelTitle')
         }
         message={
-          confirmAction === 'finish' ? t('confirmFinishMessage') : 
-          confirmAction === 'cancel' ? t('confirmCancelMessage') :
-          t('confirmDeleteMeeting')
+          confirmAction === 'finish' ? t('confirmFinishMessage') : t('confirmCancelMessage')
         }
         onConfirm={confirmMeetingAction}
         onCancel={closeConfirmDialog}
       />
+
+      {meetingWithPeer.peerUser && (
+        <UserDetailsPopup
+          user={meetingWithPeer.peerUser as User}
+          open={userDetailsOpen}
+          onClose={() => setUserDetailsOpen(false)}
+        />
+      )}
     </div>
   )
 } 

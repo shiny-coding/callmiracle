@@ -244,6 +244,7 @@
   "insufficientDuration": "Please select adjacent time slots to form at least {minutes} minutes of continuous time.",
   "selectAdjacentSlots": "Select adjacent slots to form at least {minutes} minutes of continuous time",
   "onlyFriends": "Only Friends",
+  "onlyMine": "Only Mine",
   "friend": "Friend",
   "addFriend": "Add Friend",
   "removeFriend": "Remove Friend",

@@ -143,23 +143,6 @@ export default function UserCard({
             )}
           </div>
           <div className="flex gap-2 items-center">
-            {isCurrentUser && (
-              <Chip
-                label={t('me')}
-                size="small"
-                className="bg-green-600 text-white text-xs mr-2"
-              />
-            )}
-            {currentUser?._id && !isCurrentUser && (
-              <IconButton
-                onClick={handleFriendButtonClick}
-                disabled={updateLoading}
-                className={isFriend ? "text-green-500 hover:bg-green-900" : "text-blue-400 hover:bg-blue-900"}
-                title={isFriend ? t('friend') : t('addFriend')}
-              >
-                {isFriend ? <HowToRegIcon /> : <PersonAddIcon />}
-              </IconButton>
-            )}
             {canRemoveFromGroup && !isGroupOwner && (
               <IconButton
                 onClick={(e) => {
@@ -175,23 +158,30 @@ export default function UserCard({
           </div>
         </div>
 
-        {showDetails && user.languages.length > 0 && (
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-1">
-              {user.languages.map(lang => {
-                const language = LANGUAGES.find(l => l.code === lang)
-                return (
-                  <Chip
-                    key={lang}
-                    label={language?.name || lang}
-                    size="small"
-                    className="text-xs text-white bg-gray-700"
-                  />
-                )
-              })}
+        {showDetails && (() => {
+          // Show only languages that both the current user and this user speak
+          const myLanguages = currentUser?.languages || []
+          const sharedLanguages = user.languages.filter(lang => myLanguages.includes(lang))
+          // Don't show language badges if current user speaks only one language
+          if (myLanguages.length <= 1 || sharedLanguages.length === 0) return null
+          return (
+            <div className="mb-4">
+              <div className="flex flex-wrap gap-1">
+                {sharedLanguages.map(lang => {
+                  const language = LANGUAGES.find(l => l.code === lang)
+                  return (
+                    <Chip
+                      key={lang}
+                      label={language?.name || lang}
+                      size="small"
+                      className="text-xs text-white bg-gray-700"
+                    />
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {isBlocked && (
           <LockIcon
@@ -202,8 +192,26 @@ export default function UserCard({
         )}
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Action buttons to the left */}
-          <div className="flex gap-2">
+          {/* Action buttons */}
+          <div className="flex gap-2 items-center">
+            {/* Me badge or Friend/Add Friend button */}
+            {isCurrentUser && (
+              <Chip
+                label={t('me')}
+                size="small"
+                className="bg-green-600 text-white text-xs"
+              />
+            )}
+            {currentUser?._id && !isCurrentUser && (
+              <IconButton
+                onClick={handleFriendButtonClick}
+                disabled={updateLoading}
+                className={isFriend ? "text-green-500 hover:bg-green-900" : "text-blue-400 hover:bg-blue-900"}
+                title={isFriend ? t('friend') : t('addFriend')}
+              >
+                {isFriend ? <HowToRegIcon /> : <PersonAddIcon />}
+              </IconButton>
+            )}
             {showMessageButton && !isCurrentUser && (
               <IconButton
                 onClick={(e) => {
@@ -230,6 +238,10 @@ export default function UserCard({
               >
                 <CallIcon className="text-white" />
               </IconButton>
+            )}
+            {/* Spacer for current user's card to maintain consistent height */}
+            {isCurrentUser && (showMessageButton || showCallButton) && (
+              <div className="h-10" />
             )}
           </div>
         </div>
