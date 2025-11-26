@@ -185,7 +185,7 @@ export default function ConversationsList() {
   return (
     <Paper className="h-full flex flex-col">
       <PageHeader
-        icon={<MessageIcon />}
+        icon={<MessageIcon className="dimmer-text-color" />}
         title={t('conversations')}
       >
         <IconButton 

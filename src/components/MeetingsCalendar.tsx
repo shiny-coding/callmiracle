@@ -246,7 +246,7 @@ export default function MeetingsCalendar() {
   return (
     <Paper className="flex flex-col relative h-full">
       <PageHeader
-        icon={<CalendarTodayIcon />}
+        icon={<CalendarTodayIcon className="dimmer-text-color" />}
         title={t('upcomingMeetings')}
       >
         <IconButton

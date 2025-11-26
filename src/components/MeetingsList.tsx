@@ -120,7 +120,7 @@ export default function MeetingsList() {
     <>
       <Paper className="bg-gray-800 flex flex-col h-full relative">
         <PageHeader
-          icon={<ViewListIcon className="text-blue-400" />}
+          icon={<ViewListIcon className="dimmer-text-color" />}
           title={t('myMeetings')}
         >
           <IconButton
@@ -168,7 +168,7 @@ export default function MeetingsList() {
                   {isEmptyState ? (
                     <ListItem
                       onClick={handleAddNewMeetingClick}
-                      className="p-8 bg-gray-700 rounded-lg hover:bg-gray-600 cursor-pointer shadow-lg"
+                      className="p-8 card-bg rounded-lg cursor-pointer shadow-lg"
                       sx={{ minHeight: '178px' }}
                     >
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
@@ -182,7 +182,7 @@ export default function MeetingsList() {
                     <ListItem
                       key={(item as MeetingWithPeer).meeting._id}
                       ref={(el: any) => el && (meetingRefs.current[(item as MeetingWithPeer).meeting._id] = el)}
-                      className={`flex flex-col p-4 bg-gray-700 rounded-lg hover:bg-gray-600 relative transition-all duration-500
+                      className={`flex flex-col p-4 card-bg rounded-lg relative transition-all duration-500
                         ${highlightedMeetingId === (item as MeetingWithPeer).meeting._id ? 'highlight-animation' : ''}`}
                       disablePadding
                     >

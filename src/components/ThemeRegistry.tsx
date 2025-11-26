@@ -6,7 +6,20 @@ import { createTheme } from '@mui/material/styles'
 
 const theme = createTheme({
   palette: {
-    mode: 'dark'
+    mode: 'light',
+    primary: {
+      main: '#1565c0',
+      light: '#1976d2',
+      dark: '#0d47a1',
+    },
+    background: {
+      default: 'transparent',
+      paper: 'transparent',
+    },
+    text: {
+      primary: '#000000',
+      secondary: '#4a4a4a',
+    },
   },
   components: {
     MuiFilledInput: {
@@ -26,7 +39,39 @@ const theme = createTheme({
     MuiMenu: {
       styleOverrides: {
         paper: {
-          backgroundColor: 'var(--brighter-color)' // your desired popup menu background
+          backgroundColor: 'rgba(255, 255, 255, 0.95)', // light background for menus
+          color: 'var(--text-color)',
+          '& .MuiSvgIcon-root': {
+            color: 'var(--dimmer-text-color)',
+          },
+        }
+      }
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          color: 'var(--text-color)',
+        }
+      }
+    },
+    MuiSvgIcon: {
+      styleOverrides: {
+        root: {
+          color: 'var(--dimmer-text-color)',
+        }
+      }
+    },
+    MuiListItemIcon: {
+      styleOverrides: {
+        root: {
+          color: 'var(--dimmer-text-color)',
+        }
+      }
+    },
+    MuiListItemText: {
+      styleOverrides: {
+        primary: {
+          color: 'var(--text-color)',
         }
       }
     },

@@ -361,7 +361,7 @@ export default function GroupForm() {
       )}
 
       <PageHeader
-        icon={<GroupIcon />}
+        icon={<GroupIcon className="dimmer-text-color" />}
         title={groupId ? t('editGroup') : t('createGroup')}
       >
         <IconButton

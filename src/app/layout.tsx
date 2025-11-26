@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.scss";
-import { ThemeProvider } from '@/components/ThemeProvider'
 import { SessionProvider } from '@/components/providers/SessionProvider'
-import { cookies } from 'next/headers'
 import ViewportHeightSetter from '@/components/ViewportHeightSetter'
 import ClientLoggerConfig from '@/components/ClientLoggerConfig'
 import RequestIdInjector from '@/components/RequestIdInjector'
@@ -40,7 +38,7 @@ export default async function RootLayout({ children, }: { children: React.ReactN
       <head>
         <meta name="server-id" content={serverId} />
       </head>
-      <body className="dark:text-gray-100">
+      <body>
         <ViewportHeightSetter />
         <SessionProvider>
           <ClientLoggerConfig />

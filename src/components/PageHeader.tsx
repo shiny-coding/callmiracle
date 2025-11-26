@@ -55,7 +55,7 @@ export default function PageHeader({ icon, title, children, className }: PageHea
       style={{ borderBottom: '1px solid var(--border-color)' }} // Consistent border
     >
       {icon && <div className="mr-2">{icon}</div>}
-      <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+      <Typography variant="h6" component="div" className="dimmer-text-color" sx={{ flexGrow: 1 }}>
         {title}
       </Typography>
       {children && <div className="flex items-center gap-2">{children}</div>}

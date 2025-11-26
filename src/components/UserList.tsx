@@ -156,7 +156,7 @@ export default function UserList() {
   return (
     <Paper className="h-full flex flex-col">
       <PageHeader
-        icon={<PeopleIcon />}
+        icon={<PeopleIcon className="dimmer-text-color" />}
         title={t('users')}
       >
         <IconButton 
@@ -216,7 +216,7 @@ export default function UserList() {
                 >
                   <ListItem
                     key={user._id}
-                    className="flex flex-col items-start hover:bg-gray-700 rounded-lg"
+                    className="flex flex-col items-start card-bg rounded-lg"
                   >
                     <div className="w-full">
                       <UserCard

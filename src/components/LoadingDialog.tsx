@@ -20,7 +20,7 @@ export default function LoadingDialog({ loading, error }: { loading: boolean, er
       fullWidth
       onClose={handleClose}
       PaperProps={{
-        className: 'bg-gray-900',
+        className: 'card-bg',
         sx: { zIndex: 1300 } // Lower than top/bottom controls (which should be 1400+)
       }}
       sx={{ zIndex: 1300 }}
@@ -29,13 +29,13 @@ export default function LoadingDialog({ loading, error }: { loading: boolean, er
         {!loading && (
           <IconButton
             onClick={handleClose}
-            className="absolute top-2 right-2 text-gray-400 hover:text-white"
+            className="absolute top-2 right-2 dimmer-text-color"
             size="small"
           >
             <CloseIcon />
           </IconButton>
         )}
-        <Typography className="text-white text-center text-lg pr-8">
+        <Typography className="text-color text-center text-lg pr-8">
           {loading ? t('loading') : (error?.message || error || t('error'))}
         </Typography>
       </DialogContent>

@@ -3,26 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 81, 81, 81;
+  --background-end-rgb: 81, 81, 81;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
   font-family: Arial, Helvetica, sans-serif;
   overflow: hidden;
   position: fixed;
@@ -31,14 +18,13 @@ body {
   min-height: 100vh;
 }
 
-body:before {
+body::before {
   content: '';
-  background-image: url('/space6.jpg');
+  background-image: url('/clouds.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  // filter: brightness(0.7) contrast(1.2);
-  filter: brightness(0.5) contrast(1);
+  filter: brightness(1);
   position: fixed;
   top: 0;
   left: 0;
@@ -83,16 +69,32 @@ body:before {
 
 :root {
   --link-color: rgb(121, 179, 250);
-  --border-color: #1f2937;
+  --border-color: #d8d8d8;
   --brighter-color: #1f2937;
-  --hover-border-color: #3f618d;
+  --hover-border-color: #c0c0c0;
   --link-color-hover: rgb(160, 205, 255);
   --normal-color: #14202e;
 
-  --input-border-color: #536a88;
-  --hover-input-border-color: #527eb7;
+  --input-border-color: #d0d0d0;
+  --hover-input-border-color: #b8b8b8;
   --input-bg: #111827;
   --input-focus-bg: #1f2937;
+
+  --text-color: #000000;
+  --dimmer-text-color: #4a4a4a;
+  --dimmest-text-color: #888888;
+}
+
+.text-color {
+  color: var(--text-color);
+}
+
+.dimmer-text-color {
+  color: var(--dimmer-text-color);
+}
+
+.dimmest-text-color {
+  color: var(--dimmest-text-color);
 }
 
 .link-color {
@@ -107,7 +109,25 @@ body:before {
 }
 
 .normal-bg {
-  background-color: var(--normal-color);
+  background-image: url('/clouds.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* MUI Paper components should have clouds background */
+.MuiPaper-root {
+  background-image: url('/clouds.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  color: var(--text-color) !important;
+}
+
+/* Cards with semi-transparent white background */
+.card-bg {
+  background-color: rgba(255, 255, 255, 0.85) !important;
 }
 
 .input-bg {

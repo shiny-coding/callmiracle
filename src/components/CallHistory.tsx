@@ -65,7 +65,7 @@ export default function CallHistory() {
   return (
     <Paper className="bg-gray-800 flex flex-col h-full">
       <PageHeader
-        icon={<HistoryIcon />}
+        icon={<HistoryIcon className="dimmer-text-color" />}
         title={t('callHistory')}
       >
         <IconButton
@@ -113,7 +113,7 @@ export default function CallHistory() {
                     paddingBottom: '8px',
                   }}
                 >
-                  <ListItem className="flex flex-col items-start hover:bg-gray-700 rounded-lg">
+                  <ListItem className="flex flex-col items-start card-bg rounded-lg">
                     <div className="w-full">
                       <CallHistoryUserInfo user={entry.user} />
 

@@ -77,7 +77,7 @@ export default function GroupList() {
   return (
     <Paper className="h-full flex flex-col relative">
       <PageHeader
-        icon={<GroupIcon />}
+        icon={<GroupIcon className="dimmer-text-color" />}
         title={t('groups')}
       >
         <IconButton
@@ -112,7 +112,7 @@ export default function GroupList() {
                 {filteredGroups.map((group: Group) => (
                   <ListItem
                     key={group._id}
-                    className="flex flex-col items-start hover:bg-gray-700 rounded-lg !items-stretch"
+                    className="flex flex-col items-start card-bg rounded-lg !items-stretch"
                   >
                     <GroupCard group={group} />
                   </ListItem>

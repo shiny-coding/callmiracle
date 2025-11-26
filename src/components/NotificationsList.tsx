@@ -69,7 +69,7 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
   return (
     <Paper className="bg-gray-800 flex flex-col h-full">
       <PageHeader
-        icon={<NotificationsIcon />}
+        icon={<NotificationsIcon className="dimmer-text-color" />}
         title={t('notifications')}
       >
         <IconButton
