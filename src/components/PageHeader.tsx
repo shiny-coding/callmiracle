@@ -51,7 +51,7 @@ export default function PageHeader({ icon, title, children, className }: PageHea
 
   return (
     <div
-      className={`flex items-center px-4 py-3 ${className || ''}`}
+      className={`flex items-center px-4 py-2 ${className || ''}`}
       style={{ borderBottom: '1px solid var(--border-color)' }} // Consistent border
     >
       {icon && <div className="mr-2">{icon}</div>}

@@ -24,7 +24,7 @@ body::before {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: brightness(1);
+  filter: brightness(0.9);
   position: fixed;
   top: 0;
   left: 0;
@@ -84,7 +84,12 @@ body::before {
   --dimmer-text-color: #4a4a4a;
   --dimmest-text-color: #888888;
 
-  --card-bg: rgb(0 143 151 / 10%);
+  --card-bg: #84bbff24;
+
+  /* Icon colors - orange gradient */
+  --icon-color-primary: #f97316;      /* Orange */
+  --icon-color-secondary: #fbbf24;    /* Yellowish orange / Amber */
+  --icon-gradient: linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%);
 }
 
 .text-color {
@@ -103,6 +108,33 @@ body::before {
   color: var(--link-color);
   &:hover {
     color: var(--link-color-hover);
+  }
+}
+
+/* Icon color utilities */
+.icon-color-primary {
+  color: var(--icon-color-primary);
+}
+
+.icon-color-secondary {
+  color: var(--icon-color-secondary);
+}
+
+/* Gradient icon wrapper - for MUI/SVG icons */
+.icon-gradient {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg,
+  & > svg {
+    fill: url(#iconGradient) !important;
+    color: transparent !important;
+  }
+
+  svg path,
+  & > svg path {
+    fill: inherit !important;
   }
 }
 

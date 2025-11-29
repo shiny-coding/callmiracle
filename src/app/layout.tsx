@@ -5,6 +5,7 @@ import { SessionProvider } from '@/components/providers/SessionProvider'
 import ViewportHeightSetter from '@/components/ViewportHeightSetter'
 import ClientLoggerConfig from '@/components/ClientLoggerConfig'
 import RequestIdInjector from '@/components/RequestIdInjector'
+import IconGradientDefs from '@/components/IconGradientDefs'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +40,7 @@ export default async function RootLayout({ children, }: { children: React.ReactN
         <meta name="server-id" content={serverId} />
       </head>
       <body>
+        <IconGradientDefs />
         <ViewportHeightSetter />
         <SessionProvider>
           <ClientLoggerConfig />

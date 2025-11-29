@@ -198,10 +198,10 @@ export default function MediaControls({
             onClick={() => routerPush(router, '/notifications', {
               source: 'media_controls_notifications'
             })}
-            style={{ color: pathname === notificationsPath ? selectedColor : undefined }}
+            className={pathname === notificationsPath ? '' : 'icon-gradient'}
           >
             <NotificationBadge show={hasUnseenNotifications}>
-              <NotificationsIcon className={pathname === notificationsPath ? '' : 'text-white'} />
+              <NotificationsIcon />
             </NotificationBadge>
           </IconButton>
         )}
@@ -210,9 +210,10 @@ export default function MediaControls({
           <>
             <IconButton
               onClick={handleAudioToggle}
+              className={localAudioEnabled ? 'icon-gradient' : ''}
             >
               {localAudioEnabled ? (
-                <MicIcon className="text-white" />
+                <MicIcon />
               ) : (
                 <MicOffIcon className="text-red-400" />
               )}
@@ -220,9 +221,10 @@ export default function MediaControls({
 
             <IconButton
               onClick={handleVideoToggle}
+              className={localVideoEnabled ? 'icon-gradient' : ''}
             >
               {localVideoEnabled ? (
-                <VideocamIcon className="text-white" />
+                <VideocamIcon />
               ) : (
                 <VideocamOffIcon className="text-red-400" />
               )}
@@ -231,8 +233,9 @@ export default function MediaControls({
             <IconButton
               onClick={handleDeviceSettings}
               title="Device Settings"
+              className="icon-gradient"
             >
-              <SettingsIcon className="text-white" />
+              <SettingsIcon />
             </IconButton>
           </>
         )}
