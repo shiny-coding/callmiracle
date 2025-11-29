@@ -12,8 +12,8 @@ export default function IconGradientDefs() {
     <svg width="0" height="0" style={{ position: 'absolute' }}>
       <defs>
         <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="var(--icon-color-primary, #f97316)" />
-          <stop offset="100%" stopColor="var(--icon-color-secondary, #fbbf24)" />
+          <stop offset="0%" stopColor="var(--icon-color-primary, #8b5cf6)" />
+          <stop offset="100%" stopColor="var(--icon-color-secondary, #a78bfa)" />
         </linearGradient>
       </defs>
     </svg>

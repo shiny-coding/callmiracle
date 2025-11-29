@@ -52,13 +52,12 @@ export default function PageHeader({ icon, title, children, className }: PageHea
   return (
     <div
       className={`flex items-center px-4 py-2 ${className || ''}`}
-      style={{ borderBottom: '1px solid var(--border-color)' }} // Consistent border
     >
-      {icon && <div className="mr-2">{icon}</div>}
-      <Typography variant="h6" component="div" className="dimmer-text-color" sx={{ flexGrow: 1 }}>
+      {icon && <div className="mr-2 title-bar-icon">{icon}</div>}
+      <Typography variant="h6" component="div" className="dimmer-text-color page-title" sx={{ flexGrow: 1 }}>
         {title}
       </Typography>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && <div className="flex items-center gap-2 icon-gradient">{children}</div>}
     </div>
   )
 } 

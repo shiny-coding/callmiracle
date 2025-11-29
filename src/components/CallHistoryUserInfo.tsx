@@ -76,7 +76,7 @@ export default function CallHistoryUserInfo({ user }: CallHistoryUserInfoProps) 
 
         <IconButton
           onClick={handleMessage}
-          className="text-white hover:bg-gray-600"
+          className="icon-gradient"
           title={t('sendMessage')}
         >
           <MessageIcon />
@@ -84,9 +84,9 @@ export default function CallHistoryUserInfo({ user }: CallHistoryUserInfoProps) 
 
         <IconButton
           onClick={handleCall}
-          className="bg-green-600 hover:bg-green-700"
+          className="icon-gradient"
         >
-          <CallIcon className="text-white" />
+          <CallIcon />
         </IconButton>
       </div>
 

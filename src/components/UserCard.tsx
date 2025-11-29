@@ -206,7 +206,7 @@ export default function UserCard({
               <IconButton
                 onClick={handleFriendButtonClick}
                 disabled={updateLoading}
-                className={isFriend ? "text-green-500 hover:bg-green-900" : "text-blue-400 hover:bg-blue-900"}
+                className="icon-gradient"
                 title={isFriend ? t('friend') : t('addFriend')}
               >
                 {isFriend ? <HowToRegIcon /> : <PersonAddIcon />}
@@ -222,7 +222,7 @@ export default function UserCard({
                     targetUserName: user.name
                   })
                 }}
-                className="text-white hover:bg-gray-600"
+                className="icon-gradient"
                 title={t('sendMessage')}
               >
                 <MessageIcon />
@@ -234,9 +234,9 @@ export default function UserCard({
                   e.stopPropagation()
                   handleCall()
                 }}
-                className="bg-green-600 hover:bg-green-700"
+                className="icon-gradient"
               >
-                <CallIcon className="text-white" />
+                <CallIcon />
               </IconButton>
             )}
             {/* Spacer for current user's card to maintain consistent height */}

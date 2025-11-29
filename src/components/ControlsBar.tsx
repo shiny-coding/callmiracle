@@ -50,7 +50,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   const conversationsPath = `/${locale}/conversations`
   const callHistoryPath = `/${locale}/call-history`
 
-  const selectedColor = '#60a5fa'
+  // Using CSS classes: icon-gradient for normal, icon-gradient-active for selected (with golden shadow)
 
   // Get the highest priority meeting color for the status dot
   const meetings = myMeetingsWithPeers.map(m => m.meeting)
@@ -76,7 +76,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   // Top bar layout (non-compact)
   if (position === 'top' && !isCompact) {
     return (
-      <div className={`p-3 w-full flex items-center ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
+      <div className={`py-2 px-3 w-full flex items-center ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
         <div className="flex items-center gap-2">
           <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
         </div>
@@ -86,7 +86,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
         </div>
 
         <div className="flex gap-3 items-center overflow-hidden">
-          <div className="text-sm text-white/80 capitalize overflow-hidden text-ellipsis whitespace-nowrap">
+          <div className="text-sm capitalize overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: 'var(--icon-color-primary)' }}>
             {currentUser?.name}
           </div>
           <MediaControls showNotifications={false} showMediaButtons={false} showProfile={true} />
@@ -99,29 +99,29 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   if (position === 'bottom' && !isCompact) {
     return (
       <>
-        <div className={`mt-auto p-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
+        <div className={`mt-auto py-2 px-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
           {connectionStatus !== 'connected' && (
             <>
               <div style={{ width: '48px' }} /> {/* Spacer for balance */}
               <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
-                <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} className={pathname === calendarPath ? '' : 'icon-gradient'} style={{ color: pathname === calendarPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} className={pathname === calendarPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <CalendarIconWithDot />
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} className={pathname === listPath ? '' : 'icon-gradient'} style={{ color: pathname === listPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} className={pathname === listPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <ListIcon />
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} className={pathname === usersPath ? '' : 'icon-gradient'} style={{ color: pathname === usersPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} className={pathname === usersPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <PersonIcon />
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} className={pathname === groupsPath ? '' : 'icon-gradient'} style={{ color: pathname === groupsPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} className={pathname === groupsPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <GroupIcon />
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} className={pathname === conversationsPath ? '' : 'icon-gradient'} style={{ color: pathname === conversationsPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} className={pathname === conversationsPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <NotificationBadge show={hasUnreadConversations}>
                     <MessageIcon />
                   </NotificationBadge>
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} className={pathname === callHistoryPath ? '' : 'icon-gradient'} style={{ color: pathname === callHistoryPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} className={pathname === callHistoryPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <HistoryIcon />
                 </IconButton>
               </div>
@@ -145,7 +145,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   if (position === 'bottom' && isCompact) {
     return (
       <>
-        <div className={`mt-auto p-2 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
+        <div className={`mt-auto py-2 px-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
           {connectionStatus !== 'connected' && (
             <>
               {/* Notification button on left */}
@@ -153,24 +153,24 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
 
               {/* Navigation buttons in center */}
               <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
-                <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} className={pathname === calendarPath ? '' : 'icon-gradient'} style={{ color: pathname === calendarPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} className={pathname === calendarPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <CalendarIconWithDot />
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} className={pathname === listPath ? '' : 'icon-gradient'} style={{ color: pathname === listPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} className={pathname === listPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <ListIcon />
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} className={pathname === usersPath ? '' : 'icon-gradient'} style={{ color: pathname === usersPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} className={pathname === usersPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <PersonIcon />
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} className={pathname === groupsPath ? '' : 'icon-gradient'} style={{ color: pathname === groupsPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} className={pathname === groupsPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <GroupIcon />
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} className={pathname === conversationsPath ? '' : 'icon-gradient'} style={{ color: pathname === conversationsPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} className={pathname === conversationsPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <NotificationBadge show={hasUnreadConversations}>
                     <MessageIcon />
                   </NotificationBadge>
                 </IconButton>
-                <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} className={pathname === callHistoryPath ? '' : 'icon-gradient'} style={{ color: pathname === callHistoryPath ? selectedColor : undefined }}>
+                <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} className={pathname === callHistoryPath ? 'icon-gradient-active' : 'icon-gradient'}>
                   <HistoryIcon />
                 </IconButton>
 

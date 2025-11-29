@@ -24,7 +24,7 @@ body::before {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: brightness(0.9);
+  filter: brightness(1);
   position: fixed;
   top: 0;
   left: 0;
@@ -69,27 +69,44 @@ body::before {
 
 :root {
   --link-color: rgb(121, 179, 250);
-  --border-color: #d8d8d8;
+  //--border-color: #d8d8d8;
+  --border-color: #fff;
   --brighter-color: #1f2937;
   --hover-border-color: #c0c0c0;
   --link-color-hover: rgb(160, 205, 255);
   --normal-color: #14202e;
 
-  --input-border-color: #d0d0d0;
+  --input-border-color: #e5ecf5;
   --hover-input-border-color: #b8b8b8;
-  --input-bg: #111827;
+  --input-bg: #ffffff40;
   --input-focus-bg: #1f2937;
 
   --text-color: #000000;
   --dimmer-text-color: #4a4a4a;
   --dimmest-text-color: #888888;
 
-  --card-bg: #84bbff24;
+  --card-bg: #4aedff0f;
 
-  /* Icon colors - orange gradient */
-  --icon-color-primary: #f97316;      /* Orange */
-  --icon-color-secondary: #fbbf24;    /* Yellowish orange / Amber */
+  /* Icon colors - violet gradient */
+  // --icon-color-primary: #8b5cf6;      /* Violet */
+  //--icon-color-secondary: #a78bfa;    /* Lighter violet */
+  // --icon-color-secondary: #a78bfa;    /* Lighter violet */
   --icon-gradient: linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%);
+  --icon-color-primary: #f97316;
+  --icon-color-secondary: #fbbf24;
+
+  /* Title bar icon size */
+  --title-bar-icon-size: 20px;
+
+  /* Page title font size */
+  --page-title-font-size: 1.15rem;
+
+  /* Paper shadow */
+  --paper-shadow: 0px 0px 7px white;
+
+  /* Icon colors - orange gradient (commented out)
+  --icon-gradient: linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%);
+  */
 }
 
 .text-color {
@@ -138,6 +155,50 @@ body::before {
   }
 }
 
+/* Active icon with golden shadow */
+.icon-gradient-active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg,
+  & > svg {
+    fill: url(#iconGradient) !important;
+    color: transparent !important;
+    filter: drop-shadow(0 0 6px #fbbf24) drop-shadow(0 0 10px #f59e0b);
+  }
+
+  svg path,
+  & > svg path {
+    fill: inherit !important;
+  }
+}
+
+/* Title bar icons - smaller size with gradient */
+.title-bar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg,
+  & > svg {
+    fill: url(#iconGradient) !important;
+    color: transparent !important;
+    width: var(--title-bar-icon-size) !important;
+    height: var(--title-bar-icon-size) !important;
+  }
+
+  svg path,
+  & > svg path {
+    fill: inherit !important;
+  }
+}
+
+/* Page title styling */
+.page-title {
+  font-size: var(--page-title-font-size) !important;
+}
+
 .brighter-bg {
   background-color: var(--brighter-color);
 }
@@ -149,19 +210,51 @@ body::before {
   background-repeat: no-repeat !important;
 }
 
-/* MUI Paper components should have clouds background */
+/* MUI Paper components should be transparent */
 .MuiPaper-root {
+  background: transparent !important;
+  color: var(--text-color) !important;
+  box-shadow: var(--paper-shadow) !important;
+}
+
+/* MUI Dialog/Popup should have clouds background and shadow */
+.MuiDialog-paper,
+.MuiMenu-paper,
+.MuiPopover-paper {
   background-image: url('/clouds.jpg') !important;
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
-  background-color: transparent !important;
-  color: var(--text-color) !important;
+  box-shadow: var(--paper-shadow) !important;
 }
 
-/* Cards with semi-transparent white background */
+/* MUI Select padding */
+.MuiSelect-select {
+  padding: 11.5px 14px !important;
+}
+
+/* MUI Contained Primary buttons - orange */
+.MuiButton-containedPrimary {
+  background-color: var(--icon-color-primary) !important;
+
+  &:hover {
+    background-color: var(--icon-color-secondary) !important;
+  }
+}
+
+/* MUI FAB Primary - orange */
+.MuiFab-primary {
+  background-color: var(--icon-color-primary) !important;
+
+  &:hover {
+    background-color: var(--icon-color-secondary) !important;
+  }
+}
+
+/* Cards with semi-transparent background and shadow */
 .card-bg {
   background-color: var(--card-bg) !important;
+  box-shadow: var(--paper-shadow) !important;
 }
 
 .input-bg {
@@ -176,10 +269,10 @@ body::before {
   border: 1px solid var(--border-color);
 }
 
-/* Dark scrollbar styles */
+/* Scrollbar styles - white/gray colors */
 * {
   scrollbar-width: normal;
-  scrollbar-color: #4b5563 #1f2937;
+  scrollbar-color: #a0a0a0 #f0f0f0;
 }
 
 /* Chrome, Edge, and Safari */
@@ -189,18 +282,18 @@ body::before {
 }
 
 *::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: #f0f0f0;
   border-radius: 5px;
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: #4b5563;
+  background-color: #a0a0a0;
   border-radius: 5px;
-  border: 2px solid #1f2937;
+  border: 2px solid #f0f0f0;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #6b7280;
+  background-color: #888888;
 }
 
 /* Add this animation to your global CSS */
@@ -306,6 +399,7 @@ body::before {
 /* Speech bubble styles for comic-like message bubbles */
 .speech-bubble-left {
   border-bottom-left-radius: 0;
+  box-shadow: var(--paper-shadow);
 
   &::before {
     content: '';
@@ -323,6 +417,7 @@ body::before {
 
 .speech-bubble-right {
   border-bottom-right-radius: 0;
+  box-shadow: var(--paper-shadow);
 
   &::before {
     content: '';

@@ -441,10 +441,8 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
           <IconButton
             onClick={handleSendMessage}
             disabled={!messageText.trim() || isSending}
-            className={`${
-              messageText.trim() && !isSending
-                ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                : 'bg-gray-300 text-gray-500'
+            className={`icon-gradient ${
+              !messageText.trim() || isSending ? 'opacity-50' : ''
             }`}
           >
             {isSending ? <CircularProgress size={20} /> : <SendIcon />}

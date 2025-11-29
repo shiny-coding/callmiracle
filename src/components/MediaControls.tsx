@@ -198,7 +198,7 @@ export default function MediaControls({
             onClick={() => routerPush(router, '/notifications', {
               source: 'media_controls_notifications'
             })}
-            className={pathname === notificationsPath ? '' : 'icon-gradient'}
+            className={pathname === notificationsPath ? 'icon-gradient-active' : 'icon-gradient'}
           >
             <NotificationBadge show={hasUnseenNotifications}>
               <NotificationsIcon />
@@ -210,23 +210,23 @@ export default function MediaControls({
           <>
             <IconButton
               onClick={handleAudioToggle}
-              className={localAudioEnabled ? 'icon-gradient' : ''}
+              className="icon-gradient"
             >
               {localAudioEnabled ? (
                 <MicIcon />
               ) : (
-                <MicOffIcon className="text-red-400" />
+                <MicOffIcon />
               )}
             </IconButton>
 
             <IconButton
               onClick={handleVideoToggle}
-              className={localVideoEnabled ? 'icon-gradient' : ''}
+              className="icon-gradient"
             >
               {localVideoEnabled ? (
                 <VideocamIcon />
               ) : (
-                <VideocamOffIcon className="text-red-400" />
+                <VideocamOffIcon />
               )}
             </IconButton>
 
@@ -290,27 +290,27 @@ export default function MediaControls({
         }}
       >
         <MenuItem onClick={handleProfileSettings}>
-          <ListItemIcon>
-            <SettingsIcon sx={{ color: 'white' }} />
+          <ListItemIcon className="icon-gradient">
+            <SettingsIcon />
           </ListItemIcon>
           <ListItemText primary={t('title')} />
         </MenuItem>
         <MenuItem onClick={handleLanguageClick}>
-          <ListItemIcon>
-            <LanguageIcon sx={{ color: 'white' }} />
+          <ListItemIcon className="icon-gradient">
+            <LanguageIcon />
           </ListItemIcon>
           <ListItemText primary={tRoot('selectInterfaceLanguage')} />
         </MenuItem>
         <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
         <MenuItem onClick={handleRefresh}>
-          <ListItemIcon>
-            <RefreshIcon sx={{ color: 'white' }} />
+          <ListItemIcon className="icon-gradient">
+            <RefreshIcon />
           </ListItemIcon>
           <ListItemText primary={tRoot('Profile.refreshPage')} />
         </MenuItem>
         <MenuItem onClick={handleViewLogs}>
-          <ListItemIcon>
-            <BugReportIcon sx={{ color: 'white' }} />
+          <ListItemIcon className="icon-gradient">
+            <BugReportIcon />
           </ListItemIcon>
           <ListItemText primary={tRoot('Profile.viewClientLogs')} />
         </MenuItem>
@@ -319,8 +319,8 @@ export default function MediaControls({
           {tRoot('Profile.logTestingTools')}
         </ListSubheader>
         <MenuItem onClick={handleTriggerLogs}>
-          <ListItemIcon>
-            <InfoIcon sx={{ color: 'cyan' }} />
+          <ListItemIcon className="icon-gradient">
+            <InfoIcon />
           </ListItemIcon>
           <ListItemText
             primary={tRoot('Profile.triggerLogs')}
@@ -333,8 +333,8 @@ export default function MediaControls({
           {tRoot('Profile.errorTestingTools')}
         </ListSubheader>
         <MenuItem onClick={handleTriggerException}>
-          <ListItemIcon>
-            <ErrorIcon sx={{ color: 'orange' }} />
+          <ListItemIcon className="icon-gradient">
+            <ErrorIcon />
           </ListItemIcon>
           <ListItemText
             primary={tRoot('Profile.throwError')}
@@ -343,8 +343,8 @@ export default function MediaControls({
           />
         </MenuItem>
         <MenuItem onClick={handleTriggerPromiseRejection}>
-          <ListItemIcon>
-            <ErrorIcon sx={{ color: 'red' }} />
+          <ListItemIcon className="icon-gradient">
+            <ErrorIcon />
           </ListItemIcon>
           <ListItemText
             primary={tRoot('Profile.rejectPromise')}
@@ -353,8 +353,8 @@ export default function MediaControls({
           />
         </MenuItem>
         <MenuItem onClick={handleTriggerComplexException}>
-          <ListItemIcon>
-            <ErrorIcon sx={{ color: 'purple' }} />
+          <ListItemIcon className="icon-gradient">
+            <ErrorIcon />
           </ListItemIcon>
           <ListItemText
             primary={tRoot('Profile.complexError')}
@@ -364,8 +364,8 @@ export default function MediaControls({
         </MenuItem>
         <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
         <MenuItem onClick={handleLogout}>
-          <ListItemIcon>
-            <LogoutIcon sx={{ color: 'white' }} />
+          <ListItemIcon className="icon-gradient">
+            <LogoutIcon />
           </ListItemIcon>
           <ListItemText primary={t('logout')} />
         </MenuItem>

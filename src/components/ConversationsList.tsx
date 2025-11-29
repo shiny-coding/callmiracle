@@ -188,18 +188,19 @@ export default function ConversationsList() {
         icon={<MessageIcon className="dimmer-text-color" />}
         title={t('conversations')}
       >
-        <IconButton 
-          onClick={() => refetch()} 
+        <IconButton
+          onClick={() => refetch()}
           aria-label="refresh"
           title="Refresh"
           size="small"
+          className="icon-gradient"
         >
           <RefreshIcon />
         </IconButton>
       </PageHeader>
 
       {/* Horizontal scrollable conversations bar */}
-      <Box className="border-b border-[--border-color] bg-gray-800">
+      <Box className="border-b border-[--border-color]">
         <Box 
           className="flex overflow-x-auto"
           sx={{
