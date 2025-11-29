@@ -59,7 +59,7 @@ export default function CallHistoryUserInfo({ user }: CallHistoryUserInfoProps) 
 
         <div className="flex-grow min-w-0">
           <div className="flex items-center gap-2">
-            <Typography variant="body1" className="text-white truncate">
+            <Typography variant="body1" className="text-color truncate">
               {user.name}
             </Typography>
             {isFriend && (

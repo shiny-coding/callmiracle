@@ -210,7 +210,7 @@ export default function MediaControls({
           <>
             <IconButton
               onClick={handleAudioToggle}
-              className="icon-gradient"
+              className="icon-gradient-blue"
             >
               {localAudioEnabled ? (
                 <MicIcon />
@@ -221,7 +221,7 @@ export default function MediaControls({
 
             <IconButton
               onClick={handleVideoToggle}
-              className="icon-gradient"
+              className="icon-gradient-blue"
             >
               {localVideoEnabled ? (
                 <VideocamIcon />
@@ -233,7 +233,7 @@ export default function MediaControls({
             <IconButton
               onClick={handleDeviceSettings}
               title="Device Settings"
-              className="icon-gradient"
+              className="icon-gradient-blue"
             >
               <SettingsIcon />
             </IconButton>

@@ -305,7 +305,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
                 key={group._id}
                 value={changedFilterInterests}
                 onChange={setChangedFilterInterests}
-                label={t('filterByInterests')}
+                label={selectedGroups.length > 1 ? `${group.name} - ${t('filterByInterests')}` : t('filterByInterests')}
                 interestsPairs={group.interestsPairs || []}
               />
             ))}

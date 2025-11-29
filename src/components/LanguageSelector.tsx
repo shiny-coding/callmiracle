@@ -96,46 +96,44 @@ export default function LanguageSelector({ value, onChange, label, availableLang
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <FormControl sx={{ m: 1, width: 300 }}>
-          <Select
-            id="language-select"
-            multiple
-            value={value}
-            onChange={handleChange}
-            input={<OutlinedInput />}
-            renderValue={(selected) => (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {selected.map((langCode) => (
-                  <Chip
-                    key={langCode}
-                    label={LANGUAGES.find(lang => lang.code === langCode)?.name}
-                    onDelete={() => { onChange(selected.filter(code => code !== langCode)); }}
-                    onMouseDown={(event) => { event.stopPropagation(); }}
-                  />
-                ))}
-              </Box>
-            )}
-            MenuProps={{
-              ...MenuProps,
-              PaperProps: {
-                ...MenuProps.PaperProps,
-                style: {
-                  ...MenuProps.PaperProps.style,
-                  marginTop: 8
-                }
+      <FormControl fullWidth sx={{ maxWidth: 400 }}>
+        <Select
+          id="language-select"
+          multiple
+          value={value}
+          onChange={handleChange}
+          input={<OutlinedInput />}
+          renderValue={(selected) => (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {selected.map((langCode) => (
+                <Chip
+                  key={langCode}
+                  label={LANGUAGES.find(lang => lang.code === langCode)?.name}
+                  onDelete={() => { onChange(selected.filter(code => code !== langCode)); }}
+                  onMouseDown={(event) => { event.stopPropagation(); }}
+                />
+              ))}
+            </Box>
+          )}
+          MenuProps={{
+            ...MenuProps,
+            PaperProps: {
+              ...MenuProps.PaperProps,
+              style: {
+                ...MenuProps.PaperProps.style,
+                marginTop: 8
               }
-            }}
-          >
-            {filteredLanguages.map((lang) => (
-              <MenuItem key={lang.code} value={lang.code}>
-                <Checkbox checked={value.indexOf(lang.code) > -1} />
-                <ListItemText primary={lang.name} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </div>
+            }
+          }}
+        >
+          {filteredLanguages.map((lang) => (
+            <MenuItem key={lang.code} value={lang.code}>
+              <Checkbox checked={value.indexOf(lang.code) > -1} />
+              <ListItemText primary={lang.name} />
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     </FormGroup>
   );
 } 

@@ -153,7 +153,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 unoptimized
               />
             ) : (
-              <div className="flex items-center justify-center w-full h-full bg-blue-600">
+              <div className="flex items-center justify-center w-full h-full" style={{ backgroundColor: 'var(--icon-color-primary)' }}>
                 <GroupIcon className="text-white" />
               </div>
             )}
@@ -164,7 +164,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
               <Typography variant="h6" className="text-color font-medium">
                 {group.name}
               </Typography>
-              {!group.open && <LockIcon className="dimmer-text-color" fontSize="small" />}
+              {!group.open && <span className="icon-gradient"><LockIcon fontSize="small" /></span>}
             </div>
 
             <Typography variant="body2" className="dimmer-text-color">
@@ -182,8 +182,9 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 }}
                 aria-label={t('editGroup')}
                 title={t('editGroup')}
+                className="icon-gradient"
               >
-                <EditIcon className="dimmer-text-color" />
+                <EditIcon />
               </IconButton>
             )}
           </div>
@@ -210,11 +211,11 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
 
             {/* Badge */}
             {isOwner ? (
-              <Typography variant="caption" className="text-green-400 bg-green-900 px-2 py-1 rounded">
+              <Typography variant="caption" className="text-white px-2 py-1 rounded" style={{ backgroundColor: 'var(--icon-color-primary)' }}>
                 {t('owner')}
               </Typography>
             ) : isAdmin && (
-              <Typography variant="caption" className="text-blue-400 bg-blue-900 px-2 py-1 rounded">
+              <Typography variant="caption" className="text-white px-2 py-1 rounded" style={{ backgroundColor: 'var(--icon-color-primary)' }}>
                 {t('admin')}
               </Typography>
             )}
@@ -228,7 +229,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
               variant="outlined"
               color="primary"
               size="small"
-              startIcon={<PeopleIcon />}
+              startIcon={<span className="icon-gradient"><PeopleIcon /></span>}
               onClick={(e) => {
                 e.stopPropagation()
                 handleViewParticipants()
@@ -242,7 +243,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 variant="outlined"
                 color="error"
                 size="small"
-                startIcon={<ExitToAppIcon />}
+                startIcon={<span className="icon-gradient"><ExitToAppIcon /></span>}
                 onClick={(e) => {
                   e.stopPropagation()
                   handleJoinLeave('leave')
@@ -257,7 +258,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 variant="contained"
                 color="primary"
                 size="small"
-                startIcon={<AddIcon />}
+                startIcon={<span className="icon-gradient"><AddIcon /></span>}
                 onClick={(e) => {
                   e.stopPropagation()
                   handleJoinLeave('join')

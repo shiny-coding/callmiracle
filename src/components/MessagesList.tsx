@@ -384,10 +384,10 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
             >
               <div
                 className={`
-                  max-w-[70%] p-3 relative brighter-bg
+                  max-w-[70%] p-3 relative card-bg
                   ${isOwnMessage ? 'speech-bubble-right' : 'speech-bubble-left'}
                   ${isNewMessage ? 'message-flash' : ''}
-                  rounded-xl shadow-lg
+                  rounded-xl
                 `}
               >
                 <Typography variant="body2" component="div" className="whitespace-pre-wrap break-words">
@@ -395,9 +395,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
                 </Typography>
                 <Typography
                   variant="caption"
-                  className={`block mt-1 text-xs select-none ${
-                    isOwnMessage ? 'text-blue-100' : 'text-gray-500'
-                  }`}
+                  className="block mt-1 text-xs select-none dimmest-text-color"
                 >
                   {formatMessageTime(message.createdAt)}
                   {message.edited && ` • ${t('edited')}`}

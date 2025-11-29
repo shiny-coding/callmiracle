@@ -76,9 +76,9 @@ body::before {
   --link-color-hover: rgb(160, 205, 255);
   --normal-color: #14202e;
 
-  --input-border-color: #e5ecf5;
+  --input-border-color: #1565c0;
   --hover-input-border-color: #b8b8b8;
-  --input-bg: #ffffff40;
+  --input-bg: #4aedff0f;
   --input-focus-bg: #1f2937;
 
   --text-color: #000000;
@@ -87,13 +87,18 @@ body::before {
 
   --card-bg: #4aedff0f;
 
-  /* Icon colors - violet gradient */
-  // --icon-color-primary: #8b5cf6;      /* Violet */
-  //--icon-color-secondary: #a78bfa;    /* Lighter violet */
-  // --icon-color-secondary: #a78bfa;    /* Lighter violet */
-  --icon-gradient: linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%);
+  /* Icon colors - orange gradient (active) */
   --icon-color-primary: #f97316;
   --icon-color-secondary: #fbbf24;
+  --icon-gradient: linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%);
+
+  /* Icon colors - bluish gradient (for mic/camera/devices) */
+  --icon-color-blue-primary: #1976d2;
+  --icon-color-blue-secondary: #42a5f5;
+
+  /* Icon colors - violet gradient (commented) */
+  // --icon-color-primary: #8b5cf6;      /* Violet */
+  // --icon-color-secondary: #a78bfa;    /* Lighter violet */
 
   /* Title bar icon size */
   --title-bar-icon-size: 20px;
@@ -155,7 +160,25 @@ body::before {
   }
 }
 
-/* Active icon with golden shadow */
+/* Bluish gradient icon wrapper - for mic/camera/devices icons */
+.icon-gradient-blue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg,
+  & > svg {
+    fill: url(#iconGradientBlue) !important;
+    color: transparent !important;
+  }
+
+  svg path,
+  & > svg path {
+    fill: inherit !important;
+  }
+}
+
+/* Active icon - white with dark orange shadow */
 .icon-gradient-active {
   display: inline-flex;
   align-items: center;
@@ -163,9 +186,9 @@ body::before {
 
   svg,
   & > svg {
-    fill: url(#iconGradient) !important;
-    color: transparent !important;
-    filter: drop-shadow(0 0 6px #fbbf24) drop-shadow(0 0 10px #f59e0b);
+    fill: #ffffff !important;
+    color: #ffffff !important;
+    filter: drop-shadow(0 0 6px #ea580c) drop-shadow(0 0 10px #c2410c);
   }
 
   svg path,
@@ -210,9 +233,9 @@ body::before {
   background-repeat: no-repeat !important;
 }
 
-/* MUI Paper components should be transparent */
+/* MUI Paper components background */
 .MuiPaper-root {
-  background: transparent !important;
+  background: #4288ad05 !important;
   color: var(--text-color) !important;
   box-shadow: var(--paper-shadow) !important;
 }
@@ -228,9 +251,16 @@ body::before {
   box-shadow: var(--paper-shadow) !important;
 }
 
-/* MUI Select padding */
+/* MUI Menu/Select dropdown should appear above top/bottom bars */
+.MuiModal-root,
+.MuiPopover-root {
+  z-index: 1400 !important;
+}
+
+/* MUI Select padding and alignment */
 .MuiSelect-select {
   padding: 11.5px 14px !important;
+  text-align: left !important;
 }
 
 /* MUI Contained Primary buttons - orange */
@@ -239,6 +269,10 @@ body::before {
 
   &:hover {
     background-color: var(--icon-color-secondary) !important;
+  }
+
+  &.Mui-disabled {
+    background-color: #f973163d !important;
   }
 }
 
@@ -257,8 +291,122 @@ body::before {
   box-shadow: var(--paper-shadow) !important;
 }
 
+/* MUI Dividers - white */
+.MuiDivider-root {
+  border-color: white !important;
+}
+
+/* MUI ListSubheader - black text */
+.MuiListSubheader-root {
+  color: var(--text-color) !important;
+}
+
+/* MUI MenuItem hover - like card-bg but more opaque */
+.MuiMenuItem-root:hover {
+  background-color: #4aedff20 !important;
+}
+
 .input-bg {
   background-color: var(--input-bg);
+}
+
+/* MUI Input/TextField background */
+.MuiInputBase-root,
+.MuiOutlinedInput-root {
+  background-color: var(--input-bg) !important;
+}
+
+/* MUI OutlinedInput border - same as outlined primary button */
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--input-border-color) !important;
+}
+
+/* MUI Select dropdown list border and background */
+.MuiMenu-paper {
+  border: 1px solid var(--input-border-color) !important;
+  background-color: var(--card-bg) !important;
+  background-image: url('/clouds.jpg') !important;
+  background-blend-mode: overlay !important;
+}
+
+/* MUI Outlined buttons background */
+.MuiButton-outlined {
+  background-color: var(--card-bg) !important;
+
+  &:hover {
+    background-color: #4aedff20 !important;
+  }
+}
+
+/* Close icon button should be gray */
+.MuiIconButton-root [data-testid="CloseIcon"] {
+  fill: #6b7280 !important;
+  color: #6b7280 !important;
+}
+
+/* MUI Alert/Toast - white background */
+.MuiAlert-root {
+  background-color: #ffffff !important;
+}
+
+/* MUI Chip - consistent gray background */
+.MuiChip-filledDefault {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+}
+
+/* MUI Badge - orange background */
+.MuiBadge-colorSuccess,
+.MuiBadge-colorPrimary {
+  background-color: var(--icon-color-primary) !important;
+}
+
+/* MUI Checkbox - lighter blue */
+.MuiCheckbox-root {
+  color: #42a5f5 !important;
+
+  &.Mui-checked {
+    color: #42a5f5 !important;
+  }
+
+  svg {
+    fill: #42a5f5 !important;
+    color: #42a5f5 !important;
+  }
+}
+
+.MuiSvgIcon-root[data-testid="CheckBoxIcon"],
+.MuiSvgIcon-root[data-testid="CheckBoxOutlineBlankIcon"] {
+  fill: #42a5f5 !important;
+  color: #42a5f5 !important;
+}
+
+/* MUI Slider - lighter blue */
+.MuiSlider-root {
+  color: #42a5f5 !important;
+}
+
+.MuiSlider-track,
+.MuiSlider-rail {
+  background-color: #42a5f5 !important;
+}
+
+.MuiSlider-thumb {
+  background-color: #42a5f5 !important;
+}
+
+/* MUI Radio - lighter blue */
+.MuiRadio-root {
+  color: #42a5f5 !important;
+
+  &.Mui-checked {
+    color: #42a5f5 !important;
+  }
+
+  svg {
+    fill: #42a5f5 !important;
+    color: #42a5f5 !important;
+  }
 }
 
 .panel-border {
@@ -408,7 +556,7 @@ body::before {
     height: 0;
     border-style: solid;
     border-width: 0 0 7px 7px;
-    border-color: #0000 #0000 var(--brighter-color) #0000;
+    border-color: #0000 #0000 var(--card-bg) #0000;
     z-index: 1;
     left: -7px;
     bottom: 0px;
@@ -426,7 +574,7 @@ body::before {
     height: 0;
     border-style: solid;
     border-width: 0 7px 7px 0;
-    border-color: #0000 #0000 var(--brighter-color) #0000;
+    border-color: #0000 #0000 var(--card-bg) #0000;
     z-index: 1;
     right: -7px;
     bottom: 0px;

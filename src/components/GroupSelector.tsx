@@ -57,46 +57,44 @@ export default function GroupSelector({ value, onChange, label, availableGroups 
           {label}
         </Typography>
       )}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <FormControl sx={{ m: 1, width: 300 }}>
-          <Select
-            id="group-select"
-            multiple
-            value={value}
-            onChange={handleChange}
-            input={<OutlinedInput />}
-            renderValue={(selected) => (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {selected.map((groupId) => (
-                  <Chip 
-                    key={groupId} 
-                    label={availableGroups.find(group => group._id === groupId)?.name || groupId}
-                    onDelete={() => { onChange(selected.filter(id => id !== groupId)); }}
-                    onMouseDown={(event) => { event.stopPropagation(); }}
-                  />
-                ))}
-              </Box>
-            )}
-            MenuProps={{
-              ...MenuProps,
-              PaperProps: {
-                ...MenuProps.PaperProps,
-                style: {
-                  ...MenuProps.PaperProps.style,
-                  marginTop: 8
-                }
+      <FormControl fullWidth sx={{ maxWidth: 400 }}>
+        <Select
+          id="group-select"
+          multiple
+          value={value}
+          onChange={handleChange}
+          input={<OutlinedInput />}
+          renderValue={(selected) => (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {selected.map((groupId) => (
+                <Chip
+                  key={groupId}
+                  label={availableGroups.find(group => group._id === groupId)?.name || groupId}
+                  onDelete={() => { onChange(selected.filter(id => id !== groupId)); }}
+                  onMouseDown={(event) => { event.stopPropagation(); }}
+                />
+              ))}
+            </Box>
+          )}
+          MenuProps={{
+            ...MenuProps,
+            PaperProps: {
+              ...MenuProps.PaperProps,
+              style: {
+                ...MenuProps.PaperProps.style,
+                marginTop: 8
               }
-            }}
-          >
-            {availableGroups.map((group) => (
-              <MenuItem key={group._id} value={group._id}>
-                <Checkbox checked={value.indexOf(group._id) > -1} />
-                <ListItemText primary={group.name} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </div>
+            }
+          }}
+        >
+          {availableGroups.map((group) => (
+            <MenuItem key={group._id} value={group._id}>
+              <Checkbox checked={value.indexOf(group._id) > -1} />
+              <ListItemText primary={group.name} />
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     </FormGroup>
   );
 } 

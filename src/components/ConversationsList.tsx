@@ -234,8 +234,9 @@ export default function ConversationsList() {
                 <Box
                   key={conversation._id}
                   className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors min-w-[80px] ${
-                    isSelected ? 'bg-blue-600' : 'hover:bg-gray-700'
+                    isSelected ? '' : 'hover:bg-gray-700'
                   }`}
+                  style={isSelected ? { border: '1px solid var(--icon-color-primary)', backgroundColor: 'transparent' } : undefined}
                   onClick={() => handleConversationSelect(conversation._id)}
                 >
                   <NotificationBadge show={hasUnread && !isSelected}>
@@ -251,10 +252,10 @@ export default function ConversationsList() {
                       {otherUser?.name?.charAt(0)?.toUpperCase() || '?'}
                     </Avatar>
                   </NotificationBadge>
-                  <Typography 
-                    variant="caption" 
-                    className={`text-center text-xs max-w-[70px] overflow-hidden text-ellipsis whitespace-nowrap ${
-                      isSelected ? 'text-white font-medium' : 'text-gray-300'
+                  <Typography
+                    variant="caption"
+                    className={`text-center text-xs max-w-[70px] overflow-hidden text-ellipsis whitespace-nowrap text-color ${
+                      isSelected ? 'font-medium' : ''
                     }`}
                     title={otherUser?.name || 'Unknown'}
                   >

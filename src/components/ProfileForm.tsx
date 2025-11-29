@@ -208,7 +208,7 @@ export default function ProfileForm() {
   }
 
   return (
-    <div className="flex flex-col h-full normal-bg relative">
+    <div className="flex flex-col h-full relative" style={{ boxShadow: 'var(--paper-shadow)' }}>
       {/* Loader Overlay */}
       {uploading && (
         <div
@@ -267,15 +267,15 @@ export default function ProfileForm() {
           </div>
 
           <div className="flex gap-2">
-            <IconButton 
+            <IconButton
               onClick={(e) => {
                 e.stopPropagation()
                 setShowCameraPreview(true)
               }}
-              className="bg-black/50 hover:bg-black/70"
+              className="icon-gradient"
               disabled={!localStream}
             >
-              <PhotoCameraIcon className="text-white" />
+              <PhotoCameraIcon />
             </IconButton>
             {(selectedFile || (existingImageSrc && !imageDeleted)) && (
               <IconButton
@@ -283,9 +283,9 @@ export default function ProfileForm() {
                   e.stopPropagation()
                   handleDeletePhoto()
                 }}
-                className="bg-red-500/50 hover:bg-red-500/70"
+                className="icon-gradient"
               >
-                <DeleteIcon className="text-white" />
+                <DeleteIcon />
               </IconButton>
             )}
           </div>
@@ -394,7 +394,7 @@ export default function ProfileForm() {
       </div>
 
       {/* Bottom Controls Bar */}
-      <div className="sticky bottom-0 left-0 w-full normal-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10">
+      <div className="sticky bottom-0 left-0 w-full border-t panel-border px-4 py-3 flex justify-end gap-2 z-10">
         <div className="flex flex-col justify-start gap-2 mr-auto">
           {tempLanguages.length === 0 && (
             <Typography color="warning" className="text-sm">

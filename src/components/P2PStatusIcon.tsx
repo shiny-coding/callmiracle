@@ -18,8 +18,8 @@ export default function P2PStatusIcon({ status, onClick }: P2PStatusIconProps) {
   const getIcon = () => {
     switch (status) {
       case 'online':
-        // Violet to match icon theme
-        return <WifiIcon style={{ color: '#8b5cf6' }} />
+        // Orange to match icon theme
+        return <WifiIcon style={{ color: 'var(--icon-color-primary)' }} />
       case 'offline':
         return <WifiOffIcon style={{ color: '#ef4444' }} />
       case 'checking':

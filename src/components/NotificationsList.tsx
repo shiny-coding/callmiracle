@@ -92,13 +92,13 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
             notifications.map((notification: any) => (
               <ListItem
                 key={notification._id}
-                className={`flex flex-col p-4 ${notification.seen ? 'bg-gray-700' : 'bg-gray-600'} rounded-lg mb-2`}
+                className="flex flex-col p-4 card-bg rounded-lg mb-2"
               >
                 <div className="w-full">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center">
                       {!notification.seen && (
-                        <Badge color="primary" variant="dot" className="mr-2" />
+                        <Badge color="primary" variant="dot" className="mr-4" />
                       )}
                       <Typography variant="subtitle1">
                         {getNotificationMessage(notification, t)}
@@ -134,13 +134,13 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
       </div>
 
       {notifications.length > 0 && (
-        <Box className="px-4 py-3" style={{ borderTop: '1px solid var(--border-color)' }}>
+        <Box className="px-4 py-3 flex justify-center" style={{ borderTop: '1px solid var(--border-color)' }}>
           <Button
-            fullWidth
             variant="outlined"
             startIcon={<DoneAllIcon />}
             onClick={handleMarkAllAsSeen}
             disabled={markingAllSeen || !hasUnseenNotifications}
+            sx={{ maxWidth: 420, px: 4 }}
           >
             {t('markAllAsSeen')}
           </Button>
