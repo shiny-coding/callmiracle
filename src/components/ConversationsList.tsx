@@ -206,7 +206,7 @@ export default function ConversationsList() {
           sx={{
             'padding': 'var(--10sp)',
             'gap': 'var(--10sp)',
-            'backgroundColor': 'var(--input-bg)',
+            'backgroundColor': 'transparent',
             '&::-webkit-scrollbar': {
               height: '6px',
             },

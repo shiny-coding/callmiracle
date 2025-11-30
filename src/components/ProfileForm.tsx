@@ -3,6 +3,7 @@
 import { Dialog, DialogTitle, DialogContent, TextField, IconButton, DialogActions, Button, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Select, MenuItem, Paper } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DeleteIcon from '@mui/icons-material/Delete'
+import PersonIcon from '@mui/icons-material/Person'
 import { useTranslations } from 'next-intl'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
@@ -219,12 +220,13 @@ export default function ProfileForm() {
         </div>
       )}
       {/* Header */}
-      <PageHeader title={t('title')}>
-        <IconButton 
-          onClick={handleCancel} 
+      <PageHeader icon={<PersonIcon />} title={t('title')}>
+        <IconButton
+          onClick={handleCancel}
           size="small"
           aria-label={t('close')}
           title={t('close')}
+          className="icon-gradient"
         >
           <CloseIcon />
         </IconButton>
@@ -235,12 +237,8 @@ export default function ProfileForm() {
         <div className="relative flex justify-center items-center">
           <div
             {...getRootProps()}
-            className={`
-              w-full aspect-square max-w-[240px] mx-auto rounded-full border-2 border-dashed
-              ${isDragActive ? 'border-blue-500' : 'border-gray-300'}
-              flex items-center justify-center cursor-pointer overflow-hidden
-              hover:border-blue-500 transition-colors
-            `}
+            className="w-full aspect-square max-w-[240px] mx-auto rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden transition-colors"
+            style={{ borderColor: 'var(--icon-color-primary)' }}
           >
             <input {...getInputProps()} />
             {currentUserId ? (

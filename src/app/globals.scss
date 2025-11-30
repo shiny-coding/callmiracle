@@ -414,10 +414,10 @@ body::before {
   border: 1px solid var(--border-color);
 }
 
-/* Scrollbar styles - white/gray colors */
+/* Scrollbar styles - paper background */
 * {
   scrollbar-width: normal;
-  scrollbar-color: #a0a0a0 #f0f0f0;
+  scrollbar-color: #a0a0a0 #e2f3ff;
 }
 
 /* Chrome, Edge, and Safari */
@@ -427,14 +427,14 @@ body::before {
 }
 
 *::-webkit-scrollbar-track {
-  background: #f0f0f0;
+  background: #e2f3ff;
   border-radius: 5px;
 }
 
 *::-webkit-scrollbar-thumb {
   background-color: #a0a0a0;
   border-radius: 5px;
-  border: 2px solid #f0f0f0;
+  border: 2px solid #e2f3ff;
 }
 
 *::-webkit-scrollbar-thumb:hover {
