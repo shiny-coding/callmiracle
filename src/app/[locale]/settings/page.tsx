@@ -144,7 +144,7 @@ export default function SettingsPage() {
       >
         {/* Video preview section */}
         <div className={`${isLandscape ? 'w-1/2' : 'h-1/2'} flex items-center justify-center`}>
-          <div className="relative w-full aspect-video bg-gray-800 rounded-lg overflow-hidden">
+          <div className="relative w-full aspect-video  rounded-lg overflow-hidden">
             <video
               ref={videoRef}
               autoPlay

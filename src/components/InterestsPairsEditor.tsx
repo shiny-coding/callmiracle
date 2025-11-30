@@ -78,7 +78,7 @@ export default function InterestsPairsEditor({ value, onChange, onReorder, label
       </Typography>
 
       {value.map((pair, pairIndex) => (
-        <div key={pairIndex} className="flex items-center gap-2 p-3 bg-gray-800 rounded-lg flex-wrap">
+        <div key={pairIndex} className="flex items-center gap-2 p-3  rounded-lg flex-wrap">
           {/* Move up/down buttons */}
           <div className="flex flex-col gap-1">
             <IconButton

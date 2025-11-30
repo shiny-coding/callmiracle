@@ -111,7 +111,7 @@ export default function LogViewerDialog({ open, onClose }: LogViewerDialogProps)
             <div className="text-gray-500 text-center py-8">No logs yet</div>
           ) : (
             logs.map((log, index) => (
-              <div key={index} className="mb-1 hover:bg-gray-800 px-2 py-1 rounded">
+              <div key={index} className="mb-1 hover: px-2 py-1 rounded">
                 <span className="text-gray-500">{log.timestamp}</span>
                 {' '}
                 <span className={getLevelColor(log.level)}>[{log.level.toUpperCase()}]</span>

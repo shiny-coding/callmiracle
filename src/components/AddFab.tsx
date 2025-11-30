@@ -12,7 +12,6 @@ interface AddFabProps {
 export default function AddFab({ onClick, ariaLabel, title }: AddFabProps) {
   return (
     <Fab
-      color="primary"
       aria-label={ariaLabel}
       title={title}
       onClick={onClick}
@@ -20,6 +19,16 @@ export default function AddFab({ onClick, ariaLabel, title }: AddFabProps) {
         position: 'absolute',
         bottom: 16,
         right: 16,
+        backgroundImage: 'url(/clouds.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        border: '1px solid var(--icon-color-primary)',
+        '&:hover': {
+          opacity: 0.9,
+        },
+        '& .MuiSvgIcon-root': {
+          color: 'var(--icon-color-primary)',
+        },
       }}
     >
       <AddIcon />

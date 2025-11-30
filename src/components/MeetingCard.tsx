@@ -1,6 +1,7 @@
 'use client'
 import { Typography, Chip, Button, IconButton } from '@mui/material'
 import { useTranslations } from 'next-intl'
+import { useLocale } from 'next-intl'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import TimerIcon from '@mui/icons-material/Timer'
 import VideocamIcon from '@mui/icons-material/Videocam'
@@ -37,6 +38,7 @@ interface MeetingCardProps {
 
 export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProps) {
   const t = useTranslations()
+  const locale = useLocale()
   const now = new Date()
   const { doCall } = useWebRTCContext()
   const [, setLastUpdate] = useState(0)
@@ -51,12 +53,11 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   // Check if meeting has passed using the utility function
   const meetingPassed = isMeetingPassed(meeting);
-  const textColor = meetingPassed ? "dimmest-text-color" : "dimmer-text-color";
+  const meetingColor = getMeetingColorClass(meeting);
+  const meetingColorHex = class2Hex(meetingColor);
 
   const { formatTimeSlot, formatDateForDisplay, getFirstSlotDay, groupTimeSlotsByDay, MeetingLanguagesChips, GenderChip,
-          getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, textColor, t)
-
-  const meetingColor = getMeetingColorClass(meeting);
+          getPartnerIcon } = useMeetingCardUtils(meetingWithPeer as any, meetingColor, t, locale)
 
   // Get the group name
   const meetingGroup = groups?.find(group => group._id === meeting.groupId)
@@ -64,25 +65,13 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
   // Reusable chip styling for passed vs active meetings
   const getChipSx = (isActive = isActiveNow) => ({
     '&.MuiChip-filled': {
-      backgroundColor: isActive
-        ? 'transparent'
-        : meetingPassed
-          ? 'transparent'
-          : 'rgba(128, 128, 128, 0.3)',
+      backgroundColor: 'transparent',
     },
-    backgroundColor: isActive
-      ? 'transparent'
-      : meetingPassed
-        ? 'transparent'
-        : 'rgba(128, 128, 128, 0.3)',
-    color: meetingPassed
-      ? class2Hex(PASSED_MEETING_COLOR)
-      : 'inherit',
+    backgroundColor: 'transparent',
+    color: meetingColorHex,
     border: isActive
       ? `1px solid ${class2Hex(ACTIVE_MEETING_COLOR)}`
-      : meetingPassed
-        ? `1px solid ${class2Hex(PASSED_MEETING_COLOR)}`
-        : `1px solid ${class2Hex(meetingColor)}`,
+      : `1px solid ${meetingColorHex}`,
   });
 
   const timeSlotsByDay = groupTimeSlotsByDay()
@@ -216,7 +205,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
       {(meeting.status === MeetingStatus.Seeking || meeting.status === MeetingStatus.Found) && !meetingPassed && (
         <div className="absolute top-0 left-0">
           <IconButton
-            className="text-red-500 hover:bg-red-900 p-1"
+            className="icon-gradient p-1"
             onClick={(e) => {
               e.stopPropagation();
               handleCancelMeeting();
@@ -230,7 +219,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
       <div className="absolute top-0 right-0">
         {canEditMeeting(meeting) && (
           <IconButton
-            className="text-blue-400 hover:bg-gray-600 p-1"
+            className="icon-gradient p-1"
             onClick={(e) => {
             e.stopPropagation();
             onEdit?.(e);
@@ -313,7 +302,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         </div>
       )}
       <div className="flex items-center justify-center gap-2">
-        <AccessTimeIcon className={meetingColor} fontSize="small" />
+        <AccessTimeIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
         <div className="flex flex-wrap items-center gap-2">
           {meeting.startTime && !meetingPassed &&
             <>
@@ -343,7 +332,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
                     return (
                       <React.Fragment key={day}>
-                        <Typography variant="body2" className={`${textColor} whitespace-nowrap flex items-center h-6`}>
+                        <Typography variant="body2" className="whitespace-nowrap flex items-center h-6" sx={{ color: meetingColorHex }}>
                           {day}
                         </Typography>
                         <div className="grid grid-cols-[repeat(auto-fill,110px)] gap-1">
@@ -382,13 +371,13 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         </div>        
     </div>
       <div className="flex items-center justify-center gap-2">
-        <GroupIcon className={meetingColor} fontSize="small" />
-        <Typography variant="body2" className={textColor}>
+        <GroupIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
+        <Typography variant="body2" sx={{ color: meetingColorHex }}>
           {meetingGroup?.name || t('group')}
         </Typography>
       </div>
       <div className="flex items-center justify-center gap-2">
-        <MoodIcon className={meetingColor} fontSize="small" />
+        <MoodIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
         <div className="flex flex-wrap gap-2">
         {interestsToShow && interestsToShow.map(interest => (
           <Chip
@@ -406,14 +395,14 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         <>
           {!(meeting.allowedMales && meeting.allowedFemales) && (
             <div className="flex items-center justify-center gap-2">
-              <WcIcon className={meetingColor} fontSize="small" />
+              <WcIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
               <GenderChip />
             </div>
           )}
           {!(meeting.allowedMinAge === 10 && meeting.allowedMaxAge === 100) && (
             <div className="flex items-center justify-center gap-2">
-              <CakeIcon className={meetingColor} fontSize="small" />
-              <Typography variant="body2" className={textColor}>
+              <CakeIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
+              <Typography variant="body2" sx={{ color: meetingColorHex }}>
                 {meeting.allowedMinAge}-{meeting.allowedMaxAge}
               </Typography>
             </div>
@@ -423,8 +412,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
       {meeting.totalDurationS && (
         <div className="flex items-center justify-center gap-2">
-          <TimerIcon className={meetingColor} />
-          <Typography variant="body2" className={textColor}>
+          <TimerIcon sx={{ color: class2Hex(meetingColor) }} />
+          <Typography variant="body2" sx={{ color: meetingColorHex }}>
             {t('totalDuration')}: {formatDuration(meeting.totalDurationS)}
           </Typography>
         </div>

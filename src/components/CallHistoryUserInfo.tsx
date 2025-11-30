@@ -16,9 +16,11 @@ import { routerPush } from '@/utils/routerHelper'
 
 interface CallHistoryUserInfoProps {
   user: User
+  hideActions?: boolean
+  actionsOnly?: boolean
 }
 
-export default function CallHistoryUserInfo({ user }: CallHistoryUserInfoProps) {
+export default function CallHistoryUserInfo({ user, hideActions, actionsOnly }: CallHistoryUserInfoProps) {
   const t = useTranslations()
   const router = useRouter()
   const locale = useLocale()
@@ -43,6 +45,29 @@ export default function CallHistoryUserInfo({ user }: CallHistoryUserInfoProps) 
       targetUserId: user._id,
       targetUserName: user.name
     })
+  }
+
+  // Render only action buttons
+  if (actionsOnly) {
+    return (
+      <div className="flex items-center gap-1">
+        <IconButton
+          onClick={handleMessage}
+          className="icon-gradient"
+          title={t('sendMessage')}
+        >
+          <MessageIcon />
+        </IconButton>
+
+        <IconButton
+          onClick={handleCall}
+          className="icon-gradient"
+          title={t('call')}
+        >
+          <CallIcon />
+        </IconButton>
+      </div>
+    )
   }
 
   return (
@@ -74,20 +99,25 @@ export default function CallHistoryUserInfo({ user }: CallHistoryUserInfoProps) 
           </div>
         </div>
 
-        <IconButton
-          onClick={handleMessage}
-          className="icon-gradient"
-          title={t('sendMessage')}
-        >
-          <MessageIcon />
-        </IconButton>
+        {!hideActions && (
+          <>
+            <IconButton
+              onClick={handleMessage}
+              className="icon-gradient"
+              title={t('sendMessage')}
+            >
+              <MessageIcon />
+            </IconButton>
 
-        <IconButton
-          onClick={handleCall}
-          className="icon-gradient"
-        >
-          <CallIcon />
-        </IconButton>
+            <IconButton
+              onClick={handleCall}
+              className="icon-gradient"
+              title={t('call')}
+            >
+              <CallIcon />
+            </IconButton>
+          </>
+        )}
       </div>
 
       <UserDetailsPopup

@@ -11,6 +11,7 @@ import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarU
 import UserAvatar from './UserAvatar'
 import React from 'react'
 import StandardChip from './StandardChip'
+import { useSnackbar } from '@/contexts/SnackContext'
 
 const VERTICAL_CELL_PADDING = '0.1rem'
 const HORIZONTAL_CELL_PADDING = '0.5rem'
@@ -29,19 +30,21 @@ interface MeetingChipProps {
   meetingColor?: string
   myOccupiedSlots: Set<number>
   t: (key: string, values?: Record<string, any>) => string
+  showSnackbar: (message: string, severity?: 'success' | 'error' | 'warning' | 'info') => void
 }
 
-function MeetingChip({ 
-  meeting, 
-  user, 
-  isMyMeeting = false, 
-  isJoinable = false, 
-  onUserClick, 
-  slot, 
+function MeetingChip({
+  meeting,
+  user,
+  isMyMeeting = false,
+  isJoinable = false,
+  onUserClick,
+  slot,
   group,
   meetingColor,
   myOccupiedSlots,
-  t 
+  t,
+  showSnackbar
 }: MeetingChipProps) {
   // Determine tooltip text and link behavior
   let chipTooltipText: string
@@ -172,6 +175,37 @@ function MeetingChip({
     </Tooltip>
   )
 
+  // Determine chip styling based on meeting type and joinability
+  const getChipStyle = () => {
+    if (isMyMeeting) {
+      return {
+        borderColor: meetingColor,
+        backgroundColor: 'transparent',
+      }
+    }
+    // Other users' meetings
+    if (isJoinable) {
+      return {
+        borderColor: 'var(--icon-color-primary)',
+        backgroundColor: 'transparent',
+        color: 'var(--link-color)',
+      }
+    }
+    // Non-joinable meetings - dimmed
+    return {
+      borderColor: 'var(--dimmer-border-color)',
+      backgroundColor: 'transparent',
+      color: 'var(--dimmer-text-color)',
+    }
+  }
+
+  // Handle click on non-joinable meetings (for touch devices)
+  const handleNonJoinableClick = () => {
+    if (!isMyMeeting && !isJoinable) {
+      showSnackbar(chipTooltipText, 'info')
+    }
+  }
+
   const chipElement = (
     <StandardChip
       label={
@@ -181,10 +215,9 @@ function MeetingChip({
           {interestsPart}
         </div>
       }
-      variant={isMyMeeting ? "outlined" : "filled"}
-      style={{
-        borderColor: isMyMeeting ? meetingColor : undefined,
-      }}
+      variant="outlined"
+      style={getChipStyle()}
+      onClick={!isMyMeeting && !isJoinable ? handleNonJoinableClick : undefined}
     />
   )
 
@@ -228,6 +261,8 @@ export default function MeetingsCalendarRow({
   myOccupiedSlots,
   onUserClick
 }: MeetingsCalendarRowProps) {
+  const { showSnackbar } = useSnackbar()
+
   // Determine if we should group by groups
   const userAccessibleGroups = groups?.filter(group => 
     currentUser?.groups?.includes(group._id)
@@ -357,6 +392,7 @@ export default function MeetingsCalendarRow({
                     meetingColor={isMyMeeting ? meetingColor : undefined}
                     myOccupiedSlots={myOccupiedSlots}
                     t={t}
+                    showSnackbar={showSnackbar}
                   />
                 )
               })}

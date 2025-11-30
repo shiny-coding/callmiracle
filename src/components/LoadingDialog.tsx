@@ -24,6 +24,11 @@ export default function LoadingDialog({ loading, error }: { loading: boolean, er
         sx: { zIndex: 1300 } // Lower than top/bottom controls (which should be 1400+)
       }}
       sx={{ zIndex: 1300 }}
+      slotProps={{
+        backdrop: {
+          sx: { backgroundColor: 'transparent' }
+        }
+      }}
     >
       <DialogContent className="flex items-center justify-center min-h-[120px] relative">
         {!loading && (

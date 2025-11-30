@@ -153,7 +153,7 @@ export default function LocalVideo({ onClose, showDeviceSelection = true, compac
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-lg text-red-600 dark:text-red-400 text-sm mb-2">{error}</div>
       )}
       <div style={containerStyle}
-        className={`relative ${compact ? '' : connectionStatus === 'connected' ? 'rounded-lg bg-gray-800' : 'rounded-lg bg-gray-800 mx-auto'}`}>
+        className={`relative ${compact ? '' : connectionStatus === 'connected' ? 'rounded-lg ' : 'rounded-lg  mx-auto'}`}>
         <video
           ref={videoRef}
           autoPlay

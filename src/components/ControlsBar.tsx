@@ -86,7 +86,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
         </div>
 
         <div className="flex gap-3 items-center overflow-hidden">
-          <div className="text-sm capitalize overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: 'var(--icon-color-primary)' }}>
+          <div className="text-sm capitalize overflow-hidden text-ellipsis whitespace-nowrap text-color">
             {currentUser?.name}
           </div>
           <MediaControls showNotifications={false} showMediaButtons={false} showProfile={true} />

@@ -186,7 +186,7 @@ export default function UserList() {
       {!filtersVisible && (
         <div
           ref={scrollContainerRef}
-          className="flex-grow overflow-y-auto px-4"
+          className="flex-grow overflow-y-auto px-12sp"
           style={{ position: 'relative' }}
         >
           <div

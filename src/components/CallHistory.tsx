@@ -63,7 +63,7 @@ export default function CallHistory() {
   }
 
   return (
-    <Paper className="bg-gray-800 flex flex-col h-full">
+    <Paper className=" flex flex-col h-full">
       <PageHeader
         icon={<HistoryIcon className="dimmer-text-color" />}
         title={t('callHistory')}
@@ -113,9 +113,9 @@ export default function CallHistory() {
                     paddingBottom: '8px',
                   }}
                 >
-                  <ListItem className="flex flex-col items-start card-bg rounded-lg">
-                    <div className="w-full">
-                      <CallHistoryUserInfo user={entry.user} />
+                  <ListItem className="flex items-center card-bg rounded-lg">
+                    <div className="flex-grow">
+                      <CallHistoryUserInfo user={entry.user} hideActions />
 
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Chip
@@ -130,6 +130,7 @@ export default function CallHistory() {
                         />
                       </div>
                     </div>
+                    <CallHistoryUserInfo user={entry.user} actionsOnly />
                   </ListItem>
                 </div>
               )

@@ -268,7 +268,7 @@ export default function MeetingsCalendar() {
         <>
           {/* Header grid */}
           <div
-            className="calendar-grid-header input-bg px-2"
+            className="calendar-grid-header px-2"
             style={{
               display: 'grid',
               gridTemplateColumns: '80px 1fr',
@@ -306,10 +306,9 @@ export default function MeetingsCalendar() {
                     size="small"
                     style={{
                       fontSize: '0.75rem',
-                      height: '20px',
-                      backgroundColor: 'rgba(128, 128, 128, 0.3)',
-                      position: 'absolute',
-                      right: '0.5rem'
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--border-color)',
+                      padding: '0.25rem 0.25rem',
                     }}
                   />
                 )}
@@ -352,7 +351,7 @@ export default function MeetingsCalendar() {
                       {/* Day label row (skip for today and when matching sticky header) */}
                       {!isToday(new Date(dayKey)) && dayKey !== topDayKey && (
                         <div
-                          className="calendar-day-label justify-center"
+                          className="calendar-day-label"
                           style={{ gridColumn: '1 / span 2' }}
                         >
                           <span>{getDayLabel(new Date(dayKey), t, locale)}</span>
@@ -362,10 +361,9 @@ export default function MeetingsCalendar() {
                               size="small"
                               style={{
                                 fontSize: '0.75rem',
-                                height: '20px',
-                                backgroundColor: 'rgba(128, 128, 128, 0.3)',
-                                position: 'absolute',
-                                right: '0.5rem'
+                                backgroundColor: 'transparent',
+                                border: '1px solid var(--border-color)',
+                                padding: '0.25rem 0.25rem',
                               }}
                             />
                           )}

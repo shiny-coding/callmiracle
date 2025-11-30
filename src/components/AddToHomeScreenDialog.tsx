@@ -124,7 +124,7 @@ export default function AddToHomeScreenDialog() {
               </Typography>
             </Alert>
 
-            <div className="bg-gray-800 p-4 rounded-lg space-y-2">
+            <div className=" p-4 rounded-lg space-y-2">
               <Typography variant="subtitle2" className="font-semibold">
                 {t('howToAddToHomeScreen')}
               </Typography>

@@ -16,7 +16,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { Meeting, MeetingWithPeer } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { isProfileComplete } from '@/utils/userUtils'
-import { isMeetingPassed } from '@/utils/meetingUtils'
+import { getMeetingColorClass, class2Hex, isMeetingPassed } from '@/utils/meetingUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import LoadingDialog from './LoadingDialog'
@@ -118,7 +118,7 @@ export default function MeetingsList() {
 
   return (
     <>
-      <Paper className="bg-gray-800 flex flex-col h-full relative">
+      <Paper className=" flex flex-col h-full relative">
         <PageHeader
           icon={<ViewListIcon className="dimmer-text-color" />}
           title={t('myMeetings')}
@@ -135,8 +135,8 @@ export default function MeetingsList() {
         
         <div
           ref={scrollContainerRef}
-          className="flex-grow overflow-y-auto px-4"
-          style={{ position: 'relative', paddingTop: '8px' }}
+          className="flex-grow overflow-y-auto px-12sp"
+          style={{ position: 'relative' }}
         >
           <div
             style={{
@@ -185,6 +185,7 @@ export default function MeetingsList() {
                       className={`flex flex-col p-4 card-bg rounded-lg relative transition-all duration-500
                         ${highlightedMeetingId === (item as MeetingWithPeer).meeting._id ? 'highlight-animation' : ''}`}
                       disablePadding
+                      style={isMeetingPassed((item as MeetingWithPeer).meeting) ? undefined : { border: `1px solid ${class2Hex(getMeetingColorClass((item as MeetingWithPeer).meeting))}` }}
                     >
                       <MeetingCard
                         meetingWithPeer={item as MeetingWithPeer}

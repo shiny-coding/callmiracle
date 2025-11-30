@@ -73,7 +73,7 @@ export default function NotificationPermissionRequestScreen() {
             {t('notificationPermissionRequiredDescription')}
           </Typography>
 
-          <div className="bg-gray-800 p-6 rounded-lg space-y-4">
+          <div className=" p-6 rounded-lg space-y-4">
             <Typography variant="subtitle1" className="font-semibold text-center">
               {t('whenDialogAppears')}
             </Typography>

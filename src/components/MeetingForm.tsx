@@ -305,7 +305,7 @@ export default function MeetingForm() {
       )}
       <PageHeader
         title={meetingToConnectId ? t('connectWithMeeting') : meeting ? t('editMeeting') : t('createMeeting')}
-        className="sticky top-0 bg-inherit z-10"
+        className="sticky top-0 z-10"
       >
         <IconButton onClick={handleCancel} size="small" aria-label={t('close')} title={t('close')}>
           <CloseIcon />
@@ -314,7 +314,7 @@ export default function MeetingForm() {
 
       {/* Meeting No Longer Available Message */}
       {meetingBecameUnavailable && (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex items-center justify-center">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 flex items-center justify-center">
           <Paper elevation={3} className="p-8 max-w-md w-full text-center">
             <ErrorOutlineIcon
               sx={{ fontSize: 64, color: 'error.main', mb: 2 }}
@@ -339,7 +339,7 @@ export default function MeetingForm() {
 
       {/* Scrollable Content */}
       {!meetingBecameUnavailable && (
-        <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 flex flex-col gap-4">
+        <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-12sp flex flex-col gap-4">
         {/* User Info Display - only show when connecting to transparent meeting */}
         {meetingToConnect && meetingToConnect.transparency === MeetingTransparency.Transparent && meetingWithPeerToConnect?.peerUser && (
           <div className="flex items-center gap-3 p-3 rounded-lg">
@@ -528,7 +528,7 @@ export default function MeetingForm() {
 
       {/* Bottom Controls Bar */}
       {!meetingBecameUnavailable && (
-      <div className="sticky bottom-0 left-0 w-full border-t panel-border px-4 py-3 flex justify-end gap-2 z-10 flex-wrap" style={{ backgroundColor: 'inherit' }}>
+      <div className="sticky bottom-0 left-0 w-full border-t panel-border px-4 py-3 flex justify-end gap-2 z-10 flex-wrap">
         {meeting && !isMeetingPassed(meeting) && (
           <Button
             variant="contained"

@@ -114,7 +114,7 @@ export default function InterestsDescriptionsEditor({ value, onChange, interests
         )
         
         return (
-          <div key={index} className="flex flex-col gap-3 p-3 bg-gray-800 rounded-lg">
+          <div key={index} className="flex flex-col gap-3 p-3  rounded-lg">
             <div className="flex items-center gap-2">
               <FormControl className="flex-1">
                 <InputLabel className="text-gray-300">

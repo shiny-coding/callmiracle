@@ -287,7 +287,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
           {/* Collapsible Block controls section */}
           <Divider className="my-4" />
           <div className="flex flex-col overflow-hidden">
-            <div className="flex items-center py-2" style={{ userSelect: 'none' }}>
+            <div className="flex items-center py-1" style={{ userSelect: 'none' }}>
               <IconButton 
                 size="small" 
                 onClick={handleToggleBlockSection} 

@@ -83,7 +83,7 @@ export default function VideoQualitySelector({ open, onClose }: VideoQualitySele
               key={quality}
               onClick={() => setSelectedQuality(quality as VideoQuality)}
               selected={quality === selectedQuality}
-              className={quality === qualityWeWantFromRemote ? 'bg-gray-800' : ''}
+              className={quality === qualityWeWantFromRemote ? '' : ''}
             >
               <ListItemText
                 primary={quality}

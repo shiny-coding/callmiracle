@@ -33,7 +33,7 @@ export default function UserAvatar({
           src={`/profiles/${userId}.jpg`}
           alt={displayName}
           className={`${sizeClass} rounded-full object-cover`}
-          style={{ display: 'none' }}
+          style={{ display: 'none', border: '1px solid var(--icon-color-primary)' }}
           onLoad={(e) => {
             const target = e.target as HTMLImageElement
             // Check if it's not the default 1x1 transparent image
@@ -55,9 +55,9 @@ export default function UserAvatar({
           }}
         />
       ) : null}
-      <div 
+      <div
         className={`${sizeClass} py-1 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold`}
-        style={{ display: 'flex' }}
+        style={{ display: 'flex', border: '1px solid var(--icon-color-primary)' }}
       >
         {displayName[0]?.toUpperCase()}
       </div>

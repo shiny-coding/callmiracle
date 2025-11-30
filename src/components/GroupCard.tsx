@@ -211,11 +211,11 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
 
             {/* Badge */}
             {isOwner ? (
-              <Typography variant="caption" className="text-white px-2 py-1 rounded" style={{ backgroundColor: 'var(--icon-color-primary)' }}>
+              <Typography variant="caption" className="text-color px-2 py-0.5 rounded" style={{ border: '1px solid var(--icon-color-primary)' }}>
                 {t('owner')}
               </Typography>
             ) : isAdmin && (
-              <Typography variant="caption" className="text-white px-2 py-1 rounded" style={{ backgroundColor: 'var(--icon-color-primary)' }}>
+              <Typography variant="caption" className="text-color px-2 py-0.5 rounded" style={{ border: '1px solid var(--icon-color-primary)' }}>
                 {t('admin')}
               </Typography>
             )}
@@ -235,6 +235,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 handleViewParticipants()
               }}
               className="flex-shrink-0"
+              sx={{ px: 2 }}
             >
               {t('participants')}
             </Button>
@@ -255,7 +256,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
               </Button>
             ) : !isInGroup && (
               <Button
-                variant="contained"
+                variant="outlined"
                 color="primary"
                 size="small"
                 startIcon={<span className="icon-gradient"><AddIcon /></span>}

@@ -42,7 +42,7 @@ export default function ConfirmationDialog({
       maxWidth="sm"
       fullWidth
       PaperProps={{
-        className: 'bg-gray-800 text-white'
+        className: ' text-white'
       }}
     >
       <DialogTitle className="text-white">

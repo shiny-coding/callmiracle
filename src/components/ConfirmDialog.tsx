@@ -11,7 +11,7 @@ interface ConfirmDialogProps {
 export default function ConfirmDialog({ open, title, message, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle className="bg-gray-800 text-white">
+      <DialogTitle className=" text-white">
         {title}
       </DialogTitle>
       <DialogContent className="mt-4">

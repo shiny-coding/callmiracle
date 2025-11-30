@@ -68,9 +68,9 @@ body::before {
 }
 
 :root {
-  --link-color: rgb(121, 179, 250);
-  //--border-color: #d8d8d8;
-  --border-color: #fff;
+  --link-color: rgb(59, 130, 246);
+  --border-color: #ffffff4a;
+  --dimmer-border-color: #888888;
   --brighter-color: #1f2937;
   --hover-border-color: #c0c0c0;
   --link-color-hover: rgb(160, 205, 255);
@@ -178,17 +178,18 @@ body::before {
   }
 }
 
-/* Active icon - white with dark orange shadow */
+/* Active icon - gradient icon with light blue background */
 .icon-gradient-active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  background-color: #ff9c2b40 !important;
+  border-radius: 50% !important;
 
   svg,
   & > svg {
-    fill: #ffffff !important;
-    color: #ffffff !important;
-    filter: drop-shadow(0 0 6px #ea580c) drop-shadow(0 0 10px #c2410c);
+    fill: url(#iconGradient) !important;
+    color: transparent !important;
   }
 
   svg path,
@@ -289,7 +290,7 @@ body::before {
 .card-bg {
   background-color: var(--card-bg) !important;
   // box-shadow: var(--paper-shadow) !important;
-  border: 1px solid #ffffff;
+  border: 1px solid #ffffff9e;
 }
 
 /* MUI Dividers - white */
@@ -311,10 +312,10 @@ body::before {
   background-color: var(--input-bg);
 }
 
-/* MUI Input/TextField background */
+/* MUI Input/TextField background - same as outlined buttons */
 .MuiInputBase-root,
 .MuiOutlinedInput-root {
-  background-color: var(--input-bg) !important;
+  background-color: var(--card-bg) !important;
 }
 
 /* MUI OutlinedInput border - same as outlined primary button */
@@ -457,7 +458,7 @@ body::before {
   min-height: 2rem;
   display: flex;
   align-items: center;
-  position: relative;
+  justify-content: space-between !important;
   background: linear-gradient(to right, transparent, rgb(248 248 248 / 40%) 50%, transparent);
   margin: 0.1rem 0;
 }
@@ -470,7 +471,7 @@ body::before {
 }
 
 .calendar-grid-body div {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
 }
 
 /* You can put this in your global styles or in a CSS module */

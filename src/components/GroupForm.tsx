@@ -1,6 +1,6 @@
 'use client'
 
-import { IconButton, Button, FormGroup, FormControlLabel, Switch, TextField, CircularProgress, Autocomplete, Chip, Box, InputAdornment, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
+import { IconButton, Button, FormGroup, FormControlLabel, Switch, TextField, CircularProgress, Autocomplete, Chip, Box, InputAdornment, FormControl, InputLabel, Select, MenuItem, Paper } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -349,7 +349,7 @@ export default function GroupForm() {
   const isFormValid = name.trim().length > 0 && language.length > 0
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 text-white relative">
+    <Paper className="h-full flex flex-col relative">
       {/* Loader Overlay */}
       {uploading && (
         <div
@@ -425,12 +425,6 @@ export default function GroupForm() {
             onChange={(e) => setName(e.target.value)}
             variant="outlined"
             required
-            InputLabelProps={{
-              className: 'text-gray-300'
-            }}
-            InputProps={{
-              className: 'text-white'
-            }}
             className="mb-4"
           />
 
@@ -442,12 +436,6 @@ export default function GroupForm() {
             variant="outlined"
             multiline
             rows={3}
-            InputLabelProps={{
-              className: 'text-gray-300'
-            }}
-            InputProps={{
-              className: 'text-white'
-            }}
             className="mb-4"
           />
 
@@ -462,11 +450,11 @@ export default function GroupForm() {
               }
               label={
                 <div>
-                  <div className="text-white">
+                  <div className="text-color">
                     {t('openGroup')}
                   </div>
-                  <div className="text-sm text-gray-400">
-                    {open 
+                  <div className="text-sm dimmer-text-color">
+                    {open
                       ? t('openGroupDescription')
                       : t('privateGroupDescription')
                     }
@@ -477,29 +465,28 @@ export default function GroupForm() {
           </FormGroup>
 
           <FormControl fullWidth className="mb-4">
-            <InputLabel className="text-gray-300">{t('groupTransparency')}</InputLabel>
+            <InputLabel>{t('groupTransparency')}</InputLabel>
             <Select
               value={transparency}
               onChange={(e) => setTransparency(e.target.value as MeetingTransparency)}
               variant="outlined"
-              className="text-white"
             >
               <MenuItem value={MeetingTransparency.Transparent}>
                 <div>
                   <div>{t('transparentGroup')}</div>
-                  <div className="text-sm text-gray-400">{t('transparentGroupDescription')}</div>
+                  <div className="text-sm dimmer-text-color">{t('transparentGroupDescription')}</div>
                 </div>
               </MenuItem>
               <MenuItem value={MeetingTransparency.Mixed}>
                 <div>
                   <div>{t('mixedGroup')}</div>
-                  <div className="text-sm text-gray-400">{t('mixedGroupDescription')}</div>
+                  <div className="text-sm dimmer-text-color">{t('mixedGroupDescription')}</div>
                 </div>
               </MenuItem>
               <MenuItem value={MeetingTransparency.Opaque}>
                 <div>
                   <div>{t('opaqueGroup')}</div>
-                  <div className="text-sm text-gray-400">{t('opaqueGroupDescription')}</div>
+                  <div className="text-sm dimmer-text-color">{t('opaqueGroupDescription')}</div>
                 </div>
               </MenuItem>
             </Select>
@@ -507,12 +494,11 @@ export default function GroupForm() {
 
           <div className="space-y-2">
             <FormControl fullWidth>
-              <InputLabel className="text-gray-300">{t('groupLanguage')}</InputLabel>
+              <InputLabel>{t('groupLanguage')}</InputLabel>
               <Select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
                 variant="outlined"
-                className="text-white"
                 label={t('groupLanguage')}
               >
                 {LANGUAGES.map((lang) => (
@@ -522,13 +508,13 @@ export default function GroupForm() {
                 ))}
               </Select>
             </FormControl>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm dimmer-text-color">
               {t('groupLanguageDescription')}
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-white text-sm font-medium">
+            <label className="text-color text-sm font-medium">
               {t('administrators')}
             </label>
             <Autocomplete
@@ -544,13 +530,6 @@ export default function GroupForm() {
                   {...params}
                   placeholder={t('searchAndSelectAdministrators')}
                   variant="outlined"
-                  InputLabelProps={{
-                    className: 'text-gray-300'
-                  }}
-                  InputProps={{
-                    ...params.InputProps,
-                    className: 'text-white'
-                  }}
                 />
               )}
               renderTags={(value, getTagProps) =>
@@ -573,7 +552,7 @@ export default function GroupForm() {
               }}
               className="mb-4"
             />
-            <div className="text-sm text-gray-400">
+            <div className="text-sm dimmer-text-color">
               {t('administratorsDescription')}
             </div>
           </div>
@@ -581,7 +560,7 @@ export default function GroupForm() {
           {/* Join Link Section - Only show for existing groups */}
           {groupId && group && (
             <div className="space-y-2">
-              <label className="text-white text-sm font-medium">
+              <label className="text-color text-sm font-medium">
                 {t('joinLink')}
               </label>
               <div className="flex flex-wrap gap-2">
@@ -591,22 +570,17 @@ export default function GroupForm() {
                   variant="outlined"
                   InputProps={{
                     readOnly: true,
-                    className: 'text-white',
                     endAdornment: (
                       <InputAdornment position="end">
                         <IconButton
                           onClick={handleCopyJoinLink}
                           disabled={!group.joinToken}
                           title={t('copyJoinLink')}
-                          className="text-gray-400 hover:text-white"
                         >
                           <ContentCopyIcon />
                         </IconButton>
                       </InputAdornment>
                     )
-                  }}
-                  InputLabelProps={{
-                    className: 'text-gray-300'
                   }}
                   className="flex-1"
                   sx={{ minWidth: '10rem' }}
@@ -615,10 +589,10 @@ export default function GroupForm() {
                   variant="outlined"
                   onClick={handleGenerateJoinToken}
                   disabled={isGeneratingToken}
-                  className="text-white border-gray-600 hover:border-gray-400 whitespace-nowrap flex-shrink-0"
+                  className="whitespace-nowrap flex-shrink-0"
                 >
                   {isGeneratingToken ? (
-                    <CircularProgress size={20} className="text-white" />
+                    <CircularProgress size={20} />
                   ) : (
                     <>
                       <RefreshIcon className="mr-2" />
@@ -627,7 +601,7 @@ export default function GroupForm() {
                   )}
                 </Button>
               </div>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm dimmer-text-color">
                 {t('joinLinkDescription')}
               </div>
             </div>
@@ -660,13 +634,12 @@ export default function GroupForm() {
         </div>
       </div>
 
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t panel-border" style={{ backgroundColor: 'inherit' }}>
         <div className="flex gap-2 justify-end">
           <Button
             variant="outlined"
             onClick={handleCancel}
             disabled={loading}
-            className="text-white border-gray-600 hover:border-gray-400"
           >
             {t('cancel')}
           </Button>
@@ -674,10 +647,9 @@ export default function GroupForm() {
             variant="contained"
             onClick={handleSave}
             disabled={loading || uploading || !isFormValid}
-            className="bg-blue-600 hover:bg-blue-700"
           >
             {loading ? (
-              <CircularProgress size={20} className="text-white" />
+              <CircularProgress size={20} color="inherit" />
             ) : (
               groupId ? t('update') : t('create')
             )}
@@ -696,6 +668,6 @@ export default function GroupForm() {
         loading={loading}
         destructive={true}
       />
-    </div>
+    </Paper>
   )
 } 

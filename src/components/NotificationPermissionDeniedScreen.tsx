@@ -114,7 +114,7 @@ export default function NotificationPermissionDeniedScreen() {
 
             {/* Reinstall suggestion */}
             <div className="space-y-6">
-              <div className="bg-gray-800 p-6 rounded-lg space-y-4">
+              <div className=" p-6 rounded-lg space-y-4">
                 <Typography variant="h6" className="font-semibold text-center text-orange-400">
                   {t('recommendedSolution')}
                 </Typography>
@@ -133,7 +133,7 @@ export default function NotificationPermissionDeniedScreen() {
                 </div>
               </div>
 
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className=" p-4 rounded-lg">
                 <Typography variant="subtitle2" className="font-semibold mb-2">
                   {t('alternativeMethod')}
                 </Typography>

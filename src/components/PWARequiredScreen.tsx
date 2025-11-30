@@ -86,7 +86,7 @@ export default function PWARequiredScreen() {
             {/* Platform-specific instructions */}
             {platform === 'ios' && (
               <div className="space-y-6">
-                <div className="bg-gray-800 p-4 rounded-lg space-y-2">
+                <div className=" p-4 rounded-lg space-y-2">
                   <Typography variant="subtitle1" className="font-semibold">
                     {t('howToAddToHomeScreen')}
                   </Typography>
@@ -141,7 +141,7 @@ export default function PWARequiredScreen() {
 
             {platform === 'android' && (
               <div className="space-y-6">
-                <div className="bg-gray-800 p-4 rounded-lg space-y-2">
+                <div className=" p-4 rounded-lg space-y-2">
                   <Typography variant="subtitle1" className="font-semibold">
                     {t('howToAddToHomeScreen')}
                   </Typography>
@@ -195,7 +195,7 @@ export default function PWARequiredScreen() {
             )}
 
             {platform === 'desktop' && (
-              <div className="bg-gray-800 p-4 rounded-lg space-y-2">
+              <div className=" p-4 rounded-lg space-y-2">
                 <Typography variant="subtitle1" className="font-semibold">
                   {t('howToAddToHomeScreen')}
                 </Typography>

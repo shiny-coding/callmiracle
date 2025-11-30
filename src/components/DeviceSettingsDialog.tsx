@@ -723,7 +723,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             onClick={handleContentClick}
           >
             <div
-              className="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center"
+              className="relative w-full h-full  rounded-lg overflow-hidden flex items-center justify-center"
               onClick={handleContentClick}
             >
               <video
