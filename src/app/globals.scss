@@ -288,7 +288,8 @@ body::before {
 /* Cards with semi-transparent background and shadow */
 .card-bg {
   background-color: var(--card-bg) !important;
-  box-shadow: var(--paper-shadow) !important;
+  // box-shadow: var(--paper-shadow) !important;
+  border: 1px solid #ffffff;
 }
 
 /* MUI Dividers - white */
@@ -448,6 +449,17 @@ body::before {
 
 .highlight-animation {
   animation: highlight-blink 1s ease-in-out;
+}
+
+/* Calendar day label strip */
+.calendar-day-label {
+  padding: 0.1rem 0.5rem;
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: linear-gradient(to right, transparent, rgb(248 248 248 / 40%) 50%, transparent);
+  margin: 0.1rem 0;
 }
 
 .calendar-grid-header div,

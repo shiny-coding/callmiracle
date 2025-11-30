@@ -295,14 +295,9 @@ export default function MeetingsCalendar() {
           >
             {/* Absolutely positioned sticky day label */}
             {topDayKey && (
-              <div className="normal-bg panel-border"
-                style={{
-                  position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
-                  padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-                  background: 'linear-gradient(to right, transparent, rgba(128, 128, 128, 0.4) 50%, transparent)',
-                  margin: '0.1rem 0'
-                }}
+              <div
+                className="calendar-day-label"
+                style={{ position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2 }}
               >
                 <span>{getDayLabel(new Date(topDayKey), t, locale)}</span>
                 {dayMeetingCounts[topDayKey] > 0 && (
@@ -356,18 +351,10 @@ export default function MeetingsCalendar() {
                     >
                       {/* Day label row (skip for today and when matching sticky header) */}
                       {!isToday(new Date(dayKey)) && dayKey !== topDayKey && (
-                        <div style={{
-                          gridColumn: '1 / span 2',
-                          padding: CELL_PADDING,
-                          minHeight: '2rem',
-                          borderBottom: '1px solid var(--border-color)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          position: 'relative',
-                          background: 'linear-gradient(to right, transparent, rgba(128, 128, 128, 0.4) 50%, transparent)',
-                          margin: '0.1rem 0'
-                        }}>
+                        <div
+                          className="calendar-day-label justify-center"
+                          style={{ gridColumn: '1 / span 2' }}
+                        >
                           <span>{getDayLabel(new Date(dayKey), t, locale)}</span>
                           {dayMeetingCounts[dayKey] > 0 && (
                             <Chip

@@ -68,16 +68,16 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         ? 'transparent'
         : meetingPassed
           ? 'transparent'
-          : '#374151',
+          : 'rgba(128, 128, 128, 0.3)',
     },
     backgroundColor: isActive
       ? 'transparent'
       : meetingPassed
         ? 'transparent'
-        : '#374151',
+        : 'rgba(128, 128, 128, 0.3)',
     color: meetingPassed
       ? class2Hex(PASSED_MEETING_COLOR)
-      : 'white',
+      : 'inherit',
     border: isActive
       ? `1px solid ${class2Hex(ACTIVE_MEETING_COLOR)}`
       : meetingPassed

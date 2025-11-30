@@ -1,6 +1,6 @@
 'use client'
 
-import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider, Snackbar, Alert, Paper } from '@mui/material'
+import { IconButton, Button, FormGroup, FormControlLabel, Checkbox, Slider, Typography, Divider, Snackbar, Alert, Paper, Box } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import CancelIcon from '@mui/icons-material/Cancel'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
@@ -294,7 +294,7 @@ export default function MeetingForm() {
   }
 
   return (
-    <div className="flex flex-col h-full normal-bg relative" style={{ boxShadow: 'var(--paper-shadow)' }}>
+    <Paper className="flex flex-col h-full relative">
       {loading && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -528,7 +528,7 @@ export default function MeetingForm() {
 
       {/* Bottom Controls Bar */}
       {!meetingBecameUnavailable && (
-      <div className="sticky bottom-0 left-0 w-full normal-bg border-t panel-border px-4 py-3 flex justify-end gap-2 z-10 flex-wrap">
+      <div className="sticky bottom-0 left-0 w-full border-t panel-border px-4 py-3 flex justify-end gap-2 z-10 flex-wrap" style={{ backgroundColor: 'inherit' }}>
         {meeting && !isMeetingPassed(meeting) && (
           <Button
             variant="contained"
@@ -592,6 +592,6 @@ export default function MeetingForm() {
           onClose={handleCloseUserDetails}
         />
       )}
-    </div>
+    </Paper>
   )
 } 

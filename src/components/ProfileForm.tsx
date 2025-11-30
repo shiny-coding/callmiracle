@@ -1,6 +1,6 @@
 'use client'
 
-import { Dialog, DialogTitle, DialogContent, TextField, IconButton, DialogActions, Button, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Select, MenuItem } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, TextField, IconButton, DialogActions, Button, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Select, MenuItem, Paper } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useTranslations } from 'next-intl'
@@ -208,7 +208,7 @@ export default function ProfileForm() {
   }
 
   return (
-    <div className="flex flex-col h-full relative" style={{ boxShadow: 'var(--paper-shadow)' }}>
+    <Paper className="flex flex-col h-full relative">
       {/* Loader Overlay */}
       {uploading && (
         <div
@@ -477,9 +477,9 @@ export default function ProfileForm() {
           <Button onClick={() => setShowDeleteConfirmation(false)}>
             {tRoot('cancel')}
           </Button>
-          <Button 
+          <Button
             onClick={handleDeleteAccount}
-            variant="contained" 
+            variant="contained"
             color="error"
           >
             {t('deleteAccount')}
@@ -488,6 +488,6 @@ export default function ProfileForm() {
       </Dialog>
 
 
-    </div>
+    </Paper>
   )
 } 
