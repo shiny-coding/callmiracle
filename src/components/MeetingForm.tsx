@@ -528,7 +528,7 @@ export default function MeetingForm() {
 
       {/* Bottom Controls Bar */}
       {!meetingBecameUnavailable && (
-      <div className="sticky bottom-0 left-0 w-full border-t panel-border px-4 py-3 flex justify-end gap-2 z-10 flex-wrap">
+      <div className="sticky bottom-0 left-0 w-full border-t panel-border px-12sp py-3 flex justify-end gap-2 z-10 flex-wrap">
         {meeting && !isMeetingPassed(meeting) && (
           <Button
             variant="contained"

@@ -748,7 +748,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           >
             {/* Video devices */}
             <div onClick={handleContentClick}>
-              <div className="text-lg font-medium mb-2 dark:text-gray-100">
+              <div className="text-lg font-medium mb-2 text-color">
                 {t('camera')}
               </div>
               <div className="flex flex-col gap-2">
@@ -827,7 +827,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
             {/* Audio devices */}
             <div onClick={handleContentClick}>
-              <div className="text-lg font-medium mb-2 dark:text-gray-100">
+              <div className="text-lg font-medium mb-2 text-color">
                 {t('microphone')}
               </div>
               <div className="flex flex-col gap-2">

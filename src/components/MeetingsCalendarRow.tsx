@@ -318,9 +318,10 @@ export default function MeetingsCalendarRow({
           textAlign: 'center',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           position: 'relative',
-          borderBottom: '1px solid var(--border-color)'
+          borderBottom: '1px solid var(--border-color)',
+          overflow: 'hidden'
         }}
         className="calendar-timeslot-cell"
       >
@@ -329,16 +330,16 @@ export default function MeetingsCalendarRow({
               href={timeSlotLink}
               style={{
                 color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center'
+                alignItems: 'flex-start', justifyContent: 'center', width: '100%'
               }}
             >
             {myMeeting && !meetingPassed && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
                 <span className={meetingColorClass}
                   style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s' }} />
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'flex-start' }}>
               <div className="min-w-8 px-4sp text-center">{startLabel}</div>
               -
               <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>

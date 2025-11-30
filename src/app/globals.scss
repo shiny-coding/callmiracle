@@ -558,16 +558,7 @@ body::before {
   box-shadow: var(--paper-shadow);
 
   &::before {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 0 0 7px 7px;
-    border-color: #0000 #0000 var(--card-bg) #0000;
-    z-index: 1;
-    left: -7px;
-    bottom: 0px;
+    display: none;
   }
 }
 
@@ -576,16 +567,7 @@ body::before {
   box-shadow: var(--paper-shadow);
 
   &::before {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 0 7px 7px 0;
-    border-color: #0000 #0000 var(--card-bg) #0000;
-    z-index: 1;
-    right: -7px;
-    bottom: 0px;
+    display: none;
   }
 }
 

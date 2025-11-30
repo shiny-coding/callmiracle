@@ -20,8 +20,7 @@ export default function LoadingDialog({ loading, error }: { loading: boolean, er
       fullWidth
       onClose={handleClose}
       PaperProps={{
-        className: 'card-bg',
-        sx: { zIndex: 1300 } // Lower than top/bottom controls (which should be 1400+)
+        sx: { zIndex: 1300, backgroundColor: 'white' } // Lower than top/bottom controls (which should be 1400+)
       }}
       sx={{ zIndex: 1300 }}
       slotProps={{

@@ -211,11 +211,11 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
 
             {/* Badge */}
             {isOwner ? (
-              <Typography variant="caption" className="text-color px-2 py-0.5 rounded" style={{ border: '1px solid var(--icon-color-primary)' }}>
+              <Typography variant="caption" className="text-color px-2 py-0.5 rounded" style={{ border: '1px solid var(--icon-color-primary)', marginLeft: '0.5rem' }}>
                 {t('owner')}
               </Typography>
             ) : isAdmin && (
-              <Typography variant="caption" className="text-color px-2 py-0.5 rounded" style={{ border: '1px solid var(--icon-color-primary)' }}>
+              <Typography variant="caption" className="text-color px-2 py-0.5 rounded" style={{ border: '1px solid var(--icon-color-primary)', marginLeft: '0.5rem' }}>
                 {t('admin')}
               </Typography>
             )}

@@ -76,7 +76,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   // Top bar layout (non-compact)
   if (position === 'top' && !isCompact) {
     return (
-      <div className={`py-2 px-3 w-full flex items-center ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
+      <div className={`pt-2 pb-1 px-3 w-full flex items-center ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
         <div className="flex items-center gap-2">
           <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
         </div>
@@ -99,7 +99,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   if (position === 'bottom' && !isCompact) {
     return (
       <>
-        <div className={`mt-auto py-2 px-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
+        <div className={`mt-auto pb-2 pt-1 px-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
           {connectionStatus !== 'connected' && (
             <>
               <div style={{ width: '48px' }} /> {/* Spacer for balance */}
