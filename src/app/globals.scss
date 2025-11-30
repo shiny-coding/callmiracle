@@ -85,7 +85,7 @@ body::before {
   --dimmer-text-color: #4a4a4a;
   --dimmest-text-color: #888888;
 
-  --card-bg: #4aedff0f;
+  --card-bg: #0063f408;
 
   /* Icon colors - orange gradient (active) */
   --icon-color-primary: #f97316;
@@ -235,7 +235,7 @@ body::before {
 
 /* MUI Paper components background */
 .MuiPaper-root {
-  background: #4288ad05 !important;
+  background: #00a7ff12 !important;
   color: var(--text-color) !important;
   box-shadow: var(--paper-shadow) !important;
 }
@@ -349,11 +349,6 @@ body::before {
   background-color: #ffffff !important;
 }
 
-/* MUI Chip - consistent gray background */
-.MuiChip-filledDefault {
-  background-color: #374151 !important;
-  color: #ffffff !important;
-}
 
 /* MUI Badge - orange background */
 .MuiBadge-colorSuccess,

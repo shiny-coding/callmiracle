@@ -299,7 +299,7 @@ export default function MeetingsCalendar() {
                 style={{
                   position: 'sticky', top: 0, left: 0, width: '100%', zIndex: 2,
                   padding: CELL_PADDING, minHeight: '2rem', borderBottomWidth: '1px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
                   background: 'linear-gradient(to right, transparent, rgba(128, 128, 128, 0.4) 50%, transparent)',
                   margin: '0.1rem 0'
                 }}

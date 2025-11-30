@@ -63,19 +63,26 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   // Reusable chip styling for passed vs active meetings
   const getChipSx = (isActive = isActiveNow) => ({
+    '&.MuiChip-filled': {
+      backgroundColor: isActive
+        ? 'transparent'
+        : meetingPassed
+          ? 'transparent'
+          : '#374151',
+    },
     backgroundColor: isActive
-      ? 'transparent !important'
+      ? 'transparent'
       : meetingPassed
-        ? 'transparent !important'
-        : '#4B5563 !important',
+        ? 'transparent'
+        : '#374151',
     color: meetingPassed
-      ? `${class2Hex(PASSED_MEETING_COLOR)} !important`
-      : 'white !important',
+      ? class2Hex(PASSED_MEETING_COLOR)
+      : 'white',
     border: isActive
-      ? `1px solid ${class2Hex(ACTIVE_MEETING_COLOR)} !important`
+      ? `1px solid ${class2Hex(ACTIVE_MEETING_COLOR)}`
       : meetingPassed
-        ? `1px solid ${class2Hex(PASSED_MEETING_COLOR)} !important`
-        : `1px solid ${class2Hex(meetingColor)} !important`,
+        ? `1px solid ${class2Hex(PASSED_MEETING_COLOR)}`
+        : `1px solid ${class2Hex(meetingColor)}`,
   });
 
   const timeSlotsByDay = groupTimeSlotsByDay()
