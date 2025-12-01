@@ -4,34 +4,43 @@ import { useEffect } from 'react'
 
 export default function ViewportHeightSetter() {
   useEffect(() => {
-    function setVh() {
+    function updateViewport() {
       // Use visualViewport for better iOS support, fallback to window.innerHeight
-      const height = window.visualViewport?.height || window.innerHeight
+      const viewport = window.visualViewport
+      const height = viewport?.height || window.innerHeight
       document.documentElement.style.setProperty('--vh', `${height * 0.01}px`)
+
+      // On iOS, when keyboard opens, the visualViewport has an offsetTop
+      // We need to account for this to position content correctly
+      if (viewport) {
+        document.documentElement.style.setProperty('--viewport-offset-top', `${viewport.offsetTop}px`)
+      }
     }
 
     // Set initial value
-    setVh()
+    updateViewport()
 
     // Handle resize events
-    window.addEventListener('resize', setVh)
+    window.addEventListener('resize', updateViewport)
 
     // Handle orientation changes (important for iOS)
     window.addEventListener('orientationchange', () => {
       // Add a small delay to allow the browser to recalculate dimensions
-      setTimeout(setVh, 100)
+      setTimeout(updateViewport, 100)
     })
 
-    // Also listen to visualViewport resize if available (better for iOS)
+    // Also listen to visualViewport resize and scroll if available (better for iOS)
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setVh)
+      window.visualViewport.addEventListener('resize', updateViewport)
+      window.visualViewport.addEventListener('scroll', updateViewport)
     }
 
     return () => {
-      window.removeEventListener('resize', setVh)
-      window.removeEventListener('orientationchange', setVh)
+      window.removeEventListener('resize', updateViewport)
+      window.removeEventListener('orientationchange', updateViewport)
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', setVh)
+        window.visualViewport.removeEventListener('resize', updateViewport)
+        window.visualViewport.removeEventListener('scroll', updateViewport)
       }
     }
   }, [])

@@ -25,7 +25,13 @@ export default function DisconnectedLayout({ children }: DisconnectedLayoutProps
       {showBackground && (
         <div className="video-bg-dialog" style={{ backgroundImage: 'url(/space7.jpg)' }} />
       )}
-      <div className="flex flex-col w-full" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+      <div
+        className="flex flex-col w-full"
+        style={{
+          height: 'calc(var(--vh, 1vh) * 100)',
+          transform: 'translateY(var(--viewport-offset-top, 0px))'
+        }}
+      >
         {!isFirstTimePage && <TopControlsBar />}
 
         <div className="flex flex-col items-center w-full max-w-[1536px] mx-auto grow overflow-hidden">

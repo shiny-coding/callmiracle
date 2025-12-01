@@ -67,12 +67,28 @@ export default function ConversationsList() {
 
   // Notify server that user is on conversations page (to skip push notifications)
   useEffect(() => {
-    setCurrentPage({ variables: { page: '/conversations' } }).catch(() => {
-      // Silent fail - not critical
-    })
+    const updatePageStatus = () => {
+      if (document.visibilityState === 'visible') {
+        setCurrentPage({ variables: { page: '/conversations' } }).catch(() => {
+          // Silent fail - not critical
+        })
+      } else {
+        // App is hidden/minimized - clear page so push notifications are sent
+        setCurrentPage({ variables: { page: '' } }).catch(() => {
+          // Silent fail - not critical
+        })
+      }
+    }
 
-    // Clear page when leaving
+    // Set initial status
+    updatePageStatus()
+
+    // Listen for visibility changes (app minimized/restored)
+    document.addEventListener('visibilitychange', updatePageStatus)
+
+    // Clear page when component unmounts
     return () => {
+      document.removeEventListener('visibilitychange', updatePageStatus)
       setCurrentPage({ variables: { page: '' } }).catch(() => {
         // Silent fail - not critical
       })
