@@ -3,7 +3,7 @@ import { NotificationType } from '@/generated/graphql';
 import { publishPushNotification } from './pushNotifications';
 import { getLogger } from '@/utils/logger';
 import { publishSubscriptionEvent } from '@/utils/pubsubHelper';
-import { hasActiveSubscription } from '@/lib/activeSubscriptions';
+import { isUserOnConversationsPage } from '@/lib/activeSubscriptions';
 
 
 // Helper function to publish meeting disconnection notification
@@ -79,8 +79,8 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
     logger
   })
   
-  // Check if target user has an active subscription (app is open)
-  const userHasActiveSubscription = hasActiveSubscription(targetUserId.toString())
+  // Check if target user is on the conversations page (app is open AND on messages screen)
+  const userOnConversationsPage = isUserOnConversationsPage(targetUserId.toString())
 
   logger.info('Published message notification event', {
     targetUserName: targetUser.name,
@@ -89,12 +89,12 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
     senderId: senderUser._id.toString(),
     messageLength: messageText.length,
     conversationId: conversationId.toString(),
-    userHasActiveSubscription
+    userOnConversationsPage
   })
 
-  // Only send push notification if user doesn't have an active subscription
-  // If they're connected, they'll receive the real-time event instead
-  if (!userHasActiveSubscription) {
+  // Only skip push notification if user is on the conversations page
+  // They'll see the new message highlighted in green instead
+  if (!userOnConversationsPage) {
     await publishPushNotification(db, targetUser, {
       type: NotificationType.MessageReceived,
       peerUserName: senderUser.name,
@@ -102,7 +102,7 @@ export async function publishMessageNotification(db: any, targetUserId: ObjectId
       senderUserId: senderUser._id
     })
   } else {
-    logger.info('Skipping push notification - user has active subscription', {
+    logger.info('Skipping push notification - user is on conversations page', {
       targetUserName: targetUser.name,
       targetUserId: targetUserId.toString()
     })

@@ -365,6 +365,7 @@ type Mutation {
   editMessage(input: EditMessageInput!): Message!
   deleteMessage(messageId: ID!): Boolean!
   markConversationRead(conversationId: ID!): Boolean!
+  setCurrentPage(page: String!): Boolean!
 }
 
 type Subscription {

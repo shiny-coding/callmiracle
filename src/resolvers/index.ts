@@ -8,6 +8,7 @@ import { updateUserMutation } from './updateUserMutation'
 import { callUserMutation } from './callUserMutation'
 import { notificationsMutations } from './notificationsMutations'
 import { conversationsMutations } from './conversationsMutations'
+import { pageMutations } from './pageMutations'
 import { subscriptions } from './subscriptions'
 import { dateScalar } from './scalarResolvers'
 import { meetingsMutations } from './meetingsMutations'
@@ -30,6 +31,7 @@ export const resolvers = {
     ...groupsMutations,
     ...notificationsMutations,
     ...conversationsMutations,
+    ...pageMutations,
     deleteUser: deleteUserMutation
   },
   Subscription: {

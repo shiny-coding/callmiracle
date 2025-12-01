@@ -77,18 +77,26 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
 
   const isTempConversation = conversationId.startsWith('temp_');
 
+  const currentConversation = conversations?.find(conv => conv._id === conversationId);
+
   let otherUserId: string | null = null;
   if (isTempConversation) {
     otherUserId = conversationId.replace('temp_', '');
   } else {
-    const currentConversation = conversations?.find(conv => conv._id === conversationId);
     otherUserId = currentConversation
         ? (currentConversation.user1Id === currentUser?._id
             ? currentConversation.user2Id
             : currentConversation.user1Id)
         : null;
   }
-  
+
+  // Get the lastSeenMessage for the current user to determine which messages are "new"
+  const lastSeenMessageId = currentConversation
+    ? (currentConversation.user1Id === currentUser?._id
+        ? currentConversation.user1LastSeenMessage
+        : currentConversation.user2LastSeenMessage)
+    : null;
+
   // Query for initial messages
   const { data, loading, error, fetchMore } = useQuery(GET_MESSAGES, {
     variables: { conversationId },
@@ -97,7 +105,25 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       if (data?.getMessages) {
         setMessages(data.getMessages)
         setHasMore(data.getMessages.length === MESSAGES_PER_PAGE)
-        
+
+        // Mark unread messages (messages from others that are after lastSeenMessage) as new
+        if (isFirstLoad.current && lastSeenMessageId) {
+          const unreadMessageIds = new Set<string>()
+          for (const msg of data.getMessages) {
+            // Only highlight messages from the other user
+            if (msg.userId !== currentUser?._id) {
+              // Messages are sorted newest first, so we need to check if this message
+              // comes after the lastSeenMessage (has a greater _id in MongoDB ObjectId order)
+              if (msg._id > lastSeenMessageId) {
+                unreadMessageIds.add(msg._id)
+              }
+            }
+          }
+          if (unreadMessageIds.size > 0) {
+            setNewMessageIds(unreadMessageIds)
+          }
+        }
+
         // Scroll to bottom on initial load
         if (isFirstLoad.current) {
           setTimeout(() => {

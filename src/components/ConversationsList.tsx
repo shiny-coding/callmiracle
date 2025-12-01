@@ -29,6 +29,12 @@ const MARK_CONVERSATION_READ = gql`
   }
 `
 
+const SET_CURRENT_PAGE = gql`
+  mutation SetCurrentPage($page: String!) {
+    setCurrentPage(page: $page)
+  }
+`
+
 export default function ConversationsList() {
   const { conversations, loading, error, refetch, hasUnreadMessages } = useConversations()
   const t = useTranslations()
@@ -57,6 +63,21 @@ export default function ConversationsList() {
     refetchQueries: [{ query: GET_CONVERSATIONS }],
     awaitRefetchQueries: true,
   })
+  const [setCurrentPage] = useMutation(SET_CURRENT_PAGE)
+
+  // Notify server that user is on conversations page (to skip push notifications)
+  useEffect(() => {
+    setCurrentPage({ variables: { page: '/conversations' } }).catch(() => {
+      // Silent fail - not critical
+    })
+
+    // Clear page when leaving
+    return () => {
+      setCurrentPage({ variables: { page: '' } }).catch(() => {
+        // Silent fail - not critical
+      })
+    }
+  }, [setCurrentPage])
 
   useEffect(() => {
     // Only auto-select a conversation on initial load
@@ -233,9 +254,10 @@ export default function ConversationsList() {
                       src={otherUser?._id ? `/profiles/${otherUser._id}.jpg` : undefined}
                       className="w-12 h-12 mb-1"
                       sx={{
-                        backgroundColor: isSelected ? '#ffffff' : '#4b5563',
-                        color: isSelected ? '#2563eb' : '#ffffff',
-                        fontSize: '1rem'
+                        backgroundColor: 'transparent',
+                        color: 'var(--dimmer-text-color)',
+                        fontSize: '1rem',
+                        border: '1px solid orange'
                       }}
                     >
                       {otherUser?.name?.charAt(0)?.toUpperCase() || '?'}
