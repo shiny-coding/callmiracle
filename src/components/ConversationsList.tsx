@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Paper, Typography, IconButton, Avatar, Box } from '@mui/material'
+import { Paper, Typography, Avatar, Box } from '@mui/material'
 import MessageIcon from '@mui/icons-material/Message'
-import RefreshIcon from '@mui/icons-material/Refresh'
 import { Conversation, User } from '@/generated/graphql'
 import { useConversations, GET_CONVERSATIONS } from '@/store/ConversationsProvider'
 import { useStore } from '@/store/useStore'
@@ -187,17 +186,7 @@ export default function ConversationsList() {
       <PageHeader
         icon={<MessageIcon className="dimmer-text-color" />}
         title={t('conversations')}
-      >
-        <IconButton
-          onClick={() => refetch()}
-          aria-label="refresh"
-          title="Refresh"
-          size="small"
-          className="icon-gradient"
-        >
-          <RefreshIcon />
-        </IconButton>
-      </PageHeader>
+      />
 
       {/* Horizontal scrollable conversations bar */}
       <Box className="border-b border-[--border-color]">

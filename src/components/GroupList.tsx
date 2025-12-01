@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Paper, List, ListItem, Typography, IconButton, Divider } from '@mui/material'
+import { Paper, List, ListItem, Typography, Divider } from '@mui/material'
 import GroupIcon from '@mui/icons-material/Group'
-import RefreshIcon from '@mui/icons-material/Refresh'
 import CloseIcon from '@mui/icons-material/Close'
 import { Group } from '@/generated/graphql'
 import AddFab from './AddFab'
@@ -79,16 +78,7 @@ export default function GroupList() {
       <PageHeader
         icon={<GroupIcon className="dimmer-text-color" />}
         title={t('groups')}
-      >
-        <IconButton
-          onClick={() => refetch()}
-          aria-label="refresh"
-          title="Refresh"
-          size="small"
-        >
-          <RefreshIcon />
-        </IconButton>
-      </PageHeader>
+      />
 
       <GroupsFilters
         appliedShowMyGroups={appliedShowMyGroups}

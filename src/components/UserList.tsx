@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslations } from 'next-intl'
-import { Paper, List, ListItem, Typography, IconButton, Divider } from '@mui/material'
+import { Paper, List, ListItem, Typography, Divider } from '@mui/material'
 import PeopleIcon from '@mui/icons-material/People'
-import RefreshIcon from '@mui/icons-material/Refresh'
 import CloseIcon from '@mui/icons-material/Close'
 import { User } from '@/generated/graphql'
 import { useUsers } from '@/store/UsersProvider'
@@ -158,16 +157,7 @@ export default function UserList() {
       <PageHeader
         icon={<PeopleIcon className="dimmer-text-color" />}
         title={t('users')}
-      >
-        <IconButton 
-          onClick={() => refetch && refetch()}
-          aria-label={t('refreshMeetings')}
-          title={t('refreshMeetings')}
-          size="small"
-        >
-          <RefreshIcon />
-        </IconButton>
-      </PageHeader>
+      />
 
       <UsersFilters
         appliedShowOnlyFriends={appliedShowOnlyFriends}

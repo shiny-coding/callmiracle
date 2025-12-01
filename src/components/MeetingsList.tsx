@@ -1,7 +1,6 @@
 'use client'
 
-import { Paper, List, ListItem, Typography, IconButton, Box } from '@mui/material'
-import RefreshIcon from '@mui/icons-material/Refresh'
+import { Paper, List, ListItem, Typography, Box } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import MeetingCard from './MeetingCard'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -122,16 +121,7 @@ export default function MeetingsList() {
         <PageHeader
           icon={<ViewListIcon className="dimmer-text-color" />}
           title={t('myMeetings')}
-        >
-          <IconButton
-            onClick={() => refetchMyMeetingsWithPeers(true)}
-            size="small"
-            className="hover:bg-gray-700 text-white"
-            title={t('refreshMeetings')}
-          >
-            <RefreshIcon className="text-white" />
-          </IconButton>
-        </PageHeader>
+        />
         
         <div
           ref={scrollContainerRef}

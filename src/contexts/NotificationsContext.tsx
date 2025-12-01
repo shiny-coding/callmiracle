@@ -71,6 +71,12 @@ function notificationPermissionGranted() {
 async function showBrowserNotification(notificationEvent: any, t: any, router: any) {
   if (!notificationPermissionGranted()) return
 
+  // Skip browser/push notification when app is active (document is visible)
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    console.log('App is active, skipping browser notification - will show toast instead')
+    return
+  }
+
   try {
     // Check if service worker with push manager is active
     // If so, skip browser notification as push notification will handle it

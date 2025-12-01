@@ -234,14 +234,9 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
             const updatedMessages = [...newMessages, ...messages]
             setMessages(updatedMessages)
 
-            // Mark new messages for highlighting
+            // Mark new messages for highlighting (will be cleared on click)
             const newIds = new Set<string>(newMessages.map((m: Message) => String(m._id)))
             setNewMessageIds(newIds)
-
-            // Remove highlight after 3 seconds
-            setTimeout(() => {
-              setNewMessageIds(new Set())
-            }, 3000)
 
             // Scroll to bottom to show new messages
             setTimeout(scrollToBottom, 100)
@@ -326,6 +321,13 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
     return formatRelativeTime(timestamp)
   }
 
+  // Clear new message highlights on any click
+  const handleClearHighlights = useCallback(() => {
+    if (newMessageIds.size > 0) {
+      setNewMessageIds(new Set())
+    }
+  }, [newMessageIds])
+
   if (loading) {
     return (
       <Box className="flex items-center justify-center h-full">
@@ -345,11 +347,11 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
   }
 
   return (
-    <Box className="h-full flex flex-col">
+    <Box className="h-full flex flex-col" onClick={handleClearHighlights}>
       {/* Messages container */}
-      <Box 
+      <Box
         ref={messagesContainerRef}
-        className="flex-grow overflow-y-auto p-4"
+        className="flex-grow overflow-y-auto px-12sp py-1"
         onScroll={handleScroll}
         sx={{
           '&::-webkit-scrollbar': {
@@ -386,8 +388,8 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
                 className={`
                   max-w-[70%] p-3 relative card-bg
                   ${isOwnMessage ? 'speech-bubble-right' : 'speech-bubble-left'}
-                  ${isNewMessage ? 'message-flash' : ''}
                   rounded-xl
+                  ${isNewMessage ? 'new-message-highlight' : ''}
                 `}
               >
                 <Typography variant="body2" component="div" className="whitespace-pre-wrap break-words">

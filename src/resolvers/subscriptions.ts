@@ -1,5 +1,6 @@
 import { BroadcastEvent, CallEvent, Meeting, NotificationEvent, NotificationType } from '@/generated/graphql'
 import { pubsub } from '@/lib/pubsub'
+import { addActiveSubscription, removeActiveSubscription } from '@/lib/activeSubscriptions'
 import { mergeAsyncIterators } from '@/utils'
 import { getLogger, withContext } from '@/utils/logger'
 import { ObjectId } from 'mongodb'
@@ -37,6 +38,9 @@ export const subscriptions = {
         userTopic,
         globalTopic,
       })
+
+      // Track active subscription for this user
+      addActiveSubscription(userId)
 
       // Create async iterators for both topics
       // Note: PubSub (graphql-subscriptions) uses asyncIterableIterator
@@ -79,6 +83,9 @@ export const subscriptions = {
               logger.info('User unsubscribed from real-time events', {
                 subscriberUserName
               })
+
+              // Remove active subscription tracking for this user
+              removeActiveSubscription(userId)
 
               // Cleanup both iterators
               if (userIterator.return) await userIterator.return()

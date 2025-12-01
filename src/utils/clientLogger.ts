@@ -329,14 +329,64 @@ if (typeof window !== 'undefined') {
           meta.stack = firstArg.stack
           meta.name = firstArg.name
         } else if (typeof firstArg === 'string') {
-          message = firstArg
+          // Handle printf-style format strings (e.g., "Error in %s: %s", "Object: %o")
+          // Supports %s (string), %o/%O (object), %d/%i (integer), %f (float)
+          const formatRegex = /%[sOodif]/g
+          if (args.length > 1 && formatRegex.test(firstArg)) {
+            let formattedMessage = firstArg
+            const formatArgs = args.slice(1)
+            let argIndex = 0
+            formattedMessage = formattedMessage.replace(/%[sOodif]/g, (match) => {
+              if (argIndex < formatArgs.length) {
+                const arg = formatArgs[argIndex++]
+                // Convert arg based on format specifier
+                if (typeof arg === 'object' && arg !== null) {
+                  try {
+                    return JSON.stringify(arg, null, 2)
+                  } catch {
+                    return String(arg)
+                  }
+                }
+                return String(arg)
+              }
+              return match
+            })
+            message = formattedMessage
+            // Store any remaining args that weren't used in formatting
+            if (argIndex < formatArgs.length) {
+              meta.additionalArgs = formatArgs.slice(argIndex)
+            }
+          } else {
+            message = firstArg
+            // Include additional arguments if present
+            if (args.length > 1) {
+              meta.additionalArgs = args.slice(1).map(arg => {
+                if (typeof arg === 'object' && arg !== null) {
+                  try {
+                    return JSON.stringify(arg, null, 2)
+                  } catch {
+                    return String(arg)
+                  }
+                }
+                return String(arg)
+              })
+            }
+          }
         } else {
           message = String(firstArg)
-        }
-
-        // Include additional arguments if present
-        if (args.length > 1) {
-          meta.additionalArgs = args.slice(1)
+          // Include additional arguments if present
+          if (args.length > 1) {
+            meta.additionalArgs = args.slice(1).map(arg => {
+              if (typeof arg === 'object' && arg !== null) {
+                try {
+                  return JSON.stringify(arg, null, 2)
+                } catch {
+                  return String(arg)
+                }
+              }
+              return String(arg)
+            })
+          }
         }
 
         // Add to our logger with appropriate level

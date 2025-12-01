@@ -1,7 +1,7 @@
 'use client'
 
 import { useStore, type AppState } from '@/store/useStore'
-import { Paper, Typography, Chip, IconButton } from '@mui/material'
+import { Paper, Typography, Chip } from '@mui/material'
 import { useTranslations, useLocale } from 'next-intl'
 import { MeetingWithPeer, User } from '@/generated/graphql'
 import { isToday } from 'date-fns'
@@ -17,7 +17,6 @@ import LoadingDialog from './LoadingDialog'
 import MeetingsFilters from './MeetingsFilters'
 import PageHeader from './PageHeader'
 import { shallow } from 'zustand/shallow'
-import RefreshIcon from '@mui/icons-material/Refresh'
 import { useRouter } from 'next/navigation'
 import { isProfileComplete } from '@/utils/userUtils'
 import ProfileIncompleteDialog from './ProfileIncompleteDialog'
@@ -248,16 +247,7 @@ export default function MeetingsCalendar() {
       <PageHeader
         icon={<CalendarTodayIcon className="dimmer-text-color" />}
         title={t('upcomingMeetings')}
-      >
-        <IconButton
-          onClick={() => { if (refetchFutureMeetingsWithPeers) refetchFutureMeetingsWithPeers(undefined, true) }}
-          aria-label={t('refreshMeetings')}
-          title={t('refreshMeetings')}
-          size="small"
-        >
-          <RefreshIcon />
-        </IconButton>
-      </PageHeader>
+      />
 
       <MeetingsFilters
         onToggleFilters={setFiltersVisible}

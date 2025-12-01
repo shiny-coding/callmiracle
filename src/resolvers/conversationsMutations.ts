@@ -1,9 +1,8 @@
 import { Context } from './types'
 import { ObjectId } from 'mongodb'
 import { MESSAGE_MAX_LENGTH } from '@/config/constants'
-import { publishPushNotification } from './pushNotifications'
 import { publishMessageNotification } from './publishNotifications'
-import { NotificationType, User } from '@/generated/graphql'
+import { User } from '@/generated/graphql'
 
 export const conversationsMutations = {
   addMessage: async (
@@ -104,19 +103,9 @@ export const conversationsMutations = {
       { $set: updateFields }
     )
 
-    // Send push notification and real-time notification to the target user
+    // Send real-time notification and push notification to the target user
+    // Note: publishMessageNotification handles both real-time events and push notifications
     try {
-      const truncatedMessage = message.length > 100 ? message.substring(0, 100) + '...' : message
-      
-      // Send push notification
-      await publishPushNotification(db, targetUser, {
-        type: NotificationType.MessageReceived,
-        peerUserName: currentUser.name,
-        messageText: truncatedMessage,
-        senderUserId: userId
-      })
-      
-      // Send real-time notification (no DB storage)
       await publishMessageNotification(db, _targetUserId, currentUser, message.trim(), conversation._id)
     } catch (error) {
       console.error('Error sending notifications:', error)
