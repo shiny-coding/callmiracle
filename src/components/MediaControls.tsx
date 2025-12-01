@@ -250,8 +250,11 @@ export default function MediaControls({
               sx={{
                 width: 40,
                 height: 40,
-                color: 'white',
-                fontWeight: 'bold'
+                bgcolor: 'transparent',
+                color: 'var(--dimmer-text-color)',
+                fontWeight: 'bold',
+                fontSize: '0.9rem',
+                border: '1px solid orange'
               }}
               src={imageSrc}
             >
@@ -276,19 +279,25 @@ export default function MediaControls({
         }}
         PaperProps={{
           sx: {
-            mt: 1,
-            bgcolor: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            '& .MuiMenuItem-root': {
-              color: 'white',
-              '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-              },
-            },
+            mt: '6px',
+            ml: '8px',
           },
         }}
+        marginThreshold={0}
       >
+        <ListSubheader
+          sx={{
+            bgcolor: 'transparent',
+            fontSize: '0.95rem',
+            fontWeight: 'bold',
+            textTransform: 'capitalize',
+            userSelect: 'none',
+            lineHeight: '2.5'
+          }}
+        >
+          {currentUser?.name}
+        </ListSubheader>
+        <Divider />
         <MenuItem onClick={handleProfileSettings}>
           <ListItemIcon className="icon-gradient">
             <SettingsIcon />
@@ -301,7 +310,7 @@ export default function MediaControls({
           </ListItemIcon>
           <ListItemText primary={tRoot('selectInterfaceLanguage')} />
         </MenuItem>
-        <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+        <Divider />
         <MenuItem onClick={handleRefresh}>
           <ListItemIcon className="icon-gradient">
             <RefreshIcon />
@@ -314,7 +323,7 @@ export default function MediaControls({
           </ListItemIcon>
           <ListItemText primary={tRoot('Profile.viewClientLogs')} />
         </MenuItem>
-        <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+        <Divider />
         <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
           {tRoot('Profile.logTestingTools')}
         </ListSubheader>
@@ -328,7 +337,7 @@ export default function MediaControls({
             secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
           />
         </MenuItem>
-        <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+        <Divider />
         <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
           {tRoot('Profile.errorTestingTools')}
         </ListSubheader>
@@ -362,7 +371,7 @@ export default function MediaControls({
             secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
           />
         </MenuItem>
-        <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+        <Divider />
         <MenuItem onClick={handleLogout}>
           <ListItemIcon className="icon-gradient">
             <LogoutIcon />

@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogTitle, DialogContent, Button, IconButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -78,26 +78,16 @@ export default function LanguageDialog({ open, onClose }: LanguageDialogProps) {
       onClose={onClose}
       maxWidth="xs"
       fullWidth
-      PaperProps={{
-        sx: {
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          color: 'white'
-        }
-      }}
     >
       <DialogTitle sx={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
       }}>
         <span>{t('selectInterfaceLanguage')}</span>
         <IconButton
           onClick={onClose}
           size="small"
-          sx={{ color: 'white' }}
         >
           <CloseIcon />
         </IconButton>
@@ -105,23 +95,19 @@ export default function LanguageDialog({ open, onClose }: LanguageDialogProps) {
       <DialogContent sx={{ pt: 3 }}>
         <div className="flex flex-col gap-2">
           {locales.map((locale) => (
-            <Button
+            <button
               key={locale}
-              variant={currentLocale === locale ? 'contained' : 'outlined'}
               onClick={() => handleLanguageChange(locale)}
-              fullWidth
-              sx={{
-                color: currentLocale === locale ? 'black' : 'white',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                backgroundColor: currentLocale === locale ? 'white' : 'transparent',
-                '&:hover': {
-                  backgroundColor: currentLocale === locale ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.1)',
-                  borderColor: 'rgba(255, 255, 255, 0.5)',
+              className={`
+                px-4 py-3 rounded text-sm text-left transition-colors border
+                ${currentLocale === locale
+                  ? 'bg-orange-500 text-white border-orange-500'
+                  : 'bg-transparent text-color border-blue-500 hover:bg-blue-500/10'
                 }
-              }}
+              `}
             >
               {getLanguageName(locale)}
-            </Button>
+            </button>
           ))}
         </div>
       </DialogContent>

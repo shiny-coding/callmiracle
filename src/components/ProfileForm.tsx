@@ -23,6 +23,7 @@ import PageHeader from './PageHeader'
 import { routerPush } from '@/utils/routerHelper'
 import Typography from '@mui/material/Typography'
 import { useServer } from '@/contexts/ServerContext'
+import ImageCropper from './ImageCropper'
 
 const DELETE_USER = gql`
   mutation DeleteUser($userId: ID!) {
@@ -55,6 +56,8 @@ export default function ProfileForm() {
   const currentUserId = currentUser?._id || ''
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [imageDeleted, setImageDeleted] = useState(false)
+  const [showCropper, setShowCropper] = useState(false)
+  const [fileToCrop, setFileToCrop] = useState<File | null>(null)
   const [deleteUser] = useMutation(DELETE_USER)
   const router = useRouter()
   const { imageSrc: existingImageSrc } = useProfileImage(currentUserId, timestamp)
@@ -153,8 +156,20 @@ export default function ProfileForm() {
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return
-    setSelectedFile(acceptedFiles[0])
+    setFileToCrop(acceptedFiles[0])
+    setShowCropper(true)
+  }, [])
+
+  const handleCropApply = useCallback((croppedFile: File) => {
+    setSelectedFile(croppedFile)
     setImageDeleted(false)
+    setShowCropper(false)
+    setFileToCrop(null)
+  }, [])
+
+  const handleCropClose = useCallback(() => {
+    setShowCropper(false)
+    setFileToCrop(null)
   }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -180,9 +195,9 @@ export default function ProfileForm() {
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' })
-        setSelectedFile(file)
-        setImageDeleted(false)
+        setFileToCrop(file)
         setShowCameraPreview(false)
+        setShowCropper(true)
       }
     }, 'image/jpeg')
   }
@@ -485,6 +500,15 @@ export default function ProfileForm() {
         </DialogActions>
       </Dialog>
 
+      {/* Image Cropper */}
+      {fileToCrop && (
+        <ImageCropper
+          open={showCropper}
+          imageFile={fileToCrop}
+          onClose={handleCropClose}
+          onApply={handleCropApply}
+        />
+      )}
 
     </Paper>
   )

@@ -325,7 +325,7 @@ body::before {
 
 /* MUI Select dropdown list border and background */
 .MuiMenu-paper {
-  border: 1px solid var(--input-border-color) !important;
+  border: 1px solid var(--border-color) !important;
   background-color: var(--card-bg) !important;
   background-image: url('/clouds.jpg') !important;
   background-blend-mode: overlay !important;

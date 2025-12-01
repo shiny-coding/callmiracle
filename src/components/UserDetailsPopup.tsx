@@ -209,7 +209,7 @@ export default function UserDetailsPopup({ user, open, onClose }: UserDetailsPop
                   />
                 </div>
               ) : (
-                <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-lg font-semibold">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center text-lg font-semibold" style={{ border: '1px solid orange', backgroundColor: 'transparent', color: 'var(--dimmer-text-color)' }}>
                   {user.name[0]?.toUpperCase() || '?'}
                 </div>
               )}

@@ -73,11 +73,15 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
     </Badge>
   )
 
+  // Show P2P icon only when there's a problem (offline or blocked)
+  const showP2PWarning = p2pStatus === 'offline' || p2pStatus === 'online-blocked'
+
   // Top bar layout (non-compact)
   if (position === 'top' && !isCompact) {
     return (
       <div className={`pt-2 pb-1 px-3 w-full flex items-center ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
         <div className="flex items-center gap-2">
+          {showP2PWarning && <P2PStatusIcon status={p2pStatus} onClick={handleP2PIconClick} />}
           <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
         </div>
 
@@ -86,9 +90,6 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
         </div>
 
         <div className="flex gap-3 items-center overflow-hidden">
-          <div className="text-sm capitalize overflow-hidden text-ellipsis whitespace-nowrap text-color">
-            {currentUser?.name}
-          </div>
           <MediaControls showNotifications={false} showMediaButtons={false} showProfile={true} />
         </div>
       </div>
@@ -101,32 +102,28 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
       <>
         <div className={`mt-auto pb-2 pt-1 px-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
           {connectionStatus !== 'connected' && (
-            <>
-              <div style={{ width: '48px' }} /> {/* Spacer for balance */}
-              <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
-                <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} className={pathname === calendarPath ? 'icon-gradient-active' : 'icon-gradient'}>
-                  <CalendarIconWithDot />
-                </IconButton>
-                <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} className={pathname === listPath ? 'icon-gradient-active' : 'icon-gradient'}>
-                  <ListIcon />
-                </IconButton>
-                <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} className={pathname === usersPath ? 'icon-gradient-active' : 'icon-gradient'}>
-                  <PersonIcon />
-                </IconButton>
-                <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} className={pathname === groupsPath ? 'icon-gradient-active' : 'icon-gradient'}>
-                  <GroupIcon />
-                </IconButton>
-                <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} className={pathname === conversationsPath ? 'icon-gradient-active' : 'icon-gradient'}>
-                  <NotificationBadge show={hasUnreadConversations}>
-                    <MessageIcon />
-                  </NotificationBadge>
-                </IconButton>
-                <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} className={pathname === callHistoryPath ? 'icon-gradient-active' : 'icon-gradient'}>
-                  <HistoryIcon />
-                </IconButton>
-              </div>
-              <P2PStatusIcon status={p2pStatus} onClick={handleP2PIconClick} />
-            </>
+            <div className="flex items-center gap-4 w-full" style={{ justifyContent: 'center' }}>
+              <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} className={pathname === calendarPath ? 'icon-gradient-active' : 'icon-gradient'}>
+                <CalendarIconWithDot />
+              </IconButton>
+              <IconButton onClick={() => routerPush(router, listPath, { source: 'bottom_controls_list', currentPath: pathname })} className={pathname === listPath ? 'icon-gradient-active' : 'icon-gradient'}>
+                <ListIcon />
+              </IconButton>
+              <IconButton onClick={() => routerPush(router, usersPath, { source: 'bottom_controls_users', currentPath: pathname })} className={pathname === usersPath ? 'icon-gradient-active' : 'icon-gradient'}>
+                <PersonIcon />
+              </IconButton>
+              <IconButton onClick={() => routerPush(router, groupsPath, { source: 'bottom_controls_groups', currentPath: pathname })} className={pathname === groupsPath ? 'icon-gradient-active' : 'icon-gradient'}>
+                <GroupIcon />
+              </IconButton>
+              <IconButton onClick={() => routerPush(router, conversationsPath, { source: 'bottom_controls_conversations', currentPath: pathname, hasUnreadConversations })} className={pathname === conversationsPath ? 'icon-gradient-active' : 'icon-gradient'}>
+                <NotificationBadge show={hasUnreadConversations}>
+                  <MessageIcon />
+                </NotificationBadge>
+              </IconButton>
+              <IconButton onClick={() => routerPush(router, callHistoryPath, { source: 'bottom_controls_call_history', currentPath: pathname })} className={pathname === callHistoryPath ? 'icon-gradient-active' : 'icon-gradient'}>
+                <HistoryIcon />
+              </IconButton>
+            </div>
           )}
           {connectionStatus === 'connected' && (
             <div>
@@ -148,8 +145,11 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
         <div className={`mt-auto py-2 px-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
           {connectionStatus !== 'connected' && (
             <>
-              {/* Notification button on left */}
-              <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
+              {/* P2P warning and Notification button on left */}
+              <div className="flex items-center gap-2">
+                {showP2PWarning && <P2PStatusIcon status={p2pStatus} onClick={handleP2PIconClick} />}
+                <MediaControls showNotifications={true} showMediaButtons={false} showProfile={false} />
+              </div>
 
               {/* Navigation buttons in center */}
               <div className="flex items-center gap-4" style={{ justifyContent: 'center' }}>
@@ -179,9 +179,8 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
                 <MediaControls showNotifications={false} showMediaButtons={true} showProfile={false} />
               </div>
 
-              {/* P2P Status and Profile on right */}
+              {/* Profile on right */}
               <div className="flex items-center gap-2">
-                <P2PStatusIcon status={p2pStatus} onClick={handleP2PIconClick} />
                 <MediaControls showNotifications={false} showMediaButtons={false} showProfile={true} />
               </div>
             </>

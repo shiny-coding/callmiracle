@@ -60,7 +60,7 @@ export default function TimeSlotsGrid({
                     slot.isDisabled ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
-                  {slot.isNow ? t('now') : slot.startTime} - {slot.endTime}
+                  {slot.isNow ? t('nowShort') : slot.startTime} - {slot.endTime}
                 </Button>
               )
             ))}

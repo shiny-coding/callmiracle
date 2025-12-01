@@ -325,7 +325,7 @@ export default function UsersFilters({
       )}
 
       {isExpanded && (
-        <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-32sp py-0 pb-4">
+        <div className="flex-grow overflow-y-auto flex flex-col gap-4 px-12sp py-0 pb-4">
             <TextField
               fullWidth
               placeholder={t('searchByName')}

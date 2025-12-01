@@ -143,7 +143,10 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
         )}
 
         <div className="flex items-center gap-4 mb-2">
-          <div className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded-full">
+          <div
+            className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded-full flex items-center justify-center"
+            style={!imageSrc ? { border: '1px solid orange' } : undefined}
+          >
             {imageSrc ? (
               <Image
                 src={imageSrc}
@@ -153,9 +156,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
                 unoptimized
               />
             ) : (
-              <div className="flex items-center justify-center w-full h-full" style={{ backgroundColor: 'var(--icon-color-primary)' }}>
-                <GroupIcon className="text-white" />
-              </div>
+              <GroupIcon className="icon-gradient" />
             )}
           </div>
 

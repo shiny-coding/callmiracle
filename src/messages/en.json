@@ -165,6 +165,8 @@
     "meetingCall": "Meeting Call"
   },
   "apply": "Apply",
+  "cropImage": "Crop Image",
+  "dragToPosition": "Drag to position, use slider to zoom",
   "preferences": "Partner Preferences",
   "allowMales": "Allow Males",
   "allowFemales": "Allow Females",
@@ -196,6 +198,7 @@
   "createMeeting": "Create Meeting",
   "selectTimeSlots": "Select Time Slots",
   "now": "Now",
+  "nowShort": "Now",
   "minDuration": "Minimum Duration",
   "minutes": "minutes",
   "hour": "hour",

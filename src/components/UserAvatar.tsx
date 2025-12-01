@@ -56,8 +56,8 @@ export default function UserAvatar({
         />
       ) : null}
       <div
-        className={`${sizeClass} py-1 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold`}
-        style={{ display: 'flex', border: '1px solid var(--icon-color-primary)' }}
+        className={`${sizeClass} py-1 rounded-full flex items-center justify-center font-semibold`}
+        style={{ display: 'flex', border: '1px solid orange', backgroundColor: 'transparent', color: 'var(--dimmer-text-color)' }}
       >
         {displayName[0]?.toUpperCase()}
       </div>

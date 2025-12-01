@@ -285,7 +285,7 @@ export default function MeetingsCalendarRow({
     }
     groupedMeetings[groupId].push(meetingWithInfo)
   }
-  const startLabel = slot.isNow ? t('now') : slot.startTime
+  const startLabel = slot.isNow ? t('nowShort') : slot.startTime
 
   // Check if this slot belongs to one of my meetings for the time slot indicator
   const myMeetingId = myMeetingSlotToId[slot.timestamp]
@@ -330,7 +330,7 @@ export default function MeetingsCalendarRow({
               href={timeSlotLink}
               style={{
                 color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                alignItems: 'flex-start', justifyContent: 'center', width: '100%'
+                alignItems: 'center', justifyContent: 'center', width: '100%'
               }}
             >
             {myMeeting && !meetingPassed && (
