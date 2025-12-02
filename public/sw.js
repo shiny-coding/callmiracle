@@ -1,5 +1,5 @@
 // Version number - update this when you make changes to force update
-const VERSION = '1.0.11'
+const VERSION = '1.0.17'
 console.log('Service Worker version:', VERSION)
 
 // Install event - activate immediately
@@ -109,6 +109,13 @@ self.addEventListener('notificationclick', event => {
   // For answer action or default click, open the app
   let targetUrl = notificationData?.url || '/'
 
+  console.log('[SW] Notification data:', {
+    url: notificationData?.url,
+    notificationType,
+    action,
+    targetUrl
+  })
+
   // If it's an incoming call and user clicked answer
   if (action === 'answer' && notificationType === 'INCOMING_CALL') {
     if (meetingId) {
@@ -144,50 +151,136 @@ self.addEventListener('notificationclick', event => {
     console.log('No notificationId found in notification data')
   }
 
-  // Handle navigation - try postMessage first to avoid page reload
-  event.waitUntil(
-    clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true
-    }).then(clientsArr => {
-      console.log('[SW] Found clients:', clientsArr.length, clientsArr.map(c => c.url))
+  // ALWAYS store to IndexedDB first - iOS PWA workaround
+  // On iOS, even if clients.matchAll finds a client, it may be a stale/background client
+  // that won't properly receive postMessage. The app checks IndexedDB on startup.
+  const storeToIndexedDB = () => {
+    return new Promise((resolve) => {
+      const pendingNavigation = {
+        id: 'pending',
+        url: targetUrl,
+        notificationType: notificationType,
+        timestamp: Date.now()
+      }
+      console.log('[SW] Storing navigation to IndexedDB:', JSON.stringify(pendingNavigation))
 
-      // Look for an existing visible window on our domain
-      const existingClient = clientsArr.find(client => {
-        return client.url.includes(self.location.origin)
-      })
+      try {
+        const dbRequest = indexedDB.open('callmiracle-push-nav', 1)
 
-      if (existingClient) {
-        console.log('[SW] Found existing client:', existingClient.url, 'visibilityState:', existingClient.visibilityState)
-
-        // Check if we're already on the target URL (just need to focus)
-        const existingUrl = new URL(existingClient.url)
-        const targetUrlObj = new URL(targetUrl, self.location.origin)
-
-        if (existingUrl.pathname === targetUrlObj.pathname &&
-            existingUrl.search === targetUrlObj.search) {
-          console.log('[SW] Already on target page, just focusing')
-          return existingClient.focus()
+        dbRequest.onupgradeneeded = (event) => {
+          console.log('[SW] IndexedDB upgrade needed, creating navigation store')
+          const db = event.target.result
+          if (!db.objectStoreNames.contains('navigation')) {
+            db.createObjectStore('navigation', { keyPath: 'id' })
+          }
         }
 
-        // Try postMessage first to avoid page reload
-        console.log('[SW] Sending postMessage to navigate to:', targetUrl)
-        existingClient.postMessage({
-          type: 'NOTIFICATION_CLICK',
-          url: targetUrl,
-          notificationType: notificationType
+        dbRequest.onsuccess = (event) => {
+          console.log('[SW] IndexedDB opened successfully')
+          try {
+            const db = event.target.result
+            const tx = db.transaction('navigation', 'readwrite')
+            const store = tx.objectStore('navigation')
+            store.put(pendingNavigation)
+
+            tx.oncomplete = () => {
+              console.log('[SW] Successfully stored pending navigation in IndexedDB:', targetUrl)
+              resolve(true)
+            }
+            tx.onerror = (e) => {
+              console.error('[SW] IndexedDB transaction error:', e)
+              resolve(false)
+            }
+          } catch (e) {
+            console.error('[SW] Error in IndexedDB transaction:', e)
+            resolve(false)
+          }
+        }
+
+        dbRequest.onerror = (e) => {
+          console.error('[SW] IndexedDB open error:', e)
+          resolve(false)
+        }
+
+        // Timeout fallback
+        setTimeout(() => {
+          console.log('[SW] IndexedDB operation timed out')
+          resolve(false)
+        }, 1000)
+      } catch (e) {
+        console.error('[SW] IndexedDB not available:', e)
+        resolve(false)
+      }
+    })
+  }
+
+  // Handle navigation
+  event.waitUntil(
+    storeToIndexedDB().then(() => {
+      return clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+      }).then(clientsArr => {
+        console.log('[SW] Found clients:', clientsArr.length, clientsArr.map(c => c.url))
+
+        // Look for an existing VISIBLE window on our domain
+        const existingClient = clientsArr.find(client => {
+          return client.url.includes(self.location.origin) && client.visibilityState === 'visible'
         })
 
-        // Focus the client
-        return existingClient.focus()
-      } else {
-        // No existing window, open a new one
-        console.log('[SW] No existing client, opening new window')
-        return clients.openWindow(targetUrl)
-      }
+        if (existingClient) {
+          console.log('[SW] Found existing VISIBLE client:', existingClient.url)
+
+          // Check if we're already on the target URL (just need to focus)
+          const existingUrl = new URL(existingClient.url)
+          const targetUrlObj = new URL(targetUrl, self.location.origin)
+
+          if (existingUrl.pathname === targetUrlObj.pathname &&
+              existingUrl.search === targetUrlObj.search) {
+            console.log('[SW] Already on target page, just focusing')
+            return existingClient.focus()
+          }
+
+          // Try postMessage for visible client
+          console.log('[SW] Sending postMessage to navigate to:', targetUrl)
+          existingClient.postMessage({
+            type: 'NOTIFICATION_CLICK',
+            url: targetUrl,
+            notificationType: notificationType
+          })
+
+          return existingClient.focus()
+        } else {
+          // No visible window - open new one (or bring background one to foreground)
+          // iOS often ignores the URL parameter and opens to start_url
+          // That's why we stored to IndexedDB first - app will check it on startup
+          console.log('[SW] No visible client, opening window:', targetUrl)
+
+          return clients.openWindow(targetUrl).then(async (windowClient) => {
+            console.log('[SW] Window opened:', windowClient?.url)
+
+            // Also try postMessage with delays as backup
+            if (windowClient) {
+              const sendNavigationMessage = () => {
+                console.log('[SW] Sending delayed postMessage')
+                windowClient.postMessage({
+                  type: 'NOTIFICATION_CLICK',
+                  url: targetUrl,
+                  notificationType: notificationType
+                })
+              }
+
+              setTimeout(sendNavigationMessage, 500)
+              setTimeout(sendNavigationMessage, 1500)
+              setTimeout(sendNavigationMessage, 3000)
+            }
+
+            return windowClient
+          })
+        }
+      })
     }).catch(error => {
       console.error('[SW] Error handling notification click:', error)
-      // Fallback: try to open new window
       return clients.openWindow(targetUrl)
     })
   )

@@ -116,17 +116,17 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
   if (notification.type === NotificationType.MessageReceived) {
     title = notification.peerUserName
     body = notification.messageText || ''
-    url = `/conversations?with=${notification.senderUserId?.toString()}`
+    url = `/${userLocale}/conversations?with=${notification.senderUserId?.toString()}`
   } else if (notification.type === NotificationType.IncomingCall) {
     title = 'CallMiracle'
     body = getNotificationMessage(notification, t)
     // For meeting calls, go to meeting page; for direct calls, go to call history
     if (notification.meetingId) {
-      url = `/list?meetingId=${notification.meetingId.toString()}`
+      url = `/${userLocale}/list?meetingId=${notification.meetingId.toString()}`
     } else if (notification.initiatorUserId) {
-      url = `/call-history?with=${notification.initiatorUserId.toString()}`
+      url = `/${userLocale}/call-history?with=${notification.initiatorUserId.toString()}`
     } else {
-      url = '/'
+      url = `/${userLocale}/calendar`
     }
     tag = `call-${notification.callId?.toString()}`
     requireInteraction = true
@@ -139,11 +139,11 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
     body = getNotificationMessage(notification, t)
     // For meeting calls, go to meeting page; for direct calls, go to call history
     if (notification.meetingId) {
-      url = `/list?meetingId=${notification.meetingId.toString()}`
+      url = `/${userLocale}/list?meetingId=${notification.meetingId.toString()}`
     } else if (notification.initiatorUserId) {
-      url = `/call-history?with=${notification.initiatorUserId.toString()}`
+      url = `/${userLocale}/call-history?with=${notification.initiatorUserId.toString()}`
     } else {
-      url = '/'
+      url = `/${userLocale}/calendar`
     }
     // Use the same tag as the incoming call so it replaces the notification
     tag = notification.callId ? `call-${notification.callId.toString()}` : undefined
@@ -152,7 +152,7 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
   } else {
     title = 'CallMiracle'
     body = getNotificationMessage(notification, t)
-    url = `/list?meetingId=${notification.meetingId?.toString()}`
+    url = `/${userLocale}/list?meetingId=${notification.meetingId?.toString()}`
   }
 
   const payload = {
