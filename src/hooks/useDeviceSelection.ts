@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useStore } from '@/store/useStore'
-import clientLogger from '@/utils/clientLogger'
 
 interface UseDeviceSelectionProps {
   kind: 'audioinput' | 'videoinput'
@@ -36,10 +35,10 @@ export function useDeviceSelection({
 
     async function getDevices() {
       try {
-        clientLogger.info(`[useDeviceSelection] Starting device enumeration for ${kind}`)
+        console.log(`[useDeviceSelection] Starting device enumeration for ${kind}`)
         const devices = await navigator.mediaDevices.enumerateDevices()
         const filteredDevices = devices.filter(d => d.kind === kind)
-        clientLogger.info(`[useDeviceSelection] Found ${filteredDevices.length} devices of kind ${kind}`, {
+        console.log(`[useDeviceSelection] Found ${filteredDevices.length} devices of kind ${kind}`, {
           devices: filteredDevices.map(d => ({ id: d.deviceId.slice(0, 10), label: d.label }))
         })
 
@@ -51,78 +50,78 @@ export function useDeviceSelection({
           const labels: Record<string, string> = {}
 
           for (const device of filteredDevices) {
-            clientLogger.info(`[useDeviceSelection] Getting label for device ${device.deviceId.slice(0, 10)}`)
+            console.log(`[useDeviceSelection] Getting label for device ${device.deviceId.slice(0, 10)}`)
             const label = await getLabel(device)
-            clientLogger.info(`[useDeviceSelection] Device ${device.deviceId.slice(0, 10)} label result: ${label}`)
+            console.log(`[useDeviceSelection] Device ${device.deviceId.slice(0, 10)} label result: ${label}`)
             if (label !== null) {
               realDevices.push(device)
               labels[device.deviceId] = label
             } else {
-              clientLogger.warn(`[useDeviceSelection] Device ${device.deviceId.slice(0, 10)} filtered out - label was null`)
+              console.warn(`[useDeviceSelection] Device ${device.deviceId.slice(0, 10)} filtered out - label was null`)
             }
           }
 
           if (!isMounted) return
 
-          clientLogger.info(`[useDeviceSelection] After filtering: ${realDevices.length} devices with labels`)
+          console.log(`[useDeviceSelection] After filtering: ${realDevices.length} devices with labels`)
           setDevices(realDevices)
           setDeviceLabels(labels)
 
           // Auto-select first device if none is selected and devices are available
           const currentSelected = localStorage.getItem(storageKey) || ''
-          clientLogger.info(`[useDeviceSelection] Current selection from localStorage: "${currentSelected}"`)
+          console.log(`[useDeviceSelection] Current selection from localStorage: "${currentSelected}"`)
           // Don't auto-select if user has explicitly disabled this device type
           if (!currentSelected && realDevices.length > 0) {
             const firstDevice = realDevices[0]
-            clientLogger.info(`[useDeviceSelection] Auto-selecting first ${kind}: ${firstDevice.deviceId}`)
+            console.log(`[useDeviceSelection] Auto-selecting first ${kind}: ${firstDevice.deviceId}`)
             setSelectedDevice(firstDevice.deviceId)
             localStorage.setItem(storageKey, firstDevice.deviceId)
           } else if (currentSelected === 'disabled') {
             // User has explicitly disabled this device type, respect that choice
-            clientLogger.info(`[useDeviceSelection] Device explicitly disabled by user, not auto-selecting`)
+            console.log(`[useDeviceSelection] Device explicitly disabled by user, not auto-selecting`)
             setSelectedDevice('')
           } else if (currentSelected && currentSelected !== 'disabled' && !realDevices.find(d => d.deviceId === currentSelected)) {
             // If selected device is no longer available, select the first available one
             if (realDevices.length > 0) {
               const firstDevice = realDevices[0]
-              clientLogger.info(`[useDeviceSelection] Previously selected device not available, selecting first ${kind}: ${firstDevice.deviceId}`)
+              console.log(`[useDeviceSelection] Previously selected device not available, selecting first ${kind}: ${firstDevice.deviceId}`)
               setSelectedDevice(firstDevice.deviceId)
               localStorage.setItem(storageKey, firstDevice.deviceId)
             }
           } else {
-            clientLogger.info(`[useDeviceSelection] Using existing selection: ${currentSelected}`)
+            console.log(`[useDeviceSelection] Using existing selection: ${currentSelected}`)
           }
         } else {
-          clientLogger.info(`[useDeviceSelection] No getLabel function, using ${filteredDevices.length} devices as-is`)
+          console.log(`[useDeviceSelection] No getLabel function, using ${filteredDevices.length} devices as-is`)
           setDevices(filteredDevices)
 
           // Auto-select first device if none is selected and devices are available
           const currentSelected = localStorage.getItem(storageKey) || ''
-          clientLogger.info(`[useDeviceSelection] Current selection from localStorage: "${currentSelected}"`)
+          console.log(`[useDeviceSelection] Current selection from localStorage: "${currentSelected}"`)
           // Don't auto-select if user has explicitly disabled this device type
           if (!currentSelected && filteredDevices.length > 0) {
             const firstDevice = filteredDevices[0]
-            clientLogger.info(`[useDeviceSelection] Auto-selecting first ${kind}: ${firstDevice.deviceId}`)
+            console.log(`[useDeviceSelection] Auto-selecting first ${kind}: ${firstDevice.deviceId}`)
             setSelectedDevice(firstDevice.deviceId)
             localStorage.setItem(storageKey, firstDevice.deviceId)
           } else if (currentSelected === 'disabled') {
             // User has explicitly disabled this device type, respect that choice
-            clientLogger.info(`[useDeviceSelection] Device explicitly disabled by user, not auto-selecting`)
+            console.log(`[useDeviceSelection] Device explicitly disabled by user, not auto-selecting`)
             setSelectedDevice('')
           } else if (currentSelected && currentSelected !== 'disabled' && !filteredDevices.find(d => d.deviceId === currentSelected)) {
             // If selected device is no longer available, select the first available one
             if (filteredDevices.length > 0) {
               const firstDevice = filteredDevices[0]
-              clientLogger.info(`[useDeviceSelection] Previously selected device not available, selecting first ${kind}: ${firstDevice.deviceId}`)
+              console.log(`[useDeviceSelection] Previously selected device not available, selecting first ${kind}: ${firstDevice.deviceId}`)
               setSelectedDevice(firstDevice.deviceId)
               localStorage.setItem(storageKey, firstDevice.deviceId)
             }
           } else {
-            clientLogger.info(`[useDeviceSelection] Using existing selection: ${currentSelected}`)
+            console.log(`[useDeviceSelection] Using existing selection: ${currentSelected}`)
           }
         }
       } catch (err) {
-        clientLogger.error('Error getting devices:', { error: err instanceof Error ? err.message : String(err) })
+        console.error('Error getting devices:', { error: err instanceof Error ? err.message : String(err) })
       }
     }
 
@@ -131,7 +130,7 @@ export function useDeviceSelection({
 
     // Listen for device changes (connect/disconnect)
     const handleDeviceChange = () => {
-      clientLogger.info('[useDeviceSelection] Device change detected, re-enumerating devices')
+      console.log('[useDeviceSelection] Device change detected, re-enumerating devices')
       getDevices()
     }
 
@@ -147,7 +146,7 @@ export function useDeviceSelection({
         permissionStatus = await navigator.permissions.query({ name: permissionName })
 
         const handlePermissionChange = () => {
-          clientLogger.info(`[useDeviceSelection] ${permissionName} permission changed to ${permissionStatus?.state}, re-enumerating devices`)
+          console.log(`[useDeviceSelection] ${permissionName} permission changed to ${permissionStatus?.state}, re-enumerating devices`)
           getDevices()
         }
 
@@ -159,7 +158,7 @@ export function useDeviceSelection({
         }
       } catch (err) {
         // Permission API might not be supported or permission name not recognized
-        clientLogger.info(`[useDeviceSelection] Permission monitoring not available for ${permissionName}`, {
+        console.log(`[useDeviceSelection] Permission monitoring not available for ${permissionName}`, {
           error: err instanceof Error ? err.message : String(err)
         })
         return () => {}
@@ -217,7 +216,7 @@ export function useDeviceSelection({
         setLocalStream(newStream)
       }
     } catch (err) {
-      clientLogger.error('Error switching device:', { error: err instanceof Error ? err.message : String(err) })
+      console.error('Error switching device:', { error: err instanceof Error ? err.message : String(err) })
       // Revert to previous device on error
       setSelectedDevice(previousDevice)
       localStorage.setItem(storageKey, previousDevice)

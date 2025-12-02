@@ -3,7 +3,6 @@ import { useTranslations } from 'next-intl'
 import CallUserInfo from './CallUserInfo'
 import { useStore } from '@/store/useStore'
 import { formatDuration } from '@/utils/formatDuration'
-import clientLogger from '@/utils/clientLogger'
 import { useEffect } from 'react'
 
 export default function CallEndedDialog() {
@@ -14,7 +13,7 @@ export default function CallEndedDialog() {
   }))
 
   useEffect(() => {
-    clientLogger.info('CallEndedDialog: callEndedInfo changed', {
+    console.log('CallEndedDialog: callEndedInfo changed', {
       hasInfo: !!callEndedInfo,
       user: callEndedInfo?.user?.name,
       durationS: callEndedInfo?.durationS

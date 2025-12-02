@@ -5,7 +5,6 @@ import type { VideoQuality } from '@/components/VideoQualitySelector'
 import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { MeetingStatus, User } from '@/generated/graphql'
 import { gql } from '@apollo/client'
-import clientLogger from '@/utils/clientLogger'
 
 interface UseWebRTCCallerProps {
   localStream?: MediaStream
@@ -85,7 +84,7 @@ export function useWebRTCCaller({
 
   const handleAnswer = async (pc: RTCPeerConnection, quality: VideoQuality, answer: RTCSessionDescriptionInit) => {
     try {
-      clientLogger.info('WebRTC: Processing call answer', {
+      console.log('WebRTC: Processing call answer', {
         signalingState: pc.signalingState,
         quality: quality,
         targetUserId: targetUser?._id,
@@ -99,7 +98,7 @@ export function useWebRTCCaller({
         await pc.setRemoteDescription(new RTCSessionDescription(answer))
         await dispatchPendingIceCandidates(pc)
         
-        clientLogger.info('WebRTC: Answer processed successfully', { 
+        console.log('WebRTC: Answer processed successfully', { 
           targetUserId: targetUser?._id,
           targetUserName: targetUser?.name,
           quality: quality
@@ -117,23 +116,23 @@ export function useWebRTCCaller({
                 }
               }
             })
-            clientLogger.info('Meeting status updated to CALLED', { meetingId })
+            console.log('Meeting status updated to CALLED', { meetingId })
           } catch (err) {
-            clientLogger.error('Failed to update meeting status', { 
+            console.error('Failed to update meeting status', { 
               meetingId,
               error: err instanceof Error ? err.message : String(err)
             })
           }
         }
       } else {
-        clientLogger.warn('WebRTC: Received answer in invalid signaling state', { 
+        console.warn('WebRTC: Received answer in invalid signaling state', { 
           signalingState: pc.signalingState,
           targetUserId: targetUser?._id,
           targetUserName: targetUser?.name
         })
       }
     } catch (err) {
-      clientLogger.error('WebRTC: Failed to process answer', { 
+      console.error('WebRTC: Failed to process answer', { 
         error: err instanceof Error ? err.message : String(err),
         targetUserId: targetUser?._id,
         targetUserName: targetUser?.name
@@ -144,14 +143,14 @@ export function useWebRTCCaller({
 
   const doCall = async (user: User, meetingId: string | null, meetingLastCallTime: number | null) => {
     if (!user) {
-      clientLogger.warn('WebRTC: Cannot initialize call - missing user')
+      console.warn('WebRTC: Cannot initialize call - missing user')
       return
     }
 
     setMeetingId(meetingId)
     setMeetingLastCallTime(meetingLastCallTime)
 
-    clientLogger.info('WebRTC: Initializing call connection', {
+    console.log('WebRTC: Initializing call connection', {
       targetUserId: user._id,
       targetUserName: user.name,
       meetingId: meetingId,
@@ -170,7 +169,7 @@ export function useWebRTCCaller({
       const streamToUse = await ensureMediaStream(localStream, setLocalStream, localVideoEnabled, localAudioEnabled)
 
       // Initialize call and get callId
-      clientLogger.debug('WebRTC: Initiating new call', {
+      console.log('WebRTC: Initiating new call', {
         targetUserId: user._id,
         targetUserName: user.name
       })
@@ -192,14 +191,14 @@ export function useWebRTCCaller({
       }
       setCallId(newCallId)
 
-      clientLogger.info('WebRTC: Call initiated successfully', {
+      console.log('WebRTC: Call initiated successfully', {
         targetUserId: user._id,
         targetUserName: user.name,
         callId: newCallId
       })
 
       if ( peerConnection.current ) {
-        clientLogger.debug('WebRTC: Closing existing peer connection')
+        console.log('WebRTC: Closing existing peer connection')
         peerConnection.current.close()
         peerConnection.current = null
       }
@@ -207,7 +206,7 @@ export function useWebRTCCaller({
       const pc = createPeerConnection()
       peerConnection.current = pc
 
-      clientLogger.debug('WebRTC: Setting up peer connection handlers', { 
+      console.log('WebRTC: Setting up peer connection handlers', { 
         targetUserId: user._id,
         targetUserName: user.name 
       })
@@ -216,11 +215,11 @@ export function useWebRTCCaller({
       pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
       pc.onconnectionstatechange = () => handleConnectionStateChange(pc, peerConnection)
 
-      clientLogger.debug('WebRTC: Adding local stream to peer connection')
+      console.log('WebRTC: Adding local stream to peer connection')
       addLocalStream(pc, streamToUse, true, localVideoEnabled, localAudioEnabled, qualityRemoteWantsFromUs)
       setupIceCandidateHandler(pc, user._id)
 
-      clientLogger.debug('WebRTC: Creating and sending offer', { 
+      console.log('WebRTC: Creating and sending offer', { 
         targetUserId: user._id,
         targetUserName: user.name 
       })
@@ -243,7 +242,7 @@ export function useWebRTCCaller({
         }
       })
 
-      clientLogger.info('WebRTC: Offer sent successfully', { 
+      console.log('WebRTC: Offer sent successfully', { 
         targetUserId: user._id,
         targetUserName: user.name,
         callId: syncStore().callId,
@@ -252,7 +251,7 @@ export function useWebRTCCaller({
         quality: qualityWeWantFromRemote
       })
     } catch (error) {
-      clientLogger.error('WebRTC setup error', {
+      console.error('WebRTC setup error', {
         targetUserId: user._id,
         targetUserName: user.name,
         error: error instanceof Error ? error.message : String(error)
@@ -263,7 +262,7 @@ export function useWebRTCCaller({
   }
 
   const cleanup = () => {
-    clientLogger.debug('WebRTC: Cleaning up caller')
+    console.log('WebRTC: Cleaning up caller')
     if (peerConnection.current) {
       peerConnection.current.close()
       peerConnection.current = null
@@ -274,9 +273,9 @@ export function useWebRTCCaller({
 
     // Stop local stream tracks and clear stream
     if (localStream) {
-      clientLogger.debug('WebRTC: Stopping local stream tracks')
+      console.log('WebRTC: Stopping local stream tracks')
       localStream.getTracks().forEach(track => {
-        clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+        console.log('WebRTC: Stopping track', { kind: track.kind, id: track.id })
         track.stop()
       })
       setLocalStream(undefined)

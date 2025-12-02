@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import clientLogger from '@/utils/clientLogger'
 
 export type PermissionState = 'prompt' | 'granted' | 'denied' | 'checking'
 
@@ -32,7 +31,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
   // Check current permission status
   const checkPermissions = useCallback(async () => {
     const timestamp = Date.now()
-    clientLogger.debug('[MediaPermissions] checkPermissions called', {
+    console.log('[MediaPermissions] checkPermissions called', {
       timestamp,
       isIOS
     })
@@ -41,7 +40,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
       // Try to enumerate devices to check if we have permissions
       const devices = await navigator.mediaDevices.enumerateDevices()
 
-      clientLogger.debug('[MediaPermissions] Devices enumerated', {
+      console.log('[MediaPermissions] Devices enumerated', {
         deviceCount: devices.length,
         videoDevices: devices.filter(d => d.kind === 'videoinput').length,
         audioDevices: devices.filter(d => d.kind === 'audioinput').length,
@@ -52,7 +51,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
       const hasLabels = devices.some(device => device.label !== '')
 
       if (hasLabels) {
-        clientLogger.info('[MediaPermissions] Permissions granted (devices have labels)', {
+        console.log('[MediaPermissions] Permissions granted (devices have labels)', {
           timestamp
         })
         setPermissions({
@@ -70,7 +69,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
           // @ts-ignore
           const micPermission = await navigator.permissions.query({ name: 'microphone' })
 
-          clientLogger.debug('[MediaPermissions] Permission API result', {
+          console.log('[MediaPermissions] Permission API result', {
             camera: cameraPermission.state,
             microphone: micPermission.state
           })
@@ -82,7 +81,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
           return
         } catch (err) {
           // Permission API not supported or names not recognized (iOS Safari)
-          clientLogger.debug('[MediaPermissions] Permission API not available', {
+          console.log('[MediaPermissions] Permission API not available', {
             error: err instanceof Error ? err.message : String(err)
           })
           console.log('[MediaPermissions] Permission API not available')
@@ -90,13 +89,13 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
       }
 
       // Default to 'prompt' if we can't determine
-      clientLogger.info('[MediaPermissions] Defaulting to prompt state')
+      console.log('[MediaPermissions] Defaulting to prompt state')
       setPermissions({
         camera: 'prompt',
         microphone: 'prompt'
       })
     } catch (err) {
-      clientLogger.error('[MediaPermissions] Error checking permissions', {
+      console.error('[MediaPermissions] Error checking permissions', {
         error: err instanceof Error ? err.message : String(err)
       })
       console.error('[MediaPermissions] Error checking permissions:', err)
@@ -111,7 +110,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     const timestamp = Date.now()
     const callStack = new Error().stack
-    clientLogger.info('[MediaPermissions] requestPermissions called', {
+    console.log('[MediaPermissions] requestPermissions called', {
       timestamp,
       isIOS,
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
@@ -125,14 +124,14 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
         audio: true
       }
 
-      clientLogger.debug('[MediaPermissions] Calling getUserMedia', {
+      console.log('[MediaPermissions] Calling getUserMedia', {
         constraints,
         timestamp
       })
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints)
 
-      clientLogger.info('[MediaPermissions] getUserMedia success in requestPermissions', {
+      console.log('[MediaPermissions] getUserMedia success in requestPermissions', {
         timestamp,
         timeTaken: Date.now() - timestamp,
         streamId: stream.id,
@@ -150,7 +149,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
 
       // Clean up the stream immediately
       stream.getTracks().forEach(track => {
-        clientLogger.debug('[MediaPermissions] Stopping permission test track', {
+        console.log('[MediaPermissions] Stopping permission test track', {
           kind: track.kind,
           id: track.id,
           label: track.label
@@ -158,7 +157,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
         track.stop()
       })
 
-      clientLogger.info('[MediaPermissions] Permission test stream stopped, updating state to granted')
+      console.log('[MediaPermissions] Permission test stream stopped, updating state to granted')
 
       // Update state to granted
       setPermissions({
@@ -168,7 +167,7 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
 
       return true
     } catch (err: any) {
-      clientLogger.error('[MediaPermissions] Error requesting permissions', {
+      console.error('[MediaPermissions] Error requesting permissions', {
         timestamp,
         timeTaken: Date.now() - timestamp,
         errorName: err?.name,
@@ -179,13 +178,13 @@ export function useMediaPermissions(): UseMediaPermissionsResult {
 
       // Check if it's a permission denial or other error
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        clientLogger.warn('[MediaPermissions] Permission denied by user')
+        console.warn('[MediaPermissions] Permission denied by user')
         setPermissions({
           camera: 'denied',
           microphone: 'denied'
         })
       } else {
-        clientLogger.warn('[MediaPermissions] Permission request failed (not denial)', {
+        console.warn('[MediaPermissions] Permission request failed (not denial)', {
           errorName: err?.name
         })
         // Other errors (device not found, etc.)

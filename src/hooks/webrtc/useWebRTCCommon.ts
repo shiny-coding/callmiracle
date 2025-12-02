@@ -5,7 +5,6 @@ import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { ICE_SERVERS } from '@/constants/webrtc'
-import clientLogger from '@/utils/clientLogger'
 
 export const CALL_USER = gql`
   mutation CallUser($input: CallUserInput!) {
@@ -60,7 +59,7 @@ export function useWebRTCCommon(callUser: any) {
   const { refetchMyMeetingsWithPeers } = useMeetings()
 
   const handleConnectionStateChange = (pc: RTCPeerConnection, peerConnection: React.MutableRefObject<RTCPeerConnection | null>) => {
-    clientLogger.debug('[WebRTC] Connection state changed', {
+    console.log('[WebRTC] Connection state changed', {
       connectionState: pc.connectionState,
       iceConnectionState: pc.iceConnectionState,
       iceGatheringState: pc.iceGatheringState,
@@ -68,10 +67,10 @@ export function useWebRTCCommon(callUser: any) {
     })
 
     if (pc.connectionState === 'connected') {
-      clientLogger.info('[WebRTC] Connection established successfully')
+      console.log('[WebRTC] Connection established successfully')
       setConnectionStatus(ConnectionStatus.CONNECTED)
     } else if (pc.connectionState === 'failed') {
-      clientLogger.error('[WebRTC] Connection failed', {
+      console.error('[WebRTC] Connection failed', {
         iceConnectionState: pc.iceConnectionState
       })
       pc.close()
@@ -88,7 +87,7 @@ export function useWebRTCCommon(callUser: any) {
         const videoTrack = sender.track
         const config = QUALITY_CONFIGS[quality]
 
-        clientLogger.debug('[WebRTC] Applying quality settings', {
+        console.log('[WebRTC] Applying quality settings', {
           quality,
           config,
           hasVideoTrack: !!videoTrack,
@@ -109,7 +108,7 @@ export function useWebRTCCommon(callUser: any) {
             frameRate: { max: config.maxFramerate }
           })
 
-          clientLogger.debug('[WebRTC] Track constraints applied', {
+          console.log('[WebRTC] Track constraints applied', {
             trackId: videoTrack.id,
             settings: videoTrack.getSettings()
           })
@@ -128,17 +127,17 @@ export function useWebRTCCommon(callUser: any) {
             params.encodings[0].scaleResolutionDownBy = 1920 / config.width
             await sender.setParameters(params)
 
-            clientLogger.debug('[WebRTC] Sender parameters updated', {
+            console.log('[WebRTC] Sender parameters updated', {
               encodings: params.encodings[0]
             })
           }
         }
       } else {
-        clientLogger.warn('[WebRTC] No sender with video track found for quality update')
+        console.warn('[WebRTC] No sender with video track found for quality update')
         console.log('WebRTC: No sender with video track found')
       }
     } catch (err) {
-      clientLogger.error('[WebRTC] Failed to apply quality settings', { error: err })
+      console.error('[WebRTC] Failed to apply quality settings', { error: err })
       console.error('Failed to apply quality settings:', err)
       throw err
     }
@@ -167,7 +166,7 @@ export function useWebRTCCommon(callUser: any) {
       settings: t.getSettings()
     }))
 
-    clientLogger.debug('[WebRTC] Adding local stream tracks', {
+    console.log('[WebRTC] Adding local stream tracks', {
       isInitiator,
       localVideoEnabled,
       localAudioEnabled,
@@ -187,7 +186,7 @@ export function useWebRTCCommon(callUser: any) {
 
     if (isInitiator) {
       if (!pc.getTransceivers().length) {
-        clientLogger.debug('[WebRTC] Adding transceivers as initiator', {
+        console.log('[WebRTC] Adding transceivers as initiator', {
           localAudioEnabled,
           localVideoEnabled
         })
@@ -211,7 +210,7 @@ export function useWebRTCCommon(callUser: any) {
       const existingSender = pc.getSenders().find(s => s.track?.kind === track.kind)
 
       if (existingSender) {
-        clientLogger.debug('[WebRTC] Replacing existing track', {
+        console.log('[WebRTC] Replacing existing track', {
           kind: track.kind,
           trackId: track.id,
           enabled: track.enabled,
@@ -222,16 +221,16 @@ export function useWebRTCCommon(callUser: any) {
         if (track.kind === 'video' && !localVideoEnabled) {
           track.enabled = false
           track.stop()
-          clientLogger.debug('[WebRTC] Stopped disabled video track')
+          console.log('[WebRTC] Stopped disabled video track')
         } else if (track.kind === 'audio' && !localAudioEnabled) {
           track.enabled = false
           track.stop()
-          clientLogger.debug('[WebRTC] Stopped disabled audio track')
+          console.log('[WebRTC] Stopped disabled audio track')
         } else {
           existingSender.replaceTrack(track)
         }
       } else if ((track.kind === 'audio' && localAudioEnabled) || (track.kind === 'video' && localVideoEnabled)) {
-        clientLogger.debug('[WebRTC] Adding new track', {
+        console.log('[WebRTC] Adding new track', {
           kind: track.kind,
           trackId: track.id,
           enabled: track.enabled,
@@ -260,11 +259,11 @@ export function useWebRTCCommon(callUser: any) {
 
   const handleTrack = (event: RTCTrackEvent, peerConnection: RTCPeerConnection, remoteVideoRef: React.RefObject<HTMLVideoElement>, remoteStreamRef: React.MutableRefObject<MediaStream | null>) => {
     if (!peerConnection) {
-      clientLogger.warn('[WebRTC] handleTrack called but no peerConnection')
+      console.warn('[WebRTC] handleTrack called but no peerConnection')
       return
     }
 
-    clientLogger.debug('[WebRTC] Track event received', {
+    console.log('[WebRTC] Track event received', {
       trackKind: event.track.kind,
       trackId: event.track.id,
       trackLabel: event.track.label,
@@ -280,7 +279,7 @@ export function useWebRTCCommon(callUser: any) {
     if (!event.streams[0]?.id.includes(currentUser?._id || '')) {
       const [remoteStream] = event.streams
       if (remoteStream) {
-        clientLogger.debug('[WebRTC] Remote stream received', {
+        console.log('[WebRTC] Remote stream received', {
           streamId: remoteStream.id,
           trackCount: remoteStream.getTracks().length,
           tracks: remoteStream.getTracks().map(t => ({
@@ -301,7 +300,7 @@ export function useWebRTCCommon(callUser: any) {
           // Monitor remote track ended events
           remoteStream.getTracks().forEach(track => {
             track.addEventListener('ended', () => {
-              clientLogger.warn('[WebRTC] Remote track ended', {
+              console.warn('[WebRTC] Remote track ended', {
                 kind: track.kind,
                 id: track.id,
                 label: track.label
@@ -309,14 +308,14 @@ export function useWebRTCCommon(callUser: any) {
             })
 
             track.addEventListener('mute', () => {
-              clientLogger.debug('[WebRTC] Remote track muted', {
+              console.log('[WebRTC] Remote track muted', {
                 kind: track.kind,
                 id: track.id
               })
             })
 
             track.addEventListener('unmute', () => {
-              clientLogger.debug('[WebRTC] Remote track unmuted', {
+              console.log('[WebRTC] Remote track unmuted', {
                 kind: track.kind,
                 id: track.id
               })
@@ -327,13 +326,13 @@ export function useWebRTCCommon(callUser: any) {
         // Attach to video element if it exists
         if (remoteVideoRef?.current) {
           remoteVideoRef.current.srcObject = remoteStream
-          clientLogger.debug('[WebRTC] Remote stream attached to video element')
+          console.log('[WebRTC] Remote stream attached to video element')
         }
 
         // Apply saved remote quality preference if it exists
         if (event.track.kind === 'video') {
           const qualityRemoteWantsFromUs = syncStore().qualityRemoteWantsFromUs
-          clientLogger.debug('[WebRTC] Applying quality from remote preference', {
+          console.log('[WebRTC] Applying quality from remote preference', {
             quality: qualityRemoteWantsFromUs
           })
           applyLocalQuality(peerConnection, qualityRemoteWantsFromUs).catch(err =>
@@ -342,7 +341,7 @@ export function useWebRTCCommon(callUser: any) {
         }
       }
     } else {
-      clientLogger.debug('[WebRTC] Ignoring own stream in track event')
+      console.log('[WebRTC] Ignoring own stream in track event')
     }
   }
 
@@ -365,14 +364,14 @@ export function useWebRTCCommon(callUser: any) {
 
     // Monitor ICE gathering state
     pc.addEventListener('icegatheringstatechange', () => {
-      clientLogger.debug('[WebRTC] ICE gathering state changed', {
+      console.log('[WebRTC] ICE gathering state changed', {
         iceGatheringState: pc.iceGatheringState
       })
     })
 
     // Monitor ICE connection state
     pc.addEventListener('iceconnectionstatechange', () => {
-      clientLogger.debug('[WebRTC] ICE connection state changed', {
+      console.log('[WebRTC] ICE connection state changed', {
         iceConnectionState: pc.iceConnectionState
       })
     })
@@ -380,7 +379,7 @@ export function useWebRTCCommon(callUser: any) {
     pc.onicecandidate = async (event) => {
       if (event.candidate) {
         const parsed = parseCandidate(event.candidate)
-        clientLogger.debug('[WebRTC] ICE candidate generated', {
+        console.log('[WebRTC] ICE candidate generated', {
           candidate: parsed,
           callId
         })
@@ -397,20 +396,20 @@ export function useWebRTCCommon(callUser: any) {
               }
             }
           })
-          clientLogger.debug('[WebRTC] ICE candidate sent to peer')
+          console.log('[WebRTC] ICE candidate sent to peer')
         } catch (err) {
-          clientLogger.error('[WebRTC] Failed to send ICE candidate', { error: err })
+          console.error('[WebRTC] Failed to send ICE candidate', { error: err })
           console.error('WebRTC: Failed to send ICE candidate:', err)
         }
       } else {
-        clientLogger.debug('[WebRTC] ICE gathering complete (null candidate)')
+        console.log('[WebRTC] ICE gathering complete (null candidate)')
       }
     }
   }
 
   const handleIceCandidate = async (pc: RTCPeerConnection | null, candidate: RTCIceCandidateInit) => {
     const parsed = parseCandidate(candidate)
-    clientLogger.debug('[WebRTC] Received ICE candidate from peer', {
+    console.log('[WebRTC] Received ICE candidate from peer', {
       candidate: parsed,
       hasRemoteDescription: !!pc?.remoteDescription
     })
@@ -418,15 +417,15 @@ export function useWebRTCCommon(callUser: any) {
     try {
       if (pc?.remoteDescription && pc.remoteDescription.type) {
         await pc.addIceCandidate(candidate)
-        clientLogger.debug('[WebRTC] ICE candidate added to peer connection')
+        console.log('[WebRTC] ICE candidate added to peer connection')
       } else {
         pendingIceCandidates.current.push(candidate)
-        clientLogger.debug('[WebRTC] ICE candidate buffered (no remote description yet)', {
+        console.log('[WebRTC] ICE candidate buffered (no remote description yet)', {
           pendingCount: pendingIceCandidates.current.length
         })
       }
     } catch (err) {
-      clientLogger.error('[WebRTC] Failed to handle ICE candidate', { error: err })
+      console.error('[WebRTC] Failed to handle ICE candidate', { error: err })
       console.error('WebRTC: Failed to handle ICE candidate:', err)
     }
   }
@@ -537,7 +536,7 @@ export function useWebRTCCommon(callUser: any) {
     localAudioEnabled: boolean
   ): Promise<MediaStream> => {
     const timestamp = Date.now()
-    clientLogger.debug('[WebRTC] ensureMediaStream called', {
+    console.log('[WebRTC] ensureMediaStream called', {
       timestamp,
       hasCurrentStream: !!currentStream,
       localVideoEnabled,
@@ -556,7 +555,7 @@ export function useWebRTCCommon(callUser: any) {
         (localVideoEnabled === hasVideoTrack) &&
         (localAudioEnabled === hasAudioTrack)
 
-      clientLogger.debug('[WebRTC] Existing stream analysis', {
+      console.log('[WebRTC] Existing stream analysis', {
         trackCount: tracks.length,
         tracks: tracks.map(t => ({
           kind: t.kind,
@@ -574,12 +573,12 @@ export function useWebRTCCommon(callUser: any) {
       })
 
       if (hasEndedTracks) {
-        clientLogger.info('[WebRTC] LocalStream has ended tracks, creating new stream')
+        console.log('[WebRTC] LocalStream has ended tracks, creating new stream')
         console.log('WebRTC: LocalStream has ended tracks, creating new stream')
         // Stop old tracks
         tracks.forEach(track => track.stop())
       } else if (!streamMatchesState) {
-        clientLogger.info('[WebRTC] LocalStream tracks do not match enabled state, creating new stream', {
+        console.log('[WebRTC] LocalStream tracks do not match enabled state, creating new stream', {
           expectedVideo: localVideoEnabled,
           expectedAudio: localAudioEnabled,
           actualVideo: hasVideoTrack,
@@ -589,19 +588,19 @@ export function useWebRTCCommon(callUser: any) {
         // Stop old tracks since we need a different configuration
         tracks.forEach(track => track.stop())
       } else {
-        clientLogger.debug('[WebRTC] Using existing localStream (valid)')
+        console.log('[WebRTC] Using existing localStream (valid)')
         console.log('WebRTC: Using existing localStream')
         return currentStream
       }
     } else {
-      clientLogger.info('[WebRTC] No localStream exists, creating new stream')
+      console.log('[WebRTC] No localStream exists, creating new stream')
       console.log('WebRTC: No localStream exists, creating new stream')
     }
 
     // Create new stream - only request tracks that are enabled
     // If both audio and video are disabled, create an empty MediaStream
     if (!localVideoEnabled && !localAudioEnabled) {
-      clientLogger.debug('[WebRTC] Both audio and video disabled, creating empty stream')
+      console.log('[WebRTC] Both audio and video disabled, creating empty stream')
       console.log('WebRTC: Both audio and video disabled, creating empty stream')
       const emptyStream = new MediaStream()
       setLocalStream(emptyStream)
@@ -619,7 +618,7 @@ export function useWebRTCCommon(callUser: any) {
       audio: localAudioEnabled
     }
 
-    clientLogger.info('[WebRTC] Requesting getUserMedia', {
+    console.log('[WebRTC] Requesting getUserMedia', {
       timestamp,
       constraints,
       selectedVideoDevice,
@@ -629,7 +628,7 @@ export function useWebRTCCommon(callUser: any) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints)
 
-      clientLogger.info('[WebRTC] getUserMedia success', {
+      console.log('[WebRTC] getUserMedia success', {
         timestamp,
         timeTaken: Date.now() - timestamp,
         streamId: stream.id,
@@ -648,7 +647,7 @@ export function useWebRTCCommon(callUser: any) {
       // Monitor track ended events on new stream
       stream.getTracks().forEach(track => {
         track.addEventListener('ended', () => {
-          clientLogger.warn('[WebRTC] Local track ended', {
+          console.warn('[WebRTC] Local track ended', {
             kind: track.kind,
             id: track.id,
             label: track.label,
@@ -657,14 +656,14 @@ export function useWebRTCCommon(callUser: any) {
         })
 
         track.addEventListener('mute', () => {
-          clientLogger.debug('[WebRTC] Local track muted', {
+          console.log('[WebRTC] Local track muted', {
             kind: track.kind,
             id: track.id
           })
         })
 
         track.addEventListener('unmute', () => {
-          clientLogger.debug('[WebRTC] Local track unmuted', {
+          console.log('[WebRTC] Local track unmuted', {
             kind: track.kind,
             id: track.id
           })
@@ -674,7 +673,7 @@ export function useWebRTCCommon(callUser: any) {
       setLocalStream(stream)
       return stream
     } catch (err) {
-      clientLogger.error('[WebRTC] getUserMedia failed', {
+      console.error('[WebRTC] getUserMedia failed', {
         timestamp,
         timeTaken: Date.now() - timestamp,
         error: err,

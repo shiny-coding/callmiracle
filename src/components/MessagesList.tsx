@@ -11,7 +11,8 @@ import {
   Paper
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
-import { gql, useQuery, useMutation, useApolloClient } from '@apollo/client'
+import { gql, useQuery, useMutation, useApolloClient, NetworkStatus } from '@apollo/client'
+import clientLogger from '@/utils/clientLogger'
 import { Message, Conversation } from '@/generated/graphql'
 import { useStore } from '@/store/useStore'
 import { useConversations } from '@/store/ConversationsProvider'
@@ -45,6 +46,7 @@ const ADD_MESSAGE = gql`
       userId
       message
       createdAt
+      updatedAt
       edited
     }
   }
@@ -54,9 +56,10 @@ interface MessagesListProps {
   conversationId: string;
   onMessageSent?: () => void;
   onLoadNewMessages?: (loadNewMessages: () => Promise<void>) => void;
+  onMessagesLoaded?: () => void;
 }
 
-export default function MessagesList({ conversationId, onMessageSent, onLoadNewMessages }: MessagesListProps) {
+export default function MessagesList({ conversationId, onMessageSent, onLoadNewMessages, onMessagesLoaded }: MessagesListProps) {
   const t = useTranslations()
   const currentUser = useStore(state => state.currentUser)
   const { conversations } = useConversations()
@@ -74,6 +77,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
   const isFirstLoad = useRef(true)
 
   const { subscribeToNotifications } = useSubscriptions()
+  const client = useApolloClient()
 
   const isTempConversation = conversationId.startsWith('temp_');
 
@@ -98,9 +102,10 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
     : null;
 
   // Query for initial messages
-  const { data, loading, error, fetchMore } = useQuery(GET_MESSAGES, {
+  const { data, loading, error, fetchMore, refetch, networkStatus } = useQuery(GET_MESSAGES, {
     variables: { conversationId },
     skip: isTempConversation,
+    notifyOnNetworkStatusChange: true,
     onCompleted: (data) => {
       if (data?.getMessages) {
         setMessages(data.getMessages)
@@ -126,10 +131,17 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
 
         // Scroll to bottom on initial load
         if (isFirstLoad.current) {
-          setTimeout(() => {
-            scrollToBottom()
-            isFirstLoad.current = false
-          }, 100)
+          // Use requestAnimationFrame to ensure DOM has rendered, then scroll
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              scrollToBottom()
+              isFirstLoad.current = false
+              // Notify parent that messages are loaded (for marking as read)
+              if (onMessagesLoaded) {
+                onMessagesLoaded()
+              }
+            })
+          })
         }
       }
     }
@@ -168,11 +180,118 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
     setHasMore(!isTempConversation)
   }, [conversationId, isTempConversation])
 
+  // Listen for refresh conversation event (from push notification click when already on page)
+  useEffect(() => {
+    const handleRefreshConversation = async () => {
+      // Capture current message IDs before refetch to detect truly new messages
+      const existingMessageIds = new Set(messages.map(m => m._id))
+
+      clientLogger.info('[MessagesList] Refresh conversation event received, refetching messages', {
+        conversationId,
+        currentMessagesCount: messages.length,
+        newestMessageId: messages[0]?._id
+      })
+
+      // Evict ALL getMessages cache entries to force fresh fetch
+      client.cache.evict({
+        id: 'ROOT_QUERY',
+        fieldName: 'getMessages'
+      })
+      client.cache.gc()
+
+      // Force network fetch
+      const result = await refetch({ conversationId })
+
+      clientLogger.info('[MessagesList] Messages refetched', {
+        newMessagesCount: result.data?.getMessages?.length,
+        firstMessageId: result.data?.getMessages?.[0]?._id
+      })
+
+      // Update messages state and highlight only truly new messages
+      if (result.data?.getMessages) {
+        const fetchedMessages = result.data.getMessages
+        setMessages(fetchedMessages)
+
+        // Find messages that are new (not in our previous set) and from the other user
+        const trulyNewIds = new Set<string>()
+        for (const msg of fetchedMessages) {
+          if (!existingMessageIds.has(msg._id) && msg.userId !== currentUser?._id) {
+            trulyNewIds.add(msg._id)
+          }
+        }
+
+        if (trulyNewIds.size > 0) {
+          // Add to existing highlights rather than replacing
+          setNewMessageIds(prev => {
+            const updated = new Set(prev)
+            for (const id of trulyNewIds) {
+              updated.add(id)
+            }
+            return updated
+          })
+          clientLogger.info('[MessagesList] New messages highlighted', {
+            count: trulyNewIds.size,
+            ids: Array.from(trulyNewIds)
+          })
+        }
+
+        // Scroll to bottom to show new messages
+        setTimeout(scrollToBottom, 100)
+      }
+    }
+
+    window.addEventListener('refreshConversation', handleRefreshConversation)
+    return () => {
+      window.removeEventListener('refreshConversation', handleRefreshConversation)
+    }
+  }, [refetch, conversationId, messages, client, currentUser?._id])
+
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
     }
   }
+
+  // Track distance from bottom for keyboard show/hide handling
+  const distanceFromBottomRef = useRef(0)
+
+  // Update distance from bottom on every scroll
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const updateDistanceFromBottom = () => {
+      distanceFromBottomRef.current = container.scrollHeight - container.scrollTop - container.clientHeight
+    }
+
+    container.addEventListener('scroll', updateDistanceFromBottom)
+    // Initialize
+    updateDistanceFromBottom()
+
+    return () => {
+      container.removeEventListener('scroll', updateDistanceFromBottom)
+    }
+  }, [messages]) // Re-attach when messages change
+
+  // Handle iOS keyboard show/hide - maintain scroll position relative to bottom
+  useEffect(() => {
+    if (!window.visualViewport) return
+
+    const handleViewportResize = () => {
+      const container = messagesContainerRef.current
+      if (container) {
+        // Restore the same distance from bottom after resize
+        const newScrollTop = container.scrollHeight - container.clientHeight - distanceFromBottomRef.current
+        container.scrollTop = Math.max(0, newScrollTop)
+      }
+    }
+
+    window.visualViewport.addEventListener('resize', handleViewportResize)
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportResize)
+    }
+  }, [])
 
   const handleScroll = useCallback(async () => {
     if (!messagesContainerRef.current || loadingMore || !hasMore || isTempConversation) return
@@ -260,9 +379,14 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
             const updatedMessages = [...newMessages, ...messages]
             setMessages(updatedMessages)
 
-            // Mark new messages for highlighting (will be cleared on click)
-            const newIds = new Set<string>(newMessages.map((m: Message) => String(m._id)))
-            setNewMessageIds(newIds)
+            // Add new messages to highlighting set (preserving existing highlights)
+            setNewMessageIds(prev => {
+              const updated = new Set(prev)
+              for (const m of newMessages) {
+                updated.add(String(m._id))
+              }
+              return updated
+            })
 
             // Scroll to bottom to show new messages
             setTimeout(scrollToBottom, 100)
@@ -354,7 +478,11 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
     }
   }, [newMessageIds])
 
-  if (loading) {
+  // Only show full-screen loading for initial load, not refetch
+  // NetworkStatus.loading (1) = initial load, NetworkStatus.refetch (4) = refetching
+  const isInitialLoading = loading && networkStatus === NetworkStatus.loading
+
+  if (isInitialLoading) {
     return (
       <Box className="flex items-center justify-center h-full">
         <CircularProgress />
@@ -468,10 +596,10 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
             onClick={handleSendMessage}
             disabled={!messageText.trim() || isSending}
             className={`icon-gradient ${
-              !messageText.trim() || isSending ? 'opacity-50' : ''
+              !messageText.trim() && !isSending ? 'opacity-50' : ''
             }`}
           >
-            {isSending ? <CircularProgress size={20} /> : <SendIcon />}
+            {isSending ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
           </IconButton>
         </Box>
       </Paper>

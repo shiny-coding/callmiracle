@@ -1,5 +1,5 @@
 // Version number - update this when you make changes to force update
-const VERSION = '1.0.7'
+const VERSION = '1.0.11'
 console.log('Service Worker version:', VERSION)
 
 // Install event - activate immediately
@@ -144,38 +144,56 @@ self.addEventListener('notificationclick', event => {
     console.log('No notificationId found in notification data')
   }
 
+  // Handle navigation - try postMessage first to avoid page reload
   event.waitUntil(
-    Promise.all(trackingPromises).then(() =>
-      clients.matchAll({
-        type: 'window',
-        includeUncontrolled: true
-      }).then(clientsArr => {
-      // Look for an existing window that we can navigate to the target URL
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then(clientsArr => {
+      console.log('[SW] Found clients:', clientsArr.length, clientsArr.map(c => c.url))
+
+      // Look for an existing visible window on our domain
       const existingClient = clientsArr.find(client => {
-        // Check if there's a window open to our domain
         return client.url.includes(self.location.origin)
       })
 
       if (existingClient) {
-        // Navigate existing window to target URL and focus it
-        return existingClient.navigate(targetUrl).then(client => {
-          if (client) {
-            return client.focus()
-          }
-          // If navigate fails, try to focus the existing client
+        console.log('[SW] Found existing client:', existingClient.url, 'visibilityState:', existingClient.visibilityState)
+
+        // Check if we're already on the target URL (just need to focus)
+        const existingUrl = new URL(existingClient.url)
+        const targetUrlObj = new URL(targetUrl, self.location.origin)
+
+        if (existingUrl.pathname === targetUrlObj.pathname &&
+            existingUrl.search === targetUrlObj.search) {
+          console.log('[SW] Already on target page, just focusing')
           return existingClient.focus()
-        }).catch(() => {
-          // If both navigate and focus fail, try opening a new window
-          return clients.openWindow(targetUrl)
+        }
+
+        // Try postMessage first to avoid page reload
+        console.log('[SW] Sending postMessage to navigate to:', targetUrl)
+        existingClient.postMessage({
+          type: 'NOTIFICATION_CLICK',
+          url: targetUrl,
+          notificationType: notificationType
         })
+
+        // Focus the client
+        return existingClient.focus()
       } else {
         // No existing window, open a new one
+        console.log('[SW] No existing client, opening new window')
         return clients.openWindow(targetUrl)
       }
     }).catch(error => {
-      console.error('Error handling notification click:', error)
+      console.error('[SW] Error handling notification click:', error)
       // Fallback: try to open new window
       return clients.openWindow(targetUrl)
-    }))
+    })
   )
+
+  // Fire tracking promises in background (don't wait for them)
+  Promise.all(trackingPromises).catch(err => {
+    console.error('Error tracking notification click:', err)
+  })
 }) 

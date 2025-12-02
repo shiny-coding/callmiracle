@@ -4,13 +4,12 @@
  */
 
 import { triggerTestException, triggerTestPromiseRejection, triggerTestAsyncError } from './errorTestHelpers'
-import clientLogger from './clientLogger'
 
 /**
  * Trigger from menu action
  */
 export function triggerMenuException(): void {
-  clientLogger.debug('Menu exception trigger initiated', {
+  console.log('Menu exception trigger initiated', {
     userAction: 'menu_click',
     component: 'MediaControls'
   })
@@ -22,7 +21,7 @@ export function triggerMenuException(): void {
  * Trigger promise rejection from menu
  */
 export function triggerMenuPromiseRejection(): void {
-  clientLogger.debug('Menu promise rejection trigger initiated', {
+  console.log('Menu promise rejection trigger initiated', {
     userAction: 'menu_click',
     component: 'MediaControls'
   })
@@ -34,7 +33,7 @@ export function triggerMenuPromiseRejection(): void {
  * Trigger async error from menu
  */
 export function triggerMenuAsyncError(): void {
-  clientLogger.debug('Menu async error trigger initiated', {
+  console.log('Menu async error trigger initiated', {
     userAction: 'menu_click',
     component: 'MediaControls'
   })
@@ -63,7 +62,7 @@ export function triggerComplexException(): void {
     } : null
   }
 
-  clientLogger.info('Triggering complex exception with context', context)
+  console.log('Triggering complex exception with context', context)
 
   triggerTestException('complex-test')
 }

@@ -8,7 +8,6 @@ import { useMediaPermissions } from '@/hooks/useMediaPermissions'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { IconButton, Button, Dialog, DialogTitle, DialogContent } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import clientLogger from '@/utils/clientLogger'
 
 // Clean up device name by removing hardware IDs like (046d:082d)
 function cleanDeviceName(name: string): string {
@@ -18,14 +17,14 @@ function cleanDeviceName(name: string): string {
 
 async function getVideoDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
   try {
-    clientLogger.info('[getVideoDeviceLabel] Processing device', {
+    console.log('[getVideoDeviceLabel] Processing device', {
       deviceId: device.deviceId?.slice(0, 10),
       label: device.label,
       kind: device.kind
     })
 
     if (!device.deviceId) {
-      clientLogger.info('[getVideoDeviceLabel] No deviceId, returning fallback')
+      console.log('[getVideoDeviceLabel] No deviceId, returning fallback')
       return `Camera (no ID)`
     }
 
@@ -33,28 +32,28 @@ async function getVideoDeviceLabel(device: MediaDeviceInfo): Promise<string | nu
     if (device.label) {
       const labelLower = device.label.toLowerCase()
       if (labelLower.includes('front') || labelLower.includes('user')) {
-        clientLogger.info('[getVideoDeviceLabel] Detected front camera')
+        console.log('[getVideoDeviceLabel] Detected front camera')
         return 'Front Camera'
       }
       if (labelLower.includes('back') || labelLower.includes('rear') || labelLower.includes('environment')) {
-        clientLogger.info('[getVideoDeviceLabel] Detected back camera')
+        console.log('[getVideoDeviceLabel] Detected back camera')
         return 'Back Camera'
       }
 
       // Return the label as-is if it doesn't match known patterns
-      clientLogger.info('[getVideoDeviceLabel] Using original label', { label: device.label })
+      console.log('[getVideoDeviceLabel] Using original label', { label: device.label })
       return device.label
     }
 
     // Don't create test streams - causes issues on iOS
     // Just return a generic label
     const genericLabel = `Camera ${device.deviceId.slice(0, 5)}...`
-    clientLogger.info('[getVideoDeviceLabel] No label, using generic', { label: genericLabel })
+    console.log('[getVideoDeviceLabel] No label, using generic', { label: genericLabel })
     return genericLabel
   } catch (err) {
     // Even on error, return a fallback label so the device isn't filtered out
     const fallbackLabel = device.label || `Camera ${device.deviceId?.slice(0, 5) || 'Unknown'}...`
-    clientLogger.error('[getVideoDeviceLabel] Error processing device, using fallback', {
+    console.error('[getVideoDeviceLabel] Error processing device, using fallback', {
       fallbackLabel,
       error: err instanceof Error ? err.message : String(err)
     })
@@ -97,7 +96,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
 
       if (isIOS && isInCall) {
-        clientLogger.info('[DeviceSettings] iOS in call - skipping permission request to avoid camera conflict', {
+        console.log('[DeviceSettings] iOS in call - skipping permission request to avoid camera conflict', {
           connectionStatus,
           permissionsState: permissions
         })
@@ -106,7 +105,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
       // Check if permissions are already granted
       if (permissions.camera === 'granted' && permissions.microphone === 'granted') {
-        clientLogger.info('[DeviceSettings] Permissions already granted')
+        console.log('[DeviceSettings] Permissions already granted')
         return
       }
 
@@ -116,7 +115,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       }
 
       // Request permissions
-      clientLogger.info('[DeviceSettings] Requesting media permissions')
+      console.log('[DeviceSettings] Requesting media permissions')
       await requestPermissions()
     }
 
@@ -145,7 +144,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
   // Debug logging for device lists
   useEffect(() => {
-    clientLogger.info('[DeviceSettings] Video devices updated', {
+    console.log('[DeviceSettings] Video devices updated', {
       count: videoDevices.devices.length,
       devices: videoDevices.devices.map(d => ({
         id: d.deviceId.slice(0, 10),
@@ -157,7 +156,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   }, [videoDevices.devices, videoDevices.deviceLabels, videoDevices.selectedDevice, localVideoEnabled])
 
   useEffect(() => {
-    clientLogger.info('[DeviceSettings] Audio devices updated', {
+    console.log('[DeviceSettings] Audio devices updated', {
       count: audioDevices.devices.length,
       devices: audioDevices.devices.map(d => d.label),
       selectedDevice: audioDevices.selectedDevice,
@@ -170,7 +169,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     if (!open) {
       const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
 
-      clientLogger.info('[DeviceSettings] Dialog closed, starting cleanup', {
+      console.log('[DeviceSettings] Dialog closed, starting cleanup', {
         hasPreviewStream: !!previewStreamRef.current,
         trackCount: previewStreamRef.current?.getTracks().length || 0,
         connectionStatus,
@@ -198,7 +197,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             // Safe to stop - this is a separate preview stream
             const tracks = previewStreamRef.current.getTracks()
             tracks.forEach(track => {
-              clientLogger.info('[DeviceSettings] Stopping preview track on dialog close', {
+              console.log('[DeviceSettings] Stopping preview track on dialog close', {
                 trackId: track.id,
                 kind: track.kind,
                 label: track.label,
@@ -208,7 +207,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             })
           } else {
             // Do NOT stop - this is the active call stream on iOS
-            clientLogger.info('[DeviceSettings] NOT stopping tracks - this is the active call stream on iOS', {
+            console.log('[DeviceSettings] NOT stopping tracks - this is the active call stream on iOS', {
               connectionStatus,
               streamId: previewStreamRef.current.id,
               trackCount: previewStreamRef.current.getTracks().length
@@ -220,10 +219,10 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       }
 
       cleanup()
-      clientLogger.info('[DeviceSettings] Cleanup completed on dialog close')
+      console.log('[DeviceSettings] Cleanup completed on dialog close')
       return
     } else {
-      clientLogger.info('[DeviceSettings] Dialog opened', {
+      console.log('[DeviceSettings] Dialog opened', {
         localVideoEnabled,
         connectionStatus
       })
@@ -232,14 +231,14 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     async function createPreviewStream() {
       // Prevent concurrent stream creation
       if (isCreatingStreamRef.current) {
-        clientLogger.info('[DeviceSettings] Skipping createPreviewStream - already creating', {
+        console.log('[DeviceSettings] Skipping createPreviewStream - already creating', {
           currentFlag: isCreatingStreamRef.current
         })
         return
       }
 
       if (!localVideoEnabled) {
-        clientLogger.info('[DeviceSettings] Video disabled, cleaning up preview stream')
+        console.log('[DeviceSettings] Video disabled, cleaning up preview stream')
         // Clear video element srcObject first
         if (videoRef.current) {
           videoRef.current.srcObject = null
@@ -255,10 +254,10 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       }
 
       isCreatingStreamRef.current = true
-      clientLogger.info('[DeviceSettings] Setting isCreatingStreamRef to true in createPreviewStream')
+      console.log('[DeviceSettings] Setting isCreatingStreamRef to true in createPreviewStream')
       try {
         const selectedVideoDevice = localStorage.getItem('selectedVideoDevice') || ''
-        clientLogger.info('[DeviceSettings] Creating preview stream', {
+        console.log('[DeviceSettings] Creating preview stream', {
           selectedVideoDevice: selectedVideoDevice.slice(0, 20) + '...',
           connectionStatus,
           hasOldStream: !!previewStreamRef.current,
@@ -280,7 +279,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           // IMPORTANT: Even if localStream doesn't exist yet (call not accepted),
           // we must NOT create a preview stream, as it will conflict with the
           // stream that will be created when user accepts the call.
-          clientLogger.info('[DeviceSettings] iOS in call state - no preview stream during call', {
+          console.log('[DeviceSettings] iOS in call state - no preview stream during call', {
             connectionStatus,
             hasLocalStream: !!localStream,
             localStreamId: localStream?.id,
@@ -318,7 +317,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
             const stream = await navigator.mediaDevices.getUserMedia(constraints)
             const tracks = stream.getVideoTracks()
 
-            clientLogger.info('[DeviceSettings] Preview stream created (connected, non-iOS)', {
+            console.log('[DeviceSettings] Preview stream created (connected, non-iOS)', {
               streamId: stream.id,
               trackCount: tracks.length,
               trackLabel: tracks[0]?.label,
@@ -350,7 +349,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           const stream = await navigator.mediaDevices.getUserMedia(constraints)
           const tracks = stream.getVideoTracks()
 
-          clientLogger.info('[DeviceSettings] Preview stream created (not connected)', {
+          console.log('[DeviceSettings] Preview stream created (not connected)', {
             streamId: stream.id,
             trackCount: tracks.length,
             trackLabel: tracks[0]?.label,
@@ -361,12 +360,12 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           setPreviewStream(stream)
         }
       } catch (err) {
-        clientLogger.error('[DeviceSettings] Error creating preview stream', {
+        console.error('[DeviceSettings] Error creating preview stream', {
           error: err instanceof Error ? err.message : String(err)
         })
         setPreviewStream(null)
       } finally {
-        clientLogger.info('[DeviceSettings] Resetting isCreatingStreamRef to false in createPreviewStream finally')
+        console.log('[DeviceSettings] Resetting isCreatingStreamRef to false in createPreviewStream finally')
         isCreatingStreamRef.current = false
       }
     }
@@ -378,7 +377,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
       const isActiveCallOnIOS = isIOS && isInCall
 
-      clientLogger.info('[DeviceSettings] useEffect cleanup running', {
+      console.log('[DeviceSettings] useEffect cleanup running', {
         hasPreviewStream: !!previewStreamRef.current,
         trackCount: previewStreamRef.current?.getTracks().length || 0,
         flagState: isCreatingStreamRef.current,
@@ -401,7 +400,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       // In both cases, stopping tracks would kill the call stream.
       if (previewStreamRef.current) {
         if (isActiveCallOnIOS) {
-          clientLogger.info('[DeviceSettings] NOT stopping tracks in useEffect cleanup - active call on iOS', {
+          console.log('[DeviceSettings] NOT stopping tracks in useEffect cleanup - active call on iOS', {
             connectionStatus,
             streamId: previewStreamRef.current.id,
             trackCount: previewStreamRef.current.getTracks().length
@@ -409,7 +408,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         } else {
           const tracks = previewStreamRef.current.getTracks()
           tracks.forEach(track => {
-            clientLogger.info('[DeviceSettings] Stopping track in useEffect cleanup', {
+            console.log('[DeviceSettings] Stopping track in useEffect cleanup', {
               trackId: track.id,
               kind: track.kind,
               label: track.label,
@@ -454,7 +453,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
     const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user'
 
-    clientLogger.info('[DeviceSettings] iOS camera toggle requested', {
+    console.log('[DeviceSettings] iOS camera toggle requested', {
       currentFacingMode,
       newFacingMode,
       connectionStatus,
@@ -468,11 +467,11 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         audio: false
       }
 
-      clientLogger.info('[DeviceSettings] Requesting new stream with facingMode', { facingMode: newFacingMode })
+      console.log('[DeviceSettings] Requesting new stream with facingMode', { facingMode: newFacingMode })
       const newStream = await navigator.mediaDevices.getUserMedia(constraints)
       const newVideoTrack = newStream.getVideoTracks()[0]
 
-      clientLogger.info('[DeviceSettings] New iOS camera stream acquired', {
+      console.log('[DeviceSettings] New iOS camera stream acquired', {
         streamId: newStream.id,
         trackId: newVideoTrack.id,
         trackLabel: newVideoTrack.label,
@@ -482,7 +481,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       if (isInCall && localStream) {
         // During a call: Create new stream and update localStream
         // The WebRTCProvider will automatically replace tracks in the peer connection
-        clientLogger.info('[DeviceSettings] In call - creating new local stream with new camera')
+        console.log('[DeviceSettings] In call - creating new local stream with new camera')
 
         // Get old video track to stop it later
         const oldVideoTrack = localStream.getVideoTracks()[0]
@@ -495,7 +494,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           newLocalStream.addTrack(audioTrack)
         }
 
-        clientLogger.info('[DeviceSettings] Created new local stream', {
+        console.log('[DeviceSettings] Created new local stream', {
           streamId: newLocalStream.id,
           trackCount: newLocalStream.getTracks().length,
           tracks: newLocalStream.getTracks().map(t => ({
@@ -511,7 +510,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         // Stop the old video track
         if (oldVideoTrack) {
           oldVideoTrack.stop()
-          clientLogger.info('[DeviceSettings] Old video track stopped', {
+          console.log('[DeviceSettings] Old video track stopped', {
             trackId: oldVideoTrack.id
           })
         }
@@ -521,13 +520,13 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         setPreviewStream(newLocalStream)
       } else {
         // Not in a call: Just replace the preview stream
-        clientLogger.info('[DeviceSettings] Not in call - replacing preview stream only')
+        console.log('[DeviceSettings] Not in call - replacing preview stream only')
 
         // Stop current preview stream
         if (previewStreamRef.current) {
           const tracks = previewStreamRef.current.getTracks()
           tracks.forEach(track => {
-            clientLogger.info('[DeviceSettings] Stopping preview track for iOS camera toggle', {
+            console.log('[DeviceSettings] Stopping preview track for iOS camera toggle', {
               trackId: track.id,
               readyState: track.readyState
             })
@@ -544,7 +543,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         }
 
         // Wait for iOS to release camera hardware
-        clientLogger.info('[DeviceSettings] Waiting 100ms for iOS camera release')
+        console.log('[DeviceSettings] Waiting 100ms for iOS camera release')
         await new Promise(resolve => setTimeout(resolve, 100))
 
         // Update preview
@@ -556,12 +555,12 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       setCurrentFacingMode(newFacingMode)
       localStorage.setItem('selectedVideoDevice', newFacingMode === 'user' ? 'front' : 'back')
 
-      clientLogger.info('[DeviceSettings] Camera toggle completed successfully', {
+      console.log('[DeviceSettings] Camera toggle completed successfully', {
         newFacingMode,
         isInCall
       })
     } catch (err) {
-      clientLogger.error('[DeviceSettings] Error toggling iOS camera', {
+      console.error('[DeviceSettings] Error toggling iOS camera', {
         error: err instanceof Error ? err.message : String(err),
         attemptedFacingMode: newFacingMode,
         isInCall
@@ -570,13 +569,13 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
   }
 
   const handleVideoDeviceChange = async (deviceId: string) => {
-    clientLogger.info('[DeviceSettings] handleVideoDeviceChange called', { deviceId })
+    console.log('[DeviceSettings] handleVideoDeviceChange called', { deviceId })
     if (deviceId === 'disabled') {
-      clientLogger.info('[DeviceSettings] Disabling video, saving to localStorage')
+      console.log('[DeviceSettings] Disabling video, saving to localStorage')
       setLocalVideoEnabled(false)
       // Save explicit disabled state to localStorage
       localStorage.setItem('selectedVideoDevice', 'disabled')
-      clientLogger.info('[DeviceSettings] localStorage updated', {
+      console.log('[DeviceSettings] localStorage updated', {
         selectedVideoDevice: localStorage.getItem('selectedVideoDevice')
       })
       // Notify peer if in a call
@@ -586,13 +585,13 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     } else {
       // On iOS, we don't use deviceId-based switching, only facingMode toggle
       if (isIOS) {
-        clientLogger.info('[DeviceSettings] iOS detected - ignoring deviceId-based switch, use facingMode toggle instead')
+        console.log('[DeviceSettings] iOS detected - ignoring deviceId-based switch, use facingMode toggle instead')
         setLocalVideoEnabled(true)
         return
       }
 
       // Non-iOS: Standard deviceId-based switching
-      clientLogger.info('[DeviceSettings] Enabling video and changing device', {
+      console.log('[DeviceSettings] Enabling video and changing device', {
         newDeviceId: deviceId.slice(0, 20) + '...'
       })
 
@@ -616,7 +615,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
         sendWantedMediaState()
       }
     } else {
-      clientLogger.info('[DeviceSettings] Enabling audio and changing device')
+      console.log('[DeviceSettings] Enabling audio and changing device')
       setLocalAudioEnabled(true)
       await audioDevices.handleDeviceChange(deviceId)
 
@@ -631,7 +630,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
     const isInCall = ['receiving-call', 'calling', 'connecting', 'connected'].includes(connectionStatus)
     const previewIsLocalStream = previewStreamRef.current === localStream
 
-    clientLogger.info('[DeviceSettings] handleClose called', {
+    console.log('[DeviceSettings] handleClose called', {
       hasPreviewStream: !!previewStreamRef.current,
       trackCount: previewStreamRef.current?.getTracks().length || 0,
       isIOS,
@@ -647,7 +646,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
       if (shouldStopTracks) {
         const tracks = previewStreamRef.current.getTracks()
         tracks.forEach(track => {
-          clientLogger.info('[DeviceSettings] Stopping track in handleClose', {
+          console.log('[DeviceSettings] Stopping track in handleClose', {
             trackId: track.id,
             kind: track.kind,
             readyState: track.readyState
@@ -655,7 +654,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
           track.stop()
         })
       } else {
-        clientLogger.info('[DeviceSettings] NOT stopping tracks in handleClose - active call stream on iOS', {
+        console.log('[DeviceSettings] NOT stopping tracks in handleClose - active call stream on iOS', {
           streamId: previewStreamRef.current.id,
           trackCount: previewStreamRef.current.getTracks().length
         })
@@ -666,14 +665,14 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
 
     // Clear video element
     if (videoRef.current) {
-      clientLogger.info('[DeviceSettings] Clearing video element in handleClose')
+      console.log('[DeviceSettings] Clearing video element in handleClose')
       videoRef.current.pause()
       videoRef.current.srcObject = null
       videoRef.current.removeAttribute('src')
       videoRef.current.load()
     }
 
-    clientLogger.info('[DeviceSettings] handleClose completed, calling onClose')
+    console.log('[DeviceSettings] handleClose completed, calling onClose')
     onClose()
   }
 
@@ -771,7 +770,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
                       onClick={() => {
                         // Enable video if disabled
                         if (!localVideoEnabled) {
-                          clientLogger.info('[DeviceSettings] Enabling front camera from disabled state')
+                          console.log('[DeviceSettings] Enabling front camera from disabled state')
                           setLocalVideoEnabled(true)
                           localStorage.setItem('selectedVideoDevice', 'front')
                           setCurrentFacingMode('user')
@@ -792,7 +791,7 @@ export default function DeviceSettingsDialog({ open, onClose }: DeviceSettingsDi
                       onClick={() => {
                         // Enable video if disabled
                         if (!localVideoEnabled) {
-                          clientLogger.info('[DeviceSettings] Enabling back camera from disabled state')
+                          console.log('[DeviceSettings] Enabling back camera from disabled state')
                           setLocalVideoEnabled(true)
                           localStorage.setItem('selectedVideoDevice', 'back')
                           setCurrentFacingMode('environment')

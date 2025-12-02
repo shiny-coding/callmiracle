@@ -26,7 +26,6 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useStore } from '@/store/useStore'
 import { useProfileImage } from '@/hooks/useProfileImage'
 import { triggerMenuException, triggerMenuPromiseRejection, triggerComplexException } from '@/utils/errorTestTriggers'
-import clientLogger from '@/utils/clientLogger'
 
 interface MediaControlsProps {
   showNotifications?: boolean
@@ -123,9 +122,9 @@ export default function MediaControls({
 
         await Promise.all(updatePromises)
 
-        clientLogger.info('Service workers unregistered for hard refresh')
+        console.log('Service workers unregistered for hard refresh')
       } catch (error) {
-        clientLogger.error('Failed to unregister service workers', { error })
+        console.error('Failed to unregister service workers', { error })
       }
     }
 
@@ -134,9 +133,9 @@ export default function MediaControls({
       try {
         const cacheNames = await caches.keys()
         await Promise.all(cacheNames.map(name => caches.delete(name)))
-        clientLogger.info('All caches cleared')
+        console.log('All caches cleared')
       } catch (error) {
-        clientLogger.error('Failed to clear caches', { error })
+        console.error('Failed to clear caches', { error })
       }
     }
 
@@ -175,16 +174,16 @@ export default function MediaControls({
   const handleTriggerLogs = () => {
     handleProfileMenuClose()
 
-    clientLogger.debug('Debug log test', {
+    console.log('Debug log test', {
       testType: 'menu_trigger'
     })
 
-    clientLogger.info('Info log test', {
+    console.log('Info log test', {
       testType: 'menu_trigger',
       userAction: 'test_logging'
     })
 
-    clientLogger.warn('Warning log test', {
+    console.warn('Warning log test', {
       testType: 'menu_trigger',
       warningReason: 'This is a test warning'
     })

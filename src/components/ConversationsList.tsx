@@ -13,6 +13,7 @@ import MessagesList from '@/components/MessagesList'
 import NotificationBadge from '@/components/NotificationBadge'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { gql, useLazyQuery, useMutation } from '@apollo/client'
+import clientLogger from '@/utils/clientLogger'
 
 const GET_USER = gql`
   query GetUser($userId: ID!) {
@@ -95,6 +96,19 @@ export default function ConversationsList() {
     }
   }, [setCurrentPage])
 
+  // Listen for refresh conversation event (from push notification click when already on page)
+  useEffect(() => {
+    const handleRefreshConversation = () => {
+      clientLogger.info('[ConversationsList] Refresh conversation event received')
+      refetch()
+    }
+
+    window.addEventListener('refreshConversation', handleRefreshConversation)
+    return () => {
+      window.removeEventListener('refreshConversation', handleRefreshConversation)
+    }
+  }, [refetch])
+
   useEffect(() => {
     // Only auto-select a conversation on initial load
     if (!hasInitializedRef.current && !withUserId && sortedConversations.length > 0) {
@@ -128,29 +142,73 @@ export default function ConversationsList() {
     }
   }, [sortedConversations, withUserId, lastConversationId, selectedConversationId, markConversationRead])
 
+  // Track if we need to mark conversation as read after messages load
+  const pendingMarkReadRef = useRef<string | null>(null)
+  // Track if we've handled the withUserId param
+  const handledWithUserIdRef = useRef<string | null>(null)
+
+  // Reset handled ref when withUserId changes
   useEffect(() => {
-    if (withUserId && conversations) {
+    clientLogger.info('[ConversationsList] withUserId changed', {
+      withUserId,
+      handledWithUserIdRef: handledWithUserIdRef.current
+    })
+    if (withUserId !== handledWithUserIdRef.current) {
+      handledWithUserIdRef.current = null
+    }
+  }, [withUserId])
+
+  useEffect(() => {
+    clientLogger.info('[ConversationsList] withUserId effect running', {
+      withUserId,
+      loading,
+      handledWithUserIdRef: handledWithUserIdRef.current,
+      conversationsLength: conversations?.length
+    })
+
+    // Skip if no withUserId or still loading
+    if (!withUserId || loading) return
+
+    // Skip if we've already handled this withUserId
+    if (handledWithUserIdRef.current === withUserId) {
+      clientLogger.info('[ConversationsList] Already handled this withUserId, skipping')
+      return
+    }
+
+    if (conversations && conversations.length > 0) {
       const existingConvo = conversations.find(
         c => c.user1Id === withUserId || c.user2Id === withUserId
       )
 
       if (existingConvo) {
+        clientLogger.info('[ConversationsList] Found conversation for withUserId', {
+          conversationId: existingConvo._id,
+          withUserId
+        })
+        handledWithUserIdRef.current = withUserId
         setSelectedConversationId(existingConvo._id)
         setTempConversation(null)
         // Mark this as initialized since we're selecting based on URL param
         hasInitializedRef.current = true
 
-        // Mark conversation as read when navigating from toast notification
-        markConversationRead({
-          variables: { conversationId: existingConvo._id }
-        }).catch(error => {
-          console.error('Error marking conversation as read from toast:', error)
-        })
+        // Don't mark as read immediately - wait for messages to load first
+        // so we can highlight unread messages
+        pendingMarkReadRef.current = existingConvo._id
       } else if (currentUser?._id !== withUserId) {
+        // User not found in existing conversations, fetch their info
+        clientLogger.info('[ConversationsList] User not in conversations, fetching', { withUserId })
+        handledWithUserIdRef.current = withUserId
+        getUser({ variables: { userId: withUserId } })
+      }
+    } else if (conversations && conversations.length === 0) {
+      // Conversations loaded but empty - this is a new user, fetch their info
+      if (currentUser?._id !== withUserId) {
+        clientLogger.info('[ConversationsList] No conversations, fetching user', { withUserId })
+        handledWithUserIdRef.current = withUserId
         getUser({ variables: { userId: withUserId } })
       }
     }
-  }, [withUserId, conversations, getUser, currentUser?._id, markConversationRead])
+  }, [withUserId, conversations, loading, getUser, currentUser?._id])
   
   useEffect(() => {
     if (newUserData?.getUser && currentUser) {
@@ -270,7 +328,7 @@ export default function ConversationsList() {
                       src={otherUser?._id ? `/profiles/${otherUser._id}.jpg` : undefined}
                       className="w-12 h-12 mb-1"
                       sx={{
-                        backgroundColor: 'transparent',
+                        bgcolor: 'transparent',
                         color: 'var(--dimmer-text-color)',
                         fontSize: '1rem',
                         border: '1px solid orange'
@@ -298,13 +356,23 @@ export default function ConversationsList() {
       {/* Messages area */}
       <div className="flex-grow overflow-hidden">
         {selectedConversationId ? (
-          <MessagesList 
-            conversationId={selectedConversationId} 
+          <MessagesList
+            conversationId={selectedConversationId}
             onMessageSent={() => {
               refetch() // Refetch conversations
               setTempConversation(null) // Clear temp conversation
             }}
-
+            onMessagesLoaded={() => {
+              // Mark conversation as read after messages are loaded and highlighted
+              if (pendingMarkReadRef.current === selectedConversationId) {
+                pendingMarkReadRef.current = null
+                markConversationRead({
+                  variables: { conversationId: selectedConversationId }
+                }).catch(error => {
+                  console.error('Error marking conversation as read:', error)
+                })
+              }
+            }}
           />
         ) : (
           <Box className="flex items-center justify-center h-full">

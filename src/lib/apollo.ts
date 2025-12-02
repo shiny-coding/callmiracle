@@ -176,6 +176,20 @@ const splitLink = split(
 export const client = new ApolloClient({
   // Compose links: requestId -> logging -> split(http/sse)
   link: ApolloLink.from([requestIdLink, loggingLink, splitLink]),
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          getMessages: {
+            // Don't merge - just replace with incoming data
+            // This prevents the "Cache data may be lost" warning
+            merge(existing, incoming) {
+              return incoming
+            }
+          }
+        }
+      }
+    }
+  }),
   credentials: 'include'
 }) 

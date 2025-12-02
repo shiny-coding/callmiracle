@@ -7,7 +7,6 @@ import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { useDeviceSelection } from '@/hooks/useDeviceSelection'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
-import clientLogger from '@/utils/clientLogger'
 
 async function getVideoDeviceLabel(device: MediaDeviceInfo): Promise<string | null> {
   try {
@@ -74,7 +73,7 @@ export default function LocalVideo({ onClose, showDeviceSelection = true, compac
   useEffect(() => {
     if (videoRef.current) {
       if (localStream && localVideoEnabled) {
-        clientLogger.info('[LocalVideo] Attaching local stream to video element', {
+        console.log('[LocalVideo] Attaching local stream to video element', {
           streamId: localStream.id,
           trackCount: localStream.getTracks().length,
           tracks: localStream.getTracks().map(t => ({
@@ -91,13 +90,13 @@ export default function LocalVideo({ onClose, showDeviceSelection = true, compac
         // CRITICAL: On iOS Safari, videos sometimes need explicit play() call
         // even with autoPlay attribute
         videoRef.current.play().then(() => {
-          clientLogger.info('[LocalVideo] Local video playing successfully')
+          console.log('[LocalVideo] Local video playing successfully')
         }).catch(err => {
-          clientLogger.error('[LocalVideo] Failed to play local video', { error: err })
+          console.error('[LocalVideo] Failed to play local video', { error: err })
           // Try again after a small delay (iOS sometimes needs this)
           setTimeout(() => {
             videoRef.current?.play().catch(e =>
-              clientLogger.error('[LocalVideo] Retry play failed', { error: e })
+              console.error('[LocalVideo] Retry play failed', { error: e })
             )
           }, 100)
         })

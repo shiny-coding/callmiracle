@@ -3,7 +3,6 @@
  * This helps test error logging, stack trace capture, and source map resolution
  */
 
-import clientLogger from './clientLogger'
 
 /**
  * Level 3: The actual error thrower
@@ -11,7 +10,7 @@ import clientLogger from './clientLogger'
  */
 export function throwTestError(message: string): never {
   // Log before throwing to test logger's error capture
-  clientLogger.debug('About to throw test error', {
+  console.log('About to throw test error', {
     message,
     location: 'errorTestHelpers.throwTestError',
     sourceFile: 'src/utils/errorTestHelpers.ts',
@@ -29,7 +28,7 @@ export function throwTestError(message: string): never {
  * This simulates a service/utility function
  */
 export function processTestOperation(operation: string): void {
-  clientLogger.info('Processing test operation', {
+  console.log('Processing test operation', {
     operation,
     location: 'errorTestHelpers.processTestOperation'
   })
@@ -47,7 +46,7 @@ export function processTestOperation(operation: string): void {
  * This simulates a user action triggering business logic
  */
 export function triggerTestException(source: string = 'unknown'): void {
-  clientLogger.info('Test exception triggered by user', {
+  console.log('Test exception triggered by user', {
     source,
     location: 'errorTestHelpers.triggerTestException'
   })
@@ -63,7 +62,7 @@ export function triggerTestException(source: string = 'unknown'): void {
  * Alternative: Trigger a promise rejection error
  */
 export function triggerTestPromiseRejection(source: string = 'unknown'): void {
-  clientLogger.info('Test promise rejection triggered by user', {
+  console.log('Test promise rejection triggered by user', {
     source,
     location: 'errorTestHelpers.triggerTestPromiseRejection'
   })
@@ -76,7 +75,7 @@ export function triggerTestPromiseRejection(source: string = 'unknown'): void {
  * Trigger an error with async/await chain
  */
 export async function triggerTestAsyncError(source: string = 'unknown'): Promise<never> {
-  clientLogger.info('Test async error triggered', {
+  console.log('Test async error triggered', {
     source,
     location: 'errorTestHelpers.triggerTestAsyncError'
   })

@@ -9,7 +9,6 @@ import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
 import { User } from '@/generated/graphql'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
-import clientLogger from '@/utils/clientLogger'
 
 const GET_PENDING_CALL = gql`
   query GetPendingCall($userId: ID!) {
@@ -131,12 +130,12 @@ export function WebRTCProvider({
 
     const checkPendingCall = async () => {
       try {
-        clientLogger.info('Checking for pending call', { userId: currentUser._id })
+        console.log('Checking for pending call', { userId: currentUser._id })
         const { data } = await getPendingCall({ variables: { userId: currentUser._id } })
 
         if (data?.getPendingCall) {
           const pendingCall = data.getPendingCall
-          clientLogger.info('Found pending call', {
+          console.log('Found pending call', {
             callId: pendingCall.callId,
             from: pendingCall.from.name,
             meetingId: pendingCall.meetingId
@@ -164,7 +163,7 @@ export function WebRTCProvider({
           } as IncomingRequest)
         }
       } catch (err) {
-        clientLogger.error('Failed to check pending call', { error: err })
+        console.error('Failed to check pending call', { error: err })
       }
     }
 
@@ -207,7 +206,7 @@ export function WebRTCProvider({
         // Read lastConnectedTime directly from store to avoid stale closure
         const currentLastConnectedTime = syncStore().lastConnectedTime
 
-        clientLogger.info('WebRTC: Received finished request', {
+        console.log('WebRTC: Received finished request', {
           from: callEvent.from?.name,
           fromId: callEvent.from?._id,
           lastConnectedTime: currentLastConnectedTime,
@@ -219,7 +218,7 @@ export function WebRTCProvider({
           ? Math.floor((Date.now() - currentLastConnectedTime) / 1000)
           : 0
 
-        clientLogger.info('WebRTC: Call ended info calculation', {
+        console.log('WebRTC: Call ended info calculation', {
           durationS,
           hasFrom: !!callEvent.from,
           willShowDialog: !!(callEvent.from && durationS > 0)
@@ -227,7 +226,7 @@ export function WebRTCProvider({
 
         // Show call ended dialog with partner info and duration
         if (callEvent.from && durationS > 0) {
-          clientLogger.info('WebRTC: Setting call ended info', {
+          console.log('WebRTC: Setting call ended info', {
             user: callEvent.from.name,
             durationS
           })
@@ -246,12 +245,12 @@ export function WebRTCProvider({
 
         // Ensure peer connections are closed (using refs to avoid stale closure)
         if (caller.peerConnection.current) {
-          clientLogger.info('WebRTC: Closing caller peer connection on finished')
+          console.log('WebRTC: Closing caller peer connection on finished')
           caller.peerConnection.current.close()
           caller.peerConnection.current = null
         }
         if (callee.peerConnection.current) {
-          clientLogger.info('WebRTC: Closing callee peer connection on finished')
+          console.log('WebRTC: Closing callee peer connection on finished')
           callee.peerConnection.current.close()
           callee.peerConnection.current = null
         }
@@ -259,12 +258,12 @@ export function WebRTCProvider({
         // Ensure local stream tracks are stopped (using ref to avoid stale closure)
         const currentStream = localStreamRef.current
         if (currentStream) {
-          clientLogger.info('WebRTC: Stopping local stream tracks on call finished', {
+          console.log('WebRTC: Stopping local stream tracks on call finished', {
             streamId: currentStream.id,
             trackCount: currentStream.getTracks().length
           })
           currentStream.getTracks().forEach(track => {
-            clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+            console.log('WebRTC: Stopping track', { kind: track.kind, id: track.id })
             track.stop()
           })
           setLocalStream(undefined)
@@ -331,12 +330,12 @@ export function WebRTCProvider({
 
         // Ensure peer connections are closed (using refs to avoid stale closure)
         if (caller.peerConnection.current) {
-          clientLogger.info('WebRTC: Closing caller peer connection on expired')
+          console.log('WebRTC: Closing caller peer connection on expired')
           caller.peerConnection.current.close()
           caller.peerConnection.current = null
         }
         if (callee.peerConnection.current) {
-          clientLogger.info('WebRTC: Closing callee peer connection on expired')
+          console.log('WebRTC: Closing callee peer connection on expired')
           callee.peerConnection.current.close()
           callee.peerConnection.current = null
         }
@@ -344,12 +343,12 @@ export function WebRTCProvider({
         // Ensure local stream tracks are stopped (using ref to avoid stale closure)
         const currentStream = localStreamRef.current
         if (currentStream) {
-          clientLogger.info('WebRTC: Stopping local stream tracks on expired', {
+          console.log('WebRTC: Stopping local stream tracks on expired', {
             streamId: currentStream.id,
             trackCount: currentStream.getTracks().length
           })
           currentStream.getTracks().forEach(track => {
-            clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+            console.log('WebRTC: Stopping track', { kind: track.kind, id: track.id })
             track.stop()
           })
           setLocalStream(undefined)
@@ -368,12 +367,12 @@ export function WebRTCProvider({
 
         // Ensure peer connections are closed (using refs to avoid stale closure)
         if (caller.peerConnection.current) {
-          clientLogger.info('WebRTC: Closing caller peer connection on busy')
+          console.log('WebRTC: Closing caller peer connection on busy')
           caller.peerConnection.current.close()
           caller.peerConnection.current = null
         }
         if (callee.peerConnection.current) {
-          clientLogger.info('WebRTC: Closing callee peer connection on busy')
+          console.log('WebRTC: Closing callee peer connection on busy')
           callee.peerConnection.current.close()
           callee.peerConnection.current = null
         }
@@ -381,12 +380,12 @@ export function WebRTCProvider({
         // Ensure local stream tracks are stopped (using ref to avoid stale closure)
         const currentStream = localStreamRef.current
         if (currentStream) {
-          clientLogger.info('WebRTC: Stopping local stream tracks on busy', {
+          console.log('WebRTC: Stopping local stream tracks on busy', {
             streamId: currentStream.id,
             trackCount: currentStream.getTracks().length
           })
           currentStream.getTracks().forEach(track => {
-            clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+            console.log('WebRTC: Stopping track', { kind: track.kind, id: track.id })
             track.stop()
           })
           setLocalStream(undefined)
@@ -409,14 +408,14 @@ export function WebRTCProvider({
   // Watch for stream changes and update peer connections
   useEffect(() => {
     if (!localStream) {
-      clientLogger.debug('[WebRTCProvider] Track replacement effect: no localStream')
+      console.log('[WebRTCProvider] Track replacement effect: no localStream')
       return
     }
 
     // Get the active peer connection from either caller or callee
     const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
     if (!activePeerConnection) {
-      clientLogger.debug('[WebRTCProvider] Track replacement effect: no active peer connection', {
+      console.log('[WebRTCProvider] Track replacement effect: no active peer connection', {
         callerActive: caller.active,
         calleeActive: callee.active
       })
@@ -426,7 +425,7 @@ export function WebRTCProvider({
     const role = caller.active ? 'caller' : 'callee'
     const streamTracks = localStream.getTracks()
 
-    clientLogger.info('[WebRTCProvider] Replacing tracks in active peer connection', {
+    console.log('[WebRTCProvider] Replacing tracks in active peer connection', {
       role,
       streamId: localStream.id,
       trackCount: streamTracks.length,
@@ -446,7 +445,7 @@ export function WebRTCProvider({
 
     // Update tracks in the active peer connection
     const senders = activePeerConnection.getSenders()
-    clientLogger.debug('[WebRTCProvider] Current senders in peer connection', {
+    console.log('[WebRTCProvider] Current senders in peer connection', {
       senderCount: senders.length,
       senders: senders.map(s => ({
         trackKind: s.track?.kind,
@@ -462,7 +461,7 @@ export function WebRTCProvider({
         const oldTrackId = sender.track?.id
         const oldTrackReadyState = sender.track?.readyState
 
-        clientLogger.debug('[WebRTCProvider] Replacing track', {
+        console.log('[WebRTCProvider] Replacing track', {
           kind: track.kind,
           newTrackId: track.id,
           newTrackReadyState: track.readyState,
@@ -474,19 +473,19 @@ export function WebRTCProvider({
         })
 
         sender.replaceTrack(track).then(() => {
-          clientLogger.debug('[WebRTCProvider] Track replaced successfully', {
+          console.log('[WebRTCProvider] Track replaced successfully', {
             kind: track.kind,
             newTrackId: track.id
           })
         }).catch(err => {
-          clientLogger.error('[WebRTCProvider] Failed to replace track', {
+          console.error('[WebRTCProvider] Failed to replace track', {
             kind: track.kind,
             trackId: track.id,
             error: err
           })
         })
       } else {
-        clientLogger.warn('[WebRTCProvider] No sender found for track', {
+        console.warn('[WebRTCProvider] No sender found for track', {
           kind: track.kind,
           trackId: track.id
         })
@@ -520,12 +519,12 @@ export function WebRTCProvider({
 
     // Ensure peer connections are closed (using refs to avoid stale closure)
     if (caller.peerConnection.current) {
-      clientLogger.info('WebRTC: Closing caller peer connection on hangup')
+      console.log('WebRTC: Closing caller peer connection on hangup')
       caller.peerConnection.current.close()
       caller.peerConnection.current = null
     }
     if (callee.peerConnection.current) {
-      clientLogger.info('WebRTC: Closing callee peer connection on hangup')
+      console.log('WebRTC: Closing callee peer connection on hangup')
       callee.peerConnection.current.close()
       callee.peerConnection.current = null
     }
@@ -533,12 +532,12 @@ export function WebRTCProvider({
     // Ensure local stream tracks are stopped (using ref to avoid stale closure)
     const currentStream = localStreamRef.current
     if (currentStream) {
-      clientLogger.info('WebRTC: Stopping local stream tracks on hangup', {
+      console.log('WebRTC: Stopping local stream tracks on hangup', {
         streamId: currentStream.id,
         trackCount: currentStream.getTracks().length
       })
       currentStream.getTracks().forEach(track => {
-        clientLogger.debug('WebRTC: Stopping track', { kind: track.kind, id: track.id })
+        console.log('WebRTC: Stopping track', { kind: track.kind, id: track.id })
         track.stop()
       })
       setLocalStream(undefined)

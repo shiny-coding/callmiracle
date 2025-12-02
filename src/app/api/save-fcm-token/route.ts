@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
     }
 
-    const { subscription } = await request.json()
+    const { subscription, deviceId } = await request.json()
     const userId = session.user.id
 
     if (!subscription) {
@@ -28,16 +28,27 @@ export async function POST(request: NextRequest) {
     const client = await clientPromise
     const db = client.db()
 
-    // First, remove any existing subscription with the same endpoint to avoid duplicates
+    // Remove any existing subscription with the same endpoint OR deviceId to avoid duplicates
+    // deviceId helps deduplicate on iOS where endpoint changes on page refresh
+    const pullConditions: any[] = [{ endpoint: subscription.endpoint }]
+    if (deviceId) {
+      pullConditions.push({ deviceId })
+    }
+
     await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } } as any
+      { $pull: { pushSubscriptions: { $or: pullConditions } } } as any
     )
+
+    // Add deviceId to subscription object for future deduplication
+    const subscriptionWithDeviceId = deviceId
+      ? { ...subscription, deviceId }
+      : subscription
 
     // Then add the new subscription
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $push: { pushSubscriptions: subscription } } as any
+      { $push: { pushSubscriptions: subscriptionWithDeviceId } } as any
     )
 
     if (result.modifiedCount === 0 && result.matchedCount === 0) {

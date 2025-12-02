@@ -10,7 +10,6 @@ import { useTranslations } from 'next-intl';
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider';
 import VideoQualitySelector from './VideoQualitySelector';
 import { useStore } from '@/store/useStore';
-import clientLogger from '@/utils/clientLogger';
 
 interface RemoteVideoProps {
   showTopControls?: boolean
@@ -125,7 +124,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
       const activeStreamRef = caller.active ? caller.remoteStreamRef : callee.active ? callee.remoteStreamRef : null
       const stream = activeStreamRef?.current
 
-      clientLogger.info('[RemoteVideo] Attempting to attach remote stream', {
+      console.log('[RemoteVideo] Attempting to attach remote stream', {
         hasStream: !!stream,
         streamId: stream?.id,
         trackCount: stream?.getTracks().length,
@@ -146,13 +145,13 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
         // CRITICAL: On iOS Safari, videos sometimes need explicit play() call
         // even with autoPlay attribute, especially during call setup
         remoteVideoRef.current.play().then(() => {
-          clientLogger.info('[RemoteVideo] Remote video playing successfully')
+          console.log('[RemoteVideo] Remote video playing successfully')
         }).catch(err => {
-          clientLogger.error('[RemoteVideo] Failed to play remote video', { error: err })
+          console.error('[RemoteVideo] Failed to play remote video', { error: err })
           // Try again after a small delay (iOS sometimes needs this)
           setTimeout(() => {
             remoteVideoRef.current?.play().catch(e =>
-              clientLogger.error('[RemoteVideo] Retry play failed', { error: e })
+              console.error('[RemoteVideo] Retry play failed', { error: e })
             )
           }, 100)
         })
