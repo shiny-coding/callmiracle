@@ -64,7 +64,10 @@ export function useClientPushNotifications(currentUser: any) {
 
   // Helper function to handle navigation from notification
   const handleNotificationNavigation = useCallback((url: string, notificationType?: string) => {
-    if (!url) return
+    if (!url) {
+      clientLogger.info('[PushNotifications] handleNotificationNavigation called with empty url')
+      return
+    }
 
     // Convert full URL to relative path for Next.js router
     let relativePath = url
@@ -102,8 +105,9 @@ export function useClientPushNotifications(currentUser: any) {
     }
 
     // Navigate to the target page
-    clientLogger.info('[PushNotifications] Navigating to:', { relativePath })
+    clientLogger.info('[PushNotifications] Calling router.push', { relativePath })
     router.push(relativePath, { scroll: false })
+    clientLogger.info('[PushNotifications] router.push called successfully')
   }, [router])
 
   // Listen for messages from service worker (notification clicks) via multiple channels
@@ -197,6 +201,15 @@ export function useClientPushNotifications(currentUser: any) {
     setTimeout(checkIndexedDB, 500)
     setTimeout(checkIndexedDB, 1500)
 
+    // Also check IndexedDB when page becomes visible (for iOS app switching)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        clientLogger.info('[PushNotifications] Page became visible, checking IndexedDB')
+        checkIndexedDB()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     // Listen via service worker postMessage
     const handleSWMessage = (event: MessageEvent) => {
       clientLogger.info('[PushNotifications] Received message from SW postMessage', {
@@ -238,6 +251,7 @@ export function useClientPushNotifications(currentUser: any) {
 
     return () => {
       navigator.serviceWorker.removeEventListener('message', handleSWMessage)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (broadcastChannel) {
         broadcastChannel.close()
       }

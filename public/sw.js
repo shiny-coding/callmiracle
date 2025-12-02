@@ -1,5 +1,5 @@
 // Version number - update this when you make changes to force update
-const VERSION = '1.0.17'
+const VERSION = '1.0.18'
 console.log('Service Worker version:', VERSION)
 
 // Install event - activate immediately
@@ -221,40 +221,50 @@ self.addEventListener('notificationclick', event => {
         type: 'window',
         includeUncontrolled: true
       }).then(clientsArr => {
-        console.log('[SW] Found clients:', clientsArr.length, clientsArr.map(c => c.url))
+        console.log('[SW] Found clients:', clientsArr.length)
+        clientsArr.forEach((c, i) => {
+          console.log(`[SW] Client ${i}: url=${c.url}, visibility=${c.visibilityState}`)
+        })
 
-        // Look for an existing VISIBLE window on our domain
+        // Look for ANY existing window on our domain (not just visible)
+        // On iOS, when notification is clicked, app might be backgrounded
         const existingClient = clientsArr.find(client => {
-          return client.url.includes(self.location.origin) && client.visibilityState === 'visible'
+          return client.url.includes(self.location.origin)
         })
 
         if (existingClient) {
-          console.log('[SW] Found existing VISIBLE client:', existingClient.url)
+          console.log('[SW] Found existing client:', existingClient.url, 'visibility:', existingClient.visibilityState)
 
-          // Check if we're already on the target URL (just need to focus)
-          const existingUrl = new URL(existingClient.url)
-          const targetUrlObj = new URL(targetUrl, self.location.origin)
-
-          if (existingUrl.pathname === targetUrlObj.pathname &&
-              existingUrl.search === targetUrlObj.search) {
-            console.log('[SW] Already on target page, just focusing')
-            return existingClient.focus()
-          }
-
-          // Try postMessage for visible client
+          // Send postMessage - the app will handle navigation when it becomes active
           console.log('[SW] Sending postMessage to navigate to:', targetUrl)
           existingClient.postMessage({
             type: 'NOTIFICATION_CLICK',
             url: targetUrl,
-            notificationType: notificationType
+            notificationType: notificationType,
+            timestamp: Date.now()
           })
 
-          return existingClient.focus()
+          // Focus will bring the app to foreground
+          return existingClient.focus().then(() => {
+            console.log('[SW] Client focused')
+            // Send another postMessage after focus in case the first one was missed
+            setTimeout(() => {
+              console.log('[SW] Sending post-focus postMessage')
+              existingClient.postMessage({
+                type: 'NOTIFICATION_CLICK',
+                url: targetUrl,
+                notificationType: notificationType,
+                timestamp: Date.now()
+              })
+            }, 300)
+          }).catch(err => {
+            console.log('[SW] Focus failed:', err)
+          })
         } else {
-          // No visible window - open new one (or bring background one to foreground)
+          // No existing window - open new one
           // iOS often ignores the URL parameter and opens to start_url
           // That's why we stored to IndexedDB first - app will check it on startup
-          console.log('[SW] No visible client, opening window:', targetUrl)
+          console.log('[SW] No existing client, opening window:', targetUrl)
 
           return clients.openWindow(targetUrl).then(async (windowClient) => {
             console.log('[SW] Window opened:', windowClient?.url)
@@ -266,7 +276,8 @@ self.addEventListener('notificationclick', event => {
                 windowClient.postMessage({
                   type: 'NOTIFICATION_CLICK',
                   url: targetUrl,
-                  notificationType: notificationType
+                  notificationType: notificationType,
+                  timestamp: Date.now()
                 })
               }
 
