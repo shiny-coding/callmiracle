@@ -5,7 +5,7 @@ import { callDurationHistogram, totalCallDurationMetric } from '@/utils/metrics'
 import { getLogger } from '@/utils/logger'
 import { publishSubscriptionEvent } from '@/utils/pubsubHelper'
 import { incrementUserMeetingsStats } from '@/utils/meetingsStatsUtils'
-import { publishPushNotification } from './pushNotifications'
+import { publishPushNotification, startRepeatedCallNotifications, stopRepeatedCallNotifications } from './pushNotifications'
 
 // Helper function to publish meeting discall notification
 export async function publishCallNotification(notificationType: NotificationType, db: any, initiator: User, targetUser: User, call: Call, showInitiatorName: boolean = true) {
@@ -114,6 +114,21 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       showInitiatorName = !!meeting?.lastCallTime || meeting?.transparency === MeetingTransparency.Transparent
     }
     await publishCallNotification(NotificationType.IncomingCall, db, initiator, targetUser, call as Call, showInitiatorName)
+
+    // Start repeated push notifications for incoming call (iOS doesn't persist notifications)
+    const peerUserName = showInitiatorName ? initiator.name : null
+    startRepeatedCallNotifications(
+      db,
+      targetUser,
+      {
+        type: NotificationType.IncomingCall,
+        peerUserName: peerUserName || '',
+        meetingId: _meetingId || undefined,
+        callId: _callId,
+        initiatorUserId: _initiatorUserId
+      },
+      _callId.toString()
+    )
   } 
   if (!_callId) {
     throw new Error('CallId is required')
@@ -141,6 +156,9 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
   }
 
   if (type === 'answer') {
+    // Stop repeated call notifications when call is answered
+    await stopRepeatedCallNotifications(_callId.toString())
+
     // Update call status to connected and clear pending offer
     call = await db.collection('calls').findOneAndUpdate(
       { _id: _callId },
@@ -148,7 +166,9 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       { returnDocument: 'after' }
     ) as Call|null
 
-  } else if (type === 'finished' || type == 'expired') {
+  } else if (type === 'finished' || type === 'expired') {
+    // Stop repeated call notifications when call ends
+    await stopRepeatedCallNotifications(_callId.toString())
     // Only set duration if the call was connected and is now finished
     let callDurationS = 0;
     // currentCall?.type === 'connected' means that the expired is due to call timeout
@@ -225,6 +245,11 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
         });
       }
     }
+  }
+
+  if (type === 'busy') {
+    // Stop repeated call notifications when callee is busy
+    await stopRepeatedCallNotifications(_callId.toString())
   }
 
   // Prepare common payload data

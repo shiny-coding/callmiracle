@@ -6,8 +6,7 @@ import CallUserInfo from './CallUserInfo'
 import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
-
-const MAX_CALLING_TIME_MS = 60000
+import { MAX_CALLING_TIME_MS } from '@/config/constants'
 
 export default function CallerDialog() {
   const t = useTranslations()
@@ -23,7 +22,7 @@ export default function CallerDialog() {
   const { doCall, callUser, caller } = useWebRTCContext()
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer'].includes(connectionStatus)
   const isCalling = connectionStatus === 'calling'
-  const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
+  const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true, resumeOnVisibilityChange: true })
 
   const sendExpired = useCallback(async () => {
     const { targetUser, callId, setCallId } = syncStore()
@@ -87,7 +86,7 @@ export default function CallerDialog() {
       onClose={handleCancel}
       hideBackdrop={isCalling}
       PaperProps={{
-        className: 'bg-gray-900 text-white min-w-[300px]'
+        className: 'card-bg text-color min-w-[300px]'
       }}
       slotProps={{
         backdrop: {
@@ -104,7 +103,7 @@ export default function CallerDialog() {
       <DialogContent>
         {showUserInfo && <CallUserInfo user={targetUser} />}
       </DialogContent>
-      <DialogActions className="border-t border-gray-800">
+      <DialogActions className="border-t brighter-border" style={{ backgroundColor: 'transparent' }}>
         {(connectionStatus === 'no-answer' || connectionStatus === 'busy') &&
           <Button onClick={handleCallAgain} variant="contained" color="primary">
             {t('callAgain')}

@@ -3,12 +3,17 @@ import { getNotificationMessage } from '@/utils/notificationUtils'
 import { Db, ObjectId } from 'mongodb'
 import { NotificationType, User } from '@/generated/graphql'
 import { getTranslations } from 'next-intl/server'
-import { 
-  pushNotificationsSentMetric, 
-  pushNotificationsDeliveredMetric, 
-  pushNotificationsFailedMetric 
+import {
+  pushNotificationsSentMetric,
+  pushNotificationsDeliveredMetric,
+  pushNotificationsFailedMetric
 } from '@/utils/metrics'
 import { getLogger } from '@/utils/logger'
+import { MAX_CALLING_TIME_MS, CALL_NOTIFICATION_INTERVAL_MS } from '@/config/constants'
+import { hasActiveSubscription } from '@/lib/activeSubscriptions'
+
+// Track active call notification intervals by callId
+const activeCallNotificationIntervals = new Map<string, NodeJS.Timeout>()
 
 
 type PushNotification = {
@@ -19,7 +24,8 @@ type PushNotification = {
   senderUserId?: ObjectId,
   notificationId?: ObjectId,
   callId?: ObjectId,
-  initiatorUserId?: ObjectId
+  initiatorUserId?: ObjectId,
+  isRepeated?: boolean // If true, use unique tag to wake screen instead of replacing silently
 }
 
 // VAPID keys should be generated once and stored securely as environment variables.
@@ -128,7 +134,11 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
     } else {
       url = `/${userLocale}/calendar`
     }
-    tag = `call-${notification.callId?.toString()}`
+    // For repeated notifications, use unique tag with timestamp to wake screen
+    // For initial notification, use call-based tag so missed call can replace it
+    tag = notification.isRepeated
+      ? `call-${notification.callId?.toString()}-${Date.now()}`
+      : `call-${notification.callId?.toString()}`
     requireInteraction = true
     actions = [
       { action: 'answer', title: t('notificationActions.answer') },
@@ -182,5 +192,79 @@ export const publishPushNotification = async (db: Db, user: User, notification: 
   for (const subscription of user.pushSubscriptions) {
     pushNotificationsSentMetric.add(1)
     await sendSinglePushNotification(db, user, subscription, payload)
+  }
+}
+
+/**
+ * Start sending repeated push notifications for an incoming call.
+ * Notifications are sent every CALL_NOTIFICATION_INTERVAL_MS until stopped or MAX_CALLING_TIME_MS is reached.
+ * Only sends repeated notifications if the user's PWA is not open (no active subscription).
+ */
+export const startRepeatedCallNotifications = (
+  db: Db,
+  user: User,
+  notification: PushNotification,
+  callId: string
+) => {
+  // Don't start if already active for this call
+  if (activeCallNotificationIntervals.has(callId)) {
+    return
+  }
+
+  const userId = user._id.toString()
+  const startTime = Date.now()
+  const maxNotifications = Math.floor(MAX_CALLING_TIME_MS / CALL_NOTIFICATION_INTERVAL_MS)
+  let notificationCount = 0
+
+  const intervalId = setInterval(async () => {
+    const elapsed = Date.now() - startTime
+    notificationCount++
+
+    // Stop if max time reached or max notifications sent
+    if (elapsed >= MAX_CALLING_TIME_MS || notificationCount >= maxNotifications) {
+      stopRepeatedCallNotifications(callId)
+      return
+    }
+
+    // Skip sending push if user's PWA is open (they'll hear the in-app sound)
+    const userHasActiveSubscription = hasActiveSubscription(userId)
+    if (userHasActiveSubscription) {
+      const logger = await getLogger()
+      logger.info('Skipping repeated call notification - user has active subscription (PWA open)', {
+        callId,
+        notificationCount,
+        elapsed,
+        userName: user.name
+      })
+      return
+    }
+
+    const logger = await getLogger()
+    logger.info('Sending repeated incoming call notification', {
+      callId,
+      notificationCount,
+      elapsed,
+      userName: user.name
+    })
+
+    // Mark as repeated so it uses a unique tag to wake the screen
+    await publishPushNotification(db, user, { ...notification, isRepeated: true })
+  }, CALL_NOTIFICATION_INTERVAL_MS)
+
+  activeCallNotificationIntervals.set(callId, intervalId)
+}
+
+/**
+ * Stop sending repeated push notifications for a call.
+ * Should be called when call is answered, declined, expired, or finished.
+ */
+export const stopRepeatedCallNotifications = async (callId: string) => {
+  const intervalId = activeCallNotificationIntervals.get(callId)
+  if (intervalId) {
+    clearInterval(intervalId)
+    activeCallNotificationIntervals.delete(callId)
+
+    const logger = await getLogger()
+    logger.info('Stopped repeated call notifications', { callId })
   }
 } 

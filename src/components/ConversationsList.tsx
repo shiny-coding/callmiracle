@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Paper, Typography, Avatar, Box } from '@mui/material'
+import { Paper, Typography, Box } from '@mui/material'
 import MessageIcon from '@mui/icons-material/Message'
 import { Conversation, User } from '@/generated/graphql'
 import { useConversations, GET_CONVERSATIONS } from '@/store/ConversationsProvider'
@@ -11,6 +11,7 @@ import LoadingDialog from '@/components/LoadingDialog'
 import PageHeader from '@/components/PageHeader'
 import MessagesList from '@/components/MessagesList'
 import NotificationBadge from '@/components/NotificationBadge'
+import UserAvatar from '@/components/UserAvatar'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { gql, useLazyQuery, useMutation } from '@apollo/client'
 import clientLogger from '@/utils/clientLogger'
@@ -324,18 +325,11 @@ export default function ConversationsList() {
                   onClick={() => handleConversationSelect(conversation._id)}
                 >
                   <NotificationBadge show={hasUnread && !isSelected}>
-                    <Avatar
-                      src={otherUser?._id ? `/profiles/${otherUser._id}.jpg` : undefined}
-                      className="w-12 h-12 mb-1"
-                      sx={{
-                        bgcolor: 'transparent',
-                        color: 'var(--dimmer-text-color)',
-                        fontSize: '1rem',
-                        border: '1px solid orange'
-                      }}
-                    >
-                      {otherUser?.name?.charAt(0)?.toUpperCase() || '?'}
-                    </Avatar>
+                    <UserAvatar
+                      user={otherUser}
+                      size="lg"
+                      className="mb-1"
+                    />
                   </NotificationBadge>
                   <Typography
                     variant="caption"

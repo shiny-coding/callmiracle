@@ -27,6 +27,9 @@ import { useStore } from '@/store/useStore'
 import { useProfileImage } from '@/hooks/useProfileImage'
 import { triggerMenuException, triggerMenuPromiseRejection, triggerComplexException } from '@/utils/errorTestTriggers'
 
+// Set to true to show error testing menu items (for development/debugging)
+const SHOW_ERROR_TESTING_MENU = false
+
 interface MediaControlsProps {
   showNotifications?: boolean
   showMediaButtons?: boolean
@@ -322,54 +325,58 @@ export default function MediaControls({
           </ListItemIcon>
           <ListItemText primary={tRoot('Profile.viewClientLogs')} />
         </MenuItem>
-        <Divider />
-        <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
-          {tRoot('Profile.logTestingTools')}
-        </ListSubheader>
-        <MenuItem onClick={handleTriggerLogs}>
-          <ListItemIcon className="icon-gradient">
-            <InfoIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary={tRoot('Profile.triggerLogs')}
-            secondary={tRoot('Profile.triggerLogsDesc')}
-            secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
-          />
-        </MenuItem>
-        <Divider />
-        <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
-          {tRoot('Profile.errorTestingTools')}
-        </ListSubheader>
-        <MenuItem onClick={handleTriggerException}>
-          <ListItemIcon className="icon-gradient">
-            <ErrorIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary={tRoot('Profile.throwError')}
-            secondary={tRoot('Profile.throwErrorDesc')}
-            secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
-          />
-        </MenuItem>
-        <MenuItem onClick={handleTriggerPromiseRejection}>
-          <ListItemIcon className="icon-gradient">
-            <ErrorIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary={tRoot('Profile.rejectPromise')}
-            secondary={tRoot('Profile.rejectPromiseDesc')}
-            secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
-          />
-        </MenuItem>
-        <MenuItem onClick={handleTriggerComplexException}>
-          <ListItemIcon className="icon-gradient">
-            <ErrorIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary={tRoot('Profile.complexError')}
-            secondary={tRoot('Profile.complexErrorDesc')}
-            secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
-          />
-        </MenuItem>
+        {SHOW_ERROR_TESTING_MENU && (
+          <>
+            <Divider />
+            <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
+              {tRoot('Profile.logTestingTools')}
+            </ListSubheader>
+            <MenuItem onClick={handleTriggerLogs}>
+              <ListItemIcon className="icon-gradient">
+                <InfoIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={tRoot('Profile.triggerLogs')}
+                secondary={tRoot('Profile.triggerLogsDesc')}
+                secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
+              />
+            </MenuItem>
+            <Divider />
+            <ListSubheader sx={{ bgcolor: 'transparent', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
+              {tRoot('Profile.errorTestingTools')}
+            </ListSubheader>
+            <MenuItem onClick={handleTriggerException}>
+              <ListItemIcon className="icon-gradient">
+                <ErrorIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={tRoot('Profile.throwError')}
+                secondary={tRoot('Profile.throwErrorDesc')}
+                secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
+              />
+            </MenuItem>
+            <MenuItem onClick={handleTriggerPromiseRejection}>
+              <ListItemIcon className="icon-gradient">
+                <ErrorIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={tRoot('Profile.rejectPromise')}
+                secondary={tRoot('Profile.rejectPromiseDesc')}
+                secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
+              />
+            </MenuItem>
+            <MenuItem onClick={handleTriggerComplexException}>
+              <ListItemIcon className="icon-gradient">
+                <ErrorIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={tRoot('Profile.complexError')}
+                secondary={tRoot('Profile.complexErrorDesc')}
+                secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.7rem' } }}
+              />
+            </MenuItem>
+          </>
+        )}
         <Divider />
         <MenuItem onClick={handleLogout}>
           <ListItemIcon className="icon-gradient">

@@ -20,7 +20,7 @@ export default function CallUserInfo({ user }: CallUserInfoProps) {
       />
 
       {/* Name */}
-      <Typography variant="h6" className="text-white text-center">
+      <Typography variant="h6" className="text-color text-center">
         {user.name}
       </Typography>
 

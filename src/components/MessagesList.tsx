@@ -158,7 +158,11 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       if (data?.addMessage) {
         if (!isTempConversation) {
           setMessages(prev => [data.addMessage, ...prev])
-          setTimeout(scrollToBottom, 100)
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              scrollToBottom()
+            })
+          })
         }
         
         if (onMessageSent) {
@@ -235,8 +239,12 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
           })
         }
 
-        // Scroll to bottom to show new messages
-        setTimeout(scrollToBottom, 100)
+        // Scroll to bottom to show new messages - use double rAF to ensure DOM has rendered
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            scrollToBottom()
+          })
+        })
       }
     }
 
@@ -388,8 +396,12 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
               return updated
             })
 
-            // Scroll to bottom to show new messages
-            setTimeout(scrollToBottom, 100)
+            // Scroll to bottom to show new messages - use double rAF to ensure DOM has rendered
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                scrollToBottom()
+              })
+            })
 
             // Return the updated query structure
             return {
@@ -561,7 +573,13 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
           )
         })}
         
-        {messages.length === 0 && !isTempConversation && (
+        {messages.length === 0 && !isTempConversation && loading && (
+          <Box className="flex items-center justify-center h-full">
+            <CircularProgress />
+          </Box>
+        )}
+
+        {messages.length === 0 && !isTempConversation && !loading && (
           <Box className="flex items-center justify-center h-full">
             <Typography className="text-gray-500 text-center">
               {t('noMessagesYet')}
@@ -595,11 +613,11 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
           <IconButton
             onClick={handleSendMessage}
             disabled={!messageText.trim() || isSending}
-            className={`icon-gradient ${
+            className={`${isSending ? '' : 'icon-gradient'} ${
               !messageText.trim() && !isSending ? 'opacity-50' : ''
             }`}
           >
-            {isSending ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
+            {isSending ? <CircularProgress size={24} /> : <SendIcon />}
           </IconButton>
         </Box>
       </Paper>

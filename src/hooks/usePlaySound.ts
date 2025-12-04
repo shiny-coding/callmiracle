@@ -3,13 +3,15 @@ import { useEffect, useRef, useState } from 'react'
 interface PlaySoundOptions {
   loop?: boolean
   volume?: number
+  resumeOnVisibilityChange?: boolean // Resume playing when page becomes visible again
 }
 
 export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) {
-  const { loop = false, volume = 1 } = options
+  const { loop = false, volume = 1, resumeOnVisibilityChange = false } = options
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const playPromiseRef = useRef<Promise<void> | null>(null)
+  const shouldBePlayingRef = useRef(false) // Track if sound should be playing (for visibility change handling)
   
   // Initialize audio on mount
   useEffect(() => {
@@ -39,7 +41,29 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
       }
     }
   }, [soundPath, loop, volume])
-  
+
+  // Handle visibility change - resume playing when page becomes visible
+  useEffect(() => {
+    if (!resumeOnVisibilityChange) return
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && shouldBePlayingRef.current && audioRef.current) {
+        // Page became visible and sound should be playing - try to resume
+        const actuallyPlaying = !audioRef.current.paused && !audioRef.current.ended
+        if (!actuallyPlaying) {
+          audioRef.current.play().catch(() => {
+            // Autoplay might be blocked, that's ok
+          })
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [resumeOnVisibilityChange])
+
   // Safely stop audio, handling any pending play promises
   const safeStop = () => {
     if (audioRef.current) {
@@ -70,13 +94,24 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
   
   // Play sound function
   const play = () => {
-    if (audioRef.current && !isPlaying) {
+    shouldBePlayingRef.current = true
+
+    if (audioRef.current) {
+      // Check if audio is actually playing (not just state says so)
+      // This handles cases where the OS paused the audio (e.g., screen lock/unlock)
+      const actuallyPlaying = !audioRef.current.paused && !audioRef.current.ended
+
+      if (actuallyPlaying) {
+        // Already playing, nothing to do
+        return
+      }
+
       // Reset to beginning
       audioRef.current.currentTime = 0
-      
+
       // Store the play promise to handle it properly
       playPromiseRef.current = audioRef.current.play()
-      
+
       playPromiseRef.current
         .then(() => {
           setIsPlaying(true)
@@ -100,6 +135,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
   
   // Stop sound function
   const stop = () => {
+    shouldBePlayingRef.current = false
     safeStop()
   }
   

@@ -44,7 +44,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
 
   const isConnecting = connectionStatus === ConnectionStatus.CONNECTING
 
-  const { play: playRingingSound, stop: stopRingingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true })
+  const { play: playRingingSound, stop: stopRingingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true, resumeOnVisibilityChange: true })
 
   useEffect(() => {
     if (open && connectionStatus === ConnectionStatus.RECEIVING_CALL) {
