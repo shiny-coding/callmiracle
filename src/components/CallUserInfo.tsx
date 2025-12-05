@@ -7,9 +7,25 @@ import UserAvatar from './UserAvatar'
 
 interface CallUserInfoProps {
   user: User
+  compact?: boolean
 }
 
-export default function CallUserInfo({ user }: CallUserInfoProps) {
+export default function CallUserInfo({ user, compact = false }: CallUserInfoProps) {
+  if (compact) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-2">
+        <UserAvatar
+          user={user}
+          userName={user.name}
+          size="lg"
+        />
+        <Typography variant="h6" className="text-color">
+          {user.name}
+        </Typography>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center gap-4 py-4">
       {/* Avatar */}

@@ -131,6 +131,7 @@
   "calling": "Calling...",
   "connecting": "Connecting...",
   "callAgain": "Call Again",
+  "callback": "Call Back",
   "callEnded": "Call Ended",
   "callDuration": "Duration",
   "callHistory": "Call History",
@@ -231,6 +232,7 @@
     "meetingPartnerUpdated": "Your meeting with a partner has been updated",
     "meetingWithFinished": "Your meeting with {name} has been finished",
     "missedCall": "Missed call from {name}",
+    "missedCallTitle": "Missed call",
     "missedCallAnonymous": "Missed call on meeting",
     "incomingCall": "Incoming call from {name}",
     "incomingCallAnonymous": "Incoming call"

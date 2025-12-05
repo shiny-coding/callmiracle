@@ -9,7 +9,7 @@ import { getNotificationMessage } from '@/utils/notificationUtils'
 import { useRouter, usePathname } from 'next/navigation'
 import { useClientPushNotifications } from '@/hooks/useClientPushNotifications'
 import { useSnackbar } from './SnackContext'
-import { NotificationType } from '@/generated/graphql'
+import { NotificationType, Notification } from '@/generated/graphql'
 import { routerPush } from '@/utils/routerHelper'
 
 const GET_NOTIFICATIONS = gql`
@@ -21,6 +21,11 @@ const GET_NOTIFICATIONS = gql`
       meetingId
       createdAt
       peerUserName
+      peerUserId
+      peerUser {
+        _id
+        name
+      }
       meeting {
         _id
         userId
@@ -52,7 +57,7 @@ const MARK_ALL_NOTIFICATIONS_SEEN = gql`
 `
 
 interface NotificationsContextType {
-  notifications: NotificationType[]
+  notifications: Notification[]
   loading: boolean
   error: any
   refetch: () => void

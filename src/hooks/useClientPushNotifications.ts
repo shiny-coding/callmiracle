@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import clientLogger from '@/utils/clientLogger'
+import { useStore } from '@/store/useStore'
 
 function urlBase64ToUint8Array(base64String: string) {
     const padding = "=".repeat((4 - base64String.length % 4) % 4)
@@ -61,6 +62,9 @@ const subscribeToPushNotifications = async () => {
 
 export function useClientPushNotifications(currentUser: any) {
   const router = useRouter()
+  const { setPendingMissedCall } = useStore((state) => ({
+    setPendingMissedCall: state.setPendingMissedCall
+  }))
 
   // Helper function to handle navigation from notification
   const handleNotificationNavigation = useCallback((url: string, notificationType?: string) => {
@@ -71,11 +75,37 @@ export function useClientPushNotifications(currentUser: any) {
 
     // Convert full URL to relative path for Next.js router
     let relativePath = url
+    let urlObj: URL | null = null
     try {
-      const urlObj = new URL(url, window.location.origin)
+      urlObj = new URL(url, window.location.origin)
       relativePath = urlObj.pathname + urlObj.search
     } catch {
       // If URL parsing fails, use as-is
+    }
+
+    clientLogger.info('[PushNotifications] Processing navigation', {
+      originalUrl: url,
+      relativePath,
+      notificationType
+    })
+
+    // Handle MISSED_CALL notifications specially - show the missed call dialog
+    if (notificationType === 'MISSED_CALL' && urlObj) {
+      const searchParams = urlObj.searchParams
+      const initiatorUserId = searchParams.get('with')
+      const meetingId = searchParams.get('meetingId')
+
+      if (initiatorUserId || meetingId) {
+        clientLogger.info('[PushNotifications] Setting pending missed call', {
+          initiatorUserId,
+          meetingId
+        })
+        setPendingMissedCall({
+          peerUserId: initiatorUserId || '',
+          meetingId: meetingId || undefined
+        })
+        return
+      }
     }
 
     // Get current path without locale prefix for comparison
@@ -84,15 +114,6 @@ export function useClientPushNotifications(currentUser: any) {
     const currentPathWithoutLocale = currentPath.replace(/^\/[a-z]{2}(?=\/|$)/, '')
     // Also remove locale from relativePath for comparison
     const relativePathWithoutLocale = relativePath.replace(/^\/[a-z]{2}(?=\/|$)/, '')
-
-    clientLogger.info('[PushNotifications] Processing navigation', {
-      originalUrl: url,
-      relativePath,
-      currentPath,
-      currentPathWithoutLocale,
-      relativePathWithoutLocale,
-      notificationType
-    })
 
     // Check if we're already on this page (compare without locale)
     if (currentPathWithoutLocale === relativePathWithoutLocale) {
@@ -108,7 +129,7 @@ export function useClientPushNotifications(currentUser: any) {
     clientLogger.info('[PushNotifications] Calling router.push', { relativePath })
     router.push(relativePath, { scroll: false })
     clientLogger.info('[PushNotifications] router.push called successfully')
-  }, [router])
+  }, [router, setPendingMissedCall])
 
   // Listen for messages from service worker (notification clicks) via multiple channels
   useEffect(() => {

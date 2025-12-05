@@ -170,6 +170,8 @@ type Notification {
   createdAt: Float!
   meeting: Meeting
   peerUserName: String
+  peerUserId: ID
+  peerUser: User
 }
 
 type SubscriptionEvent {

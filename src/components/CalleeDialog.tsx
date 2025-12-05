@@ -1,14 +1,19 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, IconButton } from '@mui/material'
 import CallIcon from '@mui/icons-material/Call'
+import MicIcon from '@mui/icons-material/Mic'
+import MicOffIcon from '@mui/icons-material/MicOff'
+import VideocamIcon from '@mui/icons-material/Videocam'
+import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import { useTranslations } from 'next-intl'
-import { User } from '@/generated/graphql'
+import { User, NotificationType } from '@/generated/graphql'
 import CallUserInfo from './CallUserInfo'
 import { useStore } from '@/store/useStore'
 import { useWebRTCCallee } from '@/hooks/webrtc/useWebRTCCallee'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
+import { useNotifications } from '@/contexts/NotificationsContext'
 
 interface CalleeDialogProps {
   callee: any
@@ -18,10 +23,16 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const t = useTranslations()
   const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
-  const { connectionStatus } = useStore((state) => ({
-    connectionStatus: state.connectionStatus
+  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall } = useStore((state) => ({
+    connectionStatus: state.connectionStatus,
+    localAudioEnabled: state.localAudioEnabled,
+    localVideoEnabled: state.localVideoEnabled,
+    setLocalAudioEnabled: state.setLocalAudioEnabled,
+    setLocalVideoEnabled: state.setLocalVideoEnabled,
+    pendingMissedCall: state.pendingMissedCall
   }))
   const { doCall } = useWebRTCContext()
+  const { notifications, setNotificationSeen } = useNotifications()
 
   // Preserve caller information even after call expires
   const [lastIncomingRequest, setLastIncomingRequest] = useState<any>(null)
@@ -33,7 +44,8 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   }, [callee.incomingRequest])
 
   const isMissedCall = connectionStatus === ConnectionStatus.TIMEOUT || connectionStatus === ConnectionStatus.EXPIRED
-  const open = !!callee.incomingRequest || isMissedCall
+  // Don't show CalleeDialog's missed call view if MissedCallDialog is handling it
+  const open = !!callee.incomingRequest || (isMissedCall && !pendingMissedCall)
   const isReceivingCall = connectionStatus === ConnectionStatus.RECEIVING_CALL
   const user = callee.incomingRequest?.from || lastIncomingRequest?.from || null
   const onAccept = callee.handleAcceptCall
@@ -46,6 +58,28 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const isConnecting = connectionStatus === ConnectionStatus.CONNECTING
 
   const { play: playRingingSound, stop: stopRingingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true, resumeOnVisibilityChange: true })
+
+  // Track which notifications we've already marked as seen to avoid duplicate calls
+  const markedNotificationsRef = useRef<Set<string>>(new Set())
+
+  // Mark the corresponding missed call notification as seen when showing the missed call dialog
+  useEffect(() => {
+    if (isMissedCall && user) {
+      // Find the most recent unseen MISSED_CALL notification from this caller
+      const missedCallNotification = notifications.find(
+        (n: any) =>
+          n.type === NotificationType.MissedCall &&
+          !n.seen &&
+          n.peerUserName === user.name &&
+          !markedNotificationsRef.current.has(n._id)
+      )
+
+      if (missedCallNotification) {
+        markedNotificationsRef.current.add(missedCallNotification._id)
+        setNotificationSeen(missedCallNotification._id)
+      }
+    }
+  }, [isMissedCall, user, notifications, setNotificationSeen])
 
   useEffect(() => {
     if (open && connectionStatus === ConnectionStatus.RECEIVING_CALL) {
@@ -73,7 +107,6 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     <Dialog
       open={open}
       onClose={isMissedCall ? handleClose : onReject}
-      hideBackdrop={isReceivingCall}
       PaperProps={{
         className: 'card-bg text-color min-w-[300px]'
       }}
@@ -89,7 +122,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
       <DialogTitle className="text-center">
         {isMissedCall
           ? (showUserInfo
-              ? t('notificationMessages.missedCall', { name: user.name })
+              ? t('notificationMessages.missedCallTitle')
               : t('notificationMessages.missedCallAnonymous'))
           : tStatus(connectionStatus)}
       </DialogTitle>
@@ -99,7 +132,25 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
             {t('meetingCall')}
           </Typography>
         )}
-        {showUserInfo && <CallUserInfo user={user} />}
+        {showUserInfo && <CallUserInfo user={user} compact={isMissedCall} />}
+        {!isMissedCall && (
+          <div className="flex justify-center gap-4 mt-4">
+            <IconButton
+              onClick={() => setLocalAudioEnabled(!localAudioEnabled)}
+              className="icon-gradient-blue"
+              size="large"
+            >
+              {localAudioEnabled ? <MicIcon /> : <MicOffIcon />}
+            </IconButton>
+            <IconButton
+              onClick={() => setLocalVideoEnabled(!localVideoEnabled)}
+              className="icon-gradient-blue"
+              size="large"
+            >
+              {localVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+            </IconButton>
+          </div>
+        )}
       </DialogContent>
       <DialogActions className="border-t brighter-border">
         {isMissedCall ? (
@@ -107,8 +158,8 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
             <Button onClick={handleClose} variant="contained" color="inherit">
               {t('close')}
             </Button>
-            <Button onClick={handleCallBack} variant="contained" color="success" startIcon={<CallIcon />}>
-              {t('callAgain')}
+            <Button onClick={handleCallBack} variant="contained" color="success" startIcon={<CallIcon sx={{ color: 'white' }} />}>
+              {t('callback')}
             </Button>
           </>
         ) : (
@@ -119,7 +170,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
             {!isConnecting && (
               <Button onClick={() => {
                 onAccept()
-              }} variant="contained" color="success" startIcon={<CallIcon />}>
+              }} variant="contained" color="success" startIcon={<CallIcon sx={{ color: 'white' }} />}>
                 {tVideoChat('accept')}
               </Button>
             )}

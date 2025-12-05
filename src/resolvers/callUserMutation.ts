@@ -27,6 +27,8 @@ export async function publishCallNotification(notificationType: NotificationType
       type: notificationType,
       seen: false,
       peerUserName,
+      peerUserId: new ObjectId(initiator._id),
+      meetingId: call.meetingId ? new ObjectId(call.meetingId) : undefined,
       createdAt: new Date()
     })
     notificationId = notificationResult.insertedId

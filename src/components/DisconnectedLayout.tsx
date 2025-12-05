@@ -9,6 +9,7 @@ import DetailedCallHistoryDialog from './DetailedCallHistoryDialog'
 import CallerDialog from './CallerDialog'
 import CalleeDialog from './CalleeDialog'
 import CallEndedDialog from './CallEndedDialog'
+import MissedCallDialog from './MissedCallDialog'
 
 interface DisconnectedLayoutProps {
   children: React.ReactNode
@@ -16,15 +17,11 @@ interface DisconnectedLayoutProps {
 
 export default function DisconnectedLayout({ children }: DisconnectedLayoutProps) {
   const pathname = usePathname()
-  const { connectionStatus, callee } = useWebRTCContext()
-  const showBackground = connectionStatus === 'calling' || connectionStatus === 'receiving-call'
+  const { callee } = useWebRTCContext()
   const isFirstTimePage = pathname?.includes('/first-time')
 
   return (
     <>
-      {showBackground && (
-        <div className="video-bg-dialog" style={{ backgroundImage: 'url(/space7.jpg)' }} />
-      )}
       <div
         className="flex flex-col w-full"
         style={{
@@ -46,6 +43,7 @@ export default function DisconnectedLayout({ children }: DisconnectedLayoutProps
         <CallerDialog />
         <CalleeDialog callee={callee} />
         <CallEndedDialog />
+        <MissedCallDialog />
       </div>
     </>
   )

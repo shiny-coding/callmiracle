@@ -130,6 +130,7 @@
   "calling": "Вызов...",
   "connecting": "Подключение...",
   "callAgain": "Вызвать снова",
+  "callback": "Перезвонить",
   "callEnded": "Звонок завершён",
   "callDuration": "Длительность",
   "callHistory": "История звонков",
@@ -230,6 +231,7 @@
     "meetingPartnerUpdated": "Ваша встреча с партнером обновлена",
     "meetingWithFinished": "Ваша встреча с {name} завершена",
     "missedCall": "Пропущенный звонок от {name}",
+    "missedCallTitle": "Пропущенный звонок",
     "missedCallAnonymous": "Пропущенный звонок по встрече",
     "incomingCall": "Входящий звонок от {name}",
     "incomingCallAnonymous": "Входящий звонок"

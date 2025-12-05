@@ -86,6 +86,14 @@ export interface AppState {
     meetingId?: string
   } | null
   setCallEndedInfo: (info: AppState['callEndedInfo']) => void
+
+  // Pending missed call info for showing dialog from notification click
+  pendingMissedCall: {
+    peerUserId: string
+    peerUserName?: string
+    meetingId?: string
+  } | null
+  setPendingMissedCall: (info: AppState['pendingMissedCall']) => void
 }
 
 // Define which parts of AppState are persisted
@@ -147,6 +155,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       lastMeetingLanguage: null,
       lastConversationId: null,
       callEndedInfo: null,
+      pendingMissedCall: null,
       setCurrentUser: (currentUser) => {
         set({ currentUser })
       },
@@ -194,6 +203,7 @@ const storeInitializer = persist<AppState, [], [], PersistedAppState>(
       setLastMeetingLanguage: (languages) => set({ lastMeetingLanguage: languages }),
       setLastConversationId: (conversationId) => set({ lastConversationId: conversationId }),
       setCallEndedInfo: (info) => set({ callEndedInfo: info }),
+      setPendingMissedCall: (info) => set({ pendingMissedCall: info }),
     }),
     {
       name: 'app-storage',

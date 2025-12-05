@@ -1,5 +1,9 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton } from '@mui/material'
 import CallIcon from '@mui/icons-material/Call'
+import MicIcon from '@mui/icons-material/Mic'
+import MicOffIcon from '@mui/icons-material/MicOff'
+import VideocamIcon from '@mui/icons-material/Videocam'
+import VideocamOffIcon from '@mui/icons-material/VideocamOff'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
@@ -11,17 +15,23 @@ import { MAX_CALLING_TIME_MS } from '@/config/constants'
 
 export default function CallerDialog() {
   const t = useTranslations()
-  const { connectionStatus, setConnectionStatus, targetUser, meetingId, meetingLastCallTime, currentUser } = useStore( (state: any) => ({
+  const { connectionStatus, setConnectionStatus, targetUser, meetingId, meetingLastCallTime, currentUser, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall } = useStore( (state: any) => ({
     connectionStatus: state.connectionStatus,
     setConnectionStatus: state.setConnectionStatus,
     targetUser: state.targetUser,
     meetingId: state.meetingId,
     meetingLastCallTime: state.meetingLastCallTime,
-    currentUser: state.currentUser
+    currentUser: state.currentUser,
+    localAudioEnabled: state.localAudioEnabled,
+    localVideoEnabled: state.localVideoEnabled,
+    setLocalAudioEnabled: state.setLocalAudioEnabled,
+    setLocalVideoEnabled: state.setLocalVideoEnabled,
+    pendingMissedCall: state.pendingMissedCall
   }))
   const tStatus = useTranslations('ConnectionStatus')
   const { doCall, callUser, caller } = useWebRTCContext()
-  const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer'].includes(connectionStatus)
+  // Don't show CallerDialog if MissedCallDialog is handling a notification click
+  const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer'].includes(connectionStatus) && !pendingMissedCall
   const isCalling = connectionStatus === 'calling'
   const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true, resumeOnVisibilityChange: true })
 
@@ -85,7 +95,6 @@ export default function CallerDialog() {
     <Dialog
       open={open}
       onClose={handleCancel}
-      hideBackdrop={isCalling}
       PaperProps={{
         className: 'card-bg text-color min-w-[300px]'
       }}
@@ -103,11 +112,27 @@ export default function CallerDialog() {
       </DialogTitle>
       <DialogContent>
         {showUserInfo && <CallUserInfo user={targetUser} />}
+        <div className="flex justify-center gap-4 mt-4">
+          <IconButton
+            onClick={() => setLocalAudioEnabled(!localAudioEnabled)}
+            className="icon-gradient-blue"
+            size="large"
+          >
+            {localAudioEnabled ? <MicIcon /> : <MicOffIcon />}
+          </IconButton>
+          <IconButton
+            onClick={() => setLocalVideoEnabled(!localVideoEnabled)}
+            className="icon-gradient-blue"
+            size="large"
+          >
+            {localVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+          </IconButton>
+        </div>
       </DialogContent>
       <DialogActions className="border-t brighter-border" style={{ backgroundColor: 'transparent' }}>
         {(connectionStatus === 'no-answer' || connectionStatus === 'busy') &&
-          <Button onClick={handleCallAgain} variant="contained" color="success" startIcon={<CallIcon />}>
-            {t('callAgain')}
+          <Button onClick={handleCallAgain} variant="contained" color="success" startIcon={<CallIcon sx={{ color: 'white' }} />}>
+            {t('callback')}
           </Button>
         }
         <Button onClick={handleCancel} variant="contained" color="error">
