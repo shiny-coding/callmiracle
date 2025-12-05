@@ -83,6 +83,7 @@ export interface AppState {
   callEndedInfo: {
     user: User
     durationS: number
+    meetingId?: string
   } | null
   setCallEndedInfo: (info: AppState['callEndedInfo']) => void
 }

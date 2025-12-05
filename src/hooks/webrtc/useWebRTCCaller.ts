@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
-import { useWebRTCCommon } from './useWebRTCCommon'
+import { useWebRTCCommon, clearMediaSession } from './useWebRTCCommon'
 import type { VideoQuality } from '@/components/VideoQualitySelector'
 import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { MeetingStatus, User } from '@/generated/graphql'
@@ -280,6 +280,9 @@ export function useWebRTCCaller({
       })
       setLocalStream(undefined)
     }
+
+    // Clear media session to remove iOS notification panel player
+    clearMediaSession()
   }
 
   const hangup = createHangup(cleanup)

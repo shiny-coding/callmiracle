@@ -1,4 +1,5 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material'
+import CallIcon from '@mui/icons-material/Call'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
 import CallUserInfo from './CallUserInfo'
@@ -74,7 +75,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
       onClose={isMissedCall ? handleClose : onReject}
       hideBackdrop={isReceivingCall}
       PaperProps={{
-        className: 'bg-gray-900 text-white min-w-[300px]'
+        className: 'card-bg text-color min-w-[300px]'
       }}
       slotProps={{
         backdrop: {
@@ -85,7 +86,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
         }
       }}
     >
-      <DialogTitle className="flex justify-between items-center">
+      <DialogTitle className="text-center">
         {isMissedCall
           ? (showUserInfo
               ? t('notificationMessages.missedCall', { name: user.name })
@@ -100,13 +101,13 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
         )}
         {showUserInfo && <CallUserInfo user={user} />}
       </DialogContent>
-      <DialogActions className="border-t border-gray-800">
+      <DialogActions className="border-t brighter-border">
         {isMissedCall ? (
           <>
             <Button onClick={handleClose} variant="contained" color="inherit">
               {t('close')}
             </Button>
-            <Button onClick={handleCallBack} variant="contained" color="success">
+            <Button onClick={handleCallBack} variant="contained" color="success" startIcon={<CallIcon />}>
               {t('callAgain')}
             </Button>
           </>
@@ -118,7 +119,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
             {!isConnecting && (
               <Button onClick={() => {
                 onAccept()
-              }} variant="contained" color="success">
+              }} variant="contained" color="success" startIcon={<CallIcon />}>
                 {tVideoChat('accept')}
               </Button>
             )}

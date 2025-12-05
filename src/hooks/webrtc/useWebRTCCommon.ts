@@ -6,6 +6,32 @@ import { User } from '@/generated/graphql'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { ICE_SERVERS } from '@/constants/webrtc'
 
+/**
+ * Clear the browser's media session to remove the media player from iOS notification panel
+ */
+export function clearMediaSession() {
+  if ('mediaSession' in navigator) {
+    try {
+      // Clear metadata
+      navigator.mediaSession.metadata = null
+      // Set playback state to none
+      navigator.mediaSession.playbackState = 'none'
+      // Clear action handlers
+      const actions: MediaSessionAction[] = ['play', 'pause', 'stop', 'seekbackward', 'seekforward', 'previoustrack', 'nexttrack']
+      actions.forEach(action => {
+        try {
+          navigator.mediaSession.setActionHandler(action, null)
+        } catch {
+          // Some actions may not be supported
+        }
+      })
+      console.log('WebRTC: Cleared media session')
+    } catch (err) {
+      console.warn('WebRTC: Failed to clear media session', err)
+    }
+  }
+}
+
 export const CALL_USER = gql`
   mutation CallUser($input: CallUserInput!) {
     callUser(input: $input) {

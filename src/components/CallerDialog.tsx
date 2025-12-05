@@ -1,4 +1,5 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import CallIcon from '@mui/icons-material/Call'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
@@ -97,7 +98,7 @@ export default function CallerDialog() {
         }
       }}
     >
-      <DialogTitle className="flex justify-between items-center">
+      <DialogTitle className="text-center">
         {tStatus(connectionStatus)}
       </DialogTitle>
       <DialogContent>
@@ -105,7 +106,7 @@ export default function CallerDialog() {
       </DialogContent>
       <DialogActions className="border-t brighter-border" style={{ backgroundColor: 'transparent' }}>
         {(connectionStatus === 'no-answer' || connectionStatus === 'busy') &&
-          <Button onClick={handleCallAgain} variant="contained" color="primary">
+          <Button onClick={handleCallAgain} variant="contained" color="success" startIcon={<CallIcon />}>
             {t('callAgain')}
           </Button>
         }

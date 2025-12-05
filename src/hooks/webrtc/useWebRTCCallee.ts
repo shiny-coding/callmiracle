@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useWebRTCCommon, ConnectionStatus } from './useWebRTCCommon'
+import { useWebRTCCommon, ConnectionStatus, clearMediaSession } from './useWebRTCCommon'
 import type { IncomingRequest } from './useWebRTCCommon'
 import { useStore } from '@/store/useStore'
 
@@ -166,6 +166,9 @@ export function useWebRTCCallee({
       })
       setLocalStream(undefined)
     }
+
+    // Clear media session to remove iOS notification panel player
+    clearMediaSession()
   }
 
   const hangup = createHangup(cleanup)

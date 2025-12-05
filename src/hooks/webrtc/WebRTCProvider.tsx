@@ -228,11 +228,13 @@ export function WebRTCProvider({
         if (callEvent.from && durationS > 0) {
           console.log('WebRTC: Setting call ended info', {
             user: callEvent.from.name,
-            durationS
+            durationS,
+            meetingId: callEvent.meetingId
           })
           setCallEndedInfo({
             user: callEvent.from,
-            durationS
+            durationS,
+            meetingId: callEvent.meetingId || undefined
           })
         }
 
