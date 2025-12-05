@@ -14,6 +14,20 @@ import { usePlaySound } from '@/hooks/usePlaySound'
 import { useEffect, useState, useRef } from 'react'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 import { useNotifications } from '@/contexts/NotificationsContext'
+import { gql, useQuery } from '@apollo/client'
+
+const GET_USER = gql`
+  query GetUserForMissedCall($userId: ID!) {
+    getUser(userId: $userId) {
+      _id
+      name
+      languages
+      about
+      sex
+      birthYear
+    }
+  }
+`
 
 interface CalleeDialogProps {
   callee: any
@@ -23,16 +37,24 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const t = useTranslations()
   const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
-  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall } = useStore((state) => ({
+  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall } = useStore((state) => ({
     connectionStatus: state.connectionStatus,
     localAudioEnabled: state.localAudioEnabled,
     localVideoEnabled: state.localVideoEnabled,
     setLocalAudioEnabled: state.setLocalAudioEnabled,
     setLocalVideoEnabled: state.setLocalVideoEnabled,
-    pendingMissedCall: state.pendingMissedCall
+    pendingMissedCall: state.pendingMissedCall,
+    setPendingMissedCall: state.setPendingMissedCall
   }))
   const { doCall } = useWebRTCContext()
   const { notifications, setNotificationSeen } = useNotifications()
+
+  // Fetch user for pending missed call from notification
+  const { data: pendingUserData, loading: pendingUserLoading } = useQuery(GET_USER, {
+    variables: { userId: pendingMissedCall?.peerUserId },
+    skip: !pendingMissedCall?.peerUserId
+  })
+  const pendingMissedCallUser = pendingUserData?.getUser
 
   // Preserve caller information even after call expires
   const [lastIncomingRequest, setLastIncomingRequest] = useState<any>(null)
@@ -43,17 +65,23 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     }
   }, [callee.incomingRequest])
 
-  const isMissedCall = connectionStatus === ConnectionStatus.TIMEOUT || connectionStatus === ConnectionStatus.EXPIRED
-  // Don't show CalleeDialog's missed call view if MissedCallDialog is handling it
-  const open = !!callee.incomingRequest || (isMissedCall && !pendingMissedCall)
+  const isMissedCallFromStatus = connectionStatus === ConnectionStatus.TIMEOUT || connectionStatus === ConnectionStatus.EXPIRED
+  const isMissedCallFromNotification = !!pendingMissedCall && !!pendingMissedCallUser
+  const isMissedCall = isMissedCallFromStatus || isMissedCallFromNotification
+
+  const open = !!callee.incomingRequest || (isMissedCallFromStatus && !pendingMissedCall) || isMissedCallFromNotification
   const isReceivingCall = connectionStatus === ConnectionStatus.RECEIVING_CALL
-  const user = callee.incomingRequest?.from || lastIncomingRequest?.from || null
+
+  // User source: notification user takes priority, then incoming request, then last request
+  const user = isMissedCallFromNotification ? pendingMissedCallUser : (callee.incomingRequest?.from || lastIncomingRequest?.from || null)
   const onAccept = callee.handleAcceptCall
   const onReject = callee.handleRejectCall
 
-  const meetingId = callee.incomingRequest?.meetingId || lastIncomingRequest?.meetingId
+  const meetingId = isMissedCallFromNotification
+    ? pendingMissedCall?.meetingId
+    : (callee.incomingRequest?.meetingId || lastIncomingRequest?.meetingId)
   const meetingLastCallTime = callee.incomingRequest?.meetingLastCallTime || lastIncomingRequest?.meetingLastCallTime
-  const showUserInfo = !meetingId || meetingLastCallTime
+  const showUserInfo = !meetingId || meetingLastCallTime || isMissedCallFromNotification
 
   const isConnecting = connectionStatus === ConnectionStatus.CONNECTING
 
@@ -90,14 +118,24 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   }, [open, connectionStatus])
 
   const handleClose = () => {
-    callee.setIncomingRequest(null)
-    setLastIncomingRequest(null)
+    if (isMissedCallFromNotification) {
+      setPendingMissedCall(null)
+    } else {
+      callee.setIncomingRequest(null)
+      setLastIncomingRequest(null)
+    }
   }
 
-  const handleCallBack = async () => {
-    if (user && meetingId) {
+  const handleCallBack = () => {
+    if (user) {
+      const userToCall = user
+      const meetingIdToUse = meetingId || null
+      const meetingLastCallTimeToUse = isMissedCallFromNotification ? null : meetingLastCallTime
       handleClose()
-      await doCall(user, meetingId, meetingLastCallTime)
+      // Use setTimeout to ensure dialog closes before CallerDialog opens
+      setTimeout(() => {
+        doCall(userToCall, meetingIdToUse, meetingLastCallTimeToUse)
+      }, 100)
     }
   }
 
@@ -133,24 +171,22 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
           </Typography>
         )}
         {showUserInfo && <CallUserInfo user={user} compact={isMissedCall} />}
-        {!isMissedCall && (
-          <div className="flex justify-center gap-4 mt-4">
-            <IconButton
-              onClick={() => setLocalAudioEnabled(!localAudioEnabled)}
-              className="icon-gradient-blue"
-              size="large"
-            >
-              {localAudioEnabled ? <MicIcon /> : <MicOffIcon />}
-            </IconButton>
-            <IconButton
-              onClick={() => setLocalVideoEnabled(!localVideoEnabled)}
-              className="icon-gradient-blue"
-              size="large"
-            >
-              {localVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
-            </IconButton>
-          </div>
-        )}
+        <div className="flex justify-center gap-4 mt-4">
+          <IconButton
+            onClick={() => setLocalAudioEnabled(!localAudioEnabled)}
+            className="icon-gradient-blue"
+            size="large"
+          >
+            {localAudioEnabled ? <MicIcon /> : <MicOffIcon />}
+          </IconButton>
+          <IconButton
+            onClick={() => setLocalVideoEnabled(!localVideoEnabled)}
+            className="icon-gradient-blue"
+            size="large"
+          >
+            {localVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+          </IconButton>
+        </div>
       </DialogContent>
       <DialogActions className="border-t brighter-border">
         {isMissedCall ? (

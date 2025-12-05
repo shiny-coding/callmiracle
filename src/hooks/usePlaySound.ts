@@ -92,6 +92,27 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
     }
   }
   
+  // Clear media session to prevent showing player in notification area
+  const clearMediaSession = () => {
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = null
+        navigator.mediaSession.playbackState = 'none'
+        // Clear all action handlers
+        const actions: MediaSessionAction[] = ['play', 'pause', 'stop', 'seekbackward', 'seekforward', 'previoustrack', 'nexttrack']
+        actions.forEach(action => {
+          try {
+            navigator.mediaSession.setActionHandler(action, null)
+          } catch {
+            // Some actions might not be supported
+          }
+        })
+      } catch {
+        // Media Session API might not be fully supported
+      }
+    }
+  }
+
   // Play sound function
   const play = () => {
     shouldBePlayingRef.current = true
@@ -109,12 +130,17 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
       // Reset to beginning
       audioRef.current.currentTime = 0
 
+      // Clear media session before playing to prevent showing player controls
+      clearMediaSession()
+
       // Store the play promise to handle it properly
       playPromiseRef.current = audioRef.current.play()
 
       playPromiseRef.current
         .then(() => {
           setIsPlaying(true)
+          // Clear media session again after play starts
+          clearMediaSession()
           // Clear the promise ref once it's resolved
           playPromiseRef.current = null
         })

@@ -9,7 +9,6 @@ import DetailedCallHistoryDialog from './DetailedCallHistoryDialog'
 import CallerDialog from './CallerDialog'
 import CalleeDialog from './CalleeDialog'
 import CallEndedDialog from './CallEndedDialog'
-import MissedCallDialog from './MissedCallDialog'
 
 interface DisconnectedLayoutProps {
   children: React.ReactNode
@@ -43,7 +42,6 @@ export default function DisconnectedLayout({ children }: DisconnectedLayoutProps
         <CallerDialog />
         <CalleeDialog callee={callee} />
         <CallEndedDialog />
-        <MissedCallDialog />
       </div>
     </>
   )
