@@ -251,12 +251,23 @@ export function useWebRTCCaller({
         quality: qualityWeWantFromRemote
       })
     } catch (error) {
-      console.error('WebRTC setup error', {
-        targetUserId: user._id,
-        targetUserName: user.name,
-        error: error instanceof Error ? error.message : String(error)
-      })
-      setConnectionStatus('failed')
+      const errorName = (error as Error)?.name
+      const errorMessage = error instanceof Error ? error.message : String(error)
+
+      if (errorName === 'NotAllowedError') {
+        console.info('WebRTC: Permissions denied by user/UA during setup', {
+          targetUserId: user._id,
+          targetUserName: user.name
+        })
+        setConnectionStatus('disconnected')
+      } else {
+        console.error('WebRTC setup error', {
+          targetUserId: user._id,
+          targetUserName: user.name,
+          error: errorMessage
+        })
+        setConnectionStatus('failed')
+      }
       cleanup()
     }
   }

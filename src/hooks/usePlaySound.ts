@@ -10,7 +10,21 @@ interface PlaySoundOptions {
 // Detect iOS
 const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
 
-clientLogger.info('[usePlaySound] Module loaded', { isIOS, userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A' })
+// Debug toggles to reduce noisy logging; set to true locally when investigating sound issues
+const soundDebug = false
+const soundLog = (message: string, meta: Record<string, any> = {}) => {
+  if (!soundDebug) return
+  clientLogger.info(message, meta)
+}
+const soundWarn = (message: string, meta: Record<string, any> = {}) => {
+  if (!soundDebug) return
+  clientLogger.warn(message, meta)
+}
+const soundError = (message: string, meta: Record<string, any> = {}) => {
+  clientLogger.error(message, meta)
+}
+
+soundLog('[usePlaySound] Module loaded', { isIOS, userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A' })
 
 // Shared AudioContext for all sounds (created on first user interaction)
 let sharedAudioContext: AudioContext | null = null
@@ -25,7 +39,7 @@ const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown']
 function getAudioContext(): AudioContext {
   if (!sharedAudioContext) {
     sharedAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    clientLogger.info('[usePlaySound] Created new AudioContext', { state: sharedAudioContext.state })
+    soundLog('[usePlaySound] Created new AudioContext', { state: sharedAudioContext.state })
   }
   return sharedAudioContext
 }
@@ -33,22 +47,22 @@ function getAudioContext(): AudioContext {
 // Resume AudioContext if it's suspended (required after user interaction on some browsers)
 async function ensureAudioContextRunning(): Promise<void> {
   const ctx = getAudioContext()
-  clientLogger.info('[usePlaySound] ensureAudioContextRunning', { currentState: ctx.state })
+  soundLog('[usePlaySound] ensureAudioContextRunning', { currentState: ctx.state })
   if (ctx.state === 'suspended') {
-    clientLogger.info('[usePlaySound] Resuming suspended AudioContext')
+    soundLog('[usePlaySound] Resuming suspended AudioContext')
     await ctx.resume()
-    clientLogger.info('[usePlaySound] AudioContext resumed', { newState: ctx.state })
+    soundLog('[usePlaySound] AudioContext resumed', { newState: ctx.state })
   }
 }
 
 // Unlock audio on iOS - must be called from user interaction
 function unlockAudioContext(): void {
   if (audioContextUnlocked) {
-    clientLogger.info('[usePlaySound] AudioContext already unlocked')
+    soundLog('[usePlaySound] AudioContext already unlocked')
     return
   }
 
-  clientLogger.info('[usePlaySound] Unlocking AudioContext')
+  soundLog('[usePlaySound] Unlocking AudioContext')
   const ctx = getAudioContext()
 
   // Create and play a silent buffer to unlock
@@ -57,16 +71,16 @@ function unlockAudioContext(): void {
   source.buffer = buffer
   source.connect(ctx.destination)
   source.start(0)
-  clientLogger.info('[usePlaySound] Played silent buffer to unlock')
+  soundLog('[usePlaySound] Played silent buffer to unlock')
 
   // Also resume if suspended
   if (ctx.state === 'suspended') {
     ctx.resume()
-    clientLogger.info('[usePlaySound] Resumed suspended context during unlock')
+    soundLog('[usePlaySound] Resumed suspended context during unlock')
   }
 
   audioContextUnlocked = true
-  clientLogger.info('[usePlaySound] AudioContext unlocked successfully', { state: ctx.state })
+  soundLog('[usePlaySound] AudioContext unlocked successfully', { state: ctx.state })
 }
 
 // Cancel any pending unlock-triggered playback (e.g., when stopping sound)
@@ -75,20 +89,20 @@ function cancelPendingUnlockPlay() {
   unlockEvents.forEach(evt => document.removeEventListener(evt, pendingUnlockPlayRef.handler!, true))
   pendingUnlockPlayRef.active = false
   pendingUnlockPlayRef.handler = null
-  clientLogger.info('[usePlaySound] cancelPendingUnlockPlay: listeners removed')
+  soundLog('[usePlaySound] cancelPendingUnlockPlay: listeners removed')
 }
 
 // Queue a play attempt to run right after the next user interaction unlocks audio on iOS
 function schedulePlayAfterUnlock(playFallback: () => void, soundPath: string, shouldBePlayingRef: MutableRefObject<boolean>) {
   if (pendingUnlockPlayRef.active) {
-    clientLogger.info('[usePlaySound] schedulePlayAfterUnlock skipped (already pending)', { soundPath })
+    soundLog('[usePlaySound] schedulePlayAfterUnlock skipped (already pending)', { soundPath })
     return
   }
 
   const handler = (event: Event) => {
-    clientLogger.info('[usePlaySound] schedulePlayAfterUnlock: user interaction', { eventType: event.type, soundPath, shouldBePlaying: shouldBePlayingRef.current })
+    soundLog('[usePlaySound] schedulePlayAfterUnlock: user interaction', { eventType: event.type, soundPath, shouldBePlaying: shouldBePlayingRef.current })
     if (!shouldBePlayingRef.current) {
-      clientLogger.info('[usePlaySound] schedulePlayAfterUnlock: skipping play because shouldBePlayingRef=false', { soundPath })
+      soundLog('[usePlaySound] schedulePlayAfterUnlock: skipping play because shouldBePlayingRef=false', { soundPath })
       cancelPendingUnlockPlay()
       return
     }
@@ -101,25 +115,25 @@ function schedulePlayAfterUnlock(playFallback: () => void, soundPath: string, sh
   pendingUnlockPlayRef.active = true
   pendingUnlockPlayRef.handler = handler
   unlockEvents.forEach(evt => document.addEventListener(evt, handler, true))
-  clientLogger.info('[usePlaySound] schedulePlayAfterUnlock: listeners registered', { soundPath, events: unlockEvents })
+  soundLog('[usePlaySound] schedulePlayAfterUnlock: listeners registered', { soundPath, events: unlockEvents })
 }
 
 // Set up global unlock listener for iOS
 if (typeof window !== 'undefined') {
   const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown']
   const unlockHandler = (event: Event) => {
-    clientLogger.info('[usePlaySound] User interaction detected, unlocking audio', { eventType: event.type })
+    soundLog('[usePlaySound] User interaction detected, unlocking audio', { eventType: event.type })
     unlockAudioContext()
     // Remove listeners after first interaction
     unlockEvents.forEach(evt => {
       document.removeEventListener(evt, unlockHandler, true)
     })
-    clientLogger.info('[usePlaySound] Removed unlock event listeners')
+    soundLog('[usePlaySound] Removed unlock event listeners')
   }
   unlockEvents.forEach(event => {
     document.addEventListener(event, unlockHandler, true)
   })
-  clientLogger.info('[usePlaySound] Registered unlock event listeners', { events: unlockEvents })
+  soundLog('[usePlaySound] Registered unlock event listeners', { events: unlockEvents })
 }
 
 export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) {
@@ -137,7 +151,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
   // Load audio file into buffer
   const loadAudio = useCallback(async () => {
     if (audioBufferRef.current || isLoadingRef.current) {
-      clientLogger.info('[usePlaySound] loadAudio skipped', {
+      soundLog('[usePlaySound] loadAudio skipped', {
         soundPath,
         hasBuffer: !!audioBufferRef.current,
         isLoading: isLoadingRef.current
@@ -146,23 +160,23 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
     }
 
     isLoadingRef.current = true
-    clientLogger.info('[usePlaySound] loadAudio starting', { soundPath })
+    soundLog('[usePlaySound] loadAudio starting', { soundPath })
     try {
       const response = await fetch(soundPath)
-      clientLogger.info('[usePlaySound] fetch response', { soundPath, status: response.status, ok: response.ok })
+      soundLog('[usePlaySound] fetch response', { soundPath, status: response.status, ok: response.ok })
       const arrayBuffer = await response.arrayBuffer()
-      clientLogger.info('[usePlaySound] arrayBuffer received', { soundPath, byteLength: arrayBuffer.byteLength })
+      soundLog('[usePlaySound] arrayBuffer received', { soundPath, byteLength: arrayBuffer.byteLength })
       const audioContext = getAudioContext()
-      clientLogger.info('[usePlaySound] decoding audio data', { soundPath, contextState: audioContext.state })
+      soundLog('[usePlaySound] decoding audio data', { soundPath, contextState: audioContext.state })
       audioBufferRef.current = await audioContext.decodeAudioData(arrayBuffer)
-      clientLogger.info('[usePlaySound] audio decoded successfully', {
+      soundLog('[usePlaySound] audio decoded successfully', {
         soundPath,
         duration: audioBufferRef.current.duration,
         numberOfChannels: audioBufferRef.current.numberOfChannels,
         sampleRate: audioBufferRef.current.sampleRate
       })
     } catch (err) {
-      clientLogger.error('[usePlaySound] Error loading sound', { soundPath, error: String(err) })
+      soundError('[usePlaySound] Error loading sound', { soundPath, error: String(err) })
     } finally {
       isLoadingRef.current = false
     }
@@ -170,22 +184,22 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
 
   // Preload audio on mount
   useEffect(() => {
-    clientLogger.info('[usePlaySound] useEffect mount - preloading audio', { soundPath, isIOS })
+    soundLog('[usePlaySound] useEffect mount - preloading audio', { soundPath, isIOS })
     loadAudio()
 
     // Also create HTMLAudioElement as fallback for iOS
     if (isIOS && !audioElementRef.current) {
-      clientLogger.info('[usePlaySound] Creating iOS fallback HTMLAudioElement', { soundPath })
+      soundLog('[usePlaySound] Creating iOS fallback HTMLAudioElement', { soundPath })
       audioElementRef.current = new Audio(soundPath)
       audioElementRef.current.loop = loop
       audioElementRef.current.volume = volume
       // Preload
       audioElementRef.current.load()
-      clientLogger.info('[usePlaySound] iOS fallback HTMLAudioElement created and loading', { soundPath })
+      soundLog('[usePlaySound] iOS fallback HTMLAudioElement created and loading', { soundPath })
     }
 
     return () => {
-      clientLogger.info('[usePlaySound] useEffect cleanup', { soundPath })
+      soundLog('[usePlaySound] useEffect cleanup', { soundPath })
       // Cleanup: stop any playing sound
       if (sourceNodeRef.current) {
         try {
@@ -232,23 +246,23 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
 
   // Internal play function using Web Audio API
   const playInternal = useCallback(() => {
-    clientLogger.info('[usePlaySound] playInternal called', {
+    soundLog('[usePlaySound] playInternal called', {
       soundPath,
       hasBuffer: !!audioBufferRef.current,
       isIOS
     })
     if (!audioBufferRef.current) {
-      clientLogger.warn('[usePlaySound] playInternal: no audio buffer available')
+      soundWarn('[usePlaySound] playInternal: no audio buffer available')
       return false
     }
 
     try {
       const audioContext = getAudioContext()
-      clientLogger.info('[usePlaySound] playInternal: got AudioContext', { state: audioContext.state })
+      soundLog('[usePlaySound] playInternal: got AudioContext', { state: audioContext.state })
 
       // Stop any currently playing source
       if (sourceNodeRef.current) {
-        clientLogger.info('[usePlaySound] playInternal: stopping existing source')
+        soundLog('[usePlaySound] playInternal: stopping existing source')
         try {
           sourceNodeRef.current.stop()
           sourceNodeRef.current.disconnect()
@@ -272,7 +286,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
 
       // Handle end of playback
       sourceNode.onended = () => {
-        clientLogger.info('[usePlaySound] playInternal: source ended', { soundPath, loop })
+        soundLog('[usePlaySound] playInternal: source ended', { soundPath, loop })
         if (!loop) {
           setIsPlaying(false)
           sourceNodeRef.current = null
@@ -280,48 +294,48 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
       }
 
       // Start playback
-      clientLogger.info('[usePlaySound] playInternal: starting source.start(0)', { soundPath })
+      soundLog('[usePlaySound] playInternal: starting source.start(0)', { soundPath })
       sourceNode.start(0)
       sourceNodeRef.current = sourceNode
       gainNodeRef.current = gainNode
       setIsPlaying(true)
-      clientLogger.info('[usePlaySound] playInternal: playback started successfully', { soundPath })
+      soundLog('[usePlaySound] playInternal: playback started successfully', { soundPath })
       return true
     } catch (err) {
-      clientLogger.error('[usePlaySound] playInternal error', { soundPath, error: String(err) })
+      soundError('[usePlaySound] playInternal error', { soundPath, error: String(err) })
       return false
     }
   }, [loop, volume, soundPath])
 
   // Fallback play using HTMLAudioElement (for iOS)
   const playFallback = useCallback(() => {
-    clientLogger.info('[usePlaySound] playFallback called', { soundPath, hasAudioElement: !!audioElementRef.current })
+    soundLog('[usePlaySound] playFallback called', { soundPath, hasAudioElement: !!audioElementRef.current })
     if (!audioElementRef.current) {
-      clientLogger.info('[usePlaySound] playFallback: creating new Audio element')
+      soundLog('[usePlaySound] playFallback: creating new Audio element')
       audioElementRef.current = new Audio(soundPath)
       audioElementRef.current.loop = loop
       audioElementRef.current.volume = volume
     }
 
     audioElementRef.current.currentTime = 0
-    clientLogger.info('[usePlaySound] playFallback: calling play()', { soundPath })
+    soundLog('[usePlaySound] playFallback: calling play()', { soundPath })
     const playPromise = audioElementRef.current.play()
 
     if (playPromise) {
       playPromise
         .then(() => {
-          clientLogger.info('[usePlaySound] playFallback: play() succeeded', { soundPath })
+          soundLog('[usePlaySound] playFallback: play() succeeded', { soundPath })
           setIsPlaying(true)
         })
         .catch(err => {
           if (err.name === 'NotAllowedError') {
-            clientLogger.info('[usePlaySound] playFallback blocked by autoplay (NotAllowedError)', { soundPath })
+            soundLog('[usePlaySound] playFallback blocked by autoplay (NotAllowedError)', { soundPath })
             // If iOS blocks autoplay, retry right after user interaction unlocks audio
             if (isIOS && shouldBePlayingRef.current) {
               schedulePlayAfterUnlock(playFallback, soundPath, shouldBePlayingRef)
             }
           } else if (err.name !== 'AbortError') {
-            clientLogger.error('[usePlaySound] playFallback: play() failed', {
+            soundError('[usePlaySound] playFallback: play() failed', {
               soundPath,
               errorName: err.name,
               errorMessage: err.message
@@ -330,13 +344,13 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
           setIsPlaying(false)
         })
     } else {
-      clientLogger.warn('[usePlaySound] playFallback: play() returned no promise', { soundPath })
+      soundWarn('[usePlaySound] playFallback: play() returned no promise', { soundPath })
     }
   }, [soundPath, loop, volume])
 
   // Play sound function
   const play = useCallback(async () => {
-    clientLogger.info('[usePlaySound] play() called', {
+    soundLog('[usePlaySound] play() called', {
       soundPath,
       isIOS,
       hasBuffer: !!audioBufferRef.current,
@@ -347,13 +361,13 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
 
     // Ensure audio is loaded
     if (!audioBufferRef.current) {
-      clientLogger.info('[usePlaySound] play(): no buffer, loading audio', { soundPath })
+      soundLog('[usePlaySound] play(): no buffer, loading audio', { soundPath })
       await loadAudio()
     }
 
     // Check if already playing
     if (sourceNodeRef.current) {
-      clientLogger.info('[usePlaySound] play(): already playing, skipping', { soundPath })
+      soundLog('[usePlaySound] play(): already playing, skipping', { soundPath })
       return
     }
 
@@ -361,42 +375,42 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
     // because ctx.resume() only works during user interaction and will hang otherwise
     if (isIOS) {
       const ctx = getAudioContext()
-      clientLogger.info('[usePlaySound] play(): iOS detected, checking AudioContext state', {
+      soundLog('[usePlaySound] play(): iOS detected, checking AudioContext state', {
         soundPath,
         contextState: ctx.state
       })
 
       if (ctx.state === 'suspended') {
-        clientLogger.info('[usePlaySound] play(): iOS AudioContext suspended, using HTMLAudioElement fallback', { soundPath })
+        soundLog('[usePlaySound] play(): iOS AudioContext suspended, using HTMLAudioElement fallback', { soundPath })
         playFallback()
         return
       }
     }
 
     try {
-      clientLogger.info('[usePlaySound] play(): ensuring AudioContext is running')
+      soundLog('[usePlaySound] play(): ensuring AudioContext is running')
       await ensureAudioContextRunning()
 
       // Try Web Audio first
-      clientLogger.info('[usePlaySound] play(): trying Web Audio API', {
+      soundLog('[usePlaySound] play(): trying Web Audio API', {
         soundPath,
         hasBuffer: !!audioBufferRef.current
       })
       const webAudioSuccess = audioBufferRef.current && playInternal()
-      clientLogger.info('[usePlaySound] play(): Web Audio result', { soundPath, webAudioSuccess, isIOS })
+      soundLog('[usePlaySound] play(): Web Audio result', { soundPath, webAudioSuccess, isIOS })
 
       // If Web Audio failed on iOS, use fallback
       if (!webAudioSuccess && isIOS) {
-        clientLogger.info('[usePlaySound] play(): Web Audio failed on iOS, trying fallback', { soundPath })
+        soundLog('[usePlaySound] play(): Web Audio failed on iOS, trying fallback', { soundPath })
         playFallback()
       }
     } catch (err) {
       const errorName = (err as Error).name
       const errorMessage = (err as Error).message
       if (errorName === 'NotAllowedError') {
-        clientLogger.info('[usePlaySound] play() blocked by autoplay (NotAllowedError)', { soundPath, isIOS })
+        soundLog('[usePlaySound] play() blocked by autoplay (NotAllowedError)', { soundPath, isIOS })
       } else {
-        clientLogger.error('[usePlaySound] play() error', {
+        soundError('[usePlaySound] play() error', {
           soundPath,
           isIOS,
           errorName,
@@ -405,7 +419,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
       }
       // Web Audio failed, try fallback on iOS
       if (isIOS) {
-        clientLogger.info('[usePlaySound] play(): exception on iOS, trying fallback', { soundPath })
+        soundLog('[usePlaySound] play(): exception on iOS, trying fallback', { soundPath })
         playFallback()
       }
       setIsPlaying(false)
@@ -414,7 +428,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
 
   // Stop sound function
   const stop = useCallback(() => {
-    clientLogger.info('[usePlaySound] stop() called', {
+    soundLog('[usePlaySound] stop() called', {
       soundPath,
       hasSourceNode: !!sourceNodeRef.current,
       hasAudioElement: !!audioElementRef.current
@@ -425,7 +439,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
       try {
         sourceNodeRef.current.stop()
         sourceNodeRef.current.disconnect()
-        clientLogger.info('[usePlaySound] stop(): Web Audio source stopped', { soundPath })
+        soundLog('[usePlaySound] stop(): Web Audio source stopped', { soundPath })
       } catch {
         // Ignore errors if already stopped
       }
@@ -441,7 +455,7 @@ export function usePlaySound(soundPath: string, options: PlaySoundOptions = {}) 
     if (audioElementRef.current) {
       audioElementRef.current.pause()
       audioElementRef.current.currentTime = 0
-      clientLogger.info('[usePlaySound] stop(): HTMLAudioElement paused', { soundPath })
+      soundLog('[usePlaySound] stop(): HTMLAudioElement paused', { soundPath })
     }
     cancelPendingUnlockPlay()
 

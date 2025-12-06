@@ -699,14 +699,21 @@ export function useWebRTCCommon(callUser: any) {
       setLocalStream(stream)
       return stream
     } catch (err) {
-      console.error('[WebRTC] getUserMedia failed', {
+      const errorName = (err as Error)?.name
+      const errorMessage = (err as Error)?.message
+      const meta = {
         timestamp,
         timeTaken: Date.now() - timestamp,
         error: err,
-        errorName: (err as Error)?.name,
-        errorMessage: (err as Error)?.message,
+        errorName,
+        errorMessage,
         constraints
-      })
+      }
+      if (errorName === 'NotAllowedError') {
+        console.info('[WebRTC] getUserMedia blocked by user/UA (NotAllowedError)', meta)
+      } else {
+        console.error('[WebRTC] getUserMedia failed', meta)
+      }
       throw err
     }
   }

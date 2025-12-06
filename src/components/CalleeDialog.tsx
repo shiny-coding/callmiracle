@@ -4,6 +4,7 @@ import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
+import SettingsIcon from '@mui/icons-material/Settings'
 import { useTranslations } from 'next-intl'
 import { User, NotificationType } from '@/generated/graphql'
 import CallUserInfo from './CallUserInfo'
@@ -38,7 +39,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const t = useTranslations()
   const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
-  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall, targetUser, setConnectionStatus } = useStore((state) => ({
+  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall, targetUser, setConnectionStatus, setDeviceSettingsOpen } = useStore((state) => ({
     connectionStatus: state.connectionStatus,
     localAudioEnabled: state.localAudioEnabled,
     localVideoEnabled: state.localVideoEnabled,
@@ -47,7 +48,8 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     pendingMissedCall: state.pendingMissedCall,
     setPendingMissedCall: state.setPendingMissedCall,
     targetUser: state.targetUser,
-    setConnectionStatus: state.setConnectionStatus
+    setConnectionStatus: state.setConnectionStatus,
+    setDeviceSettingsOpen: state.setDeviceSettingsOpen
   }))
   const { doCall } = useWebRTCContext()
   const { notifications, setNotificationSeen } = useNotifications()
@@ -93,6 +95,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const isConnecting = connectionStatus === ConnectionStatus.CONNECTING
 
   const { play: playRingingSound, stop: stopRingingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true, resumeOnVisibilityChange: true })
+  const handleDeviceSettings = () => setDeviceSettingsOpen(true)
 
   // Track which notifications we've already marked as seen to avoid duplicate calls
   const markedNotificationsRef = useRef<Set<string>>(new Set())
@@ -204,6 +207,14 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
             size="large"
           >
             {localVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+          </IconButton>
+          <IconButton
+            onClick={handleDeviceSettings}
+            className="icon-gradient-blue"
+            size="large"
+            title={t('deviceSettings', { defaultMessage: 'Settings' })}
+          >
+            <SettingsIcon />
           </IconButton>
         </div>
       </DialogContent>

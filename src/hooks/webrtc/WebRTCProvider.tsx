@@ -178,6 +178,8 @@ export function WebRTCProvider({
       }
 
       if (callEvent.type === 'initiate') {
+        // Clear any lingering call-ended dialog when a new call arrives
+        setCallEndedInfo(null)
         if (callId) {
           // Already in a call, send busy response
           console.log('WebRTC: Already in call, sending busy signal')

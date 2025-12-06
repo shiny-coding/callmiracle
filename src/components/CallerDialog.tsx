@@ -4,6 +4,7 @@ import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
+import SettingsIcon from '@mui/icons-material/Settings'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { User } from '@/generated/graphql'
@@ -16,7 +17,7 @@ import clientLogger from '@/utils/clientLogger'
 
 export default function CallerDialog() {
   const t = useTranslations()
-  const { connectionStatus, setConnectionStatus, targetUser, meetingId, meetingLastCallTime, currentUser, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall } = useStore( (state: any) => ({
+  const { connectionStatus, setConnectionStatus, targetUser, meetingId, meetingLastCallTime, currentUser, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setDeviceSettingsOpen } = useStore( (state: any) => ({
     connectionStatus: state.connectionStatus,
     setConnectionStatus: state.setConnectionStatus,
     targetUser: state.targetUser,
@@ -27,7 +28,8 @@ export default function CallerDialog() {
     localVideoEnabled: state.localVideoEnabled,
     setLocalAudioEnabled: state.setLocalAudioEnabled,
     setLocalVideoEnabled: state.setLocalVideoEnabled,
-    pendingMissedCall: state.pendingMissedCall
+    pendingMissedCall: state.pendingMissedCall,
+    setDeviceSettingsOpen: state.setDeviceSettingsOpen
   }))
   const tStatus = useTranslations('ConnectionStatus')
   const { doCall, callUser, caller } = useWebRTCContext()
@@ -35,6 +37,7 @@ export default function CallerDialog() {
   const open = !!targetUser && connectionStatus && ['calling', 'connecting', 'busy', 'no-answer'].includes(connectionStatus) && !pendingMissedCall
   const isCalling = connectionStatus === 'calling'
   const { play: playCallingSound, stop: stopCallingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true, resumeOnVisibilityChange: true })
+  const handleDeviceSettings = () => setDeviceSettingsOpen(true)
 
   const sendExpired = useCallback(async () => {
     const { targetUser, callId, setCallId } = syncStore()
@@ -134,6 +137,14 @@ export default function CallerDialog() {
             size="large"
           >
             {localVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+          </IconButton>
+          <IconButton
+            onClick={handleDeviceSettings}
+            className="icon-gradient-blue"
+            size="large"
+            title={t('deviceSettings', { defaultMessage: 'Settings' })}
+          >
+            <SettingsIcon />
           </IconButton>
         </div>
       </DialogContent>
