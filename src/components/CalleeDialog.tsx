@@ -15,6 +15,7 @@ import { useEffect, useState, useRef } from 'react'
 import { ConnectionStatus } from '@/hooks/webrtc/useWebRTCCommon'
 import { useNotifications } from '@/contexts/NotificationsContext'
 import { gql, useQuery } from '@apollo/client'
+import clientLogger from '@/utils/clientLogger'
 
 const GET_USER = gql`
   query GetUserForMissedCall($userId: ID!) {
@@ -37,14 +38,16 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const t = useTranslations()
   const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
-  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall } = useStore((state) => ({
+  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall, targetUser, setConnectionStatus } = useStore((state) => ({
     connectionStatus: state.connectionStatus,
     localAudioEnabled: state.localAudioEnabled,
     localVideoEnabled: state.localVideoEnabled,
     setLocalAudioEnabled: state.setLocalAudioEnabled,
     setLocalVideoEnabled: state.setLocalVideoEnabled,
     pendingMissedCall: state.pendingMissedCall,
-    setPendingMissedCall: state.setPendingMissedCall
+    setPendingMissedCall: state.setPendingMissedCall,
+    targetUser: state.targetUser,
+    setConnectionStatus: state.setConnectionStatus
   }))
   const { doCall } = useWebRTCContext()
   const { notifications, setNotificationSeen } = useNotifications()
@@ -68,12 +71,16 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const isMissedCallFromStatus = connectionStatus === ConnectionStatus.TIMEOUT || connectionStatus === ConnectionStatus.EXPIRED
   const isMissedCallFromNotification = !!pendingMissedCall && !!pendingMissedCallUser
   const isMissedCall = isMissedCallFromStatus || isMissedCallFromNotification
-
-  const open = !!callee.incomingRequest || (isMissedCallFromStatus && !pendingMissedCall) || isMissedCallFromNotification
   const isReceivingCall = connectionStatus === ConnectionStatus.RECEIVING_CALL
 
+  // Keep the dialog/sound active as soon as we enter RECEIVING_CALL, even if the offer hasn't arrived yet
+  const hasIncomingOrRingingState = isReceivingCall || !!callee.incomingRequest
+  const open = hasIncomingOrRingingState || (isMissedCallFromStatus && !pendingMissedCall) || isMissedCallFromNotification
+
   // User source: notification user takes priority, then incoming request, then last request
-  const user = isMissedCallFromNotification ? pendingMissedCallUser : (callee.incomingRequest?.from || lastIncomingRequest?.from || null)
+  const user = isMissedCallFromNotification
+    ? pendingMissedCallUser
+    : (callee.incomingRequest?.from || lastIncomingRequest?.from || targetUser || null)
   const onAccept = callee.handleAcceptCall
   const onReject = callee.handleRejectCall
 
@@ -110,12 +117,20 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   }, [isMissedCall, user, notifications, setNotificationSeen])
 
   useEffect(() => {
+    clientLogger.info('[CalleeDialog] Sound effect triggered', {
+      open,
+      connectionStatus,
+      isReceivingCall: connectionStatus === ConnectionStatus.RECEIVING_CALL,
+      shouldPlay: open && connectionStatus === ConnectionStatus.RECEIVING_CALL
+    })
     if (open && connectionStatus === ConnectionStatus.RECEIVING_CALL) {
+      clientLogger.info('[CalleeDialog] Calling playRingingSound()')
       playRingingSound()
     } else {
+      clientLogger.info('[CalleeDialog] Calling stopRingingSound()')
       stopRingingSound()
     }
-  }, [open, connectionStatus])
+  }, [open, connectionStatus, playRingingSound, stopRingingSound])
 
   const handleClose = () => {
     if (isMissedCallFromNotification) {
@@ -123,6 +138,10 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     } else {
       callee.setIncomingRequest(null)
       setLastIncomingRequest(null)
+    }
+    // Ensure dialog closes for missed-call states
+    if (isMissedCall) {
+      setConnectionStatus(ConnectionStatus.DISCONNECTED)
     }
   }
 

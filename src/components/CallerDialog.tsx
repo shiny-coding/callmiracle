@@ -12,6 +12,7 @@ import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
 import { usePlaySound } from '@/hooks/usePlaySound'
 import { MAX_CALLING_TIME_MS } from '@/config/constants'
+import clientLogger from '@/utils/clientLogger'
 
 export default function CallerDialog() {
   const t = useTranslations()
@@ -67,9 +68,16 @@ export default function CallerDialog() {
   }, [open, connectionStatus, setConnectionStatus, sendExpired])
 
   useEffect(() => {
+    clientLogger.info('[CallerDialog] Sound effect triggered', {
+      open,
+      connectionStatus,
+      shouldPlay: open && connectionStatus === 'calling'
+    })
     if (open && connectionStatus === 'calling') {
+      clientLogger.info('[CallerDialog] Calling playCallingSound()')
       playCallingSound()
     } else {
+      clientLogger.info('[CallerDialog] Calling stopCallingSound()')
       stopCallingSound()
     }
   }, [open, connectionStatus, playCallingSound, stopCallingSound])
