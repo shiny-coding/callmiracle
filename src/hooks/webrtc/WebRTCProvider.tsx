@@ -272,7 +272,12 @@ export function WebRTCProvider({
     })
   }
 
-  const sendRenegotiationOffer = async (pc: RTCPeerConnection, targetUserId: string, callId?: string | null) => {
+  const sendRenegotiationOffer = async (
+    pc: RTCPeerConnection,
+    targetUserId: string,
+    callId?: string | null,
+    opts: { retryIfNotStable?: boolean; retriesLeft?: number } = {}
+  ) => {
     if (!pc) return
     if (renegotiationInFlightRef.current) {
       clientLogger.info('[WebRTC] Renegotiation skipped (already in flight)', {
@@ -281,11 +286,24 @@ export function WebRTCProvider({
       })
       return
     }
+
+    const retriesLeft = opts.retriesLeft ?? (opts.retryIfNotStable ? 6 : 0) // ~3s window @500ms
     if (pc.signalingState !== 'stable') {
       clientLogger.warn('[WebRTC] Renegotiation skipped (signaling not stable)', {
         callId,
-        signalingState: pc.signalingState
+        signalingState: pc.signalingState,
+        willRetry: retriesLeft > 0
       })
+      if (retriesLeft > 0) {
+        setTimeout(() => {
+          sendRenegotiationOffer(pc, targetUserId, callId, {
+            retryIfNotStable: true,
+            retriesLeft: retriesLeft - 1
+          }).catch(err =>
+            clientLogger.error('[WebRTC] Renegotiation retry failed', { callId, error: String(err) })
+          )
+        }, 500)
+      }
       return
     }
 
@@ -380,8 +398,23 @@ export function WebRTCProvider({
   useEffect(() => {
     const unsubscribe = subscribeToCallEvents(async (callEvent) => {
       if (callEvent.type !== 'initiate' && callEvent.callId !== callId) {
-        console.log('WebRTC: Ignoring connection request - mismatched IDs: ', { callEvent, callId })
-        return
+        // Allow renegotiation/media updates to go through if we are in an active call but callId drifted.
+        const allowMismatched =
+          (caller.active || callee.active) &&
+          ['renegotiate-offer', 'renegotiate-answer', 'updateMediaState', 'ice-candidate', 'answer', 'offer'].includes(callEvent.type)
+
+        if (!allowMismatched) {
+          console.log('WebRTC: Ignoring connection request - mismatched IDs: ', { callEvent, callId, callerActive: caller.active, calleeActive: callee.active })
+          return
+        }
+
+        console.log('WebRTC: Processing event with mismatched IDs due to active call', {
+          callEventType: callEvent.type,
+          eventCallId: callEvent.callId,
+          currentCallId: callId,
+          callerActive: caller.active,
+          calleeActive: callee.active
+        })
       }
 
       if (callEvent.type === 'initiate') {
@@ -654,6 +687,25 @@ export function WebRTCProvider({
           applyLocalQuality(activePeerConnection, quality).catch(err => 
             console.error('WebRTC: Failed to apply quality settings:', err)
           )
+
+          // Caller-side safeguard: if we’re the caller and remote video was just enabled but our
+          // video transceiver is not recv-capable or we have no remote stream yet, initiate a renegotiation.
+          if (
+            caller.active &&
+            callEvent.videoEnabled &&
+            targetUser &&
+            (!caller.remoteStreamRef?.current || (videoTx && (videoTx.currentDirection === 'sendonly' || videoTx.currentDirection === 'inactive')))
+          ) {
+            clientLogger.info('[WebRTC] Caller triggering renegotiation on updateMediaState to pull remote video', {
+              callId,
+              targetUserId: targetUser._id,
+              hasRemoteStream: !!caller.remoteStreamRef?.current,
+              videoTx: videoTx ? { mid: videoTx.mid, direction: videoTx.direction, currentDirection: videoTx.currentDirection } : null
+            })
+            sendRenegotiationOffer(activePeerConnection, targetUser._id, callId, { retryIfNotStable: true }).catch(err =>
+              clientLogger.error('[WebRTC] Caller renegotiation trigger failed', { callId, error: String(err) })
+            )
+          }
         } else {
           clientLogger.warn('[WebRTC] updateMediaState with no active peer connection', {
             callerActive: caller.active,
@@ -1012,12 +1064,12 @@ export function WebRTCProvider({
         needsRenegotiation
       })
 
-      if (needsRenegotiation && targetUser) {
+      if (targetUser && (needsRenegotiation || localVideoEnabled)) {
         clientLogger.info('[WebRTC] Renegotiation required after media toggle (callee)', {
           callId,
           targetUserId: targetUser._id
         })
-        await sendRenegotiationOffer(activePeerConnection, targetUser._id, callId)
+        await sendRenegotiationOffer(activePeerConnection, targetUser._id, callId, { retryIfNotStable: true })
       }
     }
   }

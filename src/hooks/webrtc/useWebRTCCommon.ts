@@ -219,21 +219,15 @@ export function useWebRTCCommon(callUser: any) {
           localAudioEnabled,
           localVideoEnabled
         })
-      } else {
-        clientLogger.info('[WebRTC] addLocalStream adding transceivers as callee (bootstrap)', {
-          localAudioEnabled,
-          localVideoEnabled
-        })
+        // Initiator pre-creates transceivers
+        if (localAudioEnabled) {
+          pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] })
+        } else {
+          pc.addTransceiver('audio', { direction: 'recvonly' })
+        }
+        // Video transceiver always sendrecv so we can bind later without renegotiation
+        pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
       }
-      // Audio transceiver
-      if (localAudioEnabled) {
-        pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] })
-      } else {
-        pc.addTransceiver('audio', { direction: 'recvonly' })
-      }
-
-      // Video transceiver always sendrecv so we can bind later without renegotiation
-      pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
     } else if (!isInitiator) {
       clientLogger.info('[WebRTC] addLocalStream (callee) existing transceivers before attach', {
         count: pc.getTransceivers().length,
@@ -349,7 +343,8 @@ const handleTrack = (
     clientLogger.info('[WebRTC] Track event received', trackMeta)
 
     if (!event.streams[0]?.id.includes(currentUser?._id || '')) {
-      const [remoteStream] = event.streams
+      // Some browsers may fire track events with no streams (esp. after renegotiation).
+      const remoteStream = event.streams[0] ?? new MediaStream([event.track])
       if (remoteStream) {
         const remoteMeta = {
           streamId: remoteStream.id,
