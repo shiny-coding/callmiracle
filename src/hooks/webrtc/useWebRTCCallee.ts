@@ -8,13 +8,15 @@ interface UseWebRTCCalleeProps {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   callUser: any
   setLocalStream: (stream: MediaStream | undefined) => void
+  onRemoteStreamUpdated?: () => void
 }
 
 export function useWebRTCCallee({
   localStream,
   remoteVideoRef,
   callUser,
-  setLocalStream
+  setLocalStream,
+  onRemoteStreamUpdated
 }: UseWebRTCCalleeProps) {
   const {
     createPeerConnection,
@@ -80,7 +82,7 @@ export function useWebRTCCallee({
       peerConnection.current = pc
 
       // Set up event handlers
-      pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
+      pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef, onRemoteStreamUpdated)
       pc.onconnectionstatechange = () => handleConnectionStateChange(pc, peerConnection)
 
       addLocalStream(pc, streamToUse, false, localVideoEnabled, localAudioEnabled, incomingRequest.quality)

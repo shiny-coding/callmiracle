@@ -193,47 +193,65 @@ export function useWebRTCCommon(callUser: any) {
       settings: t.getSettings()
     }))
 
-    console.log('[WebRTC] Adding local stream tracks', {
+    clientLogger.info('[WebRTC] addLocalStream start', {
       isInitiator,
       localVideoEnabled,
       localAudioEnabled,
       trackCount: stream.getTracks().length,
       tracks: trackDetails,
-      streamId: stream.id
-    })
-
-    console.log('WebRTC: Adding local stream tracks:', {
-      trackCount: stream.getTracks().length,
-      tracks: stream.getTracks().map(t => ({
-        kind: t.kind,
-        enabled: t.enabled,
-        muted: t.muted
+      streamId: stream.id,
+      existingTransceivers: pc.getTransceivers().map(t => ({
+        mid: t.mid,
+        direction: t.direction,
+        currentDirection: t.currentDirection,
+        senderTrackKind: t.sender.track?.kind,
+        receiverTrackKind: t.receiver.track?.kind
+      })),
+      existingSenders: pc.getSenders().map(s => ({
+        trackKind: s.track?.kind,
+        trackId: s.track?.id
       }))
     })
 
-    if (isInitiator) {
-      if (!pc.getTransceivers().length) {
-        console.log('[WebRTC] Adding transceivers as initiator', {
+    if (!pc.getTransceivers().length) {
+      if (isInitiator) {
+        clientLogger.info('[WebRTC] addLocalStream adding transceivers as initiator', {
           localAudioEnabled,
           localVideoEnabled
         })
-        // Always add audio transceiver - either sendrecv or recvonly
-        if (localAudioEnabled) {
-          pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] })
-        } else {
-          pc.addTransceiver('audio', { direction: 'recvonly' })
-        }
-
-        // Always add video transceiver as sendrecv so we can attach a track later without renegotiation
-        pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
+      } else {
+        clientLogger.info('[WebRTC] addLocalStream adding transceivers as callee (bootstrap)', {
+          localAudioEnabled,
+          localVideoEnabled
+        })
       }
+      // Audio transceiver
+      if (localAudioEnabled) {
+        pc.addTransceiver('audio', { direction: 'sendrecv', streams: [stream] })
+      } else {
+        pc.addTransceiver('audio', { direction: 'recvonly' })
+      }
+
+      // Video transceiver always sendrecv so we can bind later without renegotiation
+      pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
+    } else if (!isInitiator) {
+      clientLogger.info('[WebRTC] addLocalStream (callee) existing transceivers before attach', {
+        count: pc.getTransceivers().length,
+        transceivers: pc.getTransceivers().map(t => ({
+          mid: t.mid,
+          direction: t.direction,
+          currentDirection: t.currentDirection,
+          senderTrackKind: t.sender.track?.kind,
+          receiverTrackKind: t.receiver.track?.kind
+        }))
+      })
     }
 
     for (const track of stream.getTracks()) {
       const existingSender = pc.getSenders().find(s => s.track?.kind === track.kind)
 
       if (existingSender) {
-        console.log('[WebRTC] Replacing existing track', {
+        clientLogger.info('[WebRTC] addLocalStream replacing existing sender track', {
           kind: track.kind,
           trackId: track.id,
           enabled: track.enabled,
@@ -253,7 +271,7 @@ export function useWebRTCCommon(callUser: any) {
           existingSender.replaceTrack(track)
         }
       } else if ((track.kind === 'audio' && localAudioEnabled) || (track.kind === 'video' && localVideoEnabled)) {
-        console.log('[WebRTC] Adding new track', {
+        clientLogger.info('[WebRTC] addLocalStream adding new track', {
           kind: track.kind,
           trackId: track.id,
           enabled: track.enabled,
@@ -270,24 +288,52 @@ export function useWebRTCCommon(callUser: any) {
   }
 
   const configureTransceivers = (pc: RTCPeerConnection, localVideoEnabled: boolean, localAudioEnabled: boolean) => {
+    const before = pc.getTransceivers().map(t => ({
+      mid: t.mid,
+      senderKind: t.sender.track?.kind,
+      receiverKind: t.receiver.track?.kind,
+      direction: t.direction,
+      currentDirection: t.currentDirection
+    }))
+
     for (const transceiver of pc.getTransceivers()) {
       const kind = transceiver.sender.track?.kind || transceiver.mid
       if (kind === 'video' || kind === '1') {
-        // Keep video transceivers sendrecv; rely on track enabled state to mute video
         transceiver.direction = 'sendrecv'
       } else if (kind === 'audio' || kind === '0') {
         transceiver.direction = localAudioEnabled ? 'sendrecv' : 'recvonly'
       }
     }
+
+    const after = pc.getTransceivers().map(t => ({
+      mid: t.mid,
+      senderKind: t.sender.track?.kind,
+      receiverKind: t.receiver.track?.kind,
+      direction: t.direction,
+      currentDirection: t.currentDirection
+    }))
+
+    clientLogger.info('[WebRTC] configureTransceivers applied', {
+      localVideoEnabled,
+      localAudioEnabled,
+      before,
+      after
+    })
   }
 
-  const handleTrack = (event: RTCTrackEvent, peerConnection: RTCPeerConnection, remoteVideoRef: React.RefObject<HTMLVideoElement>, remoteStreamRef: React.MutableRefObject<MediaStream | null>) => {
+const handleTrack = (
+  event: RTCTrackEvent,
+  peerConnection: RTCPeerConnection,
+  remoteVideoRef: React.RefObject<HTMLVideoElement>,
+  remoteStreamRef: React.MutableRefObject<MediaStream | null>,
+  onRemoteStreamUpdated?: () => void
+) => {
     if (!peerConnection) {
       console.warn('[WebRTC] handleTrack called but no peerConnection')
       return
     }
 
-    console.log('[WebRTC] Track event received', {
+    const trackMeta = {
       trackKind: event.track.kind,
       trackId: event.track.id,
       trackLabel: event.track.label,
@@ -298,12 +344,14 @@ export function useWebRTCCommon(callUser: any) {
       streamsCount: event.streams.length,
       streamIds: event.streams.map(s => s.id),
       currentUserId: currentUser?._id
-    })
+    }
+    console.log('[WebRTC] Track event received', trackMeta)
+    clientLogger.info('[WebRTC] Track event received', trackMeta)
 
     if (!event.streams[0]?.id.includes(currentUser?._id || '')) {
       const [remoteStream] = event.streams
       if (remoteStream) {
-        console.log('[WebRTC] Remote stream received', {
+        const remoteMeta = {
           streamId: remoteStream.id,
           trackCount: remoteStream.getTracks().length,
           tracks: remoteStream.getTracks().map(t => ({
@@ -315,43 +363,55 @@ export function useWebRTCCommon(callUser: any) {
             muted: t.muted
           })),
           hasVideoElement: !!remoteVideoRef?.current
-        })
+        }
+        console.log('[WebRTC] Remote stream received', remoteMeta)
+        clientLogger.info('[WebRTC] Remote stream received', remoteMeta)
 
-        // Store the stream in the ref regardless of video element existence
-        if (!remoteStreamRef.current) {
-          remoteStreamRef.current = remoteStream
+        const previousStreamId = remoteStreamRef.current?.id
+        // Always store the latest stream so UI can bind even if a new stream replaces the old one
+        remoteStreamRef.current = remoteStream
 
-          // Monitor remote track ended events
-          remoteStream.getTracks().forEach(track => {
-            track.addEventListener('ended', () => {
-              console.warn('[WebRTC] Remote track ended', {
-                kind: track.kind,
-                id: track.id,
-                label: track.label
-              })
-            })
-
-            track.addEventListener('mute', () => {
-              console.log('[WebRTC] Remote track muted', {
-                kind: track.kind,
-                id: track.id
-              })
-            })
-
-            track.addEventListener('unmute', () => {
-              console.log('[WebRTC] Remote track unmuted', {
-                kind: track.kind,
-                id: track.id
-              })
-            })
+        if (previousStreamId && previousStreamId !== remoteStream.id) {
+          clientLogger.info('[WebRTC] Remote stream replaced', {
+            previousStreamId,
+            newStreamId: remoteStream.id
           })
         }
+
+        // Monitor remote track events
+        remoteStream.getTracks().forEach(track => {
+          track.addEventListener('ended', () => {
+            console.warn('[WebRTC] Remote track ended', {
+              kind: track.kind,
+              id: track.id,
+              label: track.label
+            })
+          })
+
+          track.addEventListener('mute', () => {
+            console.log('[WebRTC] Remote track muted', {
+              kind: track.kind,
+              id: track.id
+            })
+          })
+
+          track.addEventListener('unmute', () => {
+            console.log('[WebRTC] Remote track unmuted', {
+              kind: track.kind,
+              id: track.id
+            })
+          })
+        })
 
         // Attach to video element if it exists
         if (remoteVideoRef?.current) {
           remoteVideoRef.current.srcObject = remoteStream
           console.log('[WebRTC] Remote stream attached to video element')
+          clientLogger.info('[WebRTC] Remote stream attached to video element', { streamId: remoteStream.id })
         }
+
+        // Notify listeners (e.g., UI) that a remote stream was updated/arrived
+        onRemoteStreamUpdated?.()
 
         // Apply saved remote quality preference if it exists
         if (event.track.kind === 'video') {
@@ -487,9 +547,35 @@ export function useWebRTCCommon(callUser: any) {
         track.enabled = localAudioEnabled
       }
     }
+    clientLogger.info('[WebRTC] sendWantedMediaStateImpl toggled tracks', {
+      targetUserId,
+      callId,
+      localVideoEnabled,
+      localAudioEnabled,
+      senderSummary: senders.map(s => ({
+        trackKind: s.track?.kind,
+        trackId: s.track?.id,
+        enabled: s.track?.enabled,
+        readyState: s.track?.readyState
+      }))
+    })
     
     // Update transceivers
     configureTransceivers(pc, localVideoEnabled, localAudioEnabled)
+
+    clientLogger.info('[WebRTC] sendWantedMediaStateImpl post-configure', {
+      targetUserId,
+      callId,
+      transceivers: pc.getTransceivers().map(t => ({
+        mid: t.mid,
+        direction: t.direction,
+        currentDirection: t.currentDirection,
+        senderTrackKind: t.sender.track?.kind,
+        senderTrackId: t.sender.track?.id,
+        receiverTrackKind: t.receiver.track?.kind,
+        receiverTrackId: t.receiver.track?.id
+      }))
+    })
 
     // Notify peer about track changes
     console.log('WebRTC: Updating media state:', {

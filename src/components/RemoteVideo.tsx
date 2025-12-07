@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import clientLogger from '@/utils/clientLogger';
 import { IconButton } from '@mui/material';
 import VideocamOffIcon from '@mui/icons-material/VideocamOff';
 import MicOffIcon from '@mui/icons-material/MicOff';
@@ -47,7 +48,9 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
     sendWantedMediaState,
     caller,
     callee,
+    remoteStreamVersion,
   } = useWebRTCContext();
+  const showRemote = remoteVideoEnabled || remoteStreamVersion > 0;
 
   const handleAudioToggle = () => {
     setLocalAudioEnabled(!localAudioEnabled);
@@ -120,44 +123,102 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
 
   // Attach stream when component mounts or stream becomes available
   useEffect(() => {
-    if (connectionStatus === 'connected' && remoteVideoRef.current) {
-      const activeStreamRef = caller.active ? caller.remoteStreamRef : callee.active ? callee.remoteStreamRef : null
-      const stream = activeStreamRef?.current
+    // Prefer any available remote stream, even before connectionStatus flips to "connected"
+    const streamRef =
+      caller.remoteStreamRef?.current ? caller.remoteStreamRef
+      : callee.remoteStreamRef?.current ? callee.remoteStreamRef
+      : caller.active ? caller.remoteStreamRef
+      : callee.active ? callee.remoteStreamRef
+      : null
 
-      console.log('[RemoteVideo] Attempting to attach remote stream', {
-        hasStream: !!stream,
-        streamId: stream?.id,
-        trackCount: stream?.getTracks().length,
-        tracks: stream?.getTracks().map(t => ({
-          kind: t.kind,
-          id: t.id,
-          readyState: t.readyState,
-          enabled: t.enabled
-        })),
-        callerActive: caller.active,
-        calleeActive: callee.active,
-        currentSrcObject: remoteVideoRef.current.srcObject
-      })
+    const stream = streamRef?.current
+    const videoEl = remoteVideoRef.current
 
-      if (stream && remoteVideoRef.current.srcObject !== stream) {
-        remoteVideoRef.current.srcObject = stream
-
-        // CRITICAL: On iOS Safari, videos sometimes need explicit play() call
-        // even with autoPlay attribute, especially during call setup
-        remoteVideoRef.current.play().then(() => {
-          console.log('[RemoteVideo] Remote video playing successfully')
-        }).catch(err => {
-          console.error('[RemoteVideo] Failed to play remote video', { error: err })
-          // Try again after a small delay (iOS sometimes needs this)
-          setTimeout(() => {
-            remoteVideoRef.current?.play().catch(e =>
-              console.error('[RemoteVideo] Retry play failed', { error: e })
-            )
-          }, 100)
-        })
-      }
+    const attachMeta = {
+      hasStream: !!stream,
+      streamId: stream?.id,
+      trackCount: stream?.getTracks().length,
+      tracks: stream?.getTracks().map(t => ({
+        kind: t.kind,
+        id: t.id,
+        readyState: t.readyState,
+        enabled: t.enabled
+      })),
+      callerActive: caller.active,
+      calleeActive: callee.active,
+      currentSrcObject: videoEl?.srcObject
     }
-  }, [connectionStatus, remoteVideoRef, caller.active, caller.remoteStreamRef, callee.active, callee.remoteStreamRef])
+    clientLogger.info('[RemoteVideo] Attempting to attach remote stream', { ...attachMeta, remoteVideoEnabled, remoteStreamVersion })
+
+    const attach = () => {
+      const el = remoteVideoRef.current
+      if (!stream || !el) return
+      if (el.srcObject !== stream) {
+        el.srcObject = stream
+      }
+
+      el.play().then(() => {
+        clientLogger.info('[RemoteVideo] Remote video playing successfully', {
+          streamId: stream.id,
+          trackStates: stream.getTracks().map(t => ({
+            kind: t.kind,
+            id: t.id,
+            enabled: t.enabled,
+            readyState: t.readyState,
+            muted: t.muted,
+            settings: t.getSettings()
+          }))
+        })
+      }).catch(err => {
+        clientLogger.error('[RemoteVideo] Failed to play remote video', {
+          error: String(err),
+          streamId: stream.id,
+          trackStates: stream.getTracks().map(t => ({
+            kind: t.kind,
+            id: t.id,
+            enabled: t.enabled,
+            readyState: t.readyState,
+            muted: t.muted,
+            settings: t.getSettings()
+          }))
+        })
+        setTimeout(() => {
+          el.play().catch(e =>
+            clientLogger.error('[RemoteVideo] Retry play failed', { error: String(e), streamId: stream.id })
+          )
+        }, 100)
+      })
+    }
+
+    if (stream && videoEl) {
+      attach()
+    } else if (stream && !videoEl) {
+      clientLogger.info('[RemoteVideo] Remote stream ready but video element not mounted yet; scheduling attach retries', { streamId: stream?.id })
+      let attempts = 0
+      const maxAttempts = 5
+      const tryAttach = () => {
+        attempts += 1
+        const el = remoteVideoRef.current
+        if (stream && el) {
+          attach()
+          return
+        }
+        if (attempts < maxAttempts) {
+          setTimeout(tryAttach, 200)
+        } else {
+          console.warn('[RemoteVideo] Gave up attaching stream; video element still not mounted', {
+            streamId: stream?.id,
+            attempts
+          })
+          clientLogger.warn('[RemoteVideo] Gave up attaching stream; video element still not mounted', {
+            streamId: stream?.id,
+            attempts
+          })
+        }
+      }
+      setTimeout(tryAttach, 150)
+    }
+  }, [connectionStatus, remoteVideoRef, caller.active, caller.remoteStreamRef, callee.active, callee.remoteStreamRef, remoteStreamVersion])
 
   useEffect(() => {
     // Reset video when connection is lost or disconnected
@@ -252,7 +313,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
             </div>
           )}
           <div className="w-full h-full flex items-center justify-center bg-black">
-            {!remoteVideoEnabled && (
+            {!showRemote && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
                 <VideocamOffIcon
                   className="text-red-400"
@@ -264,7 +325,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className={`w-full h-full ${isFitMode ? 'object-contain' : 'object-cover'} ${!remoteVideoEnabled ? 'opacity-0 pointer-events-none' : ''}`}
+              className={`w-full h-full ${isFitMode ? 'object-contain' : 'object-cover'} ${!showRemote ? 'opacity-0 pointer-events-none' : ''}`}
             />
           </div>
         </div>

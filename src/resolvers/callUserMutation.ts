@@ -268,6 +268,8 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
     offer: { videoEnabled, audioEnabled, quality, offer },
     answer: { videoEnabled, audioEnabled, quality, answer },
     'ice-candidate': { iceCandidate },
+    'renegotiate-offer': { offer },
+    'renegotiate-answer': { answer },
     finished: { },
     expired: { },
     busy: { },

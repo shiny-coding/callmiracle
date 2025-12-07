@@ -1,90 +1,71 @@
-WebRTC call + device flow (mid-call video enable analysis)
+﻿WebRTC call + device flow (mid-call video enable analysis)
 ==========================================================
 
 Goal
 ----
-- Understand how media (camera/mic) is wired through the WebRTC stack and why turning video on mid-call (after starting with video off) shows a black screen to the peer.
+- Document how local media is acquired, attached, and signaled so we can debug the "peer enables video mid-call but I see black screen" case.
 
 State + toggles
 ---------------
-- `useStore` holds `localVideoEnabled` / `localAudioEnabled` (persisted) and call metadata (`callId`, `role`, `targetUser`, `quality*`).
-- UI toggles (MediaControls, ConnectedCallLayout, DeviceSettingsDialog, etc.) flip the store and immediately call `sendWantedMediaState` from `WebRTCProvider`.
+- `useStore` keeps `localVideoEnabled`/`localAudioEnabled`, call metadata (`callId`, `role`, `targetUser`), and quality preferences.
+- UI toggles (MediaControls, ConnectedCallLayout, DeviceSettingsDialog, etc.) flip store flags and call `sendWantedMediaState` from `WebRTCProvider`.
 
-Stream acquisition
-------------------
-- `ensureMediaStream(currentStream, setLocalStream, localVideoEnabled, localAudioEnabled)` (in `useWebRTCCommon`) returns:
-  - New `MediaStream` from `getUserMedia` when either flag is true.
-  - An **empty** `MediaStream` when both flags are false.
-  - Reuses `currentStream` unless tracks ended or the track mix does not match the enabled flags, otherwise stops old tracks and recreates.
-- Callers:
-  - Caller: `useWebRTCCaller.doCall` before creating offer.
-  - Callee: `useWebRTCCallee.handleAcceptCall` before creating answer.
-  - **Not** called when the user later flips video/audio during an active call.
-
-Peer connection + tracks at call start
+Stream lifecycle (`ensureMediaStream`)
 --------------------------------------
-- `addLocalStream(pc, stream, isInitiator, localVideoEnabled, localAudioEnabled, quality)`:
+- Lives in `src/hooks/webrtc/useWebRTCCommon.ts`.
+- Returns an empty `MediaStream` when both audio and video are disabled; otherwise calls `getUserMedia` for enabled kinds (respecting `selectedVideoDevice`).
+- Reuses an existing stream unless:
+  - Any track has `readyState === 'ended'`.
+  - The track mix does not match enabled flags (e.g., video flag true but stream has no video track).
+  - In these cases it stops old tracks and recreates the stream.
+- Call sites:
+  - Caller: before offer in `useWebRTCCaller.doCall`.
+  - Callee: before answer in `useWebRTCCallee.handleAcceptCall`.
+  - Mid-call: `sendWantedMediaState` now re-invokes `ensureMediaStream` when tracks are missing or ended.
+
+Peer connection setup
+---------------------
+- `addLocalStream(pc, stream, isInitiator, localVideoEnabled, localAudioEnabled, quality)` (in `useWebRTCCommon`):
   - Initiator adds transceivers once:
-    - Audio: `sendrecv` if enabled else `recvonly`.
-    - Video: `sendrecv` if enabled else `recvonly`.
-  - Iterates `stream.getTracks()`:
-    - If a sender with the same kind exists, replaces its track (unless the local flag is false, in which case the track is stopped).
-    - Else, adds the track only when the corresponding local flag is true.
-  - Calls `configureTransceivers` to flip directions again to match flags, then applies quality.
-- When the call is started with **video off**, we typically pass an **empty stream**:
-  - Video transceiver is created as `recvonly`.
-  - There is **no video sender track** attached to the PC.
+    - Audio: `sendrecv` if enabled, else `recvonly`.
+    - Video: always `sendrecv` so we can attach a track later without renegotiation.
+  - Iterates stream tracks:
+    - Replaces an existing sender's track when kinds match.
+    - Adds a new sender only if the corresponding flag is enabled.
+    - Disabled tracks are stopped (so a disabled video track is not kept alive).
+  - `configureTransceivers` keeps video `sendrecv`; audio is `sendrecv`/`recvonly` based on the audio flag.
+  - `applyLocalQuality` tunes sender params when a video sender exists.
 
-Media updates after call start
-------------------------------
-- `sendWantedMediaState` (in `WebRTCProvider`):
-  - Reads flags from `syncStore`.
-  - Calls `sendWantedMediaStateImpl`:
-    - Iterates existing senders and toggles `track.enabled` to the desired flag.
-    - Calls `configureTransceivers` to switch directions (e.g., to `sendrecv` if video is now enabled).
-    - Sends a signaling message of type `updateMediaState` to the peer.
-  - **Does not create a new stream or add a missing track.**
-- Track replacement effect in `WebRTCProvider` runs when `localStream` changes:
-  - For each track in `localStream`, finds a sender where `sender.track?.kind === track.kind` and calls `replaceTrack`.
-  - If no sender is found, it logs a warning and does nothing.
-  - When a transceiver was created `recvonly`, `sender.track` is `null`, so the lookup does not match any sender and the new track is never attached.
+Local track attachment/resync
+-----------------------------
+- `WebRTCProvider` keeps `localStreamRef` in sync with state and runs a replacement effect when `localStream` changes:
+  - Finds matching sender and `replaceTrack`.
+  - If none, falls back to transceiver sender or `addTrack` to create a sender.
+- `sendWantedMediaState` (mid-call toggle handler):
+  - Reads latest flags from `syncStore`.
+  - Refreshes/creates a stream via `ensureMediaStream` when tracks are missing/ended.
+  - Calls `attachTracksToPeer` to bind tracks even if the sender currently has no track (tries sender by kind -> transceiver by kind/mid -> `addTrack`).
+  - Delegates to `sendWantedMediaStateImpl` to toggle `track.enabled`, re-run `configureTransceivers`, and signal `updateMediaState` to the peer.
 
-Failure path (black video when enabling mid-call)
--------------------------------------------------
-1) User starts call with video off:
-   - `ensureMediaStream` returns an empty stream.
-   - PC has a video transceiver in `recvonly` with no sender track.
-2) User later toggles video on:
-   - UI flips `localVideoEnabled` and calls `sendWantedMediaState`.
-   - That sets transceiver direction to `sendrecv` but still has **no track** to send.
-   - No new `getUserMedia` call is made, and `localStream` is unchanged.
-   - Even if a new stream were set later, the replacement effect would not find a sender because `sender.track` was null.
-3) Result: offer/answer directions change, but no video is ever sent; the peer sees a black screen.
+Remote media handling
+---------------------
+- Incoming track events land in `handleTrack` (`useWebRTCCommon`):
+  - Stores latest remote stream in `caller.remoteStreamRef` / `callee.remoteStreamRef`.
+  - Binds to the provided `remoteVideoRef` element and logs via `clientLogger`.
+  - Re-applies the remote-requested quality when a video track arrives.
+- Provider-level binding safeguard re-applies the remote stream to the video element when `remoteStreamVersion` bumps.
+- `updateMediaState` signaling handler updates `remoteVideoEnabled`/`remoteAudioEnabled`, applies quality, and (after added instrumentation) logs current receiver/transceiver state for debugging.
 
-Implications
-------------
-- We must both (a) create/refresh a stream when enabling a previously absent track, and (b) attach the new track to the existing transceiver/sender even when it currently has no track (recvonly case).
-- Without these two pieces, toggling from off→on cannot produce outgoing video.
-
-Fix direction (minimal, data-driven)
-------------------------------------
-- On media toggles that enable a previously missing track:
-  - Call `ensureMediaStream(...local flags...)` to guarantee the needed tracks exist and update `localStream`.
-  - In the track replacement effect (or adjacent helper), when no sender with `track?.kind` is found, fall back to:
-    - Find a transceiver for that kind (by `sender`, `receiver`, or `mid`) and call `transceiver.sender.replaceTrack(newTrack)` even if the sender had no track.
-    - If no transceiver exists, `addTrack` as a last resort.
-- Keep `configureTransceivers` + `updateMediaState` signaling as-is so the peer knows directions/quality, but ensure an actual track is bound before/after signaling.
-
-Optional instrumentation (if we want more certainty first)
----------------------------------------------------------
-- Add `clientLogger` breadcrumbs around:
-  - `sendWantedMediaState` entry with flags, `pc` states, and whether a matching sender/track was found.
-  - Track replacement effect: list senders (including `null` tracks) and which transceiver/sender each new track binds to.
-  - `ensureMediaStream` call sites when triggered by toggles (not just during call start).
+Black-screen hypothesis (mid-call video enable)
+-----------------------------------------------
+- Track creation now happens on toggles, and track attachment covers the no-sender/transceiver case, so the previous "no track bound" failure is addressed.
+- Remaining risk areas:
+  - Sender starts streaming but receiver never fires a `track` event (browser quirk or missing renegotiation) - watch for receiver/transceiver state after `updateMediaState`.
+  - Remote video track arrives but fails to play/bind (autoplay rejection, element detached) - check `remoteStreamVersion` logs and video element `play()` results.
+  - Video track created with constraints/device that produces black frames (e.g., denied camera, muted/ended track) - `ensureMediaStream` logs success/failure and track settings.
 
 Key files
 ---------
-- `src/hooks/webrtc/useWebRTCCommon.ts` — `ensureMediaStream`, `addLocalStream`, `configureTransceivers`, signaling helpers.
-  - See especially `addLocalStream` sender selection and `configureTransceivers`.
-- `src/hooks/webrtc/WebRTCProvider.tsx` — `sendWantedMediaState` and the `localStream` replacement effect.
-- UI toggles: `src/components/MediaControls.tsx`, `ConnectedCallLayout.tsx`, `DeviceSettingsDialog.tsx`, etc.
+- `src/hooks/webrtc/useWebRTCCommon.ts`: `ensureMediaStream`, `addLocalStream`, `configureTransceivers`, `handleTrack`, signaling helpers.
+- `src/hooks/webrtc/WebRTCProvider.tsx`: `sendWantedMediaState`, `attachTracksToPeer`, stream replacement effect, `updateMediaState` handling.
+- UI toggles live in `MediaControls`, `ConnectedCallLayout`, `DeviceSettingsDialog`, etc., and all route through `sendWantedMediaState`.

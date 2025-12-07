@@ -11,6 +11,7 @@ interface UseWebRTCCallerProps {
   remoteVideoRef: React.RefObject<HTMLVideoElement>
   callUser: any
   setLocalStream: (stream: MediaStream | undefined) => void
+  onRemoteStreamUpdated?: () => void
 }
 
 const UPDATE_MEETING_STATUS = gql`
@@ -27,7 +28,8 @@ export function useWebRTCCaller({
   localStream,
   remoteVideoRef,
   callUser,
-  setLocalStream
+  setLocalStream,
+  onRemoteStreamUpdated
 }: UseWebRTCCallerProps) {
   const {
     createPeerConnection,
@@ -212,7 +214,7 @@ export function useWebRTCCaller({
       })
 
       // Set up event handlers
-      pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef)
+      pc.ontrack = (event) => handleTrack(event, pc, remoteVideoRef, remoteStreamRef, onRemoteStreamUpdated)
       pc.onconnectionstatechange = () => handleConnectionStateChange(pc, peerConnection)
 
       console.log('WebRTC: Adding local stream to peer connection')
