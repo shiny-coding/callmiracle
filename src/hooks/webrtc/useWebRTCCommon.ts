@@ -5,6 +5,7 @@ import { syncStore, useStore, vanillaStore } from '@/store/useStore'
 import { User } from '@/generated/graphql'
 import { useMeetings } from '@/contexts/MeetingsContext'
 import { ICE_SERVERS } from '@/constants/webrtc'
+import clientLogger from '@/utils/clientLogger'
 
 /**
  * Clear the browser's media session to remove the media player from iOS notification panel
@@ -223,12 +224,8 @@ export function useWebRTCCommon(callUser: any) {
           pc.addTransceiver('audio', { direction: 'recvonly' })
         }
 
-        // Always add video transceiver - either sendrecv or recvonly
-        if (localVideoEnabled) {
-          pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
-        } else {
-          pc.addTransceiver('video', { direction: 'recvonly' })
-        }
+        // Always add video transceiver as sendrecv so we can attach a track later without renegotiation
+        pc.addTransceiver('video', { direction: 'sendrecv', streams: [stream] })
       }
     }
 
@@ -276,7 +273,8 @@ export function useWebRTCCommon(callUser: any) {
     for (const transceiver of pc.getTransceivers()) {
       const kind = transceiver.sender.track?.kind || transceiver.mid
       if (kind === 'video' || kind === '1') {
-        transceiver.direction = localVideoEnabled ? 'sendrecv' : 'recvonly'
+        // Keep video transceivers sendrecv; rely on track enabled state to mute video
+        transceiver.direction = 'sendrecv'
       } else if (kind === 'audio' || kind === '0') {
         transceiver.direction = localAudioEnabled ? 'sendrecv' : 'recvonly'
       }
@@ -562,13 +560,15 @@ export function useWebRTCCommon(callUser: any) {
     localAudioEnabled: boolean
   ): Promise<MediaStream> => {
     const timestamp = Date.now()
-    console.log('[WebRTC] ensureMediaStream called', {
+    const baseMeta = {
       timestamp,
       hasCurrentStream: !!currentStream,
       localVideoEnabled,
       localAudioEnabled,
       currentStreamId: currentStream?.id
-    })
+    }
+    console.log('[WebRTC] ensureMediaStream called', baseMeta)
+    clientLogger.info('[WebRTC] ensureMediaStream called', baseMeta)
 
     if (currentStream) {
       const tracks = currentStream.getTracks()
@@ -581,7 +581,7 @@ export function useWebRTCCommon(callUser: any) {
         (localVideoEnabled === hasVideoTrack) &&
         (localAudioEnabled === hasAudioTrack)
 
-      console.log('[WebRTC] Existing stream analysis', {
+      const existingMeta = {
         trackCount: tracks.length,
         tracks: tracks.map(t => ({
           kind: t.kind,
@@ -596,31 +596,39 @@ export function useWebRTCCommon(callUser: any) {
         hasVideoTrack,
         hasAudioTrack,
         streamMatchesState
-      })
+      }
+
+      console.log('[WebRTC] Existing stream analysis', existingMeta)
+      clientLogger.info('[WebRTC] Existing stream analysis', existingMeta)
 
       if (hasEndedTracks) {
         console.log('[WebRTC] LocalStream has ended tracks, creating new stream')
         console.log('WebRTC: LocalStream has ended tracks, creating new stream')
+        clientLogger.warn('[WebRTC] LocalStream has ended tracks, recreating', existingMeta)
         // Stop old tracks
         tracks.forEach(track => track.stop())
       } else if (!streamMatchesState) {
-        console.log('[WebRTC] LocalStream tracks do not match enabled state, creating new stream', {
+        const mismatchMeta = {
           expectedVideo: localVideoEnabled,
           expectedAudio: localAudioEnabled,
           actualVideo: hasVideoTrack,
           actualAudio: hasAudioTrack
-        })
+        }
+        console.log('[WebRTC] LocalStream tracks do not match enabled state, creating new stream', mismatchMeta)
         console.log('WebRTC: LocalStream tracks do not match enabled state, creating new stream')
+        clientLogger.info('[WebRTC] Recreating stream due to track mismatch', { ...existingMeta, ...mismatchMeta })
         // Stop old tracks since we need a different configuration
         tracks.forEach(track => track.stop())
       } else {
         console.log('[WebRTC] Using existing localStream (valid)')
         console.log('WebRTC: Using existing localStream')
+        clientLogger.info('[WebRTC] Using existing localStream (valid)', existingMeta)
         return currentStream
       }
     } else {
       console.log('[WebRTC] No localStream exists, creating new stream')
       console.log('WebRTC: No localStream exists, creating new stream')
+      clientLogger.info('[WebRTC] No localStream exists, creating new stream', { timestamp, localVideoEnabled, localAudioEnabled })
     }
 
     // Create new stream - only request tracks that are enabled
@@ -628,6 +636,7 @@ export function useWebRTCCommon(callUser: any) {
     if (!localVideoEnabled && !localAudioEnabled) {
       console.log('[WebRTC] Both audio and video disabled, creating empty stream')
       console.log('WebRTC: Both audio and video disabled, creating empty stream')
+      clientLogger.info('[WebRTC] Creating empty stream (both disabled)', { timestamp })
       const emptyStream = new MediaStream()
       setLocalStream(emptyStream)
       return emptyStream
@@ -644,17 +653,19 @@ export function useWebRTCCommon(callUser: any) {
       audio: localAudioEnabled
     }
 
-    console.log('[WebRTC] Requesting getUserMedia', {
+    const gumMeta = {
       timestamp,
       constraints,
       selectedVideoDevice,
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
-    })
+    }
+    console.log('[WebRTC] Requesting getUserMedia', gumMeta)
+    clientLogger.info('[WebRTC] Requesting getUserMedia', gumMeta)
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints)
 
-      console.log('[WebRTC] getUserMedia success', {
+      const successMeta = {
         timestamp,
         timeTaken: Date.now() - timestamp,
         streamId: stream.id,
@@ -668,7 +679,9 @@ export function useWebRTCCommon(callUser: any) {
           label: t.label,
           settings: t.getSettings()
         }))
-      })
+      }
+      console.log('[WebRTC] getUserMedia success', successMeta)
+      clientLogger.info('[WebRTC] getUserMedia success', successMeta)
 
       // Monitor track ended events on new stream
       stream.getTracks().forEach(track => {
@@ -711,8 +724,10 @@ export function useWebRTCCommon(callUser: any) {
       }
       if (errorName === 'NotAllowedError') {
         console.info('[WebRTC] getUserMedia blocked by user/UA (NotAllowedError)', meta)
+        clientLogger.warn('[WebRTC] getUserMedia blocked (NotAllowedError)', meta)
       } else {
         console.error('[WebRTC] getUserMedia failed', meta)
+        clientLogger.error('[WebRTC] getUserMedia failed', meta)
       }
       throw err
     }

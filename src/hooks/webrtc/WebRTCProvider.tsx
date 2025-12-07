@@ -9,6 +9,7 @@ import { type VideoQuality } from '@/components/VideoQualitySelector'
 import { useWebRTCCommon } from './useWebRTCCommon'
 import { User } from '@/generated/graphql'
 import { useSubscriptions } from '@/contexts/SubscriptionsContext'
+import clientLogger from '@/utils/clientLogger'
 
 const GET_PENDING_CALL = gql`
   query GetPendingCall($userId: ID!) {
@@ -43,7 +44,7 @@ interface WebRTCContextType {
   localStream: MediaStream | undefined
   setLocalStream: (stream: MediaStream | undefined) => void
   remoteVideoRef: React.RefObject<HTMLVideoElement>
-  sendWantedMediaState: () => void
+  sendWantedMediaState: () => Promise<void>
   callUser: any
   callee: ReturnType<typeof useWebRTCCallee>
   caller: ReturnType<typeof useWebRTCCaller>
@@ -73,7 +74,7 @@ export function WebRTCProvider({
   const remoteVideoRef = useRef<HTMLVideoElement>(null) as React.RefObject<HTMLVideoElement>
   const [callUser] = useMutation(CALL_USER)
   const [getPendingCall] = useLazyQuery(GET_PENDING_CALL, { fetchPolicy: 'network-only' })
-  const {applyLocalQuality, sendWantedMediaStateImpl} = useWebRTCCommon(callUser)
+  const {applyLocalQuality, sendWantedMediaStateImpl, ensureMediaStream} = useWebRTCCommon(callUser)
   const { subscribeToCallEvents } = useSubscriptions()
   const pendingCallCheckedRef = useRef(false)
 
@@ -121,6 +122,77 @@ export function WebRTCProvider({
 
   const caller = useWebRTCCaller(childProps)
   const callee = useWebRTCCallee(childProps)
+  const attachTracksToPeer = (pc: RTCPeerConnection, stream: MediaStream) => {
+    const tracks = stream.getTracks()
+    const senders = pc.getSenders()
+    const existingSenders = senders.map(s => ({
+      trackKind: s.track?.kind,
+      trackId: s.track?.id,
+      readyState: s.track?.readyState
+    }))
+
+    clientLogger.info('[WebRTC] attachTracksToPeer start', {
+      streamId: stream.id,
+      trackCount: tracks.length,
+      tracks: tracks.map(t => ({ kind: t.kind, id: t.id, readyState: t.readyState, enabled: t.enabled })),
+      senders: existingSenders
+    })
+
+    tracks.forEach(track => {
+      const sender = senders.find(s => s.track?.kind === track.kind)
+      if (sender) {
+        sender.replaceTrack(track).then(() => {
+          clientLogger.info('[WebRTC] attachTracksToPeer replaced existing sender track', {
+            kind: track.kind,
+            trackId: track.id
+          })
+        }).catch(err => {
+          clientLogger.error('[WebRTC] attachTracksToPeer failed to replace sender track', {
+            kind: track.kind,
+            trackId: track.id,
+            error: String(err)
+          })
+        })
+      } else {
+        const transceiver = pc.getTransceivers().find(t => {
+          const senderKind = t.sender.track?.kind
+          const receiverKind = t.receiver.track?.kind
+          const midKind = t.mid === '0' ? 'audio' : t.mid === '1' ? 'video' : undefined
+          return senderKind === track.kind || receiverKind === track.kind || midKind === track.kind
+        })
+
+        if (transceiver) {
+          transceiver.sender.replaceTrack(track).then(() => {
+            clientLogger.info('[WebRTC] attachTracksToPeer attached via transceiver', {
+              kind: track.kind,
+              trackId: track.id,
+              transceiverMid: transceiver.mid
+            })
+          }).catch(err => {
+            clientLogger.error('[WebRTC] attachTracksToPeer failed via transceiver', {
+              kind: track.kind,
+              trackId: track.id,
+              error: String(err)
+            })
+          })
+        } else {
+          try {
+            pc.addTrack(track, stream)
+            clientLogger.info('[WebRTC] attachTracksToPeer added new sender', {
+              kind: track.kind,
+              trackId: track.id
+            })
+          } catch (err) {
+            clientLogger.error('[WebRTC] attachTracksToPeer failed to addTrack', {
+              kind: track.kind,
+              trackId: track.id,
+              error: String(err)
+            })
+          }
+        }
+      }
+    })
+  }
 
   // Check for pending calls when app opens (e.g., from notification click)
   useEffect(() => {
@@ -412,14 +484,14 @@ export function WebRTCProvider({
   // Watch for stream changes and update peer connections
   useEffect(() => {
     if (!localStream) {
-      console.log('[WebRTCProvider] Track replacement effect: no localStream')
+      clientLogger.info('[WebRTC] Track replacement skipped (no localStream)')
       return
     }
 
     // Get the active peer connection from either caller or callee
     const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
     if (!activePeerConnection) {
-      console.log('[WebRTCProvider] Track replacement effect: no active peer connection', {
+      clientLogger.info('[WebRTC] Track replacement skipped (no active peer connection)', {
         callerActive: caller.active,
         calleeActive: callee.active
       })
@@ -429,7 +501,7 @@ export function WebRTCProvider({
     const role = caller.active ? 'caller' : 'callee'
     const streamTracks = localStream.getTracks()
 
-    console.log('[WebRTCProvider] Replacing tracks in active peer connection', {
+    clientLogger.info('[WebRTC] Track replacement start', {
       role,
       streamId: localStream.id,
       trackCount: streamTracks.length,
@@ -449,7 +521,7 @@ export function WebRTCProvider({
 
     // Update tracks in the active peer connection
     const senders = activePeerConnection.getSenders()
-    console.log('[WebRTCProvider] Current senders in peer connection', {
+    clientLogger.info('[WebRTC] Current senders before replacement', {
       senderCount: senders.length,
       senders: senders.map(s => ({
         trackKind: s.track?.kind,
@@ -465,7 +537,7 @@ export function WebRTCProvider({
         const oldTrackId = sender.track?.id
         const oldTrackReadyState = sender.track?.readyState
 
-        console.log('[WebRTCProvider] Replacing track', {
+        clientLogger.info('[WebRTC] Replacing track on sender', {
           kind: track.kind,
           newTrackId: track.id,
           newTrackReadyState: track.readyState,
@@ -477,32 +549,128 @@ export function WebRTCProvider({
         })
 
         sender.replaceTrack(track).then(() => {
-          console.log('[WebRTCProvider] Track replaced successfully', {
+          clientLogger.info('[WebRTC] Track replaced on sender', {
             kind: track.kind,
             newTrackId: track.id
           })
         }).catch(err => {
-          console.error('[WebRTCProvider] Failed to replace track', {
+          clientLogger.error('[WebRTC] Failed to replace track on sender', {
             kind: track.kind,
             trackId: track.id,
-            error: err
+            error: String(err)
           })
         })
       } else {
-        console.warn('[WebRTCProvider] No sender found for track', {
+        clientLogger.warn('[WebRTC] No sender found for track kind', {
           kind: track.kind,
           trackId: track.id
         })
+        const transceiver = activePeerConnection.getTransceivers().find(t => {
+          const senderKind = t.sender.track?.kind
+          const receiverKind = t.receiver.track?.kind
+          const midKind = t.mid === '0' ? 'audio' : t.mid === '1' ? 'video' : undefined
+          return senderKind === track.kind || receiverKind === track.kind || midKind === track.kind
+        })
+
+        if (transceiver) {
+          clientLogger.info('[WebRTC] Attaching track via transceiver.sender', {
+            kind: track.kind,
+            trackId: track.id,
+            transceiverMid: transceiver.mid
+          })
+          transceiver.sender.replaceTrack(track).then(() => {
+            clientLogger.info('[WebRTC] Track attached via transceiver.sender', {
+              kind: track.kind,
+              trackId: track.id,
+              transceiverMid: transceiver.mid
+            })
+          }).catch(err => {
+            clientLogger.error('[WebRTC] Failed to attach track via transceiver.sender', {
+              kind: track.kind,
+              trackId: track.id,
+              error: String(err)
+            })
+          })
+        } else {
+          clientLogger.warn('[WebRTC] No transceiver found for track kind, adding track', {
+            kind: track.kind,
+            trackId: track.id
+          })
+          try {
+            activePeerConnection.addTrack(track, localStream)
+            clientLogger.info('[WebRTC] Track added to peer connection (new sender)', {
+              kind: track.kind,
+              trackId: track.id
+            })
+          } catch (err) {
+            clientLogger.error('[WebRTC] Failed to add track to peer connection', {
+              kind: track.kind,
+              trackId: track.id,
+              error: String(err)
+            })
+          }
+        }
       }
     })
   }, [localStream, caller.active, caller.peerConnection, callee.active, callee.peerConnection])
 
   // Handle media state changes (video/audio/quality)
-  const sendWantedMediaState = () => {
+  const sendWantedMediaState = async () => {
     const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
-    if (!callId || !activePeerConnection || !targetUser || !(caller.active || callee.active)) return
+    if (!callId || !activePeerConnection || !targetUser || !(caller.active || callee.active)) {
+      clientLogger.info('[WebRTC] sendWantedMediaState skipped', {
+        hasCallId: !!callId,
+        hasActivePeerConnection: !!activePeerConnection,
+        hasTargetUser: !!targetUser,
+        callerActive: caller.active,
+        calleeActive: callee.active
+      })
+      return
+    }
 
     const { localVideoEnabled, localAudioEnabled, qualityWeWantFromRemote } = syncStore()
+
+    const hasEndedTracks = localStreamRef.current?.getTracks().some(track => track.readyState === 'ended')
+    const missingVideoTrack = localVideoEnabled && !(localStreamRef.current?.getVideoTracks().length)
+    const missingAudioTrack = localAudioEnabled && !(localStreamRef.current?.getAudioTracks().length)
+
+    let streamToUse = localStreamRef.current
+
+    if (!localStreamRef.current || hasEndedTracks || missingVideoTrack || missingAudioTrack) {
+      try {
+        streamToUse = await ensureMediaStream(localStreamRef.current, setLocalStream, localVideoEnabled, localAudioEnabled)
+      } catch (err) {
+        clientLogger.error('[WebRTC] Failed to refresh media stream before sending media state', { error: String(err) })
+        return
+      }
+    }
+
+    if (streamToUse) {
+      // Keep ref in sync if ensureMediaStream returned a new stream
+      localStreamRef.current = streamToUse
+      attachTracksToPeer(activePeerConnection, streamToUse)
+    }
+
+    clientLogger.info('[WebRTC] sendWantedMediaState', {
+      callId,
+      targetUserId: targetUser._id,
+      callerActive: caller.active,
+      calleeActive: callee.active,
+      localVideoEnabled,
+      localAudioEnabled,
+      qualityWeWantFromRemote,
+      pcState: {
+        connectionState: activePeerConnection.connectionState,
+        iceConnectionState: activePeerConnection.iceConnectionState,
+        signalingState: activePeerConnection.signalingState
+      },
+      senders: activePeerConnection.getSenders().map(s => ({
+        trackKind: s.track?.kind,
+        trackId: s.track?.id,
+        trackReadyState: s.track?.readyState,
+        trackEnabled: s.track?.enabled
+      }))
+    })
 
     sendWantedMediaStateImpl(
       activePeerConnection,

@@ -89,17 +89,20 @@ export default function LocalVideo({ onClose, showDeviceSelection = true, compac
 
         // CRITICAL: On iOS Safari, videos sometimes need explicit play() call
         // even with autoPlay attribute
-        videoRef.current.play().then(() => {
-          console.log('[LocalVideo] Local video playing successfully')
-        }).catch(err => {
-          console.error('[LocalVideo] Failed to play local video', { error: err })
-          // Try again after a small delay (iOS sometimes needs this)
-          setTimeout(() => {
-            videoRef.current?.play().catch(e =>
-              console.error('[LocalVideo] Retry play failed', { error: e })
-            )
-          }, 100)
-        })
+        const tryPlay = (isRetry = false) => {
+          videoRef.current?.play().then(() => {
+            console.log('[LocalVideo] Local video playing successfully')
+          }).catch(err => {
+            if (isRetry) {
+              console.error('[LocalVideo] Retry play failed', { error: err })
+            } else {
+              // First failure is common on some browsers; retry quietly
+              setTimeout(() => tryPlay(true), 150)
+            }
+          })
+        }
+
+        tryPlay(false)
       } else {
         videoRef.current.srcObject = null
         if (!localStream) {
