@@ -70,22 +70,37 @@ Key files
 - `src/hooks/webrtc/WebRTCProvider.tsx`: `sendWantedMediaState`, `attachTracksToPeer`, stream replacement effect, `updateMediaState` handling.
 - UI toggles live in `MediaControls`, `ConnectedCallLayout`, `DeviceSettingsDialog`, etc., and all route through `sendWantedMediaState`.
 
-Current regression (2025-07-28, 18:13 run)
-------------------------------------------
-- Scenario: caller (Android) and callee (iOS) both start with video on. Callee sees caller; caller never sees callee video.
-- Caller side evidence:
-  - Offer sent with `localVideoEnabled: true`, transceivers logged as `sendrecv` before offer.
-  - No caller log lines for `[WebRTC] Processing answer`, `Answer processed successfully`, or any remote `track`/`Remote stream received` events after 18:13:41. That implies the answer was never applied on the caller.
-  - No `updateMediaState` received on caller either; remote video flags stay false.
-- Callee side evidence:
-  - Callee created multiple local streams with video, `getUserMedia success` and `addLocalStream adding new track` logged.
-  - Subscription (`OnSubscriptionEvent`) was closed/restarted shortly after call start (13–130 seconds durations in logs), so call events may have dropped.
-  - We see heavy ICE traffic but no clear confirmation that the answer/remote description reached the caller.
-- Hypothesis:
-  1) The answer never reaches the caller because the caller’s subscription disconnects/filters it (e.g., SSE close, callId mismatch, or we ignore events while `callId` is unset/stale). Without `setRemoteDescription(answer)`, no remote track events fire.
-  2) Alternatively, the callee sent the answer but the caller was not in `have-local-offer` anymore when it arrived (signaling state mismatch), so we skipped applying it—again resulting in no remote tracks.
-- Next instrumentation to confirm:
-  - On caller `answer` handling: log at INFO before/after `setRemoteDescription`, including `callId`, `signalingState`, `current transceivers`, and whether `dispatchPendingIceCandidates` runs.
-  - On callee after sending the answer: log the callId and ensure `callUser` mutation resolves; also log the answer payload size and `pc.signalingState`.
-  - On subscription handler: log every incoming `callEvent.type` with `callId` and `connectionStatus` so we can see if the answer ever arrives or is filtered out.
-  - Add a warning when the caller stays in `calling/connecting` for >5s without having applied an answer (timer-based), to catch the missing-answer path in the field.
+Recent fixes/outcome (2025-07-28)
+---------------------------------
+- Fixed: initial call with both sides video-on now works by avoiding callee bootstrap transceivers (callee relies on offer-created transceivers).
+- Fixed: mid-call callee video-on now works by:
+  - Retrying renegotiation until signaling is stable.
+  - Allowing renegotiate/update events even if callId drifts during SSE reconnects.
+  - Handling track events with no `event.streams` (create a MediaStream from the track so the caller can bind it).
+- Remaining fragility: SSE disconnects still occur; if both sides miss renegotiate/update events, we would need a retry/backfill (e.g., small watchdog).
+
+Simplification opportunities
+----------------------------
+[] 1) Event handling
+   - Keep a single gate: process all call events when either caller/callee is active; only drop when truly idle. Current partial callId logic is brittle.
+   - Add a tiny “last event seen” watchdog to auto-refresh subscription if silent for N seconds.
+
+[] 2) Renegotiation
+   - Single entry: always use `sendWantedMediaState` as the only place to trigger renegotiate. Remove duplicated triggers elsewhere; keep a retry loop while signaling is not stable.
+   - Caller-side fallback: if remoteVideoEnabled becomes true but no remote stream after a grace period, fire one renegotiate attempt (already partially done).
+
+[] 3) Track/stream handling
+   - Normalize all track events: if `event.streams` is empty, always wrap in `new MediaStream([track])`. Do this in one utility.
+   - Remove duplicate track-replacement logic: consolidate attach/replace into `attachTracksToPeer` and the `localStream` effect; avoid reimplementing per hook.
+
+[] 4) Transceiver strategy
+   - Initiator pre-adds video `sendrecv`; callee relies on offer transceivers. Keep audio `sendrecv` only when enabled, otherwise `recvonly`.
+   - After toggles, `configureTransceivers` should only flip audio based on flag; video stays `sendrecv` and we depend on `track.enabled` for mute.
+
+[] 5) Signaling noise
+   - Reduce repeated ICE/log spam: coalesce duplicate ICE logs and keep only essential callId/type/size.
+   - Consider batching `updateMediaState` if multiple toggles happen quickly (debounce).
+
+[] 6) Autoplay/binding
+   - Centralize remote binding (one place to set `videoEl.srcObject` and `play()`), driven by `remoteStreamVersion`.
+   - Add a small “play guard” to retry `videoEl.play()` if it fails due to autoplay.
