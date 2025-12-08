@@ -205,9 +205,11 @@ const removeUserFromGroup = async (_: any, { groupId, userId }: { groupId: strin
   }
 }
 
-export default {
+const groupsMutations = {
   createOrUpdateGroup,
   regenerateJoinToken,
   removeUserFromGroup,
   deleteGroup
-} 
+}
+
+export default groupsMutations

@@ -102,7 +102,7 @@ export function ConversationsProvider({ children }: ConversationsProviderProps) 
     })
     
     return unsubscribe
-  }, [subscribeToNotifications, refetch])
+  }, [client.cache, subscribeToNotifications, refetch])
 
   return (
     <ConversationsContext.Provider value={{ 

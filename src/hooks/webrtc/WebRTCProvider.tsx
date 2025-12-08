@@ -1,5 +1,5 @@
 'use client'
-import { useState, createContext, useContext, ReactNode, useRef, useEffect } from 'react'
+import { useState, createContext, useContext, ReactNode, useRef, useEffect, useCallback } from 'react'
 import { useMutation, useLazyQuery, gql } from '@apollo/client'
 import { useStore, syncStore } from '@/store/useStore'
 import { useWebRTCCaller } from './useWebRTCCaller'
@@ -272,7 +272,7 @@ export function WebRTCProvider({
     })
   }
 
-  const sendRenegotiationOffer = async (
+  const sendRenegotiationOffer = useCallback(async (
     pc: RTCPeerConnection,
     targetUserId: string,
     callId?: string | null,
@@ -345,7 +345,7 @@ export function WebRTCProvider({
     } finally {
       renegotiationInFlightRef.current = false
     }
-  }
+  }, [callUser, currentUser?._id])
 
   // Check for pending calls when app opens (e.g., from notification click)
   useEffect(() => {
@@ -393,7 +393,7 @@ export function WebRTCProvider({
     }
 
     checkPendingCall()
-  }, [currentUser?._id, callId])
+  }, [callee, callId, currentUser?._id, getPendingCall, setCallId, setConnectionStatus, setRole, setTargetUser])
 
   useEffect(() => {
     const unsubscribe = subscribeToCallEvents(async (callEvent) => {
@@ -638,6 +638,9 @@ export function WebRTCProvider({
         setRemoteAudioEnabled(callEvent.audioEnabled ?? remoteAudioEnabled)
         const quality = callEvent.quality as VideoQuality
         const activePeerConnection = caller.active ? caller.peerConnection.current : callee.active ? callee.peerConnection.current : null
+        const videoTx = activePeerConnection
+          ?.getTransceivers()
+          .find(t => t.sender.track?.kind === 'video' || t.receiver.track?.kind === 'video' || t.mid === '1')
 
         const receiverSummary = activePeerConnection
           ? activePeerConnection.getReceivers().map(r => ({
@@ -792,7 +795,25 @@ export function WebRTCProvider({
     })
 
     return unsubscribe
-  }, [subscribeToCallEvents, callId])
+  }, [
+    applyLocalQuality,
+    callId,
+    callUser,
+    callee,
+    caller,
+    clearCallState,
+    currentUser?._id,
+    remoteAudioEnabled,
+    remoteVideoEnabled,
+    sendRenegotiationOffer,
+    setCallEndedInfo,
+    setCallId,
+    setConnectionStatus,
+    setRole,
+    setTargetUser,
+    subscribeToCallEvents,
+    targetUser
+  ])
 
   // Watch for stream changes and update peer connections
   useEffect(() => {
@@ -1124,7 +1145,7 @@ export function WebRTCProvider({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [caller.peerConnection, callee.peerConnection]);
 
   // Safeguard: when a remote stream arrives before the video element mounts, bind it once both exist
   useEffect(() => {
@@ -1151,7 +1172,7 @@ export function WebRTCProvider({
     }).catch(err => {
       clientLogger.error('[WebRTC] Failed to play remote video from provider effect', { error: String(err), streamId: stream.id })
     })
-  }, [remoteStreamVersion, remoteVideoRef])
+  }, [callee.remoteStreamRef, caller.remoteStreamRef, remoteStreamVersion, remoteVideoRef])
 
   const value: WebRTCContextType = {
     doCall: caller.doCall,

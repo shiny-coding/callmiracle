@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useWebRTCCommon, ConnectionStatus, clearMediaSession } from './useWebRTCCommon'
 import type { IncomingRequest } from './useWebRTCCommon'
 import { useStore } from '@/store/useStore'
@@ -61,7 +61,34 @@ export function useWebRTCCallee({
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
   const pendingAcceptRef = useRef(false)
 
-  const handleAcceptCall = async () => {
+  const cleanup = useCallback(() => {
+    console.log('WebRTC: Cleaning up callee')
+    pendingAcceptRef.current = false
+    if (peerConnection.current) {
+      peerConnection.current.close()
+      peerConnection.current = null
+    }
+    clearPendingCandidates()
+    remoteStreamRef.current = null
+    setIncomingRequest(null)
+    setActive(false)
+    setCallId(null)
+
+    // Stop local stream tracks and clear stream
+    if (localStream) {
+      console.log('WebRTC: Stopping local stream tracks')
+      localStream.getTracks().forEach(track => {
+        console.log('WebRTC: Stopping track:', track.kind, track.id)
+        track.stop()
+      })
+      setLocalStream(undefined)
+    }
+
+    // Clear media session to remove iOS notification panel player
+    clearMediaSession()
+  }, [clearPendingCandidates, localStream, setActive, setCallId, setIncomingRequest, setLocalStream])
+
+  const handleAcceptCall = useCallback(async () => {
     if (!incomingRequest) {
       console.log('WebRTC: Accept requested but missing incoming request - deferring until offer arrives')
       pendingAcceptRef.current = true
@@ -122,7 +149,32 @@ export function useWebRTCCallee({
       setConnectionStatus(ConnectionStatus.FAILED)
       cleanup()
     }
-  }
+  }, [
+    addLocalStream,
+    callUser,
+    cleanup,
+    createPeerConnection,
+    currentUser?._id,
+    dispatchPendingIceCandidates,
+    ensureMediaStream,
+    handleConnectionStateChange,
+    handleTrack,
+    incomingRequest,
+    localAudioEnabled,
+    localStream,
+    localVideoEnabled,
+    onRemoteStreamUpdated,
+    qualityWeWantFromRemote,
+    remoteVideoRef,
+    setActive,
+    setCallId,
+    setConnectionStatus,
+    setIncomingRequest,
+    setLocalStream,
+    setQualityRemoteWantsFromUs,
+    setTargetUser,
+    setupIceCandidateHandler
+  ])
 
   const handleRejectCall = async () => {
     console.log('Rejecting call from:', incomingRequest?.from.name)
@@ -156,34 +208,7 @@ export function useWebRTCCallee({
       console.log('WebRTC: Incoming request arrived after accept click, auto-accepting')
       handleAcceptCall()
     }
-  }, [incomingRequest])
-
-  const cleanup = () => {
-    console.log('WebRTC: Cleaning up callee')
-    pendingAcceptRef.current = false
-    if (peerConnection.current) {
-      peerConnection.current.close()
-      peerConnection.current = null
-    }
-    clearPendingCandidates()
-    remoteStreamRef.current = null
-    setIncomingRequest(null)
-    setActive(false)
-    setCallId(null)
-
-    // Stop local stream tracks and clear stream
-    if (localStream) {
-      console.log('WebRTC: Stopping local stream tracks')
-      localStream.getTracks().forEach(track => {
-        console.log('WebRTC: Stopping track:', track.kind, track.id)
-        track.stop()
-      })
-      setLocalStream(undefined)
-    }
-
-    // Clear media session to remove iOS notification panel player
-    clearMediaSession()
-  }
+  }, [handleAcceptCall, incomingRequest])
 
   const hangup = createHangup(cleanup)
 
