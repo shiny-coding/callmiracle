@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useWebRTCCommon, ConnectionStatus, clearMediaSession } from './useWebRTCCommon'
 import type { IncomingRequest } from './useWebRTCCommon'
 import { useStore } from '@/store/useStore'
@@ -59,15 +59,18 @@ export function useWebRTCCallee({
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null)
+  const pendingAcceptRef = useRef(false)
 
   const handleAcceptCall = async () => {
     if (!incomingRequest) {
-      console.log('WebRTC: Cannot accept call - missing incoming request')
+      console.log('WebRTC: Accept requested but missing incoming request - deferring until offer arrives')
+      pendingAcceptRef.current = true
       return
     }
 
     try {
       console.log('WebRTC: Accepting call from:', incomingRequest.from.name, 'with callId:', incomingRequest.callId)
+      pendingAcceptRef.current = false
 
       setConnectionStatus(ConnectionStatus.CONNECTING)
       setActive(true)
@@ -123,6 +126,7 @@ export function useWebRTCCallee({
 
   const handleRejectCall = async () => {
     console.log('Rejecting call from:', incomingRequest?.from.name)
+    pendingAcceptRef.current = false
     setIncomingRequest(null)
     setConnectionStatus(ConnectionStatus.REJECTED)
     setActive(false)
@@ -147,8 +151,16 @@ export function useWebRTCCallee({
     }
   }
 
+  useEffect(() => {
+    if (incomingRequest && pendingAcceptRef.current) {
+      console.log('WebRTC: Incoming request arrived after accept click, auto-accepting')
+      handleAcceptCall()
+    }
+  }, [incomingRequest])
+
   const cleanup = () => {
     console.log('WebRTC: Cleaning up callee')
+    pendingAcceptRef.current = false
     if (peerConnection.current) {
       peerConnection.current.close()
       peerConnection.current = null
