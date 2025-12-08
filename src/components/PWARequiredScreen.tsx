@@ -46,173 +46,189 @@ export default function PWARequiredScreen() {
 
   return (
     <>
-      <div className="fixed inset-0 bg-gradient-to-b from-gray-900 to-black text-white overflow-auto z-50">
-        <Container maxWidth="sm" className="py-8 px-4">
-          {/* App Icon and Name */}
-          <div className="flex justify-center mb-8">
-            <div className="relative inline-flex items-center">
-              <div className="absolute right-full mr-3 w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
-                <Image
-                  src="/logo-192.png"
-                  alt="CallMiracle"
-                  width={64}
-                  height={64}
-                  className="w-full h-full"
-                  unoptimized
-                />
-              </div>
-              <Typography variant="h4" className="font-bold">
-                CallMiracle
-              </Typography>
-            </div>
-          </div>
-
-          {/* Main Message */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <AddToHomeScreenIcon className="text-blue-400 text-4xl" />
-            </div>
-
-            <Alert severity="info" className="mb-6">
-              <Typography variant="body1" className="font-semibold">
-                {t('pwaRequiredTitle')}
-              </Typography>
-            </Alert>
-
-            <Typography variant="body1" className="text-gray-300 text-center mb-8">
-              {t('pwaRequiredDescription')}
-            </Typography>
-
-            {/* Platform-specific instructions */}
-            {platform === 'ios' && (
-              <div className="space-y-6">
-                <div className=" p-4 rounded-lg space-y-2">
-                  <Typography variant="subtitle1" className="font-semibold">
-                    {t('howToAddToHomeScreen')}
-                  </Typography>
-                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-300">
-                    <li>{t('tapShareButton')}</li>
-                    <li>{t('selectAddToHomeScreen')}</li>
-                    <li>{t('tapAdd')}</li>
-                  </ol>
+      <div className="fixed inset-0 overflow-auto z-50">
+        <Container maxWidth="sm" className="py-10 px-4">
+            {/* App Icon and Name */}
+            <div className="flex justify-center mb-10">
+              <div className="relative inline-flex items-center">
+                <div className="absolute right-full mr-3 w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/logo-192.png"
+                    alt="CallMiracle"
+                    width={64}
+                    height={64}
+                    className="w-full h-full"
+                    unoptimized
+                  />
                 </div>
-
-                {/* Instruction Images */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-2">
-                    <Typography variant="h6" className="font-bold text-red-500">
-                      1.
-                    </Typography>
-                    <div
-                      className="cursor-pointer rounded-lg overflow-hidden border-2 border-gray-600 hover:border-blue-500 transition-colors"
-                      onClick={() => setFullSizeImage(`/ios-${browser}-instruction-1.jpg`)}
-                    >
-                      <Image
-                        src={`/ios-${browser}-instruction-1.jpg`}
-                        alt={`iOS ${browser} instruction step 1`}
-                        width={300}
-                        height={650}
-                        className="w-full h-auto"
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Typography variant="h6" className="font-bold text-red-500">
-                      2.
-                    </Typography>
-                    <div
-                      className="cursor-pointer rounded-lg overflow-hidden border-2 border-gray-600 hover:border-blue-500 transition-colors"
-                      onClick={() => setFullSizeImage(`/ios-${browser}-instruction-2.jpg`)}
-                    >
-                      <Image
-                        src={`/ios-${browser}-instruction-2.jpg`}
-                        alt={`iOS ${browser} instruction step 2`}
-                        width={300}
-                        height={650}
-                        className="w-full h-auto"
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {platform === 'android' && (
-              <div className="space-y-6">
-                <div className=" p-4 rounded-lg space-y-2">
-                  <Typography variant="subtitle1" className="font-semibold">
-                    {t('howToAddToHomeScreen')}
-                  </Typography>
-                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-300">
-                    <li>{t('androidStep1')}</li>
-                    <li>{t('androidStep2')}</li>
-                    <li>{t('androidStep3')}</li>
-                  </ol>
-                </div>
-
-                {/* Instruction Images */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-2">
-                    <Typography variant="h6" className="font-bold text-red-500">
-                      1.
-                    </Typography>
-                    <div
-                      className="cursor-pointer rounded-lg overflow-hidden border-2 border-gray-600 hover:border-blue-500 transition-colors"
-                      onClick={() => setFullSizeImage(`/android-chrome-instruction-1.jpg`)}
-                    >
-                      <Image
-                        src={`/android-chrome-instruction-1.jpg`}
-                        alt="Android Chrome instruction step 1"
-                        width={300}
-                        height={650}
-                        className="w-full h-auto"
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Typography variant="h6" className="font-bold text-red-500">
-                      2.
-                    </Typography>
-                    <div
-                      className="cursor-pointer rounded-lg overflow-hidden border-2 border-gray-600 hover:border-blue-500 transition-colors"
-                      onClick={() => setFullSizeImage(`/android-chrome-instruction-2.jpg`)}
-                    >
-                      <Image
-                        src={`/android-chrome-instruction-2.jpg`}
-                        alt="Android Chrome instruction step 2"
-                        width={300}
-                        height={650}
-                        className="w-full h-auto"
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {platform === 'desktop' && (
-              <div className=" p-4 rounded-lg space-y-2">
-                <Typography variant="subtitle1" className="font-semibold">
-                  {t('howToAddToHomeScreen')}
+                <Typography variant="h4" className="font-bold text-slate-900">
+                  CallMiracle
                 </Typography>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-300">
-                  <li>{t('desktopStep1')}</li>
-                  <li>{t('desktopStep2')}</li>
-                </ol>
               </div>
-            )}
-
-            <div className="mt-8 p-4 bg-blue-900/30 rounded-lg border border-blue-500">
-              <Typography variant="body2" className="text-blue-200 text-center">
-                {t('pwaRefreshNote')}
-              </Typography>
             </div>
-          </div>
-        </Container>
+
+            {/* Main Message */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <AddToHomeScreenIcon className="text-blue-600 text-4xl" />
+              </div>
+
+              <Alert severity="info" className="mb-4">
+                <Typography variant="body1" className="font-semibold text-slate-900">
+                  {t('pwaRequiredTitle')}
+                </Typography>
+              </Alert>
+
+              <Typography variant="body1" className="text-slate-700 text-center mb-4">
+                {t('pwaRequiredDescription')}
+              </Typography>
+
+              {/* Platform-specific instructions */}
+              {platform === 'ios' && (
+                <div className="space-y-6">
+                  <div
+                    className="p-4 rounded-xl shadow-md border border-blue-100 space-y-2"
+                    style={{ backgroundColor: 'var(--card-bg)' }}
+                  >
+                    <Typography variant="subtitle1" className="font-semibold text-slate-900">
+                      {t('howToAddToHomeScreen')}
+                    </Typography>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
+                      <li>{t('tapShareButton')}</li>
+                      <li>{t('selectAddToHomeScreen')}</li>
+                      <li>{t('tapAdd')}</li>
+                    </ol>
+                  </div>
+
+                  {/* Instruction Images (hidden for now to keep layout) */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-2">
+                      <Typography variant="h6" className="font-bold text-red-500">
+                        1.
+                      </Typography>
+                      <div
+                        className="cursor-pointer rounded-lg overflow-hidden border-2 border-blue-200 hover:border-blue-500 transition-colors shadow-sm bg-white/80"
+                        onClick={() => setFullSizeImage(`/ios-${browser}-instruction-1.jpg`)}
+                      >
+                        <Image
+                          src={`/ios-${browser}-instruction-1.jpg`}
+                          alt={`iOS ${browser} instruction step 1`}
+                          width={300}
+                          height={650}
+                          className="w-full h-auto"
+                          unoptimized
+                          style={{ visibility: 'hidden' }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Typography variant="h6" className="font-bold text-red-500">
+                        2.
+                      </Typography>
+                      <div
+                        className="cursor-pointer rounded-lg overflow-hidden border-2 border-blue-200 hover:border-blue-500 transition-colors shadow-sm bg-white/80"
+                        onClick={() => setFullSizeImage(`/ios-${browser}-instruction-2.jpg`)}
+                      >
+                        <Image
+                          src={`/ios-${browser}-instruction-2.jpg`}
+                          alt={`iOS ${browser} instruction step 2`}
+                          width={300}
+                          height={650}
+                          className="w-full h-auto"
+                          unoptimized
+                          style={{ visibility: 'hidden' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {platform === 'android' && (
+                <div className="space-y-6">
+                  <div
+                    className="p-4 rounded-xl shadow-md border border-blue-100 space-y-2"
+                    style={{ backgroundColor: 'var(--card-bg)' }}
+                  >
+                    <Typography variant="subtitle1" className="font-semibold text-slate-900">
+                      {t('howToAddToHomeScreen')}
+                    </Typography>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
+                      <li>{t('androidStep1')}</li>
+                      <li>{t('androidStep2')}</li>
+                      <li>{t('androidStep3')}</li>
+                    </ol>
+                  </div>
+
+                  {/* Instruction Images (hidden for now to keep layout) */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-2">
+                      <Typography variant="h6" className="font-bold text-red-500">
+                        1.
+                      </Typography>
+                      <div
+                        className="cursor-pointer rounded-lg overflow-hidden border-2 border-blue-200 hover:border-blue-500 transition-colors shadow-sm bg-white/80"
+                        onClick={() => setFullSizeImage(`/android-chrome-instruction-1.jpg`)}
+                      >
+                        <Image
+                          src={`/android-chrome-instruction-1.jpg`}
+                          alt="Android Chrome instruction step 1"
+                          width={300}
+                          height={650}
+                          className="w-full h-auto"
+                          unoptimized
+                          style={{ visibility: 'hidden' }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Typography variant="h6" className="font-bold text-red-500">
+                        2.
+                      </Typography>
+                      <div
+                        className="cursor-pointer rounded-lg overflow-hidden border-2 border-blue-200 hover:border-blue-500 transition-colors shadow-sm bg-white/80"
+                        onClick={() => setFullSizeImage(`/android-chrome-instruction-2.jpg`)}
+                      >
+                        <Image
+                          src={`/android-chrome-instruction-2.jpg`}
+                          alt="Android Chrome instruction step 2"
+                          width={300}
+                          height={650}
+                          className="w-full h-auto"
+                          unoptimized
+                          style={{ visibility: 'hidden' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {platform === 'desktop' && (
+                <div
+                  className="p-4 rounded-xl shadow-md border border-blue-100 space-y-2"
+                  style={{ backgroundColor: 'var(--card-bg)' }}
+                >
+                  <Typography variant="subtitle1" className="font-semibold text-slate-900">
+                    {t('howToAddToHomeScreen')}
+                  </Typography>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
+                    <li>{t('desktopStep1')}</li>
+                    <li>{t('desktopStep2')}</li>
+                  </ol>
+                </div>
+              )}
+
+              <div
+                className="mt-6 p-4 rounded-xl border border-blue-200 shadow-sm"
+                style={{ backgroundColor: 'var(--card-bg)' }}
+              >
+                <Typography variant="body2" className="text-blue-900 text-center">
+                  {t('pwaRefreshNote')}
+                </Typography>
+              </div>
+            </div>
+          </Container>
       </div>
 
       {/* Full-size Image Viewer */}
@@ -222,13 +238,13 @@ export default function PWARequiredScreen() {
         maxWidth="md"
         fullWidth
       >
-        <DialogContent className="relative p-0 bg-black">
+        <DialogContent className="relative p-0 bg-white">
           <IconButton
             onClick={() => setFullSizeImage(null)}
-            className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70"
+            className="absolute top-2 right-2 z-10 bg-white/70 hover:bg-white"
             size="small"
           >
-            <CloseIcon className="text-white" />
+            <CloseIcon className="text-slate-800" />
           </IconButton>
           {fullSizeImage && (
             <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
