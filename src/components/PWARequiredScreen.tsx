@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Typography, Container, Alert } from '@mui/material'
 import { useTranslations } from 'next-intl'
-import AddToHomeScreenIcon from '@mui/icons-material/AddToHomeScreen'
 import Image from 'next/image'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
@@ -50,31 +49,39 @@ export default function PWARequiredScreen() {
         <Container maxWidth="sm" className="py-10 px-4">
             {/* App Icon and Name */}
             <div className="flex justify-center mb-10">
-              <div className="relative inline-flex items-center">
-                <div className="absolute right-full mr-3 w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
-                  <Image
-                    src="/logo-192.png"
-                    alt="CallMiracle"
-                    width={64}
-                    height={64}
-                    className="w-full h-full"
-                    unoptimized
-                  />
+              <div
+                className="inline-grid items-center gap-4"
+                style={{ gridTemplateColumns: 'auto 1fr auto' }}
+              >
+                <div className="flex justify-center">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
+                    <Image
+                      src="/logo-192.png"
+                      alt="CallMiracle"
+                      width={64}
+                      height={64}
+                      className="w-full h-full"
+                      unoptimized
+                    />
+                  </div>
                 </div>
-                <Typography variant="h4" className="font-bold text-slate-900">
-                  CallMiracle
-                </Typography>
+                <div className="flex justify-center">
+                  <Typography variant="h4" className="font-bold text-slate-900 text-center">
+                    CallMiracle
+                  </Typography>
+                </div>
+                <div className="w-16" aria-hidden="true" />
               </div>
             </div>
 
             {/* Main Message */}
             <div className="space-y-6">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <AddToHomeScreenIcon className="text-blue-600 text-4xl" />
-              </div>
-
               <Alert severity="info" className="mb-4">
-                <Typography variant="body1" className="font-semibold text-slate-900">
+                <Typography
+                  variant="body1"
+                  className="text-slate-900"
+                  sx={{ fontWeight: 500 }}
+                >
                   {t('pwaRequiredTitle')}
                 </Typography>
               </Alert>
@@ -93,10 +100,11 @@ export default function PWARequiredScreen() {
                     <Typography variant="subtitle1" className="font-semibold text-slate-900">
                       {t('howToAddToHomeScreen')}
                     </Typography>
-                    <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
+                    <ol className="list-decimal list-inside space-y-2 text-base text-slate-700">
                       <li>{t('tapShareButton')}</li>
                       <li>{t('selectAddToHomeScreen')}</li>
                       <li>{t('tapAdd')}</li>
+                      <li>{t('pwaRefreshNote')}</li>
                     </ol>
                   </div>
 
@@ -153,10 +161,11 @@ export default function PWARequiredScreen() {
                     <Typography variant="subtitle1" className="font-semibold text-slate-900">
                       {t('howToAddToHomeScreen')}
                     </Typography>
-                    <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
+                    <ol className="list-decimal list-inside space-y-2 text-base text-slate-700">
                       <li>{t('androidStep1')}</li>
                       <li>{t('androidStep2')}</li>
                       <li>{t('androidStep3')}</li>
+                      <li>{t('pwaRefreshNote')}</li>
                     </ol>
                   </div>
 
@@ -206,29 +215,21 @@ export default function PWARequiredScreen() {
 
               {platform === 'desktop' && (
                 <div
-                  className="p-4 rounded-xl shadow-md border border-blue-100 space-y-2"
-                  style={{ backgroundColor: 'var(--card-bg)' }}
-                >
-                  <Typography variant="subtitle1" className="font-semibold text-slate-900">
-                    {t('howToAddToHomeScreen')}
-                  </Typography>
-                  <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
-                    <li>{t('desktopStep1')}</li>
-                    <li>{t('desktopStep2')}</li>
-                  </ol>
-                </div>
-              )}
-
-              <div
-                className="mt-6 p-4 rounded-xl border border-blue-200 shadow-sm"
+                className="p-4 rounded-xl shadow-md border border-blue-100 space-y-2"
                 style={{ backgroundColor: 'var(--card-bg)' }}
               >
-                <Typography variant="body2" className="text-blue-900 text-center">
-                  {t('pwaRefreshNote')}
+                <Typography variant="subtitle1" className="font-semibold text-slate-900">
+                  {t('howToAddToHomeScreen')}
                 </Typography>
+                <ol className="list-decimal list-inside space-y-2 text-base text-slate-700">
+                  <li>{t('desktopStep1')}</li>
+                  <li>{t('desktopStep2')}</li>
+                  <li>{t('pwaRefreshNote')}</li>
+                </ol>
               </div>
-            </div>
-          </Container>
+            )}
+          </div>
+        </Container>
       </div>
 
       {/* Full-size Image Viewer */}
