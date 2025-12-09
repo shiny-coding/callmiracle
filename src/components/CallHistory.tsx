@@ -80,8 +80,8 @@ export default function CallHistory() {
 
       <div
         ref={scrollContainerRef}
-        className="flex-grow overflow-y-auto px-4"
-        style={{ position: 'relative', paddingTop: '8px' }}
+        className="flex-grow overflow-y-auto px-12sp"
+        style={{ position: 'relative' }}
       >
         {callHistory.length === 0 ? (
           <Typography className="text-gray-400 text-center py-4">
@@ -110,7 +110,7 @@ export default function CallHistory() {
                     width: '100%',
                     transform: `translateY(${virtualItem.start}px)`,
                     display: 'block',
-                    paddingBottom: '8px',
+                    paddingBottom: 'var(--12sp)',
                   }}
                 >
                   <ListItem className="flex items-center card-bg rounded-lg">

@@ -139,7 +139,7 @@ export default function InterestsDescriptionsEditor({ value, onChange, interests
               <IconButton
                 onClick={() => handleRemoveDescription(index)}
                 size="small"
-                className="text-red-400"
+                className="icon-gradient"
               >
                 <DeleteIcon />
               </IconButton>

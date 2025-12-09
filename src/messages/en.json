@@ -264,6 +264,7 @@
   "no": "No",
   "markAllAsSeen": "Mark All As Seen",
   "selectInterfaceLanguage": "Interface Language",
+  "continue": "Continue",
   "Languages": {
     "english": "English",
     "russian": "Русский"
@@ -304,7 +305,7 @@
     "backToSignIn": "Back to sign in"
   },
   "FirstTime": {
-    "title": "Welcome! Let's set up your profile",
+    "title": "Welcome!\nLet's set up your profile",
     "nameTitle": "What's your name?",
     "nameDescription": "This is how others will see you",
     "name": "Name",

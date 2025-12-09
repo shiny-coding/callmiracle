@@ -146,6 +146,7 @@ export default function PasswordResetTab({ onBack }: PasswordResetTabProps) {
           <>
             <TextField
               label={t('resetCode')}
+              type="text"
               value={resetCode}
               onChange={e => {
                 setResetCode(e.target.value)
@@ -155,6 +156,7 @@ export default function PasswordResetTab({ onBack }: PasswordResetTabProps) {
               }}
               fullWidth
               required
+              autoComplete="off"
               inputProps={{ name: "reset-code" }}
               error={!!validationErrors.resetCode}
               helperText={validationErrors.resetCode}
@@ -172,6 +174,7 @@ export default function PasswordResetTab({ onBack }: PasswordResetTabProps) {
               }}
               fullWidth
               required
+              autoComplete="new-password"
               inputProps={{ name: "new-password" }}
               error={!!validationErrors.newPassword}
               helperText={validationErrors.newPassword}
@@ -189,6 +192,7 @@ export default function PasswordResetTab({ onBack }: PasswordResetTabProps) {
               }}
               fullWidth
               required
+              autoComplete="new-password"
               inputProps={{ name: "confirm-new-password" }}
               error={!!validationErrors.confirmNewPassword}
               helperText={validationErrors.confirmNewPassword}

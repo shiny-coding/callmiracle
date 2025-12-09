@@ -415,6 +415,13 @@ body::before {
   }
 }
 
+/* MUI Chip in multiselect and autocomplete - orange border and semi-transparent white background */
+.MuiSelect-select .MuiChip-root,
+.MuiAutocomplete-inputRoot .MuiChip-root {
+  border: 1px solid rgb(249, 115, 22) !important;
+  background-color: rgb(255 255 255 / 62%) !important;
+}
+
 .panel-border {
   border-color: var(--border-color);
 }

@@ -134,7 +134,7 @@ export default function InterestsPairsEditor({ value, onChange, onReorder, label
           <IconButton
             onClick={() => handleRemovePair(pairIndex)}
             size="small"
-            className="text-red-400"
+            className="icon-gradient"
           >
             <DeleteIcon />
           </IconButton>

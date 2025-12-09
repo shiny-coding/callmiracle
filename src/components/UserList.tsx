@@ -201,7 +201,7 @@ export default function UserList() {
                     width: '100%',
                     transform: `translateY(${virtualItem.start}px)`,
                     display: 'block',
-                    paddingBottom: 'var(--20sp)',
+                    paddingBottom: 'var(--12sp)',
                   }}
                 >
                   <ListItem

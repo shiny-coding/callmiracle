@@ -86,11 +86,6 @@ class ClientLogger {
         mapStackTrace(originalStack, (mappedStack) => {
           clearTimeout(timeout)
 
-          // Debug: log what we got
-          console.log('[SourceMap] Original lines:', originalLines.length)
-          console.log('[SourceMap] Mapped lines:', mappedStack.length)
-          console.log('[SourceMap] Mapped result:', mappedStack)
-
           const mappedString = mappedStack.join('\n')
 
           // Always include both stacks

@@ -29,6 +29,8 @@ import { useGroups } from '@/store/GroupsProvider'
 import { Group } from '@/generated/graphql'
 import { LANGUAGES } from '@/config/languages'
 import { useSession } from 'next-auth/react'
+import Image from 'next/image'
+import LocaleSwitch from '@/components/LocaleSwitch'
 
 export default function FirstTimePage() {
   const t = useTranslations('FirstTime')
@@ -186,17 +188,49 @@ export default function FirstTimePage() {
   return (
     <div className="h-full flex flex-col">
       <Paper className="h-full flex flex-col">
-        <div className="flex-grow overflow-y-auto p-6">
-          <Typography variant="h4" className="mb-6 text-center">
+        <div className="flex-grow overflow-y-auto p-4">
+          {/* App Icon and Name */}
+          <div className="flex justify-center mb-4">
+            <div
+              className="inline-grid items-center gap-4"
+              style={{ gridTemplateColumns: 'auto 1fr auto' }}
+            >
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/logo-192.png"
+                    alt="CallMiracle"
+                    width={64}
+                    height={64}
+                    className="w-full h-full"
+                    unoptimized
+                  />
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <Typography variant="h4" className="font-bold text-slate-900 text-center">
+                  CallMiracle
+                </Typography>
+              </div>
+              <div className="w-16" aria-hidden="true" />
+            </div>
+          </div>
+
+          {/* Locale Switch */}
+          <div className="flex justify-center mb-6">
+            <LocaleSwitch />
+          </div>
+
+          <Typography variant="h5" className="mb-6 text-center" sx={{ whiteSpace: 'pre-line' }}>
             {t('title')}
           </Typography>
 
           {/* Name Section */}
-          <div className="mb-8">
-            <Typography variant="h6" className="mb-2">
+          <div className="mb-6">
+            <Typography variant="h6" className="mb-2" sx={{ paddingTop: '0.2rem' }}>
               {t('nameTitle')}
             </Typography>
-            <Typography variant="body2" color="text.secondary" className="mb-4">
+            <Typography variant="body2" color="text.secondary" className="mb-4" sx={{ paddingBottom: '0.5rem' }}>
               {t('nameDescription')}
             </Typography>
             <TextField
@@ -214,10 +248,10 @@ export default function FirstTimePage() {
 
           {/* Languages Section */}
           <div className="mb-8">
-            <Typography variant="h6" className="mb-2">
+            <Typography variant="h6" className="mb-2" sx={{ paddingTop: '0.2rem' }}>
               {t('languagesTitle')}
             </Typography>
-            <Typography variant="body2" color="text.secondary" className="mb-4">
+            <Typography variant="body2" color="text.secondary" className="mb-4" sx={{ paddingBottom: '0.5rem' }}>
               {t('languagesDescription')}
             </Typography>
             
@@ -238,10 +272,10 @@ export default function FirstTimePage() {
 
           {/* Sex and Birth Year Section */}
           <div className="mb-8">
-            <Typography variant="h6" className="mb-2">
+            <Typography variant="h6" className="mb-2" sx={{ paddingTop: '0.2rem' }}>
               {t('personalInfoTitle')}
             </Typography>
-            <Typography variant="body2" color="text.secondary" className="mb-4">
+            <Typography variant="body2" color="text.secondary" className="mb-4" sx={{ paddingBottom: '0.5rem' }}>
               {t('personalInfoDescription')}
             </Typography>
 
@@ -273,7 +307,7 @@ export default function FirstTimePage() {
 
             {/* Birth Year Selection */}
             <FormControl fullWidth className="mb-4">
-              <FormLabel component="legend" required>{t('birthYear')}</FormLabel>
+              <FormLabel component="legend" required sx={{ paddingBottom: '0.5rem' }}>{t('birthYear')}</FormLabel>
               <Select
                 value={selectedBirthYear || ''}
                 onChange={(e) => setSelectedBirthYear(Number(e.target.value) || null)}
@@ -285,7 +319,7 @@ export default function FirstTimePage() {
                 ))}
               </Select>
               {!selectedBirthYear && (
-                <Typography color="error" className="text-sm mt-1">
+                <Typography color="error" className="text-sm mt-1" sx={{ paddingTop: '0.5rem' }}>
                   {t('pleaseSelectBirthYear')}
                 </Typography>
               )}
@@ -297,10 +331,10 @@ export default function FirstTimePage() {
           {/* Groups Section */}
           {selectedLanguages.length > 0 && (
             <div className="mb-8">
-              <Typography variant="h6" className="mb-2">
+              <Typography variant="h6" className="mb-2" sx={{ paddingTop: '0.2rem' }}>
                 {t('groupsTitle')}
               </Typography>
-              <Typography variant="body2" color="text.secondary" className="mb-4">
+              <Typography variant="body2" color="text.secondary" className="mb-4" sx={{ paddingBottom: '0.5rem' }}>
                 {t('groupsDescription')}
               </Typography>
 
@@ -313,15 +347,16 @@ export default function FirstTimePage() {
                   {t('noGroupsMessage')}
                 </Typography>
               ) : (
-                <div className="flex flex-col gap-20sp">
+                <div className="flex flex-col gap-12sp px-12sp pb-20sp">
                   {publicGroups.map((group: Group) => (
-                    <GroupCard
-                      key={group._id}
-                      group={group}
-                      firstTime={true}
-                      checked={selectedGroupIds.includes(group._id)}
-                      onToggle={handleGroupToggle}
-                    />
+                    <div key={group._id} className="card-bg rounded-lg" style={{ padding: '1rem' }}>
+                      <GroupCard
+                        group={group}
+                        firstTime={true}
+                        checked={selectedGroupIds.includes(group._id)}
+                        onToggle={handleGroupToggle}
+                      />
+                    </div>
                   ))}
                 </div>
               )}

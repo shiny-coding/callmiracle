@@ -98,7 +98,7 @@ export default function GroupList() {
                 {t('noGroupsFound')}
               </Typography>
             ) : (
-              <List className="flex flex-col gap-20sp !py-0">
+              <List className="flex flex-col gap-12sp !py-0">
                 {filteredGroups.map((group: Group) => (
                   <ListItem
                     key={group._id}

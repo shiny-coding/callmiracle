@@ -411,9 +411,9 @@ export default function GroupForm() {
                   e.stopPropagation()
                   handleDeletePhoto()
                 }}
-                className="absolute right-0 top-0 bg-red-500/50 hover:bg-red-500/70"
+                className="absolute right-0 top-0 icon-gradient"
               >
-                <DeleteIcon className="text-white" />
+                <DeleteIcon />
               </IconButton>
             )}
           </div>

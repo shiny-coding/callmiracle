@@ -255,6 +255,7 @@
   "confirmAddFriend": "Добавить {userName} в друзья?",
   "confirmRemoveFriend": "Удалить {userName} из друзей?",
   "selectInterfaceLanguage": "Язык интерфейса",
+  "continue": "Продолжить",
   "Languages": {
     "english": "English",
     "russian": "Русский"
@@ -295,7 +296,7 @@
     "backToSignIn": "Вернуться к входу"
   },
   "FirstTime": {
-    "title": "Добро пожаловать! Давайте настроим ваш профиль",
+    "title": "Добро пожаловать!\nДавайте настроим ваш профиль",
     "nameTitle": "Как вас зовут?",
     "nameDescription": "Так вас будут видеть другие",
     "name": "Имя",
