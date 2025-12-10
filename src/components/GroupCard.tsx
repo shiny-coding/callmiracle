@@ -174,7 +174,7 @@ export default function GroupCard({ group, firstTime = false, checked = false, o
           </div>
 
           <div className="flex items-center space-x-2 ml-auto">
-            {(isAdmin || isOwner) && (
+            {!firstTime && (isAdmin || isOwner) && (
               <IconButton
                 size="small"
                 onClick={(e) => {

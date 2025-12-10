@@ -247,7 +247,7 @@ export default function FirstTimePage() {
           <Divider className="my-6" />
 
           {/* Languages Section */}
-          <div className="mb-8">
+          <div className="mb-6">
             <Typography variant="h6" className="mb-2" sx={{ paddingTop: '0.2rem' }}>
               {t('languagesTitle')}
             </Typography>
@@ -271,7 +271,7 @@ export default function FirstTimePage() {
           <Divider className="my-6" />
 
           {/* Sex and Birth Year Section */}
-          <div className="mb-8">
+          <div className="mb-6">
             <Typography variant="h6" className="mb-2" sx={{ paddingTop: '0.2rem' }}>
               {t('personalInfoTitle')}
             </Typography>
@@ -330,7 +330,7 @@ export default function FirstTimePage() {
 
           {/* Groups Section */}
           {selectedLanguages.length > 0 && (
-            <div className="mb-8">
+            <div className="mb-6">
               <Typography variant="h6" className="mb-2" sx={{ paddingTop: '0.2rem' }}>
                 {t('groupsTitle')}
               </Typography>
@@ -347,7 +347,7 @@ export default function FirstTimePage() {
                   {t('noGroupsMessage')}
                 </Typography>
               ) : (
-                <div className="flex flex-col gap-12sp px-12sp pb-20sp">
+                <div className="flex flex-col gap-12sp">
                   {publicGroups.map((group: Group) => (
                     <div key={group._id} className="card-bg rounded-lg" style={{ padding: '1rem' }}>
                       <GroupCard
@@ -371,7 +371,7 @@ export default function FirstTimePage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="p-6 border-t panel-border">
+        <div className="p-6 border-t panel-border flex justify-center">
           <Button
             fullWidth
             variant="contained"
@@ -379,6 +379,7 @@ export default function FirstTimePage() {
             disabled={isNextDisabled}
             onClick={handleNext}
             startIcon={updateLoading ? <CircularProgress size={20} color="inherit" /> : null}
+            sx={{ maxWidth: '400px' }}
           >
             {updateLoading ? t('saving') : t('continue')}
           </Button>

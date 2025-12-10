@@ -89,6 +89,9 @@ body::before {
 
   --card-bg: #0063f408;
 
+  /* Chip border color */
+  --chip-border-color: #004bb9;
+
   /* Icon colors - orange gradient (active) */
   --icon-color-primary: #f97316;
   --icon-color-secondary: #fbbf24;
@@ -415,10 +418,10 @@ body::before {
   }
 }
 
-/* MUI Chip in multiselect and autocomplete - orange border and semi-transparent white background */
+/* MUI Chip in multiselect and autocomplete - blue border and semi-transparent white background */
 .MuiSelect-select .MuiChip-root,
 .MuiAutocomplete-inputRoot .MuiChip-root {
-  border: 1px solid rgb(249, 115, 22) !important;
+  border: 1px solid var(--chip-border-color) !important;
   background-color: rgb(255 255 255 / 62%) !important;
 }
 
