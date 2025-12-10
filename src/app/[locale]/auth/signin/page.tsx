@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl'
 import PasswordResetTab from '@/components/PasswordResetTab'
 import Image from 'next/image'
 import LocaleSwitch from '@/components/LocaleSwitch'
+import { getBrowserLanguage } from '@/utils/language'
 
 export default function SignInContent() {
   return <SignInForm />

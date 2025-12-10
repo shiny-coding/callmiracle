@@ -5,7 +5,7 @@ import { Typography } from '@mui/material'
 import { useTranslations } from 'next-intl'
 import { Meeting, MeetingWithPeer, MeetingTransparency, User, Group } from '@/generated/graphql'
 import Link from 'next/link'
-import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, canEditMeeting, isMeetingPassed, SLOT_DURATION, getSharedInterests } from '@/utils/meetingUtils'
+import { getMeetingColorClass, class2Hex, FINDING_MEETING_COLOR, ACTIVE_MEETING_COLOR, canEditMeeting, isMeetingPassed, SLOT_DURATION, getSharedInterests, meetingIsActiveNow } from '@/utils/meetingUtils'
 import Tooltip from '@mui/material/Tooltip'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
 import UserAvatar from './UserAvatar'
@@ -103,6 +103,9 @@ function MeetingChip({
   const interestsText = meeting.interests.join(', ')
   const interestsLabel = isMyMeeting ? `${t('myMeeting')}: ${interestsText}` : interestsText
 
+  // Determine if meeting is active (for styling)
+  const isActive = isMyMeeting && meetingIsActiveNow(meeting)
+
   // User name part (when shown)
   const userNamePart = shouldShowUserName ? (
     <Tooltip title={userTooltipContent || chipTooltipText} placement="top">
@@ -141,10 +144,10 @@ function MeetingChip({
   const interestsPart = (
     <Tooltip title={chipTooltipText} placement="top">
       {isJoinable && !isMyMeeting ? (
-        <Link 
+        <Link
           href={`/meeting?meetingToConnectId=${meeting._id}&timeslot=${slot.timestamp}`}
           className="overflow-hidden text-ellipsis link-color"
-          style={{ 
+          style={{
             whiteSpace: 'nowrap',
             minWidth: 0,
             maxWidth: shouldShowUserName ? '100%' : '100%',
@@ -157,16 +160,16 @@ function MeetingChip({
           {shouldShowUserName ? interestsText : interestsLabel}
         </Link>
       ) : (
-        <span 
+        <span
           className="overflow-hidden text-ellipsis"
-          style={{ 
+          style={{
             whiteSpace: 'nowrap',
             minWidth: 0,
             maxWidth: shouldShowUserName ? '100%' : '100%',
             display: 'inline-block',
             flex: shouldShowUserName ? '1 1 auto' : undefined,
             textAlign: shouldShowUserName ? 'center' : undefined,
-            color: isMyMeeting ? meetingColor : undefined
+            color: isActive ? 'white' : (isMyMeeting ? meetingColor : undefined)
           }}
         >
           {shouldShowUserName ? interestsText : interestsLabel}
@@ -176,11 +179,21 @@ function MeetingChip({
   )
 
   // Determine chip styling based on meeting type and joinability
+  const activeColor = class2Hex(ACTIVE_MEETING_COLOR)
   const getChipStyle = () => {
+    if (isActive) {
+      // Active meetings get green background with white text
+      return {
+        backgroundColor: activeColor,
+        color: 'white',
+        fontWeight: 600,
+      }
+    }
     if (isMyMeeting) {
       return {
         borderColor: meetingColor,
         backgroundColor: 'transparent',
+        fontWeight: 600,
       }
     }
     // Other users' meetings
@@ -189,6 +202,7 @@ function MeetingChip({
         borderColor: 'var(--icon-color-primary)',
         backgroundColor: 'transparent',
         color: 'var(--link-color)',
+        fontWeight: 600,
       }
     }
     // Non-joinable meetings - dimmed
@@ -196,8 +210,10 @@ function MeetingChip({
       borderColor: 'var(--dimmer-border-color)',
       backgroundColor: 'transparent',
       color: 'var(--dimmer-text-color)',
+      fontWeight: 400,
     }
   }
+  const chipVariant = isActive ? 'filled' : 'outlined'
 
   // Handle click on non-joinable meetings (for touch devices)
   const handleNonJoinableClick = () => {
@@ -215,7 +231,7 @@ function MeetingChip({
           {interestsPart}
         </div>
       }
-      variant="outlined"
+      variant={chipVariant}
       style={getChipStyle()}
       onClick={!isMyMeeting && !isJoinable ? handleNonJoinableClick : undefined}
     />
@@ -291,12 +307,12 @@ export default function MeetingsCalendarRow({
   const myMeetingId = myMeetingSlotToId[slot.timestamp]
   const myMeeting = myMeetingsWithPeers.find(meetingWithPeer => meetingWithPeer.meeting._id === myMeetingId)?.meeting
   const meetingPassed = myMeeting && isMeetingPassed(myMeeting)
-  const slotLink = `/meeting?timeslot=${slot.timestamp}`
-  let tooltipText = t('createMeeting')
+  const isMySlot = myMeeting && !meetingPassed
+  let tooltipText = ''
   let meetingColorClass = FINDING_MEETING_COLOR
-  let timeSlotLink = slotLink;
+  let timeSlotLink: string | undefined
 
-  if (myMeeting && !meetingPassed) {
+  if (isMySlot) {
     meetingColorClass = getMeetingColorClass(myMeeting)
     if ( canEditMeeting(myMeeting) ) {
       timeSlotLink = `/meeting/${myMeetingId}`
@@ -325,27 +341,35 @@ export default function MeetingsCalendarRow({
         }}
         className="calendar-timeslot-cell"
       >
-        <Tooltip title={tooltipText} placement="left">
-          <Link
-              href={timeSlotLink}
-              style={{
-                color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', width: '100%'
-              }}
-            >
-            {myMeeting && !meetingPassed && (
+        {isMySlot ? (
+          <Tooltip title={tooltipText} placement="left">
+            <Link
+                href={timeSlotLink!}
+                style={{
+                  color: 'var(--link-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', width: '100%'
+                }}
+              >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
                 <span className={meetingColorClass}
                   style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s' }} />
               </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'flex-start' }}>
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'flex-start', fontWeight: 600 }}>
+                <div className="min-w-8 px-4sp text-center">{startLabel}</div>
+                -
+                <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
+              </div>
+            </Link>
+          </Tooltip>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: 'var(--text-color)', justifyContent: 'flex-start', fontWeight: 400 }}>
               <div className="min-w-8 px-4sp text-center">{startLabel}</div>
               -
               <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
             </div>
-          </Link>
-        </Tooltip>
+          </div>
+        )}
       </div>
       {/* Interests */}
       <div

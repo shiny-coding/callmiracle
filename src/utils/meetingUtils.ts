@@ -211,7 +211,7 @@ function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
     })
 }
 
-export const ACTIVE_MEETING_COLOR = 'text-green-400' // '#4ADE80'
+export const ACTIVE_MEETING_COLOR = 'text-green-600' // '#16A34A'
 export const PASSED_MEETING_COLOR = 'text-gray-400' // '#9CA3AF'
 export const SCHEDULED_MEETING_COLOR = 'text-yellow-400' // '#FBBF24'
 export const FINDING_MEETING_COLOR = 'text-blue-500' // '#3B82F6'
@@ -225,7 +225,6 @@ export function getMeetingColorClass(meeting: Meeting) {
     return SCHEDULED_MEETING_COLOR
   }
 
-  // Finding partner
   return FINDING_MEETING_COLOR;
 }
 

@@ -81,6 +81,9 @@ export const GET_FUTURE_MEETINGS_WITH_PEERS = gql`
         userName
         transparency
         createdAt
+        startTime
+        lastCallTime
+        status
       }
       peerUser {
         sex

@@ -8,7 +8,8 @@ import { isToday } from 'date-fns'
 import { Fragment, useRef, useState, useEffect, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import { getDayLabel, isMeetingPassed, SLOT_DURATION } from '@/utils/meetingUtils'
+import { getDayLabel, isMeetingPassed, SLOT_DURATION, getMeetingColorClass } from '@/utils/meetingUtils'
+import clientLogger from '@/utils/clientLogger'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AddFab from './AddFab'
 import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
@@ -81,21 +82,57 @@ export default function MeetingsCalendar() {
     daysArray,
     dayMeetingCounts
   } = useMemo(() => {
+    // Log all meetings for debugging
+    clientLogger.info('MeetingsCalendar: Processing meetings', {
+      myMeetingsCount: myMeetingsWithPeers.length,
+      futureMeetingsCount: futureMeetingsWithPeers.length,
+      now: Date.now(),
+      nowISO: new Date().toISOString()
+    })
+
+    myMeetingsWithPeers.forEach((mwp, idx) => {
+      const m = mwp.meeting
+      const isPassed = isMeetingPassed(m)
+      const colorClass = getMeetingColorClass(m)
+      clientLogger.info(`MeetingsCalendar: myMeeting[${idx}]`, {
+        _id: m._id,
+        status: m.status,
+        startTime: m.startTime,
+        startTimeISO: m.startTime ? new Date(m.startTime).toISOString() : null,
+        lastCallTime: m.lastCallTime,
+        timeSlots: m.timeSlots,
+        isMeetingPassed: isPassed,
+        colorClass
+      })
+    })
+
+    futureMeetingsWithPeers.forEach((mwp, idx) => {
+      const m = mwp.meeting
+      const isPassed = isMeetingPassed(m)
+      const colorClass = getMeetingColorClass(m)
+      clientLogger.info(`MeetingsCalendar: futureMeeting[${idx}]`, {
+        _id: m._id,
+        status: m.status,
+        startTime: m.startTime,
+        startTimeISO: m.startTime ? new Date(m.startTime).toISOString() : null,
+        lastCallTime: m.lastCallTime,
+        timeSlots: m.timeSlots,
+        filteredOut: mwp.filteredOut,
+        isMeetingPassed: isPassed,
+        colorClass
+      })
+    })
+
     // Collect all meetingIds for quick lookup
     const myMeetingSlotToId: Record<number, string> = {}
     myMeetingsWithPeers.forEach(meetingWithPeer => {
       const meeting = meetingWithPeer.meeting
       const isPassed = isMeetingPassed(meeting)
       if (isPassed) return
-      if (meeting.startTime) {
-        // if meeting is scheduled, it occupies two slots (an hour)
-        myMeetingSlotToId[meeting.startTime] = meeting._id
-        myMeetingSlotToId[meeting.startTime + SLOT_DURATION] = meeting._id
-      } else {
-        meeting.timeSlots.forEach(slot => {
-          myMeetingSlotToId[slot] = meeting._id
-        })
-      }
+      // Map all timeSlots to the meeting (works for both SEEKING and FOUND meetings)
+      meeting.timeSlots.forEach(slot => {
+        myMeetingSlotToId[slot] = meeting._id
+      })
     })
 
     // Create a set of all time slots occupied by user's own meetings for conflict detection

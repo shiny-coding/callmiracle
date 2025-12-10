@@ -69,6 +69,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
     },
     backgroundColor: 'transparent',
     color: meetingColorHex,
+    fontWeight: 600,
     border: isActive
       ? `1px solid ${class2Hex(ACTIVE_MEETING_COLOR)}`
       : `1px solid ${meetingColorHex}`,
@@ -240,11 +241,13 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
             ? t('meetingCancelled')
             : meeting.status === MeetingStatus.Finished
               ? t('meetingFinished')
-              : meetingPassed 
+              : meetingPassed
                 ? t('meetingPassed')
-                : meeting.status === MeetingStatus.Seeking 
-                  ? t('findingPartner')                
-                  : ( t('partnerFound') + ' ' + getPartnerIcon() )
+                : meeting.status === MeetingStatus.Seeking
+                  ? t('findingPartner')
+                  : isActiveNow
+                    ? t('readyToCallPartner')
+                    : ( t('partnerFound') + ' ' + getPartnerIcon() )
           }
         </Typography>
       </div>
@@ -258,13 +261,16 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                 <Button
                   variant="contained"
                   size="small"
-                  startIcon={<VideocamIcon />}
+                  startIcon={<VideocamIcon sx={{ color: class2Hex(ACTIVE_MEETING_COLOR) }} />}
                   onClick={handleCallPeer}
-                  className="text-white"
+                  className="text-white font-semibold"
                   sx={{
-                    backgroundColor: `${class2Hex(ACTIVE_MEETING_COLOR)} !important`, // light green
+                    background: 'var(--icon-gradient)',
+                    px: 2,
+                    mb: '0.75rem',
                     '&:hover': {
-                      backgroundColor: '#22C55E !important', // slightly darker green on hover
+                      background: 'var(--icon-gradient)',
+                      filter: 'brightness(1.1)',
                     }
                   }}
                 >
@@ -291,7 +297,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                       </div>
                     )}
                   </div>
-                  <Typography variant="body2" className={meetingPassed ? "text-gray-400" : "text-gray-200"}>
+                  <Typography variant="body2" className={meetingPassed ? "text-gray-400 font-semibold" : "text-gray-200 font-semibold"}>
                     {meetingWithPeer.peerUser.name}
                   </Typography>
                 </div>
@@ -332,7 +338,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
                     return (
                       <React.Fragment key={day}>
-                        <Typography variant="body2" className="whitespace-nowrap flex items-center h-6" sx={{ color: meetingColorHex }}>
+                        <Typography variant="body2" className="whitespace-nowrap flex items-center h-6" sx={{ color: meetingColorHex, fontWeight: 600 }}>
                           {day}
                         </Typography>
                         <div className="grid grid-cols-[repeat(auto-fill,110px)] gap-1">
@@ -372,7 +378,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
     </div>
       <div className="flex items-center justify-center gap-2">
         <GroupIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
-        <Typography variant="body2" sx={{ color: meetingColorHex }}>
+        <Typography variant="body2" sx={{ color: meetingColorHex, fontWeight: 600 }}>
           {meetingGroup?.name || t('group')}
         </Typography>
       </div>
@@ -402,7 +408,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
           {!(meeting.allowedMinAge === 10 && meeting.allowedMaxAge === 100) && (
             <div className="flex items-center justify-center gap-2">
               <CakeIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
-              <Typography variant="body2" sx={{ color: meetingColorHex }}>
+              <Typography variant="body2" sx={{ color: meetingColorHex, fontWeight: 600 }}>
                 {meeting.allowedMinAge}-{meeting.allowedMaxAge}
               </Typography>
             </div>
@@ -413,7 +419,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
       {meeting.totalDurationS && (
         <div className="flex items-center justify-center gap-2">
           <TimerIcon sx={{ color: class2Hex(meetingColor) }} />
-          <Typography variant="body2" sx={{ color: meetingColorHex }}>
+          <Typography variant="body2" sx={{ color: meetingColorHex, fontWeight: 600 }}>
             {t('totalDuration')}: {formatDuration(meeting.totalDurationS)}
           </Typography>
         </div>
