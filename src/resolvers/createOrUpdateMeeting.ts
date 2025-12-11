@@ -187,20 +187,20 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
     try {
       let myMeeting: any
       await session.withTransaction(async () => {
-        const peerMeeting = await db.collection('meetings').findOne({ _id: _meetingToConnectId })
+        const peerMeeting = await db.collection('meetings').findOne({ _id: _meetingToConnectId }, { session })
         if (!peerMeeting) throw new Error('Peer meeting not found')
 
         const insertResult = await db.collection('meetings').insertOne({
           ...$set,
           createdAt: new Date(),
           linkedToPeer: true
-        });
-        myMeeting = await db.collection('meetings').findOne({ _id: insertResult.insertedId });
+        }, { session });
+        myMeeting = await db.collection('meetings').findOne({ _id: insertResult.insertedId }, { session });
 
         const _userIds = [_userId, peerMeeting.userId];
         const users = await db.collection('users').find({
           _id: { $in: _userIds }
-        }).toArray();
+        }, { session }).toArray();
 
         const overlap = canConnectMeetings(myMeeting, peerMeeting, users)
         if (!overlap) {
