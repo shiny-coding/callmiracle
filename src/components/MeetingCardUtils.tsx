@@ -126,7 +126,7 @@ export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor:
                 key={langCode}
                 label={language?.name || langCode}
                 size="small"
-                className="text-xs"
+                className="text-xs mobile-semibold"
                 sx={chipSx}
               />
             )
@@ -137,7 +137,7 @@ export const useMeetingCardUtils = (meetingWithPeer: MeetingWithPeer, textColor:
   }
 
   function GenderChip() {
-    return <Typography variant="body2" sx={{ color: class2Hex(textColor) }}>
+    return <Typography variant="body2" className="mobile-semibold" sx={{ color: class2Hex(textColor) }}>
               {meeting.allowedMales && meeting.allowedFemales
                 ? t('anyGender')
                 : meeting.allowedMales

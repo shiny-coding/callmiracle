@@ -186,14 +186,12 @@ function MeetingChip({
       return {
         backgroundColor: activeColor,
         color: 'white',
-        fontWeight: 600,
       }
     }
     if (isMyMeeting) {
       return {
         borderColor: meetingColor,
         backgroundColor: 'transparent',
-        fontWeight: 600,
       }
     }
     // Other users' meetings
@@ -202,7 +200,6 @@ function MeetingChip({
         borderColor: 'var(--icon-color-primary)',
         backgroundColor: 'transparent',
         color: 'var(--link-color)',
-        fontWeight: 600,
       }
     }
     // Non-joinable meetings - dimmed
@@ -210,9 +207,10 @@ function MeetingChip({
       borderColor: 'var(--dimmer-border-color)',
       backgroundColor: 'transparent',
       color: 'var(--dimmer-text-color)',
-      fontWeight: 400,
     }
   }
+  // Use mobile-semibold class for chips (semibold on mobile, normal on desktop)
+  const chipClassName = (isMyMeeting || isJoinable || isActive) ? 'mobile-semibold' : ''
   const chipVariant = isActive ? 'filled' : 'outlined'
 
   // Handle click on non-joinable meetings (for touch devices)
@@ -224,6 +222,7 @@ function MeetingChip({
 
   const chipElement = (
     <StandardChip
+      className={chipClassName}
       label={
         <div className="flex items-center gap-1 p-1 flex-wrap" style={{ maxWidth: '100%', minWidth: 0 }}>
           {userNamePart}
@@ -354,7 +353,7 @@ export default function MeetingsCalendarRow({
                 <span className={meetingColorClass}
                   style={{ display: 'inline-block', borderRadius: '50%', width: 12, height: 12, background: meetingColor, border: `2px solid ${meetingColor}`, boxSizing: 'border-box', transition: 'background 0.2s' }} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'flex-start', fontWeight: 600 }}>
+              <div className="mobile-semibold" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: meetingColor, justifyContent: 'flex-start' }}>
                 <div className="min-w-8 px-4sp text-center">{startLabel}</div>
                 -
                 <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>
@@ -363,7 +362,7 @@ export default function MeetingsCalendarRow({
           </Tooltip>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: 'var(--text-color)', justifyContent: 'flex-start', fontWeight: 400 }}>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', color: 'var(--text-color)', justifyContent: 'flex-start' }}>
               <div className="min-w-8 px-4sp text-center">{startLabel}</div>
               -
               <div className="min-w-8 px-4sp text-center">{slot.endTime}</div>

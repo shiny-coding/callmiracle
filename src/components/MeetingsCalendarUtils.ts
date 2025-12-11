@@ -58,9 +58,14 @@ export function prepareTimeSlotsInfos(futureMeetingsWithPeers: MeetingWithPeer[]
     if (isMeetingPassed(meeting)) return
 
     if (meeting.startTime) {
-      // If meeting is scheduled, it occupies two slots (an hour)
-      myOccupiedSlots.add(meeting.startTime)
-      myOccupiedSlots.add(meeting.startTime + SLOT_DURATION)
+      // For matched meetings, use the actual startTime rounded to slot boundary + next slot (1 hour)
+      const startDate = new Date(meeting.startTime)
+      const minutes = startDate.getMinutes()
+      const roundedMinutes = minutes < 30 ? 0 : 30
+      startDate.setMinutes(roundedMinutes, 0, 0)
+      const slotStartTime = startDate.getTime()
+      myOccupiedSlots.add(slotStartTime)
+      myOccupiedSlots.add(slotStartTime + SLOT_DURATION)
     } else {
       // If meeting is not scheduled yet, add all its time slots
       meeting.timeSlots.forEach(slot => {
@@ -100,10 +105,6 @@ export function prepareTimeSlotsInfos(futureMeetingsWithPeers: MeetingWithPeer[]
       // Include in display only if not filtered out
       if (!isFilteredOut && (foundFirstJoinable || potentiallyJoinable || isMine)) {
         slot2meetingData[slot].displayMeetings.push({ meeting: futureMeeting, joinable })
-      }
-
-      // Count all meetings (including filtered out) for stats
-      if (foundFirstJoinable || potentiallyJoinable || isMine) {
         slot2meetingData[slot].totalCount++
       }
 

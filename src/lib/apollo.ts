@@ -10,6 +10,19 @@ function getUserId() {
   return syncStore().currentUser?._id || ''
 }
 
+// Track page unload state to suppress SSE close errors during navigation/refresh
+let isPageUnloading = false
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    isPageUnloading = true
+  })
+
+  window.addEventListener('pagehide', () => {
+    isPageUnloading = true
+  })
+}
+
 // Load Apollo error messages in development
 if (process.env.NODE_ENV !== 'production') {
   loadDevMessages()
@@ -135,9 +148,14 @@ const customSSELink = new ApolloLink((operation) => {
         console.warn(`SSE: Connection lost for ${operationName}, reconnecting...`)
         // Don't call observer.error() - let EventSource reconnect
       } else if (target.readyState === EventSource.CLOSED) {
-        // Fatal error - connection permanently closed
-        console.error(`SSE: Connection permanently closed for ${operationName}`)
-        observer.error(new Error('SSE connection permanently closed'))
+        // Connection permanently closed
+        if (isPageUnloading) {
+          // Page is unloading - this is expected, silently ignore
+        } else {
+          // Unexpected close - log as error
+          console.error(`SSE: Connection permanently closed for ${operationName}`)
+          observer.error(new Error('SSE connection permanently closed'))
+        }
       } else {
         // Unexpected state
         console.error(`SSE: Error event for ${operationName}:`, event)

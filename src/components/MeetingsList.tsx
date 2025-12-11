@@ -162,8 +162,8 @@ export default function MeetingsList() {
                       sx={{ minHeight: '178px' }}
                     >
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                        <AddIcon sx={{ fontSize: 30, color: 'white' }} />
-                        <Typography variant="h6" className="mt-2 text-white">
+                        <AddIcon sx={{ fontSize: 30 }} />
+                        <Typography variant="h6" className="mt-2">
                           {t('addNewMeetingPrompt')}
                         </Typography>
                       </Box>

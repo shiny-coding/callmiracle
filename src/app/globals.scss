@@ -263,6 +263,13 @@ body::before {
   z-index: 1400 !important;
 }
 
+/* MUI Backdrop - use blur instead of darkening */
+.MuiBackdrop-root {
+  background-color: transparent !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
 /* MUI Select padding and alignment */
 .MuiSelect-select {
   padding: 11.5px 14px !important;
@@ -491,6 +498,15 @@ body::before {
 
 .calendar-grid-body div {
   font-size: 0.85rem;
+}
+
+/* Semi-bold only on mobile (touch devices), normal weight on desktop */
+.mobile-semibold {
+  font-weight: 600;
+
+  @media (min-width: 1024px) {
+    font-weight: 400;
+  }
 }
 
 /* You can put this in your global styles or in a CSS module */

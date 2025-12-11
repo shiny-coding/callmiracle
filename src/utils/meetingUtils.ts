@@ -276,6 +276,11 @@ export function canEditMeeting(meeting: Meeting) {
     return false
   }
 
+  // Don't allow editing cancelled meetings that were linked to a peer
+  if (meeting.status === MeetingStatus.Cancelled && meeting.peerMeetingId) {
+    return false
+  }
+
   return (meeting.status === MeetingStatus.Cancelled || (meeting.status === MeetingStatus.Seeking && !isMeetingPassed(meeting)))
 }
 

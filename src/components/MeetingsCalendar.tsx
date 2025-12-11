@@ -142,11 +142,16 @@ export default function MeetingsCalendar() {
       if (isMeetingPassed(meeting)) return
 
       if (meeting.startTime) {
-        // If meeting is scheduled, it occupies two slots (an hour)
-        myOccupiedSlots.add(meeting.startTime)
-        myOccupiedSlots.add(meeting.startTime + SLOT_DURATION)
+        // For matched meetings, use the actual startTime rounded to slot boundary + next slot (1 hour)
+        const startDate = new Date(meeting.startTime)
+        const minutes = startDate.getMinutes()
+        const roundedMinutes = minutes < 30 ? 0 : 30
+        startDate.setMinutes(roundedMinutes, 0, 0)
+        const slotStartTime = startDate.getTime()
+        myOccupiedSlots.add(slotStartTime)
+        myOccupiedSlots.add(slotStartTime + SLOT_DURATION)
       } else {
-        // If meeting is not scheduled yet, add all its time slots
+        // For seeking meetings, add all timeSlots
         meeting.timeSlots.forEach(timeSlot => {
           myOccupiedSlots.add(timeSlot)
         })

@@ -297,7 +297,7 @@ export default function MeetingForm() {
     <Paper className="flex flex-col h-full relative">
       {loading && (
         <div
-          className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
+          className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
           style={{ pointerEvents: 'all' }}
         >
           <CircularProgress color="inherit" />

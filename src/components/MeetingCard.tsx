@@ -69,7 +69,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
     },
     backgroundColor: 'transparent',
     color: meetingColorHex,
-    fontWeight: 600,
     border: isActive
       ? `1px solid ${class2Hex(ACTIVE_MEETING_COLOR)}`
       : `1px solid ${meetingColorHex}`,
@@ -315,7 +314,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
               <Chip
                 label={meetingStatusLabels.timeText || formatDateForDisplay(new Date(meeting.startTime))}
                 size="small"
-                className={`text-xs`}
+                className="text-xs mobile-semibold"
                 sx={soonChipSx}
               />
             </>
@@ -338,7 +337,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
                     return (
                       <React.Fragment key={day}>
-                        <Typography variant="body2" className="whitespace-nowrap flex items-center h-6" sx={{ color: meetingColorHex, fontWeight: 600 }}>
+                        <Typography variant="body2" className="whitespace-nowrap flex items-center h-6 mobile-semibold" sx={{ color: meetingColorHex }}>
                           {day}
                         </Typography>
                         <div className="grid grid-cols-[repeat(auto-fill,110px)] gap-1">
@@ -353,7 +352,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
                                 key={`${start}-${end}`}
                                 label={formatTimeSlot(start, end)}
                                 size="small"
-                                className="text-xs"
+                                className="text-xs mobile-semibold"
                                 sx={getChipSx(isActive)}
                               />
                             )
@@ -370,7 +369,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
             <Chip
               label={getFirstSlotDay()}
               size="small"
-              className={`text-xs text-white bg-gray-500`}
+              className="text-xs text-white bg-gray-500 mobile-semibold"
               sx={getChipSx(false)}
             />
           )}
@@ -378,7 +377,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
     </div>
       <div className="flex items-center justify-center gap-2">
         <GroupIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
-        <Typography variant="body2" sx={{ color: meetingColorHex, fontWeight: 600 }}>
+        <Typography variant="body2" className="mobile-semibold" sx={{ color: meetingColorHex }}>
           {meetingGroup?.name || t('group')}
         </Typography>
       </div>
@@ -390,7 +389,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
             key={interest}
             label={interest}
             size="small"
-            className="text-xs"
+            className="text-xs mobile-semibold"
             sx={getChipSx()}
           />
         ))}
@@ -408,7 +407,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
           {!(meeting.allowedMinAge === 10 && meeting.allowedMaxAge === 100) && (
             <div className="flex items-center justify-center gap-2">
               <CakeIcon sx={{ color: class2Hex(meetingColor) }} fontSize="small" />
-              <Typography variant="body2" sx={{ color: meetingColorHex, fontWeight: 600 }}>
+              <Typography variant="body2" className="mobile-semibold" sx={{ color: meetingColorHex }}>
                 {meeting.allowedMinAge}-{meeting.allowedMaxAge}
               </Typography>
             </div>
@@ -419,7 +418,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
       {meeting.totalDurationS && (
         <div className="flex items-center justify-center gap-2">
           <TimerIcon sx={{ color: class2Hex(meetingColor) }} />
-          <Typography variant="body2" sx={{ color: meetingColorHex, fontWeight: 600 }}>
+          <Typography variant="body2" className="mobile-semibold" sx={{ color: meetingColorHex }}>
             {t('totalDuration')}: {formatDuration(meeting.totalDurationS)}
           </Typography>
         </div>
