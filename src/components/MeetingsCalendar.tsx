@@ -69,6 +69,27 @@ export default function MeetingsCalendar() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const slotRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const [topDayKey, setTopDayKey] = useState<string | null>(null)
+  const [slotRefreshKey, setSlotRefreshKey] = useState(0)
+
+  // Calculate time until next slot boundary and set up auto-refresh
+  useEffect(() => {
+    const now = Date.now()
+    const nowDate = new Date(now)
+    const minutes = nowDate.getMinutes()
+    const seconds = nowDate.getSeconds()
+    const milliseconds = nowDate.getMilliseconds()
+
+    // Calculate milliseconds until next half-hour boundary
+    const minutesUntilNextSlot = minutes < 30 ? (30 - minutes) : (60 - minutes)
+    const msUntilNextSlot = (minutesUntilNextSlot * 60 - seconds) * 1000 - milliseconds + 100 // +100ms buffer
+
+    const timer = setTimeout(() => {
+      // Trigger re-render to recalculate slots
+      setSlotRefreshKey(prev => prev + 1)
+    }, msUntilNextSlot)
+
+    return () => clearTimeout(timer)
+  }, [slotRefreshKey])
 
   const now = Date.now()
   const HOURS_AHEAD = 24 * 7
