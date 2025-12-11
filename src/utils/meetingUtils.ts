@@ -55,6 +55,94 @@ export function getOccupiedSlotsForMatchedMeeting(startTime: number, minDuration
   return slots
 }
 
+/**
+ * Represents a meeting-like object with the fields needed for slot calculation
+ */
+export interface MeetingForSlotCalculation {
+  _id: any
+  timeSlots: number[]
+  startTime?: number | null
+  minDurationM: number
+  status: MeetingStatus
+}
+
+/**
+ * Calculate all occupied slots for a user's meetings (excluding a specific meeting).
+ * For SEEKING meetings: all timeSlots
+ * For FOUND meetings: occupied slots based on startTime and minDurationM
+ */
+export function getOccupiedSlotsFromMeetings(
+  meetings: MeetingForSlotCalculation[],
+  excludeMeetingId?: string
+): Set<number> {
+  const occupiedSlots = new Set<number>()
+
+  for (const meeting of meetings) {
+    // Skip the excluded meeting
+    if (excludeMeetingId && meeting._id.toString() === excludeMeetingId) {
+      continue
+    }
+
+    // Skip passed meetings
+    if (isMeetingPassed(meeting as any)) {
+      continue
+    }
+
+    // Only consider active meetings
+    if (meeting.status !== MeetingStatus.Seeking && meeting.status !== MeetingStatus.Found) {
+      continue
+    }
+
+    if (meeting.startTime) {
+      // For matched meetings, use occupied slots based on startTime
+      getOccupiedSlotsForMatchedMeeting(meeting.startTime, meeting.minDurationM).forEach(slot => {
+        occupiedSlots.add(slot)
+      })
+    } else {
+      // For seeking meetings, all timeSlots are occupied
+      meeting.timeSlots.forEach(slot => {
+        occupiedSlots.add(slot)
+      })
+    }
+  }
+
+  return occupiedSlots
+}
+
+/**
+ * Trim a meeting's timeSlots to remove slots that conflict with other meetings.
+ * Also removes orphan slots that can't satisfy minDurationM (no adjacent slots for 60-min meetings).
+ *
+ * @returns The trimmed timeSlots array and updated lastSlotEnd
+ */
+export function trimConflictingSlots(
+  timeSlots: number[],
+  minDurationM: number,
+  occupiedSlots: Set<number>
+): { timeSlots: number[], lastSlotEnd: number } {
+  // Filter out conflicting slots
+  let filteredSlots = timeSlots.filter(slot => !occupiedSlots.has(slot))
+
+  // For 60-min meetings, remove orphan slots (slots without an adjacent slot)
+  if (minDurationM === 60) {
+    const slotSet = new Set(filteredSlots)
+    filteredSlots = filteredSlots.filter(slot => {
+      // Check if there's an adjacent slot (before or after)
+      const hasAdjacentBefore = slotSet.has(slot - SLOT_DURATION)
+      const hasAdjacentAfter = slotSet.has(slot + SLOT_DURATION)
+      return hasAdjacentBefore || hasAdjacentAfter
+    })
+  }
+
+  // Sort slots and calculate lastSlotEnd
+  filteredSlots.sort((a, b) => a - b)
+  const lastSlotEnd = filteredSlots.length > 0
+    ? Math.max(...filteredSlots) + SLOT_DURATION
+    : 0
+
+  return { timeSlots: filteredSlots, lastSlotEnd }
+}
+
 export type TimeRange = {
   start: number;
   end: number;
