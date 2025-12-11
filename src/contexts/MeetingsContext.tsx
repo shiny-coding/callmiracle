@@ -29,6 +29,7 @@ export const GET_MEETINGS_WITH_PEERS = gql`
         status
         totalDurationS
         transparency
+        linkedToPeer
       }
       peerMeeting {
         _id
