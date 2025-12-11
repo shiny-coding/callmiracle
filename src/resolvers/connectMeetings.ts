@@ -1,7 +1,7 @@
 import { Meeting, MeetingStatus, NotificationType, User } from "@/generated/graphql";
 import { ObjectId } from "mongodb";
 import { publishMeetingNotification } from "./publishNotifications";
-import { combineAdjacentSlots, getNonBlockedInterests, getInterestsOverlap, getLateAllowance, SLOT_DURATION, TimeRange } from '@/utils/meetingUtils'
+import { combineAdjacentSlots, getNonBlockedInterests, getLateAllowance, SLOT_DURATION, TimeRange, checkInterestsOverlap } from '@/utils/meetingUtils'
 import { getLogger } from "@/utils/logger"
 
 // Helper function to find overlapping time ranges
@@ -26,52 +26,87 @@ export const findOverlappingRanges = (ranges1: TimeRange[], ranges2: TimeRange[]
   return overlaps;
 }
 
+export type CannotConnectReason =
+  | 'SAME_USER'
+  | 'USER_NOT_FOUND'
+  | 'GENDER_MISMATCH'
+  | 'AGE_MISMATCH'
+  | 'LANGUAGE_MISMATCH'
+  | 'NO_INTEREST_OVERLAP'
+  | 'NO_TIME_OVERLAP'
+
+export type CanConnectResult =
+  | { success: true; overlap: TimeRange[] }
+  | { success: false; reason: CannotConnectReason }
+
 // Helper function to check if two meetings can be connected
-export const canConnectMeetings = (meeting1: any, meeting2: any, users: any[]): TimeRange[]|false => {
+export const canConnectMeetings = async (meeting1: any, meeting2: any, users: any[], db: any): Promise<CanConnectResult> => {
   // Check if meetings are from different users
-  if (meeting1.userId.equals(meeting2.userId)) return false;
-  
+  if (meeting1.userId.equals(meeting2.userId)) {
+    return { success: false, reason: 'SAME_USER' };
+  }
+
   // Find the users
   const user1 = users.find(u => u._id.equals(meeting1.userId));
   const user2 = users.find(u => u._id.equals(meeting2.userId));
-  if (!user1 || !user2) return false;
-  
+  if (!user1 || !user2) {
+    return { success: false, reason: 'USER_NOT_FOUND' };
+  }
+
   // Check gender preferences
-  if (user1.sex === 'male' && !meeting2.allowedMales) return false;
-  if (user1.sex === 'female' && !meeting2.allowedFemales) return false;
-  if (user2.sex === 'male' && !meeting1.allowedMales) return false;
-  if (user2.sex === 'female' && !meeting1.allowedFemales) return false;
-  
+  if (user1.sex === 'male' && !meeting2.allowedMales) return { success: false, reason: 'GENDER_MISMATCH' };
+  if (user1.sex === 'female' && !meeting2.allowedFemales) return { success: false, reason: 'GENDER_MISMATCH' };
+  if (user2.sex === 'male' && !meeting1.allowedMales) return { success: false, reason: 'GENDER_MISMATCH' };
+  if (user2.sex === 'female' && !meeting1.allowedFemales) return { success: false, reason: 'GENDER_MISMATCH' };
+
   // Check age preferences
   if (user1.birthYear) {
     const age1 = new Date().getFullYear() - user1.birthYear;
-    if (age1 < meeting2.allowedMinAge || age1 > meeting2.allowedMaxAge) return false;
+    if (age1 < meeting2.allowedMinAge || age1 > meeting2.allowedMaxAge) {
+      return { success: false, reason: 'AGE_MISMATCH' };
+    }
   }
   if (user2.birthYear) {
     const age2 = new Date().getFullYear() - user2.birthYear;
-    if (age2 < meeting1.allowedMinAge || age2 > meeting1.allowedMaxAge) return false;
+    if (age2 < meeting1.allowedMinAge || age2 > meeting1.allowedMaxAge) {
+      return { success: false, reason: 'AGE_MISMATCH' };
+    }
   }
-  
+
   // Check language match
-  if (meeting1.language !== meeting2.language) return false;
-  
+  if (meeting1.language !== meeting2.language) {
+    return { success: false, reason: 'LANGUAGE_MISMATCH' };
+  }
+
+  // Get the group to access interestsPairs
+  const group = await db.collection('groups').findOne({ _id: meeting1.groupId });
+  const interestsPairs: string[][] = group?.interestsPairs || [];
+
   // Use getNonBlockedInterests for both meetings
   const interests1 = getNonBlockedInterests(meeting1, user1, user2);
   const interests2 = getNonBlockedInterests(meeting2, user2, user1);
-  const interestOverlap = getInterestsOverlap(interests1, interests2);
-  if (interestOverlap === 0) return false;
-  
+
+  // Check for interest overlap (either direct match or paired interests)
+  const hasInterestOverlap = checkInterestsOverlap(interests1, interests2, interestsPairs);
+  if (!hasInterestOverlap) {
+    return { success: false, reason: 'NO_INTEREST_OVERLAP' };
+  }
+
   // Check time slot overlap
   const minDurationM = Math.max(meeting1.minDurationM, meeting2.minDurationM);
-  
+
   // Combine adjacent slots into time ranges
   const timeRanges1 = combineAdjacentSlots(meeting1.timeSlots);
   const timeRanges2 = combineAdjacentSlots(meeting2.timeSlots);
-  
+
   // Find overlapping time ranges
   const overlappingRanges = findOverlappingRanges(timeRanges1, timeRanges2, minDurationM);
-  
-  return overlappingRanges.length > 0 ? overlappingRanges : false;
+
+  if (overlappingRanges.length === 0) {
+    return { success: false, reason: 'NO_TIME_OVERLAP' };
+  }
+
+  return { success: true, overlap: overlappingRanges };
 }
 
 // Helper function to determine the best start time
@@ -148,22 +183,24 @@ export async function tryConnectMeetings(meeting: any, db: any, _userId: ObjectI
 
   // Check each potential peer for overlap
   for (const peer of potentialPeers) {
-    const overlap = canConnectMeetings(meeting, peer, users);
-    if (!overlap) continue;
-    
+    const result = await canConnectMeetings(meeting, peer, users, db);
+    if (!result.success) continue;
+
+    const overlap = result.overlap;
+
     // Find the slot with the longest overlap
-    const longestOverlap = overlap.reduce((max: any, slot: any) => 
+    const longestOverlap = overlap.reduce((max: any, slot: any) =>
       slot.duration > max.duration ? slot : max, overlap[0]);
-    
+
     // Store the peer and overlap information
     const peerUser = users.find((u: any) => u._id.equals(peer.userId));
     const peerInfo = { peer, overlap, user: peerUser };
-    
+
     // If this peer has at least one hour overlap, add to the hour overlap list
     if (longestOverlap.duration >= oneHourInMs) {
       peersWithHourOverlap.push(peerInfo);
     }
-    
+
     // Add to the list of all peers with any overlap
     peersWithAnyOverlap.push(peerInfo);
   }

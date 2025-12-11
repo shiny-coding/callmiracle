@@ -151,14 +151,14 @@ export type TimeRange = {
 // Helper function to combine adjacent time slots into time ranges
 export const combineAdjacentSlots = (slots: number[]): TimeRange[] => {
   if (slots.length === 0) return [];
-  
+
   // Sort slots chronologically
   const sortedSlots = [...slots].sort((a, b) => a - b);
-  
+
   const now = new Date().getTime();
   const combinedSlots: TimeRange[] = [];
   let currentStart, currentEnd;
-  
+
   for (let i = 0; i < sortedSlots.length; i++) {
     let slotStart = sortedSlots[i];
     const slotEnd = slotStart + SLOT_DURATION;
@@ -166,7 +166,7 @@ export const combineAdjacentSlots = (slots: number[]): TimeRange[] => {
     if (now > slotStart) {
       slotStart = now;
     }
-      
+
     // If this slot starts exactly when the previous ends, combine them
     if (slotStart === currentEnd) {
       // Extend the current slot
@@ -180,7 +180,7 @@ export const combineAdjacentSlots = (slots: number[]): TimeRange[] => {
       currentEnd = slotEnd;
     }
   }
-  
+
   // Add the last range
   if (currentStart) {
     combinedSlots.push({ start: currentStart, end: currentEnd as number });
@@ -566,6 +566,34 @@ export function getSlotDuration(timestamp: number) {
   return slotDuration
 }
 
-export function getInterestsOverlap(interests1: string[], interests2: string[]) {
-  return interests1.filter(interest => interests2.includes(interest)).length
+/**
+ * Check if two sets of interests have overlap, considering interest pairs.
+ * Interest pairs define complementary interests that should match (e.g., "Give support" <-> "Get support")
+ */
+export function checkInterestsOverlap(interests1: string[], interests2: string[], interestsPairs: string[][] = []): boolean {
+  // First check direct overlap (same interest in both)
+  for (const interest1 of interests1) {
+    if (interests2.includes(interest1)) {
+      return true;
+    }
+  }
+
+  // Check paired interests - if interest1 has a pair and interest2 has the other side of that pair
+  for (const interest1 of interests1) {
+    for (const pair of interestsPairs) {
+      // Find if interest1 is in this pair
+      const index1 = pair.indexOf(interest1);
+      if (index1 === -1) continue;
+
+      // Get the paired interest (the other one in the pair)
+      const pairedInterest = pair[index1 === 0 ? 1 : 0];
+
+      // Check if the paired interest is in interests2
+      if (interests2.includes(pairedInterest)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }

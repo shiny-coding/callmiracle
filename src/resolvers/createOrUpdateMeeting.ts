@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb"
-import { canConnectMeetings, MeetingAlreadyConnected, MeetingDoNotSufficientlyOverlap, NofitySelf, PeerAlreadyConnected, tryConnectTwoMeetings } from "./connectMeetings"
+import { canConnectMeetings, CannotConnectReason, MeetingAlreadyConnected, NofitySelf, PeerAlreadyConnected, tryConnectTwoMeetings } from "./connectMeetings"
 import { Context } from "@apollo/client/react/types/types"
 import { BroadcastType, Meeting, MeetingOutput, MeetingStatus } from "@/generated/graphql"
 import { SLOT_DURATION } from "@/utils/meetingUtils"
@@ -15,7 +15,17 @@ export enum MeetingError {
   CannotConnectMeetingInternalError = 'CannotConnectMeetingInternalError',
   MeetingAlreadyConnectedError = 'MeetingAlreadyConnectedError',
   MeetingDoNotSufficientlyOverlapError = 'MeetingDoNotSufficientlyOverlapError',
+  MeetingNoInterestOverlapError = 'MeetingNoInterestOverlapError',
   MeetingNotCancelledError = 'MeetingNotCancelledError'
+}
+
+// Symbol for throwing cannot connect errors with reason
+export class CannotConnectError extends Error {
+  reason: CannotConnectReason
+  constructor(reason: CannotConnectReason) {
+    super(`Cannot connect meetings: ${reason}`)
+    this.reason = reason
+  }
 }
 
 export const createOrUpdateMeeting = async (_: any, { input }: { input: any }, { db }: Context) : Promise<MeetingOutput> => {
@@ -202,13 +212,13 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
           _id: { $in: _userIds }
         }, { session }).toArray();
 
-        const overlap = canConnectMeetings(myMeeting, peerMeeting, users)
-        if (!overlap) {
-          throw MeetingDoNotSufficientlyOverlap
+        const connectResult = await canConnectMeetings(myMeeting, peerMeeting, users, db)
+        if (!connectResult.success) {
+          throw new CannotConnectError(connectResult.reason)
         }
 
-        myMeeting = await tryConnectTwoMeetings(myMeeting, peerMeeting, overlap, db, session, NofitySelf.No)
-        
+        myMeeting = await tryConnectTwoMeetings(myMeeting, peerMeeting, connectResult.overlap, db, session, NofitySelf.No)
+
         // Track matched meetings - both meetings are now matched
         const currentHour = new Date().getHours()
         matchedMeetingsMetric.add(1) // Both our meeting and peer meeting
@@ -231,11 +241,16 @@ async function tryCreateMeetingAndConnect(_meetingToConnectId: ObjectId, _userId
           userId: _userId.toString()
         })
         return { error: MeetingError.MeetingAlreadyConnectedError }
-      } else if (err === MeetingDoNotSufficientlyOverlap) {
-        logger.info('Meetings do not sufficiently overlap', {
+      } else if (err instanceof CannotConnectError) {
+        logger.info('Cannot connect meetings', {
           meetingToConnectId: _meetingToConnectId.toString(),
-          userId: _userId.toString()
+          userId: _userId.toString(),
+          reason: err.reason
         })
+        // Map reason to specific error
+        if (err.reason === 'NO_INTEREST_OVERLAP') {
+          return { error: MeetingError.MeetingNoInterestOverlapError }
+        }
         return { error: MeetingError.MeetingDoNotSufficientlyOverlapError }
       } else {
         logger.error('Error connecting meeting', {
