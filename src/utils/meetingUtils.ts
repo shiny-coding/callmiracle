@@ -17,6 +17,44 @@ export function getLateAllowance(minDurationM: number) {
   return LATE_ALLOWANCE_FOR_HOUR_MEETING
 }
 
+/**
+ * Get occupied time slots for a matched meeting based on its startTime and duration.
+ * Returns 1-3 slots depending on how much time is left in the first slot.
+ *
+ * For 30-min meetings: 1 slot if ≥20 mins left, otherwise 2 slots
+ * For 60-min meetings: 2 slots if they sum to ≥45 mins, otherwise 3 slots
+ */
+export function getOccupiedSlotsForMatchedMeeting(startTime: number, minDurationM: number): number[] {
+  // Round startTime down to the previous 30-minute slot
+  const startDate = new Date(startTime)
+  const minutes = startDate.getMinutes()
+  const roundedMinutes = minutes < 30 ? 0 : 30
+  startDate.setMinutes(roundedMinutes, 0, 0)
+  const slotStartTime = startDate.getTime()
+
+  // Calculate time remaining in the first slot (from startTime to end of first slot)
+  const firstSlotEnd = slotStartTime + SLOT_DURATION
+  const timeInFirstSlotMs = firstSlotEnd - startTime
+
+  const slots: number[] = [slotStartTime]
+
+  if (minDurationM === 30) {
+    // For 30-min meetings: add 2nd slot only if less than 20 mins left in first slot
+    if (timeInFirstSlotMs < 20 * 60 * 1000) {
+      slots.push(slotStartTime + SLOT_DURATION)
+    }
+  } else {
+    // For 60-min meetings: always add 2nd slot, add 3rd if first two sum to less than 45 mins
+    slots.push(slotStartTime + SLOT_DURATION)
+    const timeInTwoSlotsMs = timeInFirstSlotMs + SLOT_DURATION
+    if (timeInTwoSlotsMs < 45 * 60 * 1000) {
+      slots.push(slotStartTime + 2 * SLOT_DURATION)
+    }
+  }
+
+  return slots
+}
+
 export type TimeRange = {
   start: number;
   end: number;
@@ -198,14 +236,7 @@ function getOccupiedTimeSlots(meetings: Meeting[], currentMeetingId?: string) {
     .filter(m => !isMeetingPassed(m))
     .flatMap(m => {
       if (m.startTime) {
-        // Round startTime down to the previous 30-minute slot
-        const startDate = new Date(m.startTime)
-        const minutes = startDate.getMinutes()
-        const roundedMinutes = minutes < 30 ? 0 : 30
-        const slotStartTime = setMilliseconds(setSeconds(setMinutes(startDate, roundedMinutes), 0), 0).getTime()
-        
-        // Return slot start time and next slot (slot start + 30min)
-        return [slotStartTime, slotStartTime + SLOT_DURATION]
+        return getOccupiedSlotsForMatchedMeeting(m.startTime, m.minDurationM)
       }
       return m.timeSlots || []
     })

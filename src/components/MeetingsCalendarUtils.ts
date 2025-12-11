@@ -1,7 +1,7 @@
 import { Meeting, MeetingWithPeer, User } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { TimeSlot } from './TimeSlotsGrid'
-import { SLOT_DURATION, getLateAllowance, getSlotDuration, isMeetingPassed } from '@/utils/meetingUtils'
+import { SLOT_DURATION, getLateAllowance, getSlotDuration, isMeetingPassed, getOccupiedSlotsForMatchedMeeting } from '@/utils/meetingUtils'
 
 export type MeetingWithInfo = {
   meeting: Meeting,
@@ -58,14 +58,10 @@ export function prepareTimeSlotsInfos(futureMeetingsWithPeers: MeetingWithPeer[]
     if (isMeetingPassed(meeting)) return
 
     if (meeting.startTime) {
-      // For matched meetings, use the actual startTime rounded to slot boundary + next slot (1 hour)
-      const startDate = new Date(meeting.startTime)
-      const minutes = startDate.getMinutes()
-      const roundedMinutes = minutes < 30 ? 0 : 30
-      startDate.setMinutes(roundedMinutes, 0, 0)
-      const slotStartTime = startDate.getTime()
-      myOccupiedSlots.add(slotStartTime)
-      myOccupiedSlots.add(slotStartTime + SLOT_DURATION)
+      // For matched meetings, use utility function to get occupied slots
+      getOccupiedSlotsForMatchedMeeting(meeting.startTime, meeting.minDurationM).forEach(slot => {
+        myOccupiedSlots.add(slot)
+      })
     } else {
       // If meeting is not scheduled yet, add all its time slots
       meeting.timeSlots.forEach(slot => {

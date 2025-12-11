@@ -8,7 +8,7 @@ import { isToday } from 'date-fns'
 import { Fragment, useRef, useState, useEffect, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useMeetings } from '@/contexts/MeetingsContext'
-import { getDayLabel, isMeetingPassed, SLOT_DURATION, getMeetingColorClass } from '@/utils/meetingUtils'
+import { getDayLabel, isMeetingPassed, SLOT_DURATION, getMeetingColorClass, getOccupiedSlotsForMatchedMeeting } from '@/utils/meetingUtils'
 import clientLogger from '@/utils/clientLogger'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AddFab from './AddFab'
@@ -163,14 +163,10 @@ export default function MeetingsCalendar() {
       if (isMeetingPassed(meeting)) return
 
       if (meeting.startTime) {
-        // For matched meetings, use the actual startTime rounded to slot boundary + next slot (1 hour)
-        const startDate = new Date(meeting.startTime)
-        const minutes = startDate.getMinutes()
-        const roundedMinutes = minutes < 30 ? 0 : 30
-        startDate.setMinutes(roundedMinutes, 0, 0)
-        const slotStartTime = startDate.getTime()
-        myOccupiedSlots.add(slotStartTime)
-        myOccupiedSlots.add(slotStartTime + SLOT_DURATION)
+        // For matched meetings, use utility function to get occupied slots
+        getOccupiedSlotsForMatchedMeeting(meeting.startTime, meeting.minDurationM).forEach(slot => {
+          myOccupiedSlots.add(slot)
+        })
       } else {
         // For seeking meetings, add all timeSlots
         meeting.timeSlots.forEach(timeSlot => {
