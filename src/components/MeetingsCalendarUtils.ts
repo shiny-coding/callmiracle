@@ -76,6 +76,23 @@ export function prepareTimeSlotsInfos(futureMeetingsWithPeers: MeetingWithPeer[]
     const isFilteredOut = meetingWithPeer.filteredOut
 
     if (isMeetingPassed(futureMeeting)) continue
+
+    const isMine = currentUser._id === futureMeeting.userId
+
+    // For my matched meetings, only show occupied slots
+    if (isMine && futureMeeting.startTime) {
+      const occupiedSlots = getOccupiedSlotsForMatchedMeeting(futureMeeting.startTime, futureMeeting.minDurationM)
+      for (const slot of occupiedSlots) {
+        if (slot < slots[0].timestamp) continue
+        if (slot2meetingData[slot]) {
+          slot2meetingData[slot].displayMeetings.push({ meeting: futureMeeting, joinable: false })
+          slot2meetingData[slot].totalCount++
+        }
+      }
+      continue
+    }
+
+    // For seeking meetings or other users' meetings, use original timeSlots logic
     let foundFirstJoinable = false
     for (let i = 0; i < futureMeeting.timeSlots.length; i++) {
       const slot = futureMeeting.timeSlots[i]
@@ -83,7 +100,6 @@ export function prepareTimeSlotsInfos(futureMeetingsWithPeers: MeetingWithPeer[]
         continue
       }
 
-      const isMine = currentUser._id === futureMeeting.userId
       const nextSlot = futureMeeting.timeSlots[i + 1]
       const nextSlotContiguous = nextSlot && nextSlot - slot === SLOT_DURATION
       const timeLeftInCurrentSlot = getSlotDuration(slot)

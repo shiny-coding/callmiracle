@@ -148,12 +148,19 @@ export default function MeetingsCalendar() {
     const myMeetingSlotToId: Record<number, string> = {}
     myMeetingsWithPeers.forEach(meetingWithPeer => {
       const meeting = meetingWithPeer.meeting
-      const isPassed = isMeetingPassed(meeting)
-      if (isPassed) return
-      // Map all timeSlots to the meeting (works for both SEEKING and FOUND meetings)
-      meeting.timeSlots.forEach(slot => {
-        myMeetingSlotToId[slot] = meeting._id
-      })
+      if (isMeetingPassed(meeting)) return
+
+      if (meeting.startTime) {
+        // For matched meetings, only map occupied slots (based on actual startTime)
+        getOccupiedSlotsForMatchedMeeting(meeting.startTime, meeting.minDurationM).forEach(slot => {
+          myMeetingSlotToId[slot] = meeting._id
+        })
+      } else {
+        // For seeking meetings, map all timeSlots
+        meeting.timeSlots.forEach(slot => {
+          myMeetingSlotToId[slot] = meeting._id
+        })
+      }
     })
 
     // Create a set of all time slots occupied by user's own meetings for conflict detection
