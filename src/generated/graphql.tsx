@@ -305,6 +305,7 @@ export type Mutation = {
   regenerateJoinToken: Group;
   removeUserFromGroup: Scalars['Boolean']['output'];
   setAllNotificationsSeen: Scalars['Boolean']['output'];
+  setCurrentPage: Scalars['Boolean']['output'];
   setNotificationSeen?: Maybe<Notification>;
   updateMeetingStatus: Meeting;
   updateUser?: Maybe<User>;
@@ -377,6 +378,11 @@ export type MutationSetAllNotificationsSeenArgs = {
 };
 
 
+export type MutationSetCurrentPageArgs = {
+  page: Scalars['String']['input'];
+};
+
+
 export type MutationSetNotificationSeenArgs = {
   id: Scalars['ID']['input'];
 };
@@ -397,6 +403,8 @@ export type Notification = {
   createdAt: Scalars['Float']['output'];
   meeting?: Maybe<Meeting>;
   meetingId?: Maybe<Scalars['ID']['output']>;
+  peerUser?: Maybe<User>;
+  peerUserId?: Maybe<Scalars['ID']['output']>;
   peerUserName?: Maybe<Scalars['String']['output']>;
   seen: Scalars['Boolean']['output'];
   type: Scalars['String']['output'];
