@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { Context } from './types'
-import { Call, User, Meeting } from '@/generated/graphql'
+import { Call, User, Meeting, MeetingTransparency } from '@/generated/graphql'
 
 export const callsQueries = {
   getCalls: async (_: any, __: any, { db }: Context) => {
@@ -170,7 +170,9 @@ export const callsQueries = {
     if (call.meetingId) {
       const meeting = await db.collection('meetings').findOne<Meeting>({ _id: call.meetingId })
       if (meeting) {
-        meetingLastCallTime = meeting.lastCallTime || null
+        // For transparent meetings, set a truthy value so client shows peer name
+        meetingLastCallTime = meeting.lastCallTime ||
+          (meeting.transparency === MeetingTransparency.Transparent ? 1 : null)
       }
     }
 

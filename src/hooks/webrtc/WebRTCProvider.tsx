@@ -99,6 +99,8 @@ export function WebRTCProvider({
     setCallId,
     meetingId,
     meetingLastCallTime,
+    setMeetingId,
+    setMeetingLastCallTime,
     setCallEndedInfo,
   } = useStore((state) => ({
     currentUser: state.currentUser,
@@ -113,6 +115,8 @@ export function WebRTCProvider({
     setCallId: state.setCallId,
     meetingId: state.meetingId,
     meetingLastCallTime: state.meetingLastCallTime,
+    setMeetingId: state.setMeetingId,
+    setMeetingLastCallTime: state.setMeetingLastCallTime,
     setCallEndedInfo: state.setCallEndedInfo,
   }))
 
@@ -441,6 +445,10 @@ export function WebRTCProvider({
           setCallId(callEvent.callId ?? null)
           setTargetUser(callEvent.from)
           setRole('callee')
+          // Set meetingId and meetingLastCallTime from initiate event
+          // so CalleeDialog can immediately determine whether to show peer info
+          setMeetingId(callEvent.meetingId ?? null)
+          setMeetingLastCallTime(callEvent.meetingLastCallTime ?? null)
           setConnectionStatus(ConnectionStatus.RECEIVING_CALL)
           callee.active = true
         }

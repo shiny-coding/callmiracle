@@ -159,8 +159,10 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
   const handleCallPeer = () => {
     if (meetingWithPeer.peerUser && meetingWithPeer.peerUser._id) {
-      // If this is a first call (no lastCallTime), don't show user info
-      doCall(meetingWithPeer.peerUser as User, meetingWithPeer.meeting._id, meetingWithPeer.meeting.lastCallTime ?? null)
+      // For CallerDialog: pass lastCallTime or 1 for transparent meetings (to show peer name)
+      const meetingLastCallTime = meetingWithPeer.meeting.lastCallTime ||
+        (meetingWithPeer.meeting.transparency === MeetingTransparency.Transparent ? 1 : null)
+      doCall(meetingWithPeer.peerUser as User, meetingWithPeer.meeting._id, meetingLastCallTime)
     }
   }
 

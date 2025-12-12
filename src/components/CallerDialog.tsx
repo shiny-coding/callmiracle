@@ -85,6 +85,8 @@ export default function CallerDialog() {
     }
   }, [open, connectionStatus, playCallingSound, stopCallingSound])
 
+  const showUserInfo = !meetingId || meetingLastCallTime
+
   if (!targetUser) return null
 
   const handleCallAgain = async () => {
@@ -99,8 +101,6 @@ export default function CallerDialog() {
       await caller.cleanup()
     }
   }
-
-  const showUserInfo = !meetingId || meetingLastCallTime
 
   return ( open &&
     <Dialog

@@ -39,7 +39,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const t = useTranslations()
   const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
-  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall, targetUser, setConnectionStatus, setDeviceSettingsOpen } = useStore((state) => ({
+  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall, targetUser, setConnectionStatus, setDeviceSettingsOpen, storeMeetingId, storeMeetingLastCallTime } = useStore((state) => ({
     connectionStatus: state.connectionStatus,
     localAudioEnabled: state.localAudioEnabled,
     localVideoEnabled: state.localVideoEnabled,
@@ -49,7 +49,9 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     setPendingMissedCall: state.setPendingMissedCall,
     targetUser: state.targetUser,
     setConnectionStatus: state.setConnectionStatus,
-    setDeviceSettingsOpen: state.setDeviceSettingsOpen
+    setDeviceSettingsOpen: state.setDeviceSettingsOpen,
+    storeMeetingId: state.meetingId,
+    storeMeetingLastCallTime: state.meetingLastCallTime
   }))
   const { doCall } = useWebRTCContext()
   const { notifications, setNotificationSeen } = useNotifications()
@@ -86,10 +88,12 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const onAccept = callee.handleAcceptCall
   const onReject = callee.handleRejectCall
 
+  // Use store values as fallback when incomingRequest hasn't arrived yet
+  // These are set from the 'initiate' event in WebRTCProvider
   const meetingId = isMissedCallFromNotification
     ? pendingMissedCall?.meetingId
-    : (callee.incomingRequest?.meetingId || lastIncomingRequest?.meetingId)
-  const meetingLastCallTime = callee.incomingRequest?.meetingLastCallTime || lastIncomingRequest?.meetingLastCallTime
+    : (callee.incomingRequest?.meetingId || lastIncomingRequest?.meetingId || storeMeetingId)
+  const meetingLastCallTime = callee.incomingRequest?.meetingLastCallTime || lastIncomingRequest?.meetingLastCallTime || storeMeetingLastCallTime
   const showUserInfo = !meetingId || meetingLastCallTime || isMissedCallFromNotification
 
   const isConnecting = connectionStatus === ConnectionStatus.CONNECTING

@@ -93,6 +93,9 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
   })
 
   // Only handle calls table for specific types
+  // Track meetingLastCallTime for initiate event (computed from meeting transparency)
+  let initiateMeetingLastCallTime: number | null = null
+
   if (type === 'initiate') {
     // Create new call record
     const _call = await db.collection('calls').insertOne({
@@ -114,6 +117,9 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
       const meeting = await db.collection('meetings').findOne<Meeting>({ _id: _meetingId })
       // Show name only if there was at least one successful call in this meeting before
       showInitiatorName = !!meeting?.lastCallTime || meeting?.transparency === MeetingTransparency.Transparent
+      // Compute meetingLastCallTime for the initiate event (same logic as offer)
+      initiateMeetingLastCallTime = meeting?.lastCallTime ||
+        (meeting?.transparency === MeetingTransparency.Transparent ? 1 : null)
     }
     await publishCallNotification(NotificationType.IncomingCall, db, initiator, targetUser, call as Call, showInitiatorName)
 
@@ -265,6 +271,7 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
 
   // Additional fields based on type
   const additionalFields: Record<string, Record<string, any>> = {
+    initiate: { meetingLastCallTime: initiateMeetingLastCallTime },
     offer: { videoEnabled, audioEnabled, quality, offer },
     answer: { videoEnabled, audioEnabled, quality, answer },
     'ice-candidate': { iceCandidate },
@@ -279,7 +286,10 @@ export const callUserMutation = async (_: any, { input }: { input: any }, { db }
   if ( type === 'offer' && _meetingId ) {
     const meeting = await db.collection('meetings').findOne({ _id: _meetingId })
     if ( meeting ) {
-      additionalFields.offer.meetingLastCallTime = meeting.lastCallTime
+      // For transparent meetings, set a truthy value so client shows peer name
+      // Same logic as showInitiatorName for push notifications
+      additionalFields.offer.meetingLastCallTime = meeting.lastCallTime ||
+        (meeting.transparency === MeetingTransparency.Transparent ? 1 : null)
     }
   }
 
