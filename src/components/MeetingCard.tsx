@@ -11,7 +11,7 @@ import GroupIcon from '@mui/icons-material/Group'
 import WcIcon from '@mui/icons-material/Wc'
 import CakeIcon from '@mui/icons-material/Cake'
 import { useWebRTCContext } from '@/hooks/webrtc/WebRTCProvider'
-import { MeetingWithPeer, User } from '@/generated/graphql'
+import { MeetingWithPeer, User, MeetingTransparency } from '@/generated/graphql'
 import { formatDuration } from '@/utils/formatDuration'
 import { isMeetingPassed, getSharedInterests, class2Hex, ACTIVE_MEETING_COLOR, PASSED_MEETING_COLOR, SCHEDULED_MEETING_COLOR, FINDING_MEETING_COLOR, getMeetingColorClass, canEditMeeting, meetingIsActiveNow, getLateAllowance } from '@/utils/meetingUtils'
 import React, { useEffect, useState } from 'react'
@@ -251,59 +251,52 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         </Typography>
       </div>
 
-      {meeting.peerMeetingId && meeting.startTime && (
-        <div className="flex flex-col gap-1">
-          {meetingWithPeer.peerUser && (
-            <div className="flex items-center justify-center gap-2 mt-2">
-
-              {isActiveNow && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<VideocamIcon sx={{ color: class2Hex(ACTIVE_MEETING_COLOR) }} />}
-                  onClick={handleCallPeer}
-                  className="text-white font-semibold"
-                  sx={{
-                    background: 'var(--icon-gradient)',
-                    px: 2,
-                    mb: '0.75rem',
-                    '&:hover': {
-                      background: 'var(--icon-gradient)',
-                      filter: 'brightness(1.1)',
-                    }
-                  }}
-                >
-                  {t('call')}
-                </Button>
-              )}
-              {meeting.lastCallTime ? (
-                <div
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80"
-                  onClick={() => setUserDetailsOpen(true)}
-                >
-                  <div className="relative w-8 h-8 flex-shrink-0 overflow-hidden rounded-full">
-                    {peerImageSrc ? (
-                      <Image
-                        src={peerImageSrc}
-                        alt={meetingWithPeer.peerUser.name}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full bg-blue-600 text-white text-sm font-semibold">
-                        {meetingWithPeer.peerUser.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+      {meeting.peerMeetingId && meeting.startTime && meetingWithPeer.peerUser && (
+        <div className="flex flex-col items-center gap-2 mt-2">
+          {isActiveNow && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<VideocamIcon sx={{ color: class2Hex(ACTIVE_MEETING_COLOR) }} />}
+              onClick={handleCallPeer}
+              className="text-white font-semibold"
+              sx={{
+                background: 'var(--icon-gradient)',
+                px: 2,
+                '&:hover': {
+                  background: 'var(--icon-gradient)',
+                  filter: 'brightness(1.1)',
+                }
+              }}
+            >
+              {t('call')}
+            </Button>
+          )}
+          {(meeting.lastCallTime || meeting.transparency === MeetingTransparency.Transparent) && (
+            <div
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80"
+              onClick={() => setUserDetailsOpen(true)}
+            >
+              <div className="relative w-8 h-8 flex-shrink-0 overflow-hidden rounded-full">
+                {peerImageSrc ? (
+                  <Image
+                    src={peerImageSrc}
+                    alt={meetingWithPeer.peerUser.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full bg-blue-600 text-white text-sm font-semibold">
+                    {meetingWithPeer.peerUser.name.charAt(0).toUpperCase()}
                   </div>
-                  <Typography variant="body2" className={meetingPassed ? "text-gray-400 font-semibold" : "text-gray-200 font-semibold"}>
-                    {meetingWithPeer.peerUser.name}
-                  </Typography>
-                </div>
-              ) : null}
+                )}
+              </div>
+              <Typography variant="body2" className={meetingPassed ? "text-gray-400 mobile-semibold" : "mobile-semibold"}>
+                {meetingWithPeer.peerUser.name}
+              </Typography>
             </div>
           )}
-          
         </div>
       )}
       <div className="flex items-center justify-center gap-2">
@@ -425,9 +418,8 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
       )}
 
       {!meetingPassed && meeting.status === MeetingStatus.Called && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <Button
-            className="max-w-min"
             variant="contained"
             color="warning"
             startIcon={<DoneIcon />}
