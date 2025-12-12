@@ -148,7 +148,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
       calleeActive: callee.active,
       currentSrcObject: videoEl?.srcObject
     }
-    clientLogger.info('[RemoteVideo] Attempting to attach remote stream', { ...attachMeta, remoteVideoEnabled, remoteStreamVersion })
+    clientLogger.info('WebRTC', 'Attempting to attach remote stream', { ...attachMeta, remoteVideoEnabled, remoteStreamVersion })
 
     const attach = () => {
       const el = remoteVideoRef.current
@@ -158,7 +158,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
       }
 
       el.play().then(() => {
-        clientLogger.info('[RemoteVideo] Remote video playing successfully', {
+        clientLogger.info('WebRTC', 'Remote video playing successfully', {
           streamId: stream.id,
           trackStates: stream.getTracks().map(t => ({
             kind: t.kind,
@@ -170,7 +170,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
           }))
         })
       }).catch(err => {
-        clientLogger.error('[RemoteVideo] Failed to play remote video', {
+        clientLogger.error('WebRTC', 'Failed to play remote video', {
           error: String(err),
           streamId: stream.id,
           trackStates: stream.getTracks().map(t => ({
@@ -184,7 +184,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
         })
         setTimeout(() => {
           el.play().catch(e =>
-            clientLogger.error('[RemoteVideo] Retry play failed', { error: String(e), streamId: stream.id })
+            clientLogger.error('WebRTC', 'Retry play failed', { error: String(e), streamId: stream.id })
           )
         }, 100)
       })
@@ -193,7 +193,7 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
     if (stream && videoEl) {
       attach()
     } else if (stream && !videoEl) {
-      clientLogger.info('[RemoteVideo] Remote stream ready but video element not mounted yet; scheduling attach retries', { streamId: stream?.id })
+      clientLogger.info('WebRTC', 'Remote stream ready but video element not mounted yet; scheduling attach retries', { streamId: stream?.id })
       let attempts = 0
       const maxAttempts = 5
       const tryAttach = () => {
@@ -206,11 +206,11 @@ export default function RemoteVideo({ showTopControls = false }: RemoteVideoProp
         if (attempts < maxAttempts) {
           setTimeout(tryAttach, 200)
         } else {
-          console.warn('[RemoteVideo] Gave up attaching stream; video element still not mounted', {
+          console.warn('Gave up attaching stream; video element still not mounted', {
             streamId: stream?.id,
             attempts
           })
-          clientLogger.warn('[RemoteVideo] Gave up attaching stream; video element still not mounted', {
+          clientLogger.warn('WebRTC', 'Gave up attaching stream; video element still not mounted', {
             streamId: stream?.id,
             attempts
           })

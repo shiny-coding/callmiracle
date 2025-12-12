@@ -2,6 +2,24 @@
 
 import { mapStackTrace } from 'sourcemapped-stacktrace'
 
+// Valid log levels
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+
+// Valid section names - add new sections here (PascalCase)
+export type LogSection =
+  | 'WebRTC'
+  | 'PushNotifications'
+  | 'Conversations'
+  | 'Messages'
+  | 'Calls'
+  | 'Meetings'
+  | 'Sound'
+  | 'Console'
+  | 'Unhandled'
+
+// Section log level overrides
+export type SectionLogLevels = Partial<Record<LogSection, LogLevel>>
+
 // Client-side logger that can optionally send logs to server
 interface LogMeta {
   [key: string]: any
@@ -11,26 +29,29 @@ interface LogEntry {
   timestamp: string
   level: string
   message: string
+  section?: LogSection
   meta: LogMeta
 }
 
 class ClientLogger {
   private isEnabled = typeof window !== 'undefined'
-  private clientLogLevel = 'info' // Temporarily set to 'info' for debugging DeviceSettings
+  private clientLogLevel: LogLevel = 'info' // Default log level
+  private sectionLogLevels: SectionLogLevels = {} // Per-section overrides
   private logBuffer: LogEntry[] = []
   private maxBufferSize = 300
 
-  private formatMessage(level: string, message: string, meta?: LogMeta): string {
-    const timestamp = new Date().toISOString()
+  // Format message for browser console (simple format without timestamp/level)
+  private formatConsoleMessage(section: LogSection, message: string, meta?: LogMeta): string {
     const metaStr = meta && Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : ''
-    return `${timestamp} [${level.toUpperCase()}]: ${message}${metaStr}`
+    return `[${section}] ${message}${metaStr}`
   }
 
-  private addToBuffer(level: string, message: string, meta: LogMeta = {}) {
+  private addToBuffer(level: string, message: string, section?: LogSection, meta: LogMeta = {}) {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
       message,
+      section,
       meta
     }
 
@@ -53,13 +74,24 @@ class ClientLogger {
   }
 
   // Set the client log level (called when session is available)
-  setLogLevel(level: string) {
+  setLogLevel(level: LogLevel) {
     this.clientLogLevel = level
   }
 
-  private shouldLog(messageLevel: string): boolean {
-    const levels = ['debug', 'info', 'warn', 'error']
-    const currentIndex = levels.indexOf(this.clientLogLevel)
+  // Set section-specific log levels (called when session is available)
+  setSectionLogLevels(levels: SectionLogLevels) {
+    this.sectionLogLevels = levels
+  }
+
+  private shouldLog(messageLevel: LogLevel, section?: LogSection): boolean {
+    const levels: LogLevel[] = ['debug', 'info', 'warn', 'error']
+
+    // Check for section-specific override first
+    const effectiveLevel = section && this.sectionLogLevels[section]
+      ? this.sectionLogLevels[section]!
+      : this.clientLogLevel
+
+    const currentIndex = levels.indexOf(effectiveLevel)
     const messageIndex = levels.indexOf(messageLevel)
     return messageIndex >= currentIndex
   }
@@ -108,12 +140,12 @@ class ClientLogger {
     })
   }
 
-  private sendToServer = async (level: string, message: string, meta: LogMeta = {}) => {
+  private sendToServer = async (level: LogLevel, message: string, section: LogSection, meta: LogMeta = {}) => {
     if (!this.isEnabled) return
 
     try {
-      // Use user's clientLogLevel to determine what to send to server
-      const shouldSend = this.shouldLog(level)
+      // Use user's clientLogLevel (or section override) to determine what to send to server
+      const shouldSend = this.shouldLog(level, section)
 
       if (shouldSend) {
         // Map stack trace if present
@@ -125,6 +157,7 @@ class ClientLogger {
           body: JSON.stringify({
             level,
             message,
+            section,
             meta: {
               ...mappedMeta,
               url: window.location.href,
@@ -142,111 +175,79 @@ class ClientLogger {
     }
   }
   
-  debug = (message: string, meta: LogMeta = {}) => {
-    this.addToBuffer('debug', message, meta)
+  debug = (section: LogSection, message: string, meta: LogMeta = {}) => {
+    this.addToBuffer('debug', message, section, meta)
 
-    if (!this.shouldLog('debug')) return
+    if (!this.shouldLog('debug', section)) return
 
-    console.debug(this.formatMessage('debug', message, meta))
-
-    // Send to server based on user's clientLogLevel
-    this.sendToServer('debug', message, meta)
-  }
-
-  info = (message: string, meta: LogMeta = {}) => {
-    this.addToBuffer('info', message, meta)
-
-    if (!this.shouldLog('info')) return
-
-    console.info(this.formatMessage('info', message, meta))
+    console.debug(this.formatConsoleMessage(section, message, meta))
 
     // Send to server based on user's clientLogLevel
-    this.sendToServer('info', message, meta)
+    this.sendToServer('debug', message, section, meta)
   }
 
-  warn = (message: string, meta: LogMeta = {}) => {
-    this.addToBuffer('warn', message, meta)
+  info = (section: LogSection, message: string, meta: LogMeta = {}) => {
+    this.addToBuffer('info', message, section, meta)
 
-    if (!this.shouldLog('warn')) return
+    if (!this.shouldLog('info', section)) return
+
+    console.info(this.formatConsoleMessage(section, message, meta))
+
+    // Send to server based on user's clientLogLevel
+    this.sendToServer('info', message, section, meta)
+  }
+
+  warn = (section: LogSection, message: string, meta: LogMeta = {}) => {
+    this.addToBuffer('warn', message, section, meta)
+
+    if (!this.shouldLog('warn', section)) return
 
     // Set flag to prevent console.warn interception for our own logs
     if (typeof window !== 'undefined') {
       (window as any).__clientLoggerLogging = true
     }
 
-    console.warn(this.formatMessage('warn', message, meta))
+    console.warn(this.formatConsoleMessage(section, message, meta))
 
     if (typeof window !== 'undefined') {
       (window as any).__clientLoggerLogging = false
     }
 
     // Send to server based on user's clientLogLevel
-    this.sendToServer('warn', message, meta)
+    this.sendToServer('warn', message, section, meta)
   }
 
-  error = (message: string, meta: LogMeta = {}) => {
-    this.addToBuffer('error', message, meta)
+  error = (section: LogSection, message: string, meta: LogMeta = {}) => {
+    this.addToBuffer('error', message, section, meta)
 
-    if (!this.shouldLog('error')) return
+    if (!this.shouldLog('error', section)) return
 
     // Set flag to prevent console.error interception for our own logs
     if (typeof window !== 'undefined') {
       (window as any).__clientLoggerLogging = true
     }
 
-    console.error(this.formatMessage('error', message, meta))
+    console.error(this.formatConsoleMessage(section, message, meta))
 
     if (typeof window !== 'undefined') {
       (window as any).__clientLoggerLogging = false
     }
 
     // Send to server based on user's clientLogLevel
-    this.sendToServer('error', message, meta)
+    this.sendToServer('error', message, section, meta)
   }
 
   // Silent error - sends to server only, doesn't show in console
   // Use for errors that browser will display natively (like unhandled errors)
-  errorSilent = (message: string, meta: LogMeta = {}) => {
-    this.addToBuffer('error', message, meta)
+  errorSilent = (section: LogSection, message: string, meta: LogMeta = {}) => {
+    this.addToBuffer('error', message, section, meta)
 
-    if (!this.shouldLog('error')) return
+    if (!this.shouldLog('error', section)) return
 
     // Only send to server, don't show in console (browser will show it natively)
-    this.sendToServer('error', message, meta)
+    this.sendToServer('error', message, section, meta)
   }
 
-  // Wrapper for logging user actions
-  userAction = (action: string, meta: LogMeta = {}) => {
-    this.info(`User action: ${action}`, { action, ...meta })
-  }
-  
-  // Wrapper for API call logging
-  apiCall = (method: string, url: string, status: number, duration: number, meta: LogMeta = {}) => {
-    const level = status >= 400 ? 'error' : 'info'
-    const message = `API ${method} ${url} - ${status} (${duration}ms)`
-    
-    this[level](message, { 
-      method, 
-      url, 
-      status, 
-      duration, 
-      type: 'api_call',
-      ...meta 
-    })
-  }
-  
-  // Wrapper for performance logging
-  performance = (name: string, duration: number, meta: LogMeta = {}) => {
-    const level = duration > 1000 ? 'warn' : 'info'
-    const message = `Performance: ${name} took ${duration}ms`
-    
-    this[level](message, { 
-      name, 
-      duration, 
-      type: 'performance',
-      ...meta 
-    })
-  }
 }
 
 const clientLogger = new ClientLogger()
@@ -260,7 +261,7 @@ if (typeof window !== 'undefined') {
     // Use errorSilent because browser will show the error natively
     // We only want to send to Grafana, not duplicate in console
     const hasStack = !!event.error?.stack
-    clientLogger.errorSilent('Unhandled JavaScript error', {
+    clientLogger.errorSilent('Unhandled', 'Unhandled JavaScript error', {
       message: event.error?.message || event.message,
       // Only include filename/lineno/colno if no stack trace (fallback info)
       ...(hasStack ? {} : {
@@ -275,7 +276,7 @@ if (typeof window !== 'undefined') {
 
   window.addEventListener('unhandledrejection', (event) => {
     // Use errorSilent because browser will show the rejection natively
-    clientLogger.errorSilent('Unhandled promise rejection', {
+    clientLogger.errorSilent('Unhandled', 'Unhandled promise rejection', {
       reason: event.reason?.message || String(event.reason),
       stack: event.reason?.stack,
       type: 'unhandled_rejection'
@@ -384,8 +385,8 @@ if (typeof window !== 'undefined') {
           }
         }
 
-        // Add to our logger with appropriate level
-        clientLogger[level](`[Console] ${message}`, { ...meta, type: `console_${level}` })
+        // Add to our logger with appropriate level using 'console' section
+        clientLogger[level]('Console', message, { ...meta, type: `console_${level}` })
       } finally {
         isLoggingToConsole = false
       }

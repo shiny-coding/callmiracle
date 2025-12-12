@@ -69,7 +69,7 @@ export function useClientPushNotifications(currentUser: any) {
   // Helper function to handle navigation from notification
   const handleNotificationNavigation = useCallback((url: string, notificationType?: string) => {
     if (!url) {
-      clientLogger.info('[PushNotifications] handleNotificationNavigation called with empty url')
+      clientLogger.info('PushNotifications', 'handleNotificationNavigation called with empty url')
       return
     }
 
@@ -83,7 +83,7 @@ export function useClientPushNotifications(currentUser: any) {
       // If URL parsing fails, use as-is
     }
 
-    clientLogger.info('[PushNotifications] Processing navigation', {
+    clientLogger.info('PushNotifications', 'Processing navigation', {
       originalUrl: url,
       relativePath,
       notificationType
@@ -96,7 +96,7 @@ export function useClientPushNotifications(currentUser: any) {
       const meetingId = searchParams.get('meetingId')
 
       if (initiatorUserId || meetingId) {
-        clientLogger.info('[PushNotifications] Setting pending missed call', {
+        clientLogger.info('PushNotifications', 'Setting pending missed call', {
           initiatorUserId,
           meetingId
         })
@@ -117,7 +117,7 @@ export function useClientPushNotifications(currentUser: any) {
 
     // Check if we're already on this page (compare without locale)
     if (currentPathWithoutLocale === relativePathWithoutLocale) {
-      clientLogger.info('[PushNotifications] Already on target page, triggering refresh instead')
+      clientLogger.info('PushNotifications', 'Already on target page, triggering refresh instead')
       // Dispatch a custom event to refresh the messages
       window.dispatchEvent(new CustomEvent('refreshConversation', {
         detail: { url: relativePath }
@@ -126,19 +126,19 @@ export function useClientPushNotifications(currentUser: any) {
     }
 
     // Navigate to the target page
-    clientLogger.info('[PushNotifications] Calling router.push', { relativePath })
+    clientLogger.info('PushNotifications', 'Calling router.push', { relativePath })
     router.push(relativePath, { scroll: false })
-    clientLogger.info('[PushNotifications] router.push called successfully')
+    clientLogger.info('PushNotifications', 'router.push called successfully')
   }, [router, setPendingMissedCall])
 
   // Listen for messages from service worker (notification clicks) via multiple channels
   useEffect(() => {
     if (!('serviceWorker' in navigator)) {
-      clientLogger.info('[PushNotifications] Service worker not supported')
+      clientLogger.info('PushNotifications', 'Service worker not supported')
       return
     }
 
-    clientLogger.info('[PushNotifications] Setting up message listeners', {
+    clientLogger.info('PushNotifications', 'Setting up message listeners', {
       currentPath: window.location.pathname + window.location.search,
       swControllerExists: !!navigator.serviceWorker.controller
     })
@@ -149,7 +149,7 @@ export function useClientPushNotifications(currentUser: any) {
     const handleNavigation = (url: string, notificationType: string | undefined, timestamp: number) => {
       // Prevent handling the same navigation multiple times
       if (timestamp && timestamp <= handledTimestamp) {
-        clientLogger.info('[PushNotifications] Skipping duplicate navigation', { timestamp, handledTimestamp })
+        clientLogger.info('PushNotifications', 'Skipping duplicate navigation', { timestamp, handledTimestamp })
         return
       }
       handledTimestamp = timestamp || Date.now()
@@ -159,18 +159,18 @@ export function useClientPushNotifications(currentUser: any) {
     // Check IndexedDB for pending navigation (iOS cold start workaround)
     // IMPORTANT: Must match the database name used in sw.js ('callmiracle-push-nav')
     const checkIndexedDB = () => {
-      clientLogger.info('[PushNotifications] Checking IndexedDB for pending navigation')
+      clientLogger.info('PushNotifications', 'Checking IndexedDB for pending navigation')
       try {
         const dbRequest = indexedDB.open('callmiracle-push-nav', 1)
         dbRequest.onupgradeneeded = (event: any) => {
-          clientLogger.info('[PushNotifications] IndexedDB upgrade needed, creating store')
+          clientLogger.info('PushNotifications', 'IndexedDB upgrade needed, creating store')
           const db = event.target.result
           if (!db.objectStoreNames.contains('navigation')) {
             db.createObjectStore('navigation', { keyPath: 'id' })
           }
         }
         dbRequest.onsuccess = (event: any) => {
-          clientLogger.info('[PushNotifications] IndexedDB opened successfully')
+          clientLogger.info('PushNotifications', 'IndexedDB opened successfully')
           const db = event.target.result
           try {
             const tx = db.transaction('navigation', 'readwrite')
@@ -179,7 +179,7 @@ export function useClientPushNotifications(currentUser: any) {
 
             getRequest.onsuccess = () => {
               const data = getRequest.result
-              clientLogger.info('[PushNotifications] IndexedDB get result', {
+              clientLogger.info('PushNotifications', 'IndexedDB get result', {
                 hasData: !!data,
                 dataUrl: data?.url,
                 dataId: data?.id
@@ -187,7 +187,7 @@ export function useClientPushNotifications(currentUser: any) {
               if (data && data.url) {
                 // Check if the navigation is recent (within last 30 seconds)
                 const age = Date.now() - (data.timestamp || 0)
-                clientLogger.info('[PushNotifications] Found pending navigation in IndexedDB', {
+                clientLogger.info('PushNotifications', 'Found pending navigation in IndexedDB', {
                   url: data.url,
                   age,
                   timestamp: data.timestamp
@@ -197,23 +197,23 @@ export function useClientPushNotifications(currentUser: any) {
                   // Delete the pending navigation (key is 'pending' - the id field)
                   store.delete('pending')
                   // Handle the navigation
-                  clientLogger.info('[PushNotifications] Navigating from IndexedDB data', { url: data.url })
+                  clientLogger.info('PushNotifications', 'Navigating from IndexedDB data', { url: data.url })
                   handleNavigation(data.url, data.notificationType, data.timestamp)
                 } else {
                   // Too old, just delete it
                   store.delete('pending')
-                  clientLogger.info('[PushNotifications] Pending navigation too old, ignoring')
+                  clientLogger.info('PushNotifications', 'Pending navigation too old, ignoring')
                 }
               } else {
-                clientLogger.info('[PushNotifications] No pending navigation found in IndexedDB')
+                clientLogger.info('PushNotifications', 'No pending navigation found in IndexedDB')
               }
             }
           } catch (e) {
-            clientLogger.info('[PushNotifications] Error reading from IndexedDB', { error: String(e) })
+            clientLogger.info('PushNotifications', 'Error reading from IndexedDB', { error: String(e) })
           }
         }
       } catch (e) {
-        clientLogger.info('[PushNotifications] IndexedDB not available', { error: String(e) })
+        clientLogger.info('PushNotifications', 'IndexedDB not available', { error: String(e) })
       }
     }
 
@@ -225,7 +225,7 @@ export function useClientPushNotifications(currentUser: any) {
     // Also check IndexedDB when page becomes visible (for iOS app switching)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        clientLogger.info('[PushNotifications] Page became visible, checking IndexedDB')
+        clientLogger.info('PushNotifications', 'Page became visible, checking IndexedDB')
         checkIndexedDB()
       }
     }
@@ -233,7 +233,7 @@ export function useClientPushNotifications(currentUser: any) {
 
     // Listen via service worker postMessage
     const handleSWMessage = (event: MessageEvent) => {
-      clientLogger.info('[PushNotifications] Received message from SW postMessage', {
+      clientLogger.info('PushNotifications', 'Received message from SW postMessage', {
         type: event.data?.type,
         url: event.data?.url,
         notificationType: event.data?.notificationType,
@@ -252,7 +252,7 @@ export function useClientPushNotifications(currentUser: any) {
     try {
       broadcastChannel = new BroadcastChannel('push-notification-navigation')
       broadcastChannel.onmessage = (event) => {
-        clientLogger.info('[PushNotifications] Received message from BroadcastChannel', {
+        clientLogger.info('PushNotifications', 'Received message from BroadcastChannel', {
           url: event.data?.url,
           notificationType: event.data?.notificationType,
           timestamp: event.data?.timestamp,
@@ -263,12 +263,12 @@ export function useClientPushNotifications(currentUser: any) {
           handleNavigation(event.data.url, event.data.notificationType, event.data.timestamp)
         }
       }
-      clientLogger.info('[PushNotifications] BroadcastChannel listener registered')
+      clientLogger.info('PushNotifications', 'BroadcastChannel listener registered')
     } catch (e) {
-      clientLogger.info('[PushNotifications] BroadcastChannel not available', { error: String(e) })
+      clientLogger.info('PushNotifications', 'BroadcastChannel not available', { error: String(e) })
     }
 
-    clientLogger.info('[PushNotifications] Message listeners registered')
+    clientLogger.info('PushNotifications', 'Message listeners registered')
 
     return () => {
       navigator.serviceWorker.removeEventListener('message', handleSWMessage)
@@ -276,7 +276,7 @@ export function useClientPushNotifications(currentUser: any) {
       if (broadcastChannel) {
         broadcastChannel.close()
       }
-      clientLogger.info('[PushNotifications] Message listeners removed')
+      clientLogger.info('PushNotifications', 'Message listeners removed')
     }
   }, [handleNotificationNavigation])
 

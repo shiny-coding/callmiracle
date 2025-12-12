@@ -227,6 +227,9 @@ export const authOptions: NextAuthOptions = {
       if (token.clientLogLevel) {
         session.user.clientLogLevel = token.clientLogLevel
       }
+      if (token.clientSectionLogLevels) {
+        session.user.clientSectionLogLevels = token.clientSectionLogLevels
+      }
       return session
     },
     async jwt({ token, user, account, profile }) {
@@ -238,6 +241,7 @@ export const authOptions: NextAuthOptions = {
         token.languages = (user as any).languages || []
         token.logLevel = (user as any).logLevel || 'info'
         token.clientLogLevel = (user as any).clientLogLevel || 'warn'
+        token.clientSectionLogLevels = (user as any).clientSectionLogLevels || {}
         token.lastDbRefresh = Date.now()
       } else if (token.id) {
         const now = Date.now()
@@ -261,6 +265,7 @@ export const authOptions: NextAuthOptions = {
                 token.languages = dbUser.languages;
                 token.logLevel = dbUser.logLevel || defaultLogLevel;
                 token.clientLogLevel = dbUser.clientLogLevel || defaultClientLogLevel;
+                token.clientSectionLogLevels = dbUser.clientSectionLogLevels || {};
 
                 token.lastDbRefresh = now;
               }

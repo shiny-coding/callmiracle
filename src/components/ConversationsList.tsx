@@ -100,7 +100,7 @@ export default function ConversationsList() {
   // Listen for refresh conversation event (from push notification click when already on page)
   useEffect(() => {
     const handleRefreshConversation = () => {
-      clientLogger.info('[ConversationsList] Refresh conversation event received')
+      clientLogger.info('Conversations', 'Refresh conversation event received')
       refetch()
     }
 
@@ -150,7 +150,7 @@ export default function ConversationsList() {
 
   // Reset handled ref when withUserId changes
   useEffect(() => {
-    clientLogger.info('[ConversationsList] withUserId changed', {
+    clientLogger.info('Conversations', 'withUserId changed', {
       withUserId,
       handledWithUserIdRef: handledWithUserIdRef.current
     })
@@ -160,7 +160,7 @@ export default function ConversationsList() {
   }, [withUserId])
 
   useEffect(() => {
-    clientLogger.info('[ConversationsList] withUserId effect running', {
+    clientLogger.info('Conversations', 'withUserId effect running', {
       withUserId,
       loading,
       handledWithUserIdRef: handledWithUserIdRef.current,
@@ -172,7 +172,7 @@ export default function ConversationsList() {
 
     // Skip if we've already handled this withUserId
     if (handledWithUserIdRef.current === withUserId) {
-      clientLogger.info('[ConversationsList] Already handled this withUserId, skipping')
+      clientLogger.info('Conversations', 'Already handled this withUserId, skipping')
       return
     }
 
@@ -182,7 +182,7 @@ export default function ConversationsList() {
       )
 
       if (existingConvo) {
-        clientLogger.info('[ConversationsList] Found conversation for withUserId', {
+        clientLogger.info('Conversations', 'Found conversation for withUserId', {
           conversationId: existingConvo._id,
           withUserId
         })
@@ -197,14 +197,14 @@ export default function ConversationsList() {
         pendingMarkReadRef.current = existingConvo._id
       } else if (currentUser?._id !== withUserId) {
         // User not found in existing conversations, fetch their info
-        clientLogger.info('[ConversationsList] User not in conversations, fetching', { withUserId })
+        clientLogger.info('Conversations', 'User not in conversations, fetching', { withUserId })
         handledWithUserIdRef.current = withUserId
         getUser({ variables: { userId: withUserId } })
       }
     } else if (conversations && conversations.length === 0) {
       // Conversations loaded but empty - this is a new user, fetch their info
       if (currentUser?._id !== withUserId) {
-        clientLogger.info('[ConversationsList] No conversations, fetching user', { withUserId })
+        clientLogger.info('Conversations', 'No conversations, fetching user', { withUserId })
         handledWithUserIdRef.current = withUserId
         getUser({ variables: { userId: withUserId } })
       }

@@ -190,7 +190,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       // Capture current message IDs before refetch to detect truly new messages
       const existingMessageIds = new Set(messages.map(m => m._id))
 
-      clientLogger.info('[MessagesList] Refresh conversation event received, refetching messages', {
+      clientLogger.info('Messages', 'Refresh conversation event received, refetching messages', {
         conversationId,
         currentMessagesCount: messages.length,
         newestMessageId: messages[0]?._id
@@ -206,7 +206,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       // Force network fetch
       const result = await refetch({ conversationId })
 
-      clientLogger.info('[MessagesList] Messages refetched', {
+      clientLogger.info('Messages', 'Messages refetched', {
         newMessagesCount: result.data?.getMessages?.length,
         firstMessageId: result.data?.getMessages?.[0]?._id
       })
@@ -233,7 +233,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
             }
             return updated
           })
-          clientLogger.info('[MessagesList] New messages highlighted', {
+          clientLogger.info('Messages', 'New messages highlighted', {
             count: trulyNewIds.size,
             ids: Array.from(trulyNewIds)
           })

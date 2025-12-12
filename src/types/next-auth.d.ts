@@ -1,5 +1,6 @@
 import NextAuth, { DefaultSession } from "next-auth"
 import { JWT } from "next-auth/jwt"
+import { SectionLogLevels } from "@/utils/clientLogger"
 
 declare module "next-auth" {
   interface Session {
@@ -8,14 +9,16 @@ declare module "next-auth" {
       name: string
       logLevel?: string
       clientLogLevel?: string
+      clientSectionLogLevels?: SectionLogLevels
     } & DefaultSession["user"]
   }
-  
+
   interface User {
     id: string
     name: string
     logLevel?: string
     clientLogLevel?: string
+    clientSectionLogLevels?: SectionLogLevels
   }
 }
 
@@ -26,6 +29,7 @@ declare module "next-auth/jwt" {
     languages?: string[]
     logLevel?: string
     clientLogLevel?: string
+    clientSectionLogLevels?: SectionLogLevels
     lastDbRefresh?: number
   }
 } 

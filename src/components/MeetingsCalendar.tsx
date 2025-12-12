@@ -104,7 +104,7 @@ export default function MeetingsCalendar() {
     dayMeetingCounts
   } = useMemo(() => {
     // Log all meetings for debugging
-    clientLogger.info('MeetingsCalendar: Processing meetings', {
+    clientLogger.info('Meetings', 'Processing meetings', {
       myMeetingsCount: myMeetingsWithPeers.length,
       futureMeetingsCount: futureMeetingsWithPeers.length,
       now: Date.now(),
@@ -115,7 +115,7 @@ export default function MeetingsCalendar() {
       const m = mwp.meeting
       const isPassed = isMeetingPassed(m)
       const colorClass = getMeetingColorClass(m)
-      clientLogger.info(`MeetingsCalendar: myMeeting[${idx}]`, {
+      clientLogger.info('Meetings', `myMeeting[${idx}]`, {
         _id: m._id,
         status: m.status,
         startTime: m.startTime,
@@ -131,7 +131,7 @@ export default function MeetingsCalendar() {
       const m = mwp.meeting
       const isPassed = isMeetingPassed(m)
       const colorClass = getMeetingColorClass(m)
-      clientLogger.info(`MeetingsCalendar: futureMeeting[${idx}]`, {
+      clientLogger.info('Meetings', `futureMeeting[${idx}]`, {
         _id: m._id,
         status: m.status,
         startTime: m.startTime,

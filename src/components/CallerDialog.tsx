@@ -71,16 +71,16 @@ export default function CallerDialog() {
   }, [open, connectionStatus, setConnectionStatus, sendExpired])
 
   useEffect(() => {
-    clientLogger.info('[CallerDialog] Sound effect triggered', {
+    clientLogger.info('Calls', 'Sound effect triggered', {
       open,
       connectionStatus,
       shouldPlay: open && connectionStatus === 'calling'
     })
     if (open && connectionStatus === 'calling') {
-      clientLogger.info('[CallerDialog] Calling playCallingSound()')
+      clientLogger.info('Calls', 'Calling playCallingSound()')
       playCallingSound()
     } else {
-      clientLogger.info('[CallerDialog] Calling stopCallingSound()')
+      clientLogger.info('Calls', 'Calling stopCallingSound()')
       stopCallingSound()
     }
   }, [open, connectionStatus, playCallingSound, stopCallingSound])

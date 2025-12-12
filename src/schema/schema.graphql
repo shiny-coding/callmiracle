@@ -114,8 +114,21 @@ type User {
   logLevel: String
   locale: String
   clientLogLevel: String
+  clientSectionLogLevels: ClientSectionLogLevels
   instrumentationConfig: InstrumentationConfig
   meetingsStats: MeetingsStats
+}
+
+type ClientSectionLogLevels {
+  WebRTC: String
+  PushNotifications: String
+  Conversations: String
+  Messages: String
+  Calls: String
+  Meetings: String
+  Sound: String
+  Console: String
+  Unhandled: String
 }
 
 type InstrumentationConfig {
@@ -227,6 +240,19 @@ input UserInput {
   groups: [ID!]
   logLevel: String
   clientLogLevel: String
+  clientSectionLogLevels: ClientSectionLogLevelsInput
+}
+
+input ClientSectionLogLevelsInput {
+  WebRTC: String
+  PushNotifications: String
+  Conversations: String
+  Messages: String
+  Calls: String
+  Meetings: String
+  Sound: String
+  Console: String
+  Unhandled: String
 }
 
 input CallUserInput {

@@ -124,17 +124,17 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   }, [isMissedCall, user, notifications, setNotificationSeen])
 
   useEffect(() => {
-    clientLogger.info('[CalleeDialog] Sound effect triggered', {
+    clientLogger.info('Calls', 'Sound effect triggered', {
       open,
       connectionStatus,
       isReceivingCall: connectionStatus === ConnectionStatus.RECEIVING_CALL,
       shouldPlay: open && connectionStatus === ConnectionStatus.RECEIVING_CALL
     })
     if (open && connectionStatus === ConnectionStatus.RECEIVING_CALL) {
-      clientLogger.info('[CalleeDialog] Calling playRingingSound()')
+      clientLogger.info('Calls', 'Calling playRingingSound()')
       playRingingSound()
     } else {
-      clientLogger.info('[CalleeDialog] Calling stopRingingSound()')
+      clientLogger.info('Calls', 'Calling stopRingingSound()')
       stopRingingSound()
     }
   }, [open, connectionStatus, playRingingSound, stopRingingSound])
