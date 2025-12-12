@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
     }
     const sectionLabel = `[${formatSectionName(section)}]`
 
-    // Enrich metadata with section as a separate field for Loki filtering
+    // Pass section as top-level field for Loki label extraction
     // Note: Logger context already captures IP from request
     // Note: Message has [CLIENT] prefix for identification
     // Note: userAgent already in meta from client
     // Note: Loki adds its own ingestion timestamp
     const enrichedMeta = {
       ...meta,
-      section: section || 'unknown' // Add section as filterable field
+      section: section || 'Unknown' // Top-level for Loki label
     }
 
     // Log using the same pattern as server-side, but with [CLIENT][Section] prefix

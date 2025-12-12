@@ -43,7 +43,7 @@ const lokiFormat = format.combine(
       spanId = span.spanContext().spanId
     }
 
-    const { userId, userName, ip, path, requestId, userAgent, service, level, operationName, source, ...nonLabelInfo } = info as any
+    const { userId, userName, ip, path, requestId, userAgent, service, level, operationName, source, section, ...nonLabelInfo } = info as any
 
     const ordered = {
       message: info.message,
@@ -62,7 +62,7 @@ const lokiFormat = format.combine(
 
     return {
       ...nonLabelInfo,
-      labels: { userId, userName, ip, path, requestId, operationName, traceId, spanId, level, source }
+      labels: { userId, userName, ip, path, requestId, operationName, traceId, spanId, level, source, section }
     }
   })()
 )
