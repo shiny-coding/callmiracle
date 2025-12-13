@@ -60,11 +60,17 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({ children }) 
         onClick={onClick ? handleSnackbarClick : undefined}
         sx={onClick ? { cursor: 'pointer' } : {}}
       >
-        <Alert 
-          onClose={handleClose} 
-          severity={severity} 
-          sx={{ 
+        <Alert
+          onClose={handleClose}
+          severity={severity}
+          icon={false}
+          sx={{
             width: '100%',
+            background: 'linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%)',
+            color: 'white',
+            '& .MuiAlert-action': {
+              color: 'white',
+            },
             ...(onClick ? { cursor: 'pointer' } : {})
           }}
           onClick={onClick ? handleSnackbarClick : undefined}

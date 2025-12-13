@@ -12,7 +12,7 @@ import { getDayLabel, isMeetingPassed, SLOT_DURATION, getMeetingColorClass, getO
 import clientLogger from '@/utils/clientLogger'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import AddFab from './AddFab'
-import { getCalendarTimeSlots, prepareTimeSlotsInfos } from './MeetingsCalendarUtils'
+import { getCalendarTimeSlots, prepareTimeSlotsInfos, getNextUnjoinableTime } from './MeetingsCalendarUtils'
 import React from 'react'
 import LoadingDialog from './LoadingDialog'
 import MeetingsFilters from './MeetingsFilters'
@@ -90,6 +90,35 @@ export default function MeetingsCalendar() {
 
     return () => clearTimeout(timer)
   }, [slotRefreshKey])
+
+  // Set up timer to refresh when a meeting becomes unjoinable (based on late allowance thresholds)
+  // This ensures UI updates precisely when meetings transition from joinable to unjoinable
+  useEffect(() => {
+    // Only consider other users' meetings (can't join own meetings)
+    const otherUsersMeetings = futureMeetingsWithPeers
+      .filter(mwp => mwp.meeting.userId !== currentUser?._id && !isMeetingPassed(mwp.meeting))
+      .map(mwp => mwp.meeting)
+
+    const nextUnjoinableTime = getNextUnjoinableTime(otherUsersMeetings)
+
+    if (nextUnjoinableTime === null) {
+      return
+    }
+
+    const now = Date.now()
+    const msUntilUnjoinable = nextUnjoinableTime - now + 100 // +100ms buffer
+
+    if (msUntilUnjoinable <= 0) {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      // Trigger re-render to update joinability status
+      setSlotRefreshKey(prev => prev + 1)
+    }, msUntilUnjoinable)
+
+    return () => clearTimeout(timer)
+  }, [futureMeetingsWithPeers, currentUser?._id, slotRefreshKey])
 
   const now = Date.now()
   const HOURS_AHEAD = 24 * 7

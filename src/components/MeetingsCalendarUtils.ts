@@ -1,7 +1,7 @@
 import { Meeting, MeetingWithPeer, User } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { TimeSlot } from './TimeSlotsGrid'
-import { SLOT_DURATION, getLateAllowance, getSlotDuration, isMeetingPassed, getOccupiedSlotsForMatchedMeeting } from '@/utils/meetingUtils'
+import { SLOT_DURATION, getLateAllowance, getSlotDuration, isMeetingPassed, getOccupiedSlotsForMatchedMeeting, LATE_ALLOWANCE_FOR_HALF_HOUR_MEETING, LATE_ALLOWANCE_FOR_HOUR_MEETING } from '@/utils/meetingUtils'
 
 export type MeetingWithInfo = {
   meeting: Meeting,
@@ -126,4 +126,60 @@ export function prepareTimeSlotsInfos(futureMeetingsWithPeers: MeetingWithPeer[]
     }
   }
   return slot2meetingData
+}
+
+/**
+ * Calculate the earliest time when any meeting in the list will become unjoinable.
+ * Used to schedule re-renders for timely UI updates when meetings transition from joinable to unjoinable.
+ *
+ * A slot becomes unjoinable when its contiguous time drops below:
+ * - 30-min meetings: 30min - LATE_ALLOWANCE_FOR_HALF_HOUR_MEETING (25 min)
+ * - 60-min meetings: 60min - LATE_ALLOWANCE_FOR_HOUR_MEETING (50 min)
+ *
+ * @param meetings Array of meetings to check (should exclude user's own meetings since they can't be "joined")
+ * @returns Timestamp when the next meeting becomes unjoinable, or null if none will
+ */
+export function getNextUnjoinableTime(meetings: { timeSlots: number[], minDurationM: number }[]): number | null {
+  const now = Date.now()
+  let earliestTime: number | null = null
+
+  for (const meeting of meetings) {
+    const lateAllowance = getLateAllowance(meeting.minDurationM)
+    const minRequired = meeting.minDurationM * 60 * 1000 - lateAllowance
+
+    const sortedSlots = [...meeting.timeSlots].sort((a, b) => a - b)
+
+    for (let i = 0; i < sortedSlots.length; i++) {
+      const slot = sortedSlots[i]
+      const slotEnd = slot + SLOT_DURATION
+
+      // Skip past slots
+      if (now >= slotEnd) continue
+
+      // Calculate contiguous end from this slot
+      let contiguousEnd = slotEnd
+      for (let j = i + 1; j < sortedSlots.length; j++) {
+        const nextSlot = sortedSlots[j]
+        if (nextSlot === contiguousEnd) {
+          contiguousEnd = nextSlot + SLOT_DURATION
+        } else {
+          break
+        }
+      }
+
+      // Calculate when this slot becomes unjoinable
+      // Slot is joinable while: contiguousEnd - now >= minRequired
+      // Becomes unjoinable when: now > contiguousEnd - minRequired
+      const unjoinableTime = contiguousEnd - minRequired
+
+      // Only consider if it's in the future
+      if (unjoinableTime > now) {
+        if (earliestTime === null || unjoinableTime < earliestTime) {
+          earliestTime = unjoinableTime
+        }
+      }
+    }
+  }
+
+  return earliestTime
 }
