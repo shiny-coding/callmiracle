@@ -339,7 +339,7 @@ export default function MeetingForm() {
 
       {/* Scrollable Content */}
       {!meetingBecameUnavailable && (
-        <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden px-12sp flex flex-col gap-4">
+        <div ref={formContentRef} className="flex-1 overflow-y-auto overflow-x-hidden list-item-gap flex flex-col gap-4">
         {/* User Info Display - only show when connecting to transparent meeting */}
         {meetingToConnect && meetingToConnect.transparency === MeetingTransparency.Transparent && meetingWithPeerToConnect?.peerUser && (
           <div className="flex items-center gap-3 p-3 rounded-lg">
@@ -528,7 +528,7 @@ export default function MeetingForm() {
 
       {/* Bottom Controls Bar */}
       {!meetingBecameUnavailable && (
-      <div className="sticky bottom-0 left-0 w-full border-t panel-border px-12sp py-3 flex justify-end gap-2 z-10 flex-wrap">
+      <div className="sticky bottom-0 left-0 w-full border-t panel-border list-item-gap py-3 flex justify-end gap-2 z-10 flex-wrap">
         {meeting && !isMeetingPassed(meeting) && (
           <Button
             variant="contained"

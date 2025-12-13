@@ -176,7 +176,7 @@ export default function UserList() {
       {!filtersVisible && (
         <div
           ref={scrollContainerRef}
-          className="flex-grow overflow-y-auto px-12sp"
+          className="flex-grow overflow-y-auto px-20sp"
           style={{ position: 'relative', paddingTop: 'var(--list-item-gap)', paddingBottom: 'var(--list-item-gap)' }}
         >
           <div

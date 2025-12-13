@@ -68,19 +68,11 @@ export default function CallHistory() {
         icon={<HistoryIcon className="dimmer-text-color" />}
         title={t('callHistory')}
       >
-        <IconButton
-          onClick={() => router.back()}
-          aria-label={t('close')}
-          title={t('close')}
-          size="small"
-        >
-          <CloseIcon />
-        </IconButton>
       </PageHeader>
 
       <div
         ref={scrollContainerRef}
-        className="flex-grow overflow-y-auto px-12sp"
+        className="flex-grow overflow-y-auto list-item-gap"
         style={{ position: 'relative', paddingTop: 'var(--list-item-gap)', paddingBottom: 'var(--list-item-gap)' }}
       >
         {callHistory.length === 0 ? (

@@ -8,6 +8,12 @@
   --background-end-rgb: 81, 81, 81;
 }
 
+html,
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   font-family: Arial, Helvetica, sans-serif;
@@ -71,7 +77,7 @@ body::before {
 
 :root {
   --link-color: rgb(59, 130, 246);
-  --border-color: #ffffff4a;
+  --border-color: #07bdff4a;
   --dimmer-border-color: #888888;
   --brighter-color: #1f2937;
   --hover-border-color: #c0c0c0;
@@ -88,6 +94,7 @@ body::before {
   --dimmest-text-color: #888888;
 
   --card-bg: #00d7f414;
+  --card-shadow-color: oklch(0.7 0.13 233.8 / 1);
 
   /* Chip border color */
   --chip-border-color: #004bb9;
@@ -112,7 +119,7 @@ body::before {
   --page-title-font-size: 1.15rem;
 
   /* Paper shadow */
-  --paper-shadow: 0px 0px 7px white;
+  --paper-shadow: 0px 0px 2px oklch(0.7 0.13 233.8 / 1);
 
   /* Popup/Dialog shadow */
   --popup-shadow: 0 4px 13px #022e4499;
@@ -123,6 +130,10 @@ body::before {
   /* Icon colors - orange gradient (commented out)
   --icon-gradient: linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%);
   */
+}
+
+.list-item-gap {
+  padding-inline: var(--list-item-gap);
 }
 
 .text-color {
@@ -307,7 +318,7 @@ body::before {
 /* Cards with semi-transparent background and shadow */
 .card-bg {
   background-color: var(--card-bg) !important;
-  box-shadow: 0 0px 3px oklch(0.7 0.13 233.8 / 1) !important;
+  box-shadow: 0 0px 3px var(--card-shadow-color) !important;
   border: 1px solid #ffffff9e;
   transition: background-color 0.5s ease-out, border-color 0.5s ease-out;
 }

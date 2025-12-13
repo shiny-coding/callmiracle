@@ -290,7 +290,7 @@ export default function MeetingsFilters({ onToggleFilters }: MeetingsFiltersProp
       {isExpanded && (
         <div
           ref={scrollableContainerRef}
-          className="flex-grow overflow-y-auto flex flex-col gap-4 px-12sp py-0 pb-4"
+          className="flex-grow overflow-y-auto flex flex-col gap-4 list-item-gap py-0 pb-4"
         >
             {availableGroups.length > 1 && (
               <GroupSelector

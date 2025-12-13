@@ -285,9 +285,9 @@ export default function ConversationsList() {
       />
 
       {/* Horizontal scrollable conversations bar */}
-      <Box className="border-b border-[--border-color]">
+      <Box className="">
         <Box 
-          className="flex overflow-x-auto"
+          className="flex overflow-x-auto card-bg"
           sx={{
             'padding': 'var(--10sp)',
             'gap': 'var(--10sp)',

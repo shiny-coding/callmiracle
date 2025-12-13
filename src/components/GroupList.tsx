@@ -92,7 +92,7 @@ export default function GroupList() {
       {/* Conditional Group List Display: Only show if filters are not expanded */}
       {!filtersVisible && (
         <div
-          className="flex-grow overflow-y-auto px-12sp"
+          className="flex-grow overflow-y-auto list-item-gap"
           style={{ paddingTop: 'var(--list-item-gap)', paddingBottom: 'var(--list-item-gap)' }}
         >
           <div className="relative" style={{ paddingBottom: LIST_BOTTOM_PADDING }}>

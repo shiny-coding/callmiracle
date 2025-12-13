@@ -517,7 +517,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       {/* Messages container */}
       <Box
         ref={messagesContainerRef}
-        className="flex-grow overflow-y-auto px-12sp py-1"
+        className="flex-grow overflow-y-auto list-item-gap py-1"
         onScroll={handleScroll}
         sx={{
           '&::-webkit-scrollbar': {
@@ -589,7 +589,7 @@ export default function MessagesList({ conversationId, onMessageSent, onLoadNewM
       </Box>
 
       {/* Input area */}
-      <Paper className="border-t brighter-border" elevation={0} sx={{ backgroundColor: 'var(--brighter-color)', 'padding': 'var(--10sp)' }}>
+      <Paper className="" elevation={0} sx={{ backgroundColor: 'var(--brighter-color)', 'padding': 'var(--10sp)' }}>
         <Box className="flex gap-2 items-end">
           <Box className="flex-grow">
             <div
