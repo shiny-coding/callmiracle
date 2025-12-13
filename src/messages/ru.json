@@ -148,6 +148,7 @@
     "finished": "Вызов завершен",
     "expired": "Вызов истек",
     "receiving-call": "Входящий вызов...",
+    "receiving-meeting-call": "Звонок по встрече...",
     "busy": "Занято",
     "no-answer": "Нет ответа"
   },

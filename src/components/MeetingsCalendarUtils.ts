@@ -1,7 +1,7 @@
 import { Meeting, MeetingWithPeer, User } from '@/generated/graphql'
 import { format, setMinutes, setSeconds, setMilliseconds, isToday } from 'date-fns'
 import { TimeSlot } from './TimeSlotsGrid'
-import { SLOT_DURATION, getLateAllowance, getSlotDuration, isMeetingPassed, getOccupiedSlotsForMatchedMeeting, LATE_ALLOWANCE_FOR_HALF_HOUR_MEETING, LATE_ALLOWANCE_FOR_HOUR_MEETING } from '@/utils/meetingUtils'
+import { SLOT_DURATION, getLateAllowance, getSlotDuration, isMeetingPassed, getOccupiedSlotsForMatchedMeeting } from '@/utils/meetingUtils'
 
 export type MeetingWithInfo = {
   meeting: Meeting,

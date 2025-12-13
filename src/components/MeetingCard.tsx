@@ -254,7 +254,7 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
       </div>
 
       {meeting.peerMeetingId && meeting.startTime && meetingWithPeer.peerUser && (
-        <div className="flex flex-col items-center gap-2 mt-2">
+        <div className="flex flex-col items-center gap-2">
           {isActiveNow && (
             <Button
               variant="contained"

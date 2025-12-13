@@ -188,14 +188,11 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
           ? (showUserInfo
               ? t('notificationMessages.missedCallTitle')
               : t('notificationMessages.missedCallAnonymous'))
-          : tStatus(connectionStatus)}
+          : (meetingId && connectionStatus === ConnectionStatus.RECEIVING_CALL
+              ? tStatus('receiving-meeting-call')
+              : tStatus(connectionStatus))}
       </DialogTitle>
       <DialogContent>
-        {meetingId && (
-          <Typography variant="subtitle1" className="mb-4 text-blue-400">
-            {t('meetingCall')}
-          </Typography>
-        )}
         {showUserInfo && <CallUserInfo user={user} compact={isMissedCall} />}
         <div className="flex justify-center gap-4 mt-4">
           <IconButton

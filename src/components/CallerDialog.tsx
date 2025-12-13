@@ -85,6 +85,8 @@ export default function CallerDialog() {
     }
   }, [open, connectionStatus, playCallingSound, stopCallingSound])
 
+  // Show user info: always for non-meeting calls, or for meeting calls after first call
+  // For first meeting calls, peer info stays hidden to preserve anonymity
   const showUserInfo = !meetingId || meetingLastCallTime
 
   if (!targetUser) return null

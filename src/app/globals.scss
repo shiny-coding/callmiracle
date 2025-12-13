@@ -385,9 +385,25 @@ body::before {
     color: #42a5f5 !important;
   }
 
+  &.Mui-disabled.Mui-checked {
+    color: #90a4ae !important;
+
+    svg {
+      fill: #90a4ae !important;
+      color: #90a4ae !important;
+    }
+  }
+
   svg {
     fill: #42a5f5 !important;
     color: #42a5f5 !important;
+  }
+}
+
+.MuiCheckbox-root.Mui-disabled.Mui-checked {
+  .MuiSvgIcon-root[data-testid="CheckBoxIcon"] {
+    fill: #90a4ae !important;
+    color: #90a4ae !important;
   }
 }
 

@@ -148,7 +148,8 @@
     "timeout": "No response",
     "finished": "Call Finished",
     "expired": "Call expired",
-    "receiving-call": "Receiving call...",
+    "receiving-call": "Incoming call...",
+    "receiving-meeting-call": "Meeting call...",
     "busy": "Busy",
     "no-answer": "No answer"
   },
