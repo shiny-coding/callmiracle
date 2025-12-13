@@ -126,7 +126,7 @@ export default function MeetingsList() {
         <div
           ref={scrollContainerRef}
           className="flex-grow overflow-y-auto px-12sp"
-          style={{ position: 'relative' }}
+          style={{ position: 'relative', paddingTop: 'var(--list-item-gap)', paddingBottom: 'var(--list-item-gap)' }}
         >
           <div
             style={{
@@ -152,7 +152,7 @@ export default function MeetingsList() {
                     width: '100%',
                     transform: `translateY(${virtualItem.start}px)`,
                     display: 'block',
-                    paddingBottom: 'var(--12sp)',
+                    paddingBottom: 'var(--list-item-gap)',
                   }}
                 >
                   {isEmptyState ? (

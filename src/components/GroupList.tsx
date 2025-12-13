@@ -91,14 +91,17 @@ export default function GroupList() {
 
       {/* Conditional Group List Display: Only show if filters are not expanded */}
       {!filtersVisible && (
-        <div className="flex-grow overflow-y-auto px-12sp">
+        <div
+          className="flex-grow overflow-y-auto px-12sp"
+          style={{ paddingTop: 'var(--list-item-gap)', paddingBottom: 'var(--list-item-gap)' }}
+        >
           <div className="relative" style={{ paddingBottom: LIST_BOTTOM_PADDING }}>
             {filteredGroups.length === 0 ? (
               <Typography className="text-gray-400 text-center py-8">
                 {t('noGroupsFound')}
               </Typography>
             ) : (
-              <List className="flex flex-col gap-12sp !py-0">
+              <List className="flex flex-col !py-0" style={{ gap: 'var(--list-item-gap)' }}>
                 {filteredGroups.map((group: Group) => (
                   <ListItem
                     key={group._id}

@@ -294,7 +294,8 @@ export default function MediaControls({
             fontWeight: 'bold',
             textTransform: 'capitalize',
             userSelect: 'none',
-            lineHeight: '2.5'
+            lineHeight: '2.5',
+            textAlign: 'center'
           }}
         >
           {currentUser?.name}

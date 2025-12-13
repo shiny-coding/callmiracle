@@ -94,7 +94,7 @@ export default function NotificationsList({ onClose }: NotificationsListProps) {
         </IconButton>
       </PageHeader>
 
-      <div className="flex-grow overflow-y-auto px-4 pt-2">
+      <div className="flex-grow overflow-y-auto px-12sp" style={{ paddingTop: 'var(--list-item-gap)', paddingBottom: 'var(--list-item-gap)' }}>
         <List>
           {notifications.length === 0 ? (
             <Typography className="text-gray-400 text-center py-4">

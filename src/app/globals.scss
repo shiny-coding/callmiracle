@@ -87,7 +87,7 @@ body::before {
   --dimmer-text-color: #4a4a4a;
   --dimmest-text-color: #888888;
 
-  --card-bg: #0063f408;
+  --card-bg: #00d7f414;
 
   /* Chip border color */
   --chip-border-color: #004bb9;
@@ -116,6 +116,9 @@ body::before {
 
   /* Popup/Dialog shadow */
   --popup-shadow: 0 4px 13px #022e4499;
+
+  /* List item gap */
+  --list-item-gap: var(--20sp);
 
   /* Icon colors - orange gradient (commented out)
   --icon-gradient: linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%);
@@ -304,7 +307,7 @@ body::before {
 /* Cards with semi-transparent background and shadow */
 .card-bg {
   background-color: var(--card-bg) !important;
-  // box-shadow: var(--paper-shadow) !important;
+  box-shadow: 0 0px 3px oklch(0.7 0.13 233.8 / 1) !important;
   border: 1px solid #ffffff9e;
   transition: background-color 0.5s ease-out, border-color 0.5s ease-out;
 }
