@@ -100,7 +100,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   if (position === 'bottom' && !isCompact) {
     return (
       <>
-        <div className={`mt-auto pb-2 pt-1 px-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
+        <div className={`mt-auto pb-2 pt-1 px-3 w-full flex items-center gap-4 normal-bg ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
           {connectionStatus !== 'connected' && (
             <div className="flex items-center gap-4 w-full" style={{ justifyContent: 'center' }}>
               <IconButton onClick={() => routerPush(router, calendarPath, { source: 'bottom_controls_calendar', currentPath: pathname })} className={pathname === calendarPath ? 'icon-gradient-active' : 'icon-gradient'}>
@@ -142,7 +142,7 @@ export default function ControlsBar({ position, isCompact, className = '' }: Con
   if (position === 'bottom' && isCompact) {
     return (
       <>
-        <div className={`mt-auto py-2 px-3 w-full flex items-center gap-4 ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
+        <div className={`mt-auto py-2 px-3 w-full flex items-center gap-4 normal-bg ${className}`} style={{ justifyContent: 'space-between', position: 'relative', zIndex: 1400 }}>
           {connectionStatus !== 'connected' && (
             <>
               {/* P2P warning and Notification button on left */}

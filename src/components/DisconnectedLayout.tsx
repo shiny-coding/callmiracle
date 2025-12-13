@@ -31,7 +31,7 @@ export default function DisconnectedLayout({ children }: DisconnectedLayoutProps
         {!isFirstTimePage && <TopControlsBar />}
 
         <div className="flex flex-col items-center w-full max-w-[1536px] mx-auto grow overflow-hidden">
-          <div className="overflow-y-auto py-1 w-full max-w-[800px] grow">
+          <div className="overflow-y-auto w-full max-w-[800px] grow" style={{ padding: '1px' }}>
             {children}
           </div>
         </div>
