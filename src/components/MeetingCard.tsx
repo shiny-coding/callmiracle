@@ -255,25 +255,6 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
 
       {meeting.peerMeetingId && meeting.startTime && meetingWithPeer.peerUser && (
         <div className="flex flex-col items-center gap-2">
-          {isActiveNow && (
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<VideocamIcon sx={{ color: class2Hex(ACTIVE_MEETING_COLOR) }} />}
-              onClick={handleCallPeer}
-              className="text-white font-semibold"
-              sx={{
-                background: 'var(--icon-gradient)',
-                px: 2,
-                '&:hover': {
-                  background: 'var(--icon-gradient)',
-                  filter: 'brightness(1.1)',
-                }
-              }}
-            >
-              {t('call')}
-            </Button>
-          )}
           {(meeting.lastCallTime || meeting.transparency === MeetingTransparency.Transparent) && (
             <div
               className="flex items-center gap-2 cursor-pointer hover:opacity-80"
@@ -419,16 +400,35 @@ export default function MeetingCard({ meetingWithPeer, onEdit }: MeetingCardProp
         </div>
       )}
 
-      {!meetingPassed && meeting.status === MeetingStatus.Called && (
-        <div className="flex items-center justify-center gap-2">
+      {isActiveNow && meetingWithPeer.peerUser && (
+        <div className={`flex items-center gap-4 ${meeting.lastCallTime ? 'justify-between' : 'justify-center'}`}>
+          {meeting.lastCallTime && (
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<DoneIcon sx={{ color: 'white' }} />}
+              onClick={handleFinishMeeting}
+              size="small"
+            >
+              {t('finishMeeting')}
+            </Button>
+          )}
           <Button
             variant="contained"
-            color="warning"
-            startIcon={<DoneIcon />}
-            onClick={handleFinishMeeting}
             size="small"
+            startIcon={<VideocamIcon sx={{ color: class2Hex(ACTIVE_MEETING_COLOR) }} />}
+            onClick={handleCallPeer}
+            className="text-white font-semibold"
+            sx={{
+              background: 'var(--icon-gradient)',
+              px: 2,
+              '&:hover': {
+                background: 'var(--icon-gradient)',
+                filter: 'brightness(1.1)',
+              }
+            }}
           >
-            {t('finishMeeting')}
+            {t('call')}
           </Button>
         </div>
       )}

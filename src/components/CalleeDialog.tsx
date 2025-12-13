@@ -1,10 +1,9 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, IconButton } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, IconButton } from '@mui/material'
 import CallIcon from '@mui/icons-material/Call'
 import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
 import VideocamIcon from '@mui/icons-material/Videocam'
 import VideocamOffIcon from '@mui/icons-material/VideocamOff'
-import SettingsIcon from '@mui/icons-material/Settings'
 import { useTranslations } from 'next-intl'
 import { User, NotificationType } from '@/generated/graphql'
 import CallUserInfo from './CallUserInfo'
@@ -39,7 +38,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const t = useTranslations()
   const tVideoChat = useTranslations('VideoChat')
   const tStatus = useTranslations('ConnectionStatus')
-  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall, targetUser, setConnectionStatus, setDeviceSettingsOpen, storeMeetingId, storeMeetingLastCallTime } = useStore((state) => ({
+  const { connectionStatus, localAudioEnabled, localVideoEnabled, setLocalAudioEnabled, setLocalVideoEnabled, pendingMissedCall, setPendingMissedCall, targetUser, setConnectionStatus, storeMeetingId, storeMeetingLastCallTime } = useStore((state) => ({
     connectionStatus: state.connectionStatus,
     localAudioEnabled: state.localAudioEnabled,
     localVideoEnabled: state.localVideoEnabled,
@@ -49,7 +48,6 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
     setPendingMissedCall: state.setPendingMissedCall,
     targetUser: state.targetUser,
     setConnectionStatus: state.setConnectionStatus,
-    setDeviceSettingsOpen: state.setDeviceSettingsOpen,
     storeMeetingId: state.meetingId,
     storeMeetingLastCallTime: state.meetingLastCallTime
   }))
@@ -99,7 +97,6 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
   const isConnecting = connectionStatus === ConnectionStatus.CONNECTING
 
   const { play: playRingingSound, stop: stopRingingSound } = usePlaySound('/sounds/sfx-calling.mp3', { loop: true, resumeOnVisibilityChange: true })
-  const handleDeviceSettings = () => setDeviceSettingsOpen(true)
 
   // Track which notifications we've already marked as seen to avoid duplicate calls
   const markedNotificationsRef = useRef<Set<string>>(new Set())
@@ -167,10 +164,18 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
 
   if (!user) return null
 
+  // Only allow closing via backdrop/escape for missed calls, not for incoming calls
+  const handleDialogClose = (_event: object, reason: 'backdropClick' | 'escapeKeyDown') => {
+    if (isMissedCall) {
+      handleClose()
+    }
+    // For incoming calls, ignore backdrop click and escape - must use accept/reject buttons
+  }
+
   return (
     <Dialog
       open={open}
-      onClose={isMissedCall ? handleClose : onReject}
+      onClose={handleDialogClose}
       PaperProps={{
         className: 'card-bg text-color min-w-[300px]'
       }}
@@ -209,14 +214,6 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
           >
             {localVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
           </IconButton>
-          <IconButton
-            onClick={handleDeviceSettings}
-            className="icon-gradient-blue"
-            size="large"
-            title={t('deviceSettings', { defaultMessage: 'Settings' })}
-          >
-            <SettingsIcon />
-          </IconButton>
         </div>
       </DialogContent>
       <DialogActions className="border-t brighter-border">
@@ -231,7 +228,7 @@ export default function CalleeDialog({ callee }: CalleeDialogProps) {
           </>
         ) : (
           <>
-            <Button onClick={onReject} variant="contained" color="error">
+            <Button onClick={onReject} variant="contained" color="error" sx={{ marginRight: 'auto' }}>
               {tVideoChat('reject')}
             </Button>
             {!isConnecting && (
