@@ -114,6 +114,9 @@ body::before {
   /* Paper shadow */
   --paper-shadow: 0px 0px 7px white;
 
+  /* Popup/Dialog shadow */
+  --popup-shadow: 0 4px 13px #022e4499;
+
   /* Icon colors - orange gradient (commented out)
   --icon-gradient: linear-gradient(135deg, var(--icon-color-primary) 0%, var(--icon-color-secondary) 100%);
   */
@@ -254,7 +257,7 @@ body::before {
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
-  box-shadow: var(--paper-shadow) !important;
+  box-shadow: var(--popup-shadow) !important;
 }
 
 /* MUI Menu/Select dropdown should appear above top/bottom bars */

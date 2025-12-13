@@ -325,7 +325,7 @@
   "meetingCall": "Звонок по встрече",
   "confirmFinishTitle": "Завершить встречу",
   "confirmCancelTitle": "Отменить встречу",
-  "confirmFinishMessage": "Вы уверены, что хотите отметить эту встречу как завершенную?",
+  "confirmFinishMessage": "Вы хотите завершить эту встречу?",
   "confirmCancelMessage": "Вы уверены, что хотите отменить эту встречу?",
   "yes": "Да",
   "no": "Нет",
