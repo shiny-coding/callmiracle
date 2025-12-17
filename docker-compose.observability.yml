@@ -16,7 +16,7 @@ services:
     image: grafana/grafana:latest
     container_name: callmiracle-grafana
     ports:
-      - "3004:3000"
+      - "127.0.0.1:3004:3000"
     env_file:
       - .env.observability
     environment:
@@ -40,7 +40,7 @@ services:
       - ./observability/tempo/tempo.yaml:/etc/tempo.yaml
       - tempo-data:/var/tempo
     ports:
-      - "3200:3200"   # tempo
+      - "127.0.0.1:3200:3200"   # tempo
       #- "4317:4317"   # otlp grpc, we're using otel collector on this port
       #- "4318:4318"   # otlp http
       #- "9411:9411"   # zipkin, this is for debugging?
@@ -57,7 +57,7 @@ services:
       - ./observability/loki/loki.yaml:/etc/loki/local-config.yaml
       - loki-data:/loki
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     networks:
       - observability
     restart: unless-stopped
@@ -70,10 +70,10 @@ services:
     volumes:
       - ./observability/otel-collector/config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8888:8888"   # Prometheus metrics
-      - "8889:8889"   # Prometheus metrics exporter
+      - "127.0.0.1:4317:4317"   # OTLP gRPC receiver
+      - "127.0.0.1:4318:4318"   # OTLP HTTP receiver
+      - "127.0.0.1:8888:8888"   # Prometheus metrics
+      - "127.0.0.1:8889:8889"   # Prometheus metrics exporter
     networks:
       - observability
     depends_on:
@@ -96,7 +96,7 @@ services:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     networks:
       - observability
     depends_on:

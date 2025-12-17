@@ -16,7 +16,7 @@ services:
       dockerfile: Dockerfile
       network: host
     ports:
-      - "3003:3000"
+      - "127.0.0.1:3003:3000"
     # Load all environment variables from .env.local file for runtime
     env_file:
       - .env.local

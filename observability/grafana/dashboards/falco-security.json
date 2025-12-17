@@ -1,0 +1,119 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "falco-security",
+    "title": "Falco Security Alerts",
+    "tags": ["security", "falco"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Security Alerts Timeline",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "targets": [
+          {
+            "expr": "count_over_time({job=\"falcosidekick\"} [1m])",
+            "legendFormat": "Alerts/min",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": { "fillOpacity": 30 }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Alerts by Priority",
+        "type": "piechart",
+        "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "targets": [
+          {
+            "expr": "sum by (priority) (count_over_time({job=\"falcosidekick\"} | json [24h]))",
+            "legendFormat": "{{priority}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Alerts by Container",
+        "type": "piechart",
+        "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "targets": [
+          {
+            "expr": "sum by (container_name) (count_over_time({job=\"falcosidekick\"} | json | container_name != \"\" [24h]))",
+            "legendFormat": "{{container_name}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Top Rules Triggered",
+        "type": "bargauge",
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "targets": [
+          {
+            "expr": "topk(10, sum by (rule) (count_over_time({job=\"falcosidekick\"} | json [24h])))",
+            "legendFormat": "{{rule}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Recent Critical/Warning Alerts",
+        "type": "logs",
+        "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "targets": [
+          {
+            "expr": "{job=\"falcosidekick\"} | json | priority =~ \"Warning|Critical|Error\"",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "wrapLogMessage": true,
+          "enableLogDetails": true
+        }
+      },
+      {
+        "id": 6,
+        "title": "All Alerts Log",
+        "type": "logs",
+        "gridPos": { "h": 10, "w": 24, "x": 0, "y": 26 },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "targets": [
+          {
+            "expr": "{job=\"falcosidekick\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "wrapLogMessage": true,
+          "enableLogDetails": true
+        }
+      }
+    ]
+  },
+  "overwrite": true
+}
