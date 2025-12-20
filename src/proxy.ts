@@ -14,7 +14,7 @@ const intlMiddleware = createIntlMiddleware(routing)
 // Add any other extensions you want to exclude
 const PUBLIC_FILE = /\.(.*)$/i
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Skip middleware for public files (e.g. .jpg, .png, .css, .js, .ico, etc)

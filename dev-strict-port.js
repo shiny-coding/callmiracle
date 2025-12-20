@@ -36,23 +36,28 @@ async function main() {
   
   // Start Next.js dev server with turbopack
   console.log(`Starting Next.js dev server on port ${PORT}...`);
-  
-  const nextProcess = spawn('npx', [
-    'next',
-    'dev',
-    '--turbopack',
-    '-p',
-    PORT.toString()
-  ], {
-    stdio: 'inherit',
-    shell: true,
-    env: {
-      ...process.env,
-      // Force Next.js to not look for alternative ports
-      PORT: PORT.toString(),
-      NODE_OPTIONS: '--inspect'
+
+  // Filter out yarn-specific npm_config env vars that cause npm warnings
+  const cleanEnv = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) =>
+      !key.startsWith('npm_config_') || key === 'npm_config_user_agent'
+    )
+  );
+
+  const nextProcess = spawn(
+    `npx next dev --turbopack -p ${PORT}`,
+    [],
+    {
+      stdio: 'inherit',
+      shell: true,
+      env: {
+        ...cleanEnv,
+        // Force Next.js to not look for alternative ports
+        PORT: PORT.toString(),
+        NODE_OPTIONS: '--inspect'
+      }
     }
-  });
+  );
   
   // Handle process termination signals
   let isShuttingDown = false;
@@ -72,15 +77,16 @@ async function main() {
     // IMPORTANT: detached: true is crucial - without it, the child process receives
     // the same SIGINT signal that triggered this shutdown, causing it to terminate
     // before it can execute the cleanup logic
-    const shutdownScript = spawn('node', [
-      shutdownScriptPath,
-      nextProcess.pid.toString()
-    ], {
-      stdio: ['ignore', 'inherit', 'inherit'], // Ignore stdin to prevent signal inheritance
-      shell: true,
-      detached: true, // Detach from parent process group to avoid signal inheritance
-      env: { ...process.env, PORT: PORT.toString() }
-    });
+    const shutdownScript = spawn(
+      `node "${shutdownScriptPath}" ${nextProcess.pid}`,
+      [],
+      {
+        stdio: ['ignore', 'inherit', 'inherit'], // Ignore stdin to prevent signal inheritance
+        shell: true,
+        detached: true, // Detach from parent process group to avoid signal inheritance
+        env: { ...cleanEnv, PORT: PORT.toString() }
+      }
+    );
     
     shutdownScript.on('exit', (code) => {
       process.exit(0);
