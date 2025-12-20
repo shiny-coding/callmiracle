@@ -30,7 +30,10 @@ jobs:
             
             echo "Installing dependencies..."
             yarn install
-            
+
+            echo "Syncing dashboards..."
+            yarn dashboards:sync
+
             echo "Building containers..."
             docker compose build
             

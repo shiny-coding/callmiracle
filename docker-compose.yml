@@ -5,7 +5,7 @@ networks:
     driver: bridge
   observability:
     external: true
-    name: callmiracle_observability
+    name: observability
   redis-network:
     external: true
     name: callmiracle_redis-network
@@ -25,8 +25,8 @@ services:
       # Override for production deployment
       - NODE_ENV=production
       # Override observability endpoints for container networking
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://callmiracle-otel-collector:4318
-      - LOKI_HOST=http://callmiracle-loki:3100
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - LOKI_HOST=http://loki:3100
       # MongoDB connection to host machine
       - MONGODB_URI=mongodb://host.docker.internal:27017/callmiracle
       # Redis connection to container
